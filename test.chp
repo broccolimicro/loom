@@ -1,0 +1,22 @@
+struct channel
+{
+	int<1> r;
+	int<1> a;
+}
+
+proc fifo(channel l, channel r)
+{
+	*[
+		[l.r]; l.a := 1; [~l.r]; l.a := 0;
+		r.a := 1; [r.r]; r.a := 0; [~r.r]
+	]
+}
+
+proc main()
+{
+	channel a;
+	channel b;
+	channel c;
+	fifo f1(a, b);
+	fifo f2(b, c);
+}
