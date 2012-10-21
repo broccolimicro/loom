@@ -59,7 +59,7 @@
 #include <streambuf>
 #include <string>
 #include <list>
-#include <regex>
+#include <map>
 
 using namespace std;
 
@@ -141,6 +141,12 @@ struct keyword
 	}
 
 	string name;
+
+	keyword &operator=(keyword k)
+	{
+		name = k.name;
+		return *this;
+	}
 };
 
 /* This structure describes a variable in the chp program. We need
@@ -152,25 +158,51 @@ struct variable
 	variable()
 	{
 		name = "";
-		type = NULL;
+		type = "";
 		width = 0;
 	}
 	variable(string chp)
 	{
-		cout << "\t\tvariable! -> "+chp << endl;
+		parse(chp);
 	}
 	~variable()
 	{
 		name = "";
-		type = NULL;
+		type = "";
 		width = 0;
 	}
 
 	string		name;		// the name of the instantiated variable
-	keyword		*type;		// a pointer to the type of the instantiated variable
+	string		type;		// the name of the type of the instantiated variable
 	uint16_t	width;		// the bit width of the instantiated variable
 
-	void parse(){}
+	variable &operator=(variable v)
+	{
+		name = v.name;
+		type = v.type;
+		width = v.width;
+		return *this;
+	}
+
+	void parse(string chp)
+	{
+		cout << "\t\tvariable! -> "+chp << endl;
+
+		int width_start = chp.find_first_of("< ");
+		int name_start = chp.find_first_of("> ");
+
+		string t = chp.substr(0, width_start);
+		string w = "";
+		if (chp.find_first_of("<>") != chp.npos)
+		{
+			w = chp.substr(width_start+1, name_start - (width_start+1));
+		}
+		string n = chp.substr(chp.find_first_of("> ")+1);
+
+		cout << "\t\t\ttype! -> "+t << endl;
+		cout << "\t\t\twidth!-> "+w << endl;
+		cout << "\t\t\tname! -> "+n << endl;
+	}
 };
 
 /* This structure represents a structure or record. A record
@@ -192,7 +224,13 @@ struct record : keyword
 		name = "";
 	}
 
-	list<variable> vars;	// the list of member variables that make up this record
+	map<string, variable> vars;	// the list of member variables that make up this record
+
+	record &operator=(record r)
+	{
+		vars = r.vars;
+		return *this;
+	}
 
 	void parse(string chp)
 	{
@@ -204,6 +242,8 @@ struct record : keyword
 		string::iterator i, j;
 		string io_block;
 
+		variable v;
+
 		name = chp.substr(name_start, name_end - name_start);
 		io_block = chp.substr(block_start, block_end - block_start);
 
@@ -214,7 +254,8 @@ struct record : keyword
 		{
 			if (*(i+1) == ';')
 			{
-				vars.push_back(variable(io_block.substr(j-io_block.begin(), i+1 - j)));
+				v.parse(io_block.substr(j-io_block.begin(), i+1 - j));
+				vars.insert(pair<string, variable>(name, v));
 				j = i+2;
 			}
 		}
@@ -244,11 +285,21 @@ struct block
 		raw = "";
 	}
 
-	string raw;					// the raw chp of this block
-	list<process*>	procs;		// a list of pointers to subprocesses
-	list<block>		blocks;		// a list of sub-blocks
-	list<variable>	vars;		// the variable space of this block
-	list<space>		states;		// the state space of this block
+	string raw;							// the raw chp of this block
+	list<process*>			procs;		// a list of pointers to subprocesses
+	list<block>				blocks;		// a list of sub-blocks
+	map<string, variable>	vars;		// the variable space of this block
+	list<space>				states;		// the state space of this block
+
+	block &operator=(block b)
+	{
+		raw = b.raw;
+		procs = b.procs;
+		blocks = b.blocks;
+		vars = b.vars;
+		states = b.states;
+		return *this;
+	}
 
 	void parse(string chp)
 	{
@@ -279,9 +330,17 @@ struct process : keyword
 		name = "";
 	}
 
-	block			def;	// the chp that defined this process
-	list<string>	prs;	// the final set of generated production rules
-	list<variable>	io;		// the input and output signals of this process
+	block					def;	// the chp that defined this process
+	list<string>			prs;	// the final set of generated production rules
+	map<string, variable>	io;		// the input and output signals of this process
+
+	process &operator=(process p)
+	{
+		def = p.def;
+		prs = p.prs;
+		io = p.io;
+		return *this;
+	}
 
 	void parse(string chp)
 	{
@@ -295,6 +354,8 @@ struct process : keyword
 		string io_block;
 		string::iterator i, j;
 
+		variable v;
+
 		name = chp.substr(name_start, name_end - name_start);
 		io_block = chp.substr(input_start, input_end - input_start);
 
@@ -305,7 +366,8 @@ struct process : keyword
 		{
 			if (*(i+1) == ',' || i+1 == io_block.end())
 			{
-				io.push_back(variable(io_block.substr(j-io_block.begin(), i+1 - j)));
+				v.parse(io_block.substr(j-io_block.begin(), i+1 - j));
+				io.insert(pair<string, variable>(v.name, v));
 				j = i+2;
 			}
 		}
@@ -340,6 +402,14 @@ struct space
 	uint8_t		size;		// the number of states in this state space
 	string		*data;		// the raw data of the state space
 
+	space &operator=(space s)
+	{
+		var = s.var;
+		size = s.size;
+		data = s.data;
+		return *this;
+	}
+
 	void parse(){}
 };
 
@@ -353,7 +423,7 @@ struct program
 {
 	program()
 	{
-		type_space.push_back(keyword("int"));
+		type_space.insert(pair<string, keyword>("int", keyword("int")));
 	}
 	program(string chp)
 	{
@@ -364,10 +434,19 @@ struct program
 
 	}
 
-	list<keyword>	type_space;
-	list<variable>	globals;
-	list<string>	prs;
-	list<string>	errors;
+	map<string, keyword>	type_space;
+	map<string, variable>	globals;
+	list<string>			prs;
+	list<string>			errors;
+
+	program &operator=(program p)
+	{
+		type_space = p.type_space;
+		globals = p.globals;
+		prs = p.prs;
+		errors = p.errors;
+		return *this;
+	}
 
 	void parse(string chp)
 	{
@@ -377,8 +456,11 @@ struct program
 		string error;
 		int error_start, error_len;
 
+		process p;
+		record r;
+
 		// Define the basic types. In this case, 'int'
-		type_space.push_back(keyword("int"));
+		type_space.insert(pair<string, keyword>("int", keyword("int")));
 
 		// remove extraneous whitespace
 		for (i = chp.begin(); i < chp.end(); i++)
@@ -414,10 +496,16 @@ struct program
 				{
 					// Is this a process?
 					if (cleaned_chp.compare(j-cleaned_chp.begin(), 5, "proc ") == 0)
-						type_space.push_back(process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1)));
+					{
+						p.parse(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1));
+						type_space.insert(pair<string, process>(p.name, p));
+					}
 					// This isn't a process, is it a record?
 					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "struct ") == 0)
-						type_space.push_back(record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1)));
+					{
+						r.parse(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1));
+						type_space.insert(pair<string, record>(r.name, r));
+					}
 					// This isn't either a process or a record, this is an error.
 					else
 					{
@@ -430,9 +518,15 @@ struct program
 
 						// Make sure we don't miss the next record or process though.
 						if (cleaned_chp.compare(j-cleaned_chp.begin(), 5, "proc ") == 0)
-							type_space.push_back(process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1)));
+						{
+							p.parse(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1));
+							type_space.insert(pair<string, process>(p.name, p));
+						}
 						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "struct ") == 0)
-							type_space.push_back(record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1)));
+						{
+							r.parse(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1));
+							type_space.insert(pair<string, record>(r.name, r));
+						}
 					}
 				}
 				j = i+1;
