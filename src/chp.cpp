@@ -191,17 +191,14 @@ struct variable
 		int width_start = chp.find_first_of("< ");
 		int name_start = chp.find_first_of("> ");
 
-		string t = chp.substr(0, width_start);
-		string w = "";
+		name = chp.substr(chp.find_first_of("> ")+1);
+		type = chp.substr(0, width_start);
 		if (chp.find_first_of("<>") != chp.npos)
-		{
-			w = chp.substr(width_start+1, name_start - (width_start+1));
-		}
-		string n = chp.substr(chp.find_first_of("> ")+1);
+			width = atoi(chp.substr(width_start+1, name_start - (width_start+1)).c_str());
 
-		cout << "\t\t\ttype! -> "+t << endl;
-		cout << "\t\t\twidth!-> "+w << endl;
-		cout << "\t\t\tname! -> "+n << endl;
+		cout << "\t\t\ttype! -> " << type << endl;
+		cout << "\t\t\twidth!-> " << width << endl;
+		cout << "\t\t\tname! -> " << name << endl;
 	}
 };
 
@@ -247,8 +244,8 @@ struct record : keyword
 		name = chp.substr(name_start, name_end - name_start);
 		io_block = chp.substr(block_start, block_end - block_start);
 
-		cout << "\tname!   -> "+name << endl;
-		cout << "\tblock!  -> "+io_block << endl;
+		cout << "\tname!   -> " << name << endl;
+		cout << "\tblock!  -> " << io_block << endl;
 
 		for (i = io_block.begin(), j = io_block.begin(); i < io_block.end(); i++)
 		{
@@ -288,15 +285,13 @@ struct block
 	string raw;							// the raw chp of this block
 	list<process*>			procs;		// a list of pointers to subprocesses
 	list<block>				blocks;		// a list of sub-blocks
-	map<string, variable>	vars;		// the variable space of this block
-	list<space>				states;		// the state space of this block
+	map<string, space>		states;		// the state space of this block
 
 	block &operator=(block b)
 	{
 		raw = b.raw;
 		procs = b.procs;
 		blocks = b.blocks;
-		vars = b.vars;
 		states = b.states;
 		return *this;
 	}
