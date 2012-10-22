@@ -6,9 +6,9 @@ struct channel
 
 proc fifo(channel l, channel r)
 {
-	*[
-		[l.r]; l.a := 1; [~l.r]; l.a := 0;
-		r.a := 1; [r.r]; r.a := 0; [~r.r]
+	*[1 ->
+		[l.r -> skip]; l.a := 1; [~l.r -> skip]; l.a := 0;
+		r.a := 1; [r.r -> skip]; r.a := 0; [~r.r -> skip]
 	]
 }
 

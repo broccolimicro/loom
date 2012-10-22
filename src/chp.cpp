@@ -202,6 +202,60 @@ struct variable
 	}
 };
 
+/* This structure describes an instruction in the chp program, namely what lies between
+ * two semicolons in a block of. This has not been expanded to ;S1||S2; type of composition.
+ */
+
+struct instruction
+{
+	instruction()
+	{
+		var_affected = "";
+		val_at_end = "";
+	}
+	instruction(string chp)
+	{
+		parse(chp);
+	}
+	~instruction()
+	{
+		var_affected = "";
+		val_at_end = "";
+	}
+
+	string		var_affected;	// the name of the variable this instruction operates on.
+	string		val_at_end;		// the value that the variable is set to.
+
+	instruction &operator=(instruction v)
+	{
+		var_affected = v.var_affected;
+		val_at_end = v.val_at_end;
+		return *this;
+	}
+
+	void parse(string chp)
+	{
+		cout << "\t\tvariable! -> "+chp << endl;
+
+		string::iterator i;
+		int name_end;
+		int assign_start;
+		for (i = chp.begin(); i < chp.end(); i++)
+		{
+
+		}
+		name_end = chp.find_first_of(" .=-!?");
+		var_affected = chp.substr(0,name_end);
+
+		assign_start = chp.find_first_of(":");
+		val_at_end = chp.substr(assign_start, chp.length());
+
+		cout << "\t\t\variable affected! -> " << var_affected << endl;
+		cout << "\t\t\value at end! -> " << val_at_end << endl;
+
+	}
+};
+
 /* This structure represents a structure or record. A record
  * contains a bunch of member variables that help you index
  * segments of bits within the multibit signal.
@@ -285,7 +339,7 @@ struct block
 	string raw;							// the raw chp of this block
 	list<process*>			procs;		// a list of pointers to subprocesses
 	list<block>				blocks;		// a list of sub-blocks
-	map<string, space>		states;		// the state space of this block
+	map<string, string>		*states;		// the state space of this block
 
 	block &operator=(block b)
 	{
@@ -298,7 +352,9 @@ struct block
 
 	void parse(string chp)
 	{
+
 		raw = chp;
+
 
 		cout << "\tblock!  -> "+chp << endl;
 	}
@@ -405,7 +461,10 @@ struct space
 		return *this;
 	}
 
-	void parse(){}
+	void parse(){
+
+
+	}
 };
 
 /* This structure describes a whole program. It contains a record of all
@@ -430,14 +489,14 @@ struct program
 	}
 
 	map<string, keyword>	type_space;
-	map<string, variable>	globals;
+	variable				main;
 	list<string>			prs;
 	list<string>			errors;
 
 	program &operator=(program p)
 	{
 		type_space = p.type_space;
-		globals = p.globals;
+		main = p.main;
 		prs = p.prs;
 		errors = p.errors;
 		return *this;
@@ -527,6 +586,7 @@ struct program
 				j = i+1;
 			}
 		}
+		main.parse("main m()");
 	}
 };
 
