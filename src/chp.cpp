@@ -586,6 +586,7 @@ struct program
 				j = i+1;
 			}
 		}
+
 		main.parse("main m()");
 	}
 };
