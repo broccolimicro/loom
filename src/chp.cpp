@@ -326,6 +326,11 @@ struct space
 	{
 		var = "";
 	}
+	space(string v, list<string> s)
+	{
+		var = v;
+		states = s;
+	}
 	~space()
 	{
 		var = "";
@@ -333,7 +338,19 @@ struct space
 
 	string			var;
 	list<string>	states;
+
+	space &operator=(space s)
+	{
+		var = s.var;
+		states = s.states;
+		return *this;
+	}
 };
+
+space operator==(space s, int x)
+{
+
+}
 
 /* This structure represents a block. An conditional statement
  * or loop can be considered a block. By definition, it is
@@ -391,27 +408,23 @@ struct block
 			}
 		}
 
-		map<string, string> s[5];
-		/*s[0]["r"] = "iX";
-		s[0]["a"] = "oX";
+		list<string> s;
+		s.push_back("iX");
+		s.push_back("i1");
+		s.push_back("iX");
+		s.push_back("i0");
+		s.push_back("iX");
 
-		s[1]["r"] = "i1";
-		s[1]["a"] = "oX";
+		states["r"] = space("r", s);
 
-		s[2]["r"] = "iX";
-		s[2]["a"] = "o1";
+		s.clear();
+		s.push_back("oX");
+		s.push_back("oX");
+		s.push_back("o1");
+		s.push_back("o1");
+		s.push_back("o0");
 
-		s[3]["r"] = "i0";
-		s[3]["a"] = "o1";
-
-		s[4]["r"] = "iX";
-		s[4]["a"] = "o0";
-
-		states.push_back(s[0]);
-		states.push_back(s[1]);
-		states.push_back(s[2]);
-		states.push_back(s[3]);
-		states.push_back(s[4]);*/
+		states["a"] = space("a", s);
 
 		map<string, space>::iterator k, l;
 
