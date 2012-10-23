@@ -262,7 +262,7 @@ struct instruction
 
 		if(chp.find_first_of(":")!=chp.npos){
 			assign_start = chp.find_first_of(":");
-			val_at_end = chp.substr(assign_start);
+			val_at_end = chp.substr(assign_start+2);
 			cout << "\t\t\tvalue at end! -> " << val_at_end << endl;
 		}
 
@@ -677,6 +677,7 @@ struct block
 		//Turn instructions into states!
 		for(curr_var = vars.begin(); curr_var != vars.end(); curr_var++){
 			states[curr_var->first].states.push_back("X");
+			states[curr_var->first].var = curr_var->first;
 			for(curr_instr = instrs.begin(); curr_instr != instrs.end(); curr_instr++){
 				if (curr_var->first == instr.var_affected){
 					states[instr.var_affected].states.push_back("o"+instr.val_at_end);
@@ -685,6 +686,7 @@ struct block
 
 				}
 			}
+			cout << states[curr_var->first]<< endl;
 		}
 
 
