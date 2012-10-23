@@ -320,6 +320,12 @@ struct record : keyword
 	}
 };
 
+struct space
+{
+	space(){}
+	~space(){}
+};
+
 /* This structure represents a block. An conditional statement
  * or loop can be considered a block. By definition, it is
  * something that we can pull out and analyze independently of
@@ -398,7 +404,7 @@ struct block
 		states.push_back(s[3]);
 		states.push_back(s[4]);*/
 
-		map<string, string>::iterator k, l;
+		map<string, space>::iterator k, l;
 
 		for (k = states.begin(); k != states.end(); k++)
 		{
