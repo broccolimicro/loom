@@ -235,23 +235,30 @@ struct instruction
 
 	void parse(string chp)
 	{
-		cout << "\t\tvariable! -> "+chp << endl;
+
+
+		cout << "\t\t instruction! -> "+chp << endl;
 
 		string::iterator i;
 		int name_end;
 		int assign_start;
-		for (i = chp.begin(); i < chp.end(); i++)
+		/*for (i = chp.begin(); i < chp.end(); i++)
 		{
 
-		}
-		name_end = chp.find_first_of(" .=-!?");
+		}*/
+		name_end = chp.find_first_of(" .=-!?;:|,*+()[]{}&<>@#");
 		var_affected = chp.substr(0,name_end);
+		cout << "\t\tvariable affected! -> " << var_affected << endl;
 
-		assign_start = chp.find_first_of(":");
-		val_at_end = chp.substr(assign_start, chp.length());
+		if(chp.find_first_of(":")!=chp.npos){
+			assign_start = chp.find_first_of(":");
+			val_at_end = chp.substr(assign_start);
+			cout << "\t\tvalue at end! -> " << val_at_end << endl;
+		}
 
-		cout << "\t\t\variable affected! -> " << var_affected << endl;
-		cout << "\t\t\value at end! -> " << val_at_end << endl;
+
+
+
 
 	}
 };
@@ -337,23 +344,49 @@ struct block
 	}
 
 	string raw;							// the raw chp of this block
-	list<process*>			procs;		// a list of pointers to subprocesses
-	list<block>				blocks;		// a list of sub-blocks
-	map<string, string>		*states;		// the state space of this block
+	list<process*>				procs;		// a list of pointers to subprocesses
+	list<block>					blocks;		// a list of sub-blocks
+	list<instruction>			instructions;		// an ordered list of instructions in block
+	list< map<string, string> >	states;		// the state space of this block
 
 	block &operator=(block b)
 	{
 		raw = b.raw;
 		procs = b.procs;
 		blocks = b.blocks;
+		instructions = b.instructions;
 		states = b.states;
 		return *this;
 	}
 
 	void parse(string chp)
 	{
+		instruction instr; //Lists are pass by value, right? Else this wont work
 
 		raw = chp;
+		string rest_of_chp = chp;
+		string::iterator i,j;
+
+		for(i = chp.begin(), j = chp.begin();i != chp.end(); i++){
+			if (*i == ';'){
+				instr.parse(chp.substr(j-chp.begin(), i-j));
+				j = i+1;
+				instructions.push_back(instr);
+			}
+
+		}
+
+		/*while (rest_of_chp.find_first_of(";") != rest_of_chp.npos){
+
+			instr_end = rest_of_chp.find_first_of(";");
+			if(rest_of_chp.find_first_of(";") != rest_of_chp.npos){
+				instr.parse(rest_of_chp.substr(0, instr_end));
+				instructions.push_back(instr);
+				rest_of_chp = rest_of_chp.substr(instr_end+1);
+			}
+
+		}*/
+
 
 
 		cout << "\tblock!  -> "+chp << endl;
