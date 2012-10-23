@@ -322,8 +322,17 @@ struct record : keyword
 
 struct space
 {
-	space(){}
-	~space(){}
+	space()
+	{
+		var = "";
+	}
+	~space()
+	{
+		var = "";
+	}
+
+	string			var;
+	list<string>	states;
 };
 
 /* This structure represents a block. An conditional statement
