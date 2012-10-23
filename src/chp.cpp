@@ -60,8 +60,18 @@
 #include <string>
 #include <list>
 #include <map>
+#include <sstream>
 
 using namespace std;
+
+template <typename T>
+string to_string(T n)
+{
+     ostringstream os;
+     os << n;
+     return os.str();
+}
+
 
 struct keyword;
 struct record;
@@ -360,18 +370,17 @@ ostream &operator<<(ostream &os, space s)
 space operator==(space s1, int s2)
 {
 	space result;
-	result.var = s1.var;
-
 	list<string>::iterator i;
 	string state;
-	char num[32];
+
+	result.var = s1.var + " == " + to_string(s2);
 
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 	{
 		if (i->substr(1, 1) == "X")
 			state = "1";
 		else
-			state = itoa(atoi(i->substr(1).c_str()), num, 10);
+			state = to_string((int)(atoi(i->substr(1).c_str()) == s2));
 		result.states.push_back(i->substr(0, 1) + state);
 	}
 
@@ -381,18 +390,97 @@ space operator==(space s1, int s2)
 space operator==(int s2, space s1)
 {
 	space result;
-	result.var = s1.var;
-
 	list<string>::iterator i;
 	string state;
-	char num[32];
+
+	result.var = to_string(s2) + " == " + s1.var;
 
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 	{
 		if (i->substr(1, 1) == "X")
 			state = "1";
 		else
-			state = itoa(atoi(i->substr(1).c_str()), num, 10);
+			state = to_string((int)(atoi(i->substr(1).c_str()) == s2));
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
+space operator!=(space s1, int s2)
+{
+	space result;
+	result.var = s1.var + " != " + to_string(s2);
+
+	list<string>::iterator i;
+	string state;
+
+	for (i = s1.states.begin(); i != s1.states.end(); i++)
+	{
+		if (i->substr(1, 1) == "X")
+			state = "1";
+		else
+			state = to_string((int)(atoi(i->substr(1).c_str()) != s2));
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
+space operator!=(int s2, space s1)
+{
+	space result;
+	result.var = to_string(s2) + " != " + s1.var;
+
+	list<string>::iterator i;
+	string state;
+
+	for (i = s1.states.begin(); i != s1.states.end(); i++)
+	{
+		if (i->substr(1, 1) == "X")
+			state = "1";
+		else
+			state = to_string((int)(atoi(i->substr(1).c_str()) != s2));
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
+space operator<(space s1, int s2)
+{
+	space result;
+	result.var = s1.var + " < " + to_string(s2);
+
+	list<string>::iterator i;
+	string state;
+
+	for (i = s1.states.begin(); i != s1.states.end(); i++)
+	{
+		if (i->substr(1, 1) == "X")
+			state = "1";
+		else
+			state = to_string((int)(atoi(i->substr(1).c_str()) < s2));
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
+space operator<(int s2, space s1)
+{
+	space result;
+	result.var = to_string(s2) + " < " + s1.var;
+
+	list<string>::iterator i;
+	string state;
+
+	for (i = s1.states.begin(); i != s1.states.end(); i++)
+	{
+		if (i->substr(1, 1) == "X")
+			state = "1";
+		else
+			state = to_string((int)(atoi(i->substr(1).c_str()) > s2));
 		result.states.push_back(i->substr(0, 1) + state);
 	}
 
