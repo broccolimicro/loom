@@ -224,7 +224,7 @@ struct instruction
 	}
 
 	string		var_affected;	// the name of the variable this instruction operates on.
-	string		val_at_end;		// the value that the variable is set to.
+	string		val_at_end;		// the value that the variable is set to. i0, i1, iX, o0, o1, oX, in, on
 
 	instruction &operator=(instruction v)
 	{
@@ -242,7 +242,7 @@ struct instruction
 		string::iterator i;
 		int name_end;
 		int assign_start;
-		/*for (i = chp.begin(); i < chp.end(); i++)
+		/*for (i = chp.begin(); i != chp.end(); i++)
 		{
 
 		}*/
@@ -308,7 +308,7 @@ struct record : keyword
 		cout << "\tname!   -> " << name << endl;
 		cout << "\tblock!  -> " << io_block << endl;
 
-		for (i = io_block.begin(), j = io_block.begin(); i < io_block.end(); i++)
+		for (i = io_block.begin(), j = io_block.begin(); i != io_block.end(); i++)
 		{
 			if (*(i+1) == ';')
 			{
@@ -343,18 +343,19 @@ struct block
 		raw = "";
 	}
 
-	string raw;							// the raw chp of this block
-	list<process*>				procs;		// a list of pointers to subprocesses
-	list<block>					blocks;		// a list of sub-blocks
-	list<instruction>			instructions;		// an ordered list of instructions in block
-	list< map<string, string> >	states;		// the state space of this block
+	string 				raw;							// the raw chp of this block
+	list<process*>		procs;		// a list of pointers to subprocesses
+	list<block>			blocks;		// a list of sub-blocks
+	list<instruction>	instrs;		// an ordered list of instructions in block
+	map<string, space>	states;		// the state space of this block. format "i####" or "o####"
+	list<string>		prs;
 
 	block &operator=(block b)
 	{
 		raw = b.raw;
 		procs = b.procs;
 		blocks = b.blocks;
-		instructions = b.instructions;
+		instrs = b.instrs;
 		states = b.states;
 		return *this;
 	}
@@ -371,10 +372,40 @@ struct block
 			if (*i == ';'){
 				instr.parse(chp.substr(j-chp.begin(), i-j));
 				j = i+1;
-				instructions.push_back(instr);
+				instrs.push_back(instr);
 			}
-
 		}
+
+		map<string, string> s[5];
+		/*s[0]["r"] = "iX";
+		s[0]["a"] = "oX";
+
+		s[1]["r"] = "i1";
+		s[1]["a"] = "oX";
+
+		s[2]["r"] = "iX";
+		s[2]["a"] = "o1";
+
+		s[3]["r"] = "i0";
+		s[3]["a"] = "o1";
+
+		s[4]["r"] = "iX";
+		s[4]["a"] = "o0";
+
+		states.push_back(s[0]);
+		states.push_back(s[1]);
+		states.push_back(s[2]);
+		states.push_back(s[3]);
+		states.push_back(s[4]);*/
+
+		map<string, string>::iterator k, l;
+
+		for (k = states.begin(); k != states.end(); k++)
+		{
+			cout << " ";
+		}
+
+		cout << endl;
 
 		/*while (rest_of_chp.find_first_of(";") != rest_of_chp.npos){
 
@@ -386,8 +417,6 @@ struct block
 			}
 
 		}*/
-
-
 
 		cout << "\tblock!  -> "+chp << endl;
 	}
@@ -446,7 +475,7 @@ struct process : keyword
 		cout << "\tname!   -> "+name << endl;
 		cout << "\tinputs! -> "+io_block << endl;
 
-		for (i = io_block.begin(), j = io_block.begin(); i < io_block.end(); i++)
+		for (i = io_block.begin(), j = io_block.begin(); i != io_block.end(); i++)
 		{
 			if (*(i+1) == ',' || i+1 == io_block.end())
 			{
@@ -457,46 +486,6 @@ struct process : keyword
 		}
 
 		def.parse(chp.substr(block_start, block_end - block_start));
-	}
-};
-
-/* This structure represents the state space of a single variable as affected by
- * a block of chp. We need to keep track of the variable to with this state space
- * belongs, the number of states in the space, and the raw state data.
- */
-struct space
-{
-	space()
-	{
-		var = NULL;
-		size = 0;
-		data = NULL;
-	}
-	~space()
-	{
-		if (data != NULL)
-			delete [] data;
-
-		var = NULL;
-		size = 0;
-		data = NULL;
-	}
-
-	variable	*var;		// a pointer to the variable that this state space describes
-	uint8_t		size;		// the number of states in this state space
-	string		*data;		// the raw data of the state space
-
-	space &operator=(space s)
-	{
-		var = s.var;
-		size = s.size;
-		data = s.data;
-		return *this;
-	}
-
-	void parse(){
-
-
 	}
 };
 
@@ -550,7 +539,7 @@ struct program
 		type_space.insert(pair<string, keyword>("int", keyword("int")));
 
 		// remove extraneous whitespace
-		for (i = chp.begin(); i < chp.end(); i++)
+		for (i = chp.begin(); i != chp.end(); i++)
 		{
 			if (!sc(*i))
 				cleaned_chp += *i;
@@ -560,7 +549,7 @@ struct program
 
 		// split the program into records and processes
 		int depth[3] = {0};
-		for (i = cleaned_chp.begin(), j = cleaned_chp.begin(); i < cleaned_chp.end(); i++)
+		for (i = cleaned_chp.begin(), j = cleaned_chp.begin(); i != cleaned_chp.end(); i++)
 		{
 			if (*i == '(')
 				depth[0]++;
