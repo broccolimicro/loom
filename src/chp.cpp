@@ -347,9 +347,56 @@ struct space
 	}
 };
 
-space operator==(space s, int x)
+ostream &operator<<(ostream &os, space s)
 {
+    os << s.var << " : ";
+    list<string>::iterator i;
+    for (i = s.states.begin(); i != s.states.end(); i++)
+    	os << *i << " ";
 
+    return os;
+}
+
+space operator==(space s1, int s2)
+{
+	space result;
+	result.var = s1.var;
+
+	list<string>::iterator i;
+	string state;
+	char num[32];
+
+	for (i = s1.states.begin(); i != s1.states.end(); i++)
+	{
+		if (i->substr(1, 1) == "X")
+			state = "1";
+		else
+			state = itoa(atoi(i->substr(1).c_str()), num, 10);
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
+space operator==(int s2, space s1)
+{
+	space result;
+	result.var = s1.var;
+
+	list<string>::iterator i;
+	string state;
+	char num[32];
+
+	for (i = s1.states.begin(); i != s1.states.end(); i++)
+	{
+		if (i->substr(1, 1) == "X")
+			state = "1";
+		else
+			state = itoa(atoi(i->substr(1).c_str()), num, 10);
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
 }
 
 /* This structure represents a block. An conditional statement
@@ -444,6 +491,10 @@ struct block
 		s.push_back("o0");
 
 		states["a"] = space("a", s);
+
+		space test = (states["r"] == 0);
+
+		cout << test << endl;
 
 		map<string, space>::iterator k, l;
 
