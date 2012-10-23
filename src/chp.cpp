@@ -237,7 +237,7 @@ struct instruction
 	{
 
 
-		cout << "\t\t instruction! -> "+chp << endl;
+		cout << "\t\tinstruction! -> "+chp << endl;
 
 		string::iterator i;
 		int name_end;
@@ -248,12 +248,12 @@ struct instruction
 		}*/
 		name_end = chp.find_first_of(" .=-!?;:|,*+()[]{}&<>@#");
 		var_affected = chp.substr(0,name_end);
-		cout << "\t\tvariable affected! -> " << var_affected << endl;
+		cout << "\t\t\tvariable affected! -> " << var_affected << endl;
 
 		if(chp.find_first_of(":")!=chp.npos){
 			assign_start = chp.find_first_of(":");
 			val_at_end = chp.substr(assign_start);
-			cout << "\t\tvalue at end! -> " << val_at_end << endl;
+			cout << "\t\t\tvalue at end! -> " << val_at_end << endl;
 		}
 
 
@@ -394,19 +394,38 @@ struct block
 
 	void parse(string chp)
 	{
+
 		instruction instr; //Lists are pass by value, right? Else this wont work
 
 		raw = chp;
+		string potential_instr;
 		string rest_of_chp = chp;
 		string::iterator i,j;
 
+		cout << "\tblock!  -> "+chp << endl;  // Output the raw block
+
+		//Parse instructions
 		for(i = chp.begin(), j = chp.begin();i != chp.end(); i++){
 			if (*i == ';'){
-				instr.parse(chp.substr(j-chp.begin(), i-j));
+				potential_instr = chp.substr(j-chp.begin(), i-j);
+				if(potential_instr.find(":=") != potential_instr.npos){
+					instr.parse(potential_instr);
+				}
 				j = i+1;
 				instrs.push_back(instr);
 			}
 		}
+
+		/*while (rest_of_chp.find_first_of(";") != rest_of_chp.npos){
+
+				instr_end = rest_of_chp.find_first_of(";");
+				if(rest_of_chp.find_first_of(";") != rest_of_chp.npos){
+					instr.parse(rest_of_chp.substr(0, instr_end));
+					instructions.push_back(instr);
+					rest_of_chp = rest_of_chp.substr(instr_end+1);
+				}
+
+			}*/
 
 		list<string> s;
 		s.push_back("iX");
@@ -435,18 +454,9 @@ struct block
 
 		cout << endl;
 
-		/*while (rest_of_chp.find_first_of(";") != rest_of_chp.npos){
 
-			instr_end = rest_of_chp.find_first_of(";");
-			if(rest_of_chp.find_first_of(";") != rest_of_chp.npos){
-				instr.parse(rest_of_chp.substr(0, instr_end));
-				instructions.push_back(instr);
-				rest_of_chp = rest_of_chp.substr(instr_end+1);
-			}
 
-		}*/
 
-		cout << "\tblock!  -> "+chp << endl;
 	}
 };
 
