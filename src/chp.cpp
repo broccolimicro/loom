@@ -487,6 +487,126 @@ space operator<(int s2, space s1)
 	return result;
 }
 
+space operator>(space s1, int s2)
+{
+	space result;
+	result.var = s1.var + " > " + to_string(s2);
+
+	list<string>::iterator i;
+	string state;
+
+	for (i = s1.states.begin(); i != s1.states.end(); i++)
+	{
+		if (i->substr(1, 1) == "X")
+			state = "1";
+		else
+			state = to_string((int)(atoi(i->substr(1).c_str()) > s2));
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
+space operator>(int s2, space s1)
+{
+	space result;
+	result.var = to_string(s2) + " > " + s1.var;
+
+	list<string>::iterator i;
+	string state;
+
+	for (i = s1.states.begin(); i != s1.states.end(); i++)
+	{
+		if (i->substr(1, 1) == "X")
+			state = "1";
+		else
+			state = to_string((int)(atoi(i->substr(1).c_str()) < s2));
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
+space operator<=(space s1, int s2)
+{
+	space result;
+	result.var = s1.var + " <= " + to_string(s2);
+
+	list<string>::iterator i;
+	string state;
+
+	for (i = s1.states.begin(); i != s1.states.end(); i++)
+	{
+		if (i->substr(1, 1) == "X")
+			state = "1";
+		else
+			state = to_string((int)(atoi(i->substr(1).c_str()) <= s2));
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
+space operator<=(int s2, space s1)
+{
+	space result;
+	result.var = to_string(s2) + " <= " + s1.var;
+
+	list<string>::iterator i;
+	string state;
+
+	for (i = s1.states.begin(); i != s1.states.end(); i++)
+	{
+		if (i->substr(1, 1) == "X")
+			state = "1";
+		else
+			state = to_string((int)(atoi(i->substr(1).c_str()) >= s2));
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
+space operator>=(space s1, int s2)
+{
+	space result;
+	result.var = s1.var + " >= " + to_string(s2);
+
+	list<string>::iterator i;
+	string state;
+
+	for (i = s1.states.begin(); i != s1.states.end(); i++)
+	{
+		if (i->substr(1, 1) == "X")
+			state = "1";
+		else
+			state = to_string((int)(atoi(i->substr(1).c_str()) >= s2));
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
+space operator>=(int s2, space s1)
+{
+	space result;
+	result.var = to_string(s2) + " >= " + s1.var;
+
+	list<string>::iterator i;
+	string state;
+
+	for (i = s1.states.begin(); i != s1.states.end(); i++)
+	{
+		if (i->substr(1, 1) == "X")
+			state = "1";
+		else
+			state = to_string((int)(atoi(i->substr(1).c_str()) <= s2));
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
 /* This structure represents a block. An conditional statement
  * or loop can be considered a block. By definition, it is
  * something that we can pull out and analyze independently of
