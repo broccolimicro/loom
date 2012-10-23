@@ -413,21 +413,22 @@ struct block
 	{
 		raw = "";
 	}
-	block(string chp)
+	block(string chp, map<string, variable> svars)
 	{
-		parse(chp);
+		parse(chp, svars);
 	}
 	~block()
 	{
 		raw = "";
 	}
 
-	string 				raw;							// the raw chp of this block
-	list<process*>		procs;		// a list of pointers to subprocesses
-	list<block>			blocks;		// a list of sub-blocks
-	list<instruction>	instrs;		// an ordered list of instructions in block
-	map<string, space>	states;		// the state space of this block. format "i####" or "o####"
-	list<string>		prs;
+	string 					raw;							// the raw chp of this block
+	map<string, variable>	vars;
+	list<process*>			procs;		// a list of pointers to subprocesses
+	list<block>				blocks;		// a list of sub-blocks
+	list<instruction>		instrs;		// an ordered list of instructions in block
+	map<string, space>		states;		// the state space of this block. format "i####" or "o####"
+	list<string>			prs;
 
 	block &operator=(block b)
 	{
@@ -439,8 +440,9 @@ struct block
 		return *this;
 	}
 
-	void parse(string chp)
+	void parse(string chp, map<string, variable> svars)
 	{
+		vars = svars;
 
 		instruction instr; //Lists are pass by value, right? Else this wont work
 
@@ -448,7 +450,8 @@ struct block
 		string potential_instr;
 		string rest_of_chp = chp;
 		string::iterator i,j;
-
+		list<instruction>::iterator curr_instr;  //Used later to iterate through instr lists
+		map<string, variable>::iterator curr_var;
 		cout << "\tblock!  -> "+chp << endl;  // Output the raw block
 
 		//Parse instructions
@@ -463,16 +466,19 @@ struct block
 			}
 		}
 
-		/*while (rest_of_chp.find_first_of(";") != rest_of_chp.npos){
+		//Turn instructions into states!
+		for(curr_var = vars.begin(); curr_var != vars.end(); curr_var++){
+			states[curr_var->first].states.push_back("X");
+			for(curr_instr = instrs.begin(); curr_instr != instrs.end(); curr_instr++){
+				if (curr_var->first == instr.var_affected){
+					states[instr.var_affected].states.push_back("o"+instr.val_at_end);
+				}else{
+					states[instr.var_affected].states.push_back("X");
 
-				instr_end = rest_of_chp.find_first_of(";");
-				if(rest_of_chp.find_first_of(";") != rest_of_chp.npos){
-					instr.parse(rest_of_chp.substr(0, instr_end));
-					instructions.push_back(instr);
-					rest_of_chp = rest_of_chp.substr(instr_end+1);
 				}
+			}
+		}
 
-			}*/
 
 		list<string> s;
 		s.push_back("iX");
@@ -574,7 +580,7 @@ struct process : keyword
 			}
 		}
 
-		def.parse(chp.substr(block_start, block_end - block_start));
+		def.parse(chp.substr(block_start, block_end - block_start), io);
 	}
 };
 
