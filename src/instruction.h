@@ -45,25 +45,26 @@ struct instruction
 	{
 
 
-		cout << "\t\tInstruction:  \t "+chp << endl;
+
 
 		string::iterator i;
 		int name_end;
 		int assign_start;
-		/*for (i = chp.begin(); i != chp.end(); i++)
-		{
 
-		}*/
-		name_end = chp.find_first_of(" =-!?;:|,*+()[]{}&<>@#");
-		var_affected = chp.substr(0,name_end);
-		cout << "\t\t\tVariable affected -> " << var_affected << endl;
+		if(chp.find(":=") != chp.npos){
+			name_end = chp.find_first_of(" .=-!?;:|,*+()[]{}&<>@#");
+			var_affected = chp.substr(0,name_end);
+			cout << "\t\tInstruction:  \t "+chp << endl;
 
-		if(chp.find_first_of(":")!=chp.npos){
 			assign_start = chp.find_first_of(":");
 			val_at_end = chp.substr(assign_start+2);
-			cout << "\t\t\tValue at end -> " << val_at_end << endl;
+		}else{
+			var_affected = "Unhandled";
+			val_at_end = "NA";
+			cout << "\t\tInstr not handled: "+chp << endl;
 		}
-
+		cout << "\t\t\tVariable affected -> " << var_affected << endl;
+		cout << "\t\t\tValue at end -> " << val_at_end << endl;
 
 
 

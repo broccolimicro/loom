@@ -122,19 +122,13 @@ struct block
 		for(i = chp.begin(), j = chp.begin();i != chp.end(); i++){				//Iterate through the entire string
 			if (*i == ';'){														//We nabbed an instruction!
 				potential_instr = chp.substr(j-chp.begin(), i-j);
-				if(potential_instr.find(":=") != potential_instr.npos){			//This is when a 'real' instruction is added
-					instr.parse(potential_instr);
-					instrs.push_back(instr);
-					if(vars.find(instr.var_affected) == vars.end() ){
-						cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + instr.var_affected << endl;
-					}
-				}else{					//This is when a 'vacuous' instruction is added
-					cout << "\t\tInstr not handled: " + potential_instr << endl;
+				instr.parse(potential_instr);
+				instrs.push_back(instr);
 
-					instr.val_at_end = "Unhandled";
-					instr.val_at_end = "NA";
-					instrs.push_back(instr);
+				if((vars.find(instr.var_affected) == vars.end()) && (instr.var_affected!="Unhandled") ){
+					cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + instr.var_affected << endl;
 				}
+
 				j = i+1;
 			}
 		}
