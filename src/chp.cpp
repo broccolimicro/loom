@@ -145,18 +145,18 @@ struct block
 		}
 
 
-		list<string> s;
-		s.push_back("iX");
+		/*list<string> s;
+		s.push_back(" X");
 		s.push_back("i1");
-		s.push_back("iX");
+		s.push_back(" X");
 		s.push_back("i0");
-		s.push_back("iX");
+		s.push_back(" X");
 
 		states["r"] = space("r", s);
 
 		s.clear();
-		s.push_back("oX");
-		s.push_back("oX");
+		s.push_back(" X");
+		s.push_back(" X");
 		s.push_back("o1");
 		s.push_back("o1");
 		s.push_back("o0");
@@ -165,7 +165,7 @@ struct block
 
 		space test = (states["r"] == 0);
 
-		cout << test << endl;
+		cout << test << endl;*/
 
 		map<string, space>::iterator k, l;
 
