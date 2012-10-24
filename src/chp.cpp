@@ -204,14 +204,17 @@ struct process : keyword
 	process()
 	{
 		name = "";
+		_kind = "process";
 	}
 	process(string chp)
 	{
 		parse(chp);
+		_kind = "process";
 	}
 	~process()
 	{
 		name = "";
+		_kind = "process";
 	}
 
 	block					def;	// the chp that defined this process
@@ -270,7 +273,7 @@ struct program
 {
 	program()
 	{
-		type_space.insert(pair<string, keyword>("int", keyword("int")));
+		type_space.insert(pair<string, keyword*>("int", new keyword("int")));
 	}
 	program(string chp)
 	{
@@ -278,10 +281,14 @@ struct program
 	}
 	~program()
 	{
+		map<string, keyword*>::iterator i;
+		for (i = type_space.begin(); i != type_space.end(); i++)
+			delete i->second;
 
+		type_space.clear();
 	}
 
-	map<string, keyword>	type_space;
+	map<string, keyword*>	type_space;
 	variable				main;
 	list<string>			prs;
 	list<string>			errors;
@@ -303,11 +310,11 @@ struct program
 		string error;
 		int error_start, error_len;
 
-		process p;
-		record r;
+		process *p;
+		record *r;
 
 		// Define the basic types. In this case, 'int'
-		type_space.insert(pair<string, keyword>("int", keyword("int")));
+		type_space.insert(pair<string, keyword*>("int", new keyword("int")));
 
 		// remove extraneous whitespace
 		for (i = chp.begin(); i != chp.end(); i++)
@@ -344,14 +351,14 @@ struct program
 					// Is this a process?
 					if (cleaned_chp.compare(j-cleaned_chp.begin(), 5, "proc ") == 0)
 					{
-						p.parse(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1));
-						type_space.insert(pair<string, process>(p.name, p));
+						p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1));
+						type_space.insert(pair<string, process*>(p->name, p));
 					}
 					// This isn't a process, is it a record?
 					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "struct ") == 0)
 					{
-						r.parse(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1));
-						type_space.insert(pair<string, record>(r.name, r));
+						r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space);
+						type_space.insert(pair<string, record*>(r->name, r));
 					}
 					// This isn't either a process or a record, this is an error.
 					else
@@ -366,13 +373,13 @@ struct program
 						// Make sure we don't miss the next record or process though.
 						if (cleaned_chp.compare(j-cleaned_chp.begin(), 5, "proc ") == 0)
 						{
-							p.parse(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1));
-							type_space.insert(pair<string, process>(p.name, p));
+							p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1));
+							type_space.insert(pair<string, process*>(p->name, p));
 						}
 						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "struct ") == 0)
 						{
-							r.parse(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1));
-							type_space.insert(pair<string, record>(r.name, r));
+							r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space);
+							type_space.insert(pair<string, record*>(r->name, r));
 						}
 					}
 				}

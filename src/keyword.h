@@ -17,20 +17,33 @@
  */
 struct keyword
 {
+protected:
+	string _kind;
+
+public:
+
 	keyword()
 	{
 		name = "";
+		_kind = "keyword";
 	}
 	keyword(string n)
 	{
 		name = n;
+		_kind = "keyword";
 	}
 	~keyword()
 	{
 		name = "";
+		_kind = "keyword";
 	}
 
 	string name;
+
+	string kind()
+	{
+		return _kind;
+	}
 
 	keyword &operator=(keyword k)
 	{
