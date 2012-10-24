@@ -45,7 +45,7 @@ struct instruction
 	{
 
 
-		cout << "\t\tinstruction! -> "+chp << endl;
+		cout << "\t\tInstruction:\t "+chp << endl;
 
 		string::iterator i;
 		int name_end;
@@ -56,12 +56,12 @@ struct instruction
 		}*/
 		name_end = chp.find_first_of(" .=-!?;:|,*+()[]{}&<>@#");
 		var_affected = chp.substr(0,name_end);
-		cout << "\t\t\tvariable affected! -> " << var_affected << endl;
+		cout << "\t\t\tVariable affected -> " << var_affected << endl;
 
 		if(chp.find_first_of(":")!=chp.npos){
 			assign_start = chp.find_first_of(":");
 			val_at_end = chp.substr(assign_start+2);
-			cout << "\t\t\tvalue at end! -> " << val_at_end << endl;
+			cout << "\t\t\tValue at end -> " << val_at_end << endl;
 		}
 
 

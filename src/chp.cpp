@@ -117,17 +117,28 @@ struct block
 		map<string, variable>::iterator curr_var;
 		cout << "\tblock!  -> "+chp << endl;  // Output the raw block
 
+
 		//Parse instructions
 		for(i = chp.begin(), j = chp.begin();i != chp.end(); i++){
 			if (*i == ';'){
 				potential_instr = chp.substr(j-chp.begin(), i-j);
-				if(potential_instr.find(":=") != potential_instr.npos){
+				if(potential_instr.find(":=") != potential_instr.npos){			//This is when a 'real' instruction is added
 					instr.parse(potential_instr);
+					instrs.push_back(instr);
+					if(vars.find(instr.var_affected) == vars.end() ){
+						cout << instr.var_affected << endl;
+						cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope" << endl;
+					}
+				}else{					//This is when a 'vacuous' instruction is added
+					cout << "\t\tInstruction not handled: \t" + potential_instr << endl;
+					instr.val_at_end = "Unhandled";
+					instr.val_at_end = "NA";
+					//instrs.push_back(instr);
 				}
 				j = i+1;
-				instrs.push_back(instr);
 			}
 		}
+
 
 		//Turn instructions into states!
 		for(curr_var = vars.begin(); curr_var != vars.end(); curr_var++){
@@ -136,6 +147,7 @@ struct block
 			for(curr_instr = instrs.begin(); curr_instr != instrs.end(); curr_instr++){
 				if (curr_var->first == instr.var_affected){
 					states[curr_var->first].states.push_back("o"+instr.val_at_end);
+				//	cout << instr.val_at_end<<endl;
 				}else{
 					states[curr_var->first].states.push_back(" X");
 
