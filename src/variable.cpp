@@ -12,6 +12,7 @@ variable::variable()
 	name = "";
 	type = "";
 	width = 0;
+	last = "X";
 }
 
 variable::variable(string n, string t, uint16_t w)
@@ -19,11 +20,13 @@ variable::variable(string n, string t, uint16_t w)
 	name = n;
 	type = t;
 	width = w;
+	last = "X";
 }
 
 variable::variable(string chp)
 {
 	parse(chp);
+	last = "X";
 }
 
 variable::~variable()
@@ -31,6 +34,7 @@ variable::~variable()
 	name = "";
 	type = "";
 	width = 0;
+	last = "X";
 }
 
 variable &variable::operator=(variable v)
@@ -38,6 +42,7 @@ variable &variable::operator=(variable v)
 	name = v.name;
 	type = v.type;
 	width = v.width;
+	last = v.last;
 	return *this;
 }
 

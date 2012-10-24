@@ -58,9 +58,10 @@ space operator==(space s1, string s2)
 
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 	{
-		for (j = i->begin()+1, k = s2.begin(); j != i->end() && k != s2.end(); j++)
+		state = "i";
+		for (j = i->begin()+1, k = s2.begin(); j != i->end() && k != s2.end(); j++, k++)
 		{
-			if (*j == 'X')
+			if (*j == 'X' || *k == 'X')
 				state += "X";
 			else if (*j == *k)
 				state += "1";
@@ -77,7 +78,7 @@ space operator==(space s1, string s2)
 space operator==(string s1, space s2)
 {
 	space result;
-	result.var = s1 + " == " + s2.var;
+	result.var =  s1 + " == " + s2.var;
 
 	list<string>::iterator i;
 	string::iterator j, k;
@@ -85,9 +86,10 @@ space operator==(string s1, space s2)
 
 	for (i = s2.states.begin(); i != s2.states.end(); i++)
 	{
-		for (j = i->begin()+1, k = s1.begin(); j != i->end() && k != s1.end(); j++)
+		state = "i";
+		for (j = i->begin()+1, k = s1.begin(); j != i->end() && k != s1.end(); j++, k++)
 		{
-			if (*j == 'X')
+			if (*j == 'X' || *k == 'X')
 				state += "X";
 			else if (*j == *k)
 				state += "1";

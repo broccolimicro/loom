@@ -114,96 +114,80 @@ struct block
 
 	void parse(string chp, map<string, variable*> svars)
 	{
-		allvars = svars;	//The variables this block uses.
+		cout << "\tblock!  -> "+chp << endl;  		// Output the raw block
 
+		allvars = svars;						//The variables this block uses.
+		raw = chp;
+
+		string raw_instr;							//String of CHP code to be tested as an instruction
 		instruction instr; 							//Lists are pass by value, right? Else this wont work
 
-		raw = chp;
-		string potential_instr;						//String of CHP code to be tested as an instruction
-		string rest_of_chp = chp; 					//The segment of CHP we have not yet parsed
-		string::iterator i,j;
-		list<string>::reverse_iterator ri, rj;
-		list<instruction>::iterator curr_instr;  	//Used later to iterate through instr lists
-		map<string, variable*>::iterator curr_var, k;
-		cout << "\tblock!  -> "+chp << endl;  		// Output the raw block
-		list<bool> was_output_change;
+		list<instruction>::iterator ii;  	//Used later to iterate through instr lists
+		map<string, variable*>::iterator vi, k;
+
+		list<bool> delta_out;
+		list<bool>::iterator di;
+		unsigned int i, j = 0;
+
+		string xstate;
+		string state;
 
 		//Parse instructions!
-		for(i = chp.begin(), j = chp.begin();i != chp.end(); i++){				//Iterate through the entire string
-			if (*i == ';'){														//We nabbed an instruction!
-				potential_instr = chp.substr(j-chp.begin(), i-j);
-				instr.parse(potential_instr);
-				instrs.push_back(instr);
-				if(instrs.size() > 1 ){
-					ri = instrs.rbegin();
-					rj = ri;
-					rj++;
-					if(instrs->rbegin().val_at_end[0] == 'o' )
-						was_output_change.push_back(*ri != *rj);
-					else
-						was_output_change.push_back(false);
-				}else{
-					was_output_change.push_back(false);
-				}
-				curr_var = allvars.find(instr.var_affected);
-				if((curr_var == allvars.end()) && (instr.var_affected!="Unhandled") ){
-					cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + instr.var_affected << endl;
-				}
-				else
-					curr_var->second->width = max(curr_var->second->width, (uint16_t)(instr.val_at_end.length()-1));
+		for(i = chp.find_first_of(";"), j = 0; i != chp.npos; j = i+1, i = chp.find_first_of(";", i+1))				//Iterate through the entire string
+		{
+			raw_instr = chp.substr(j, i-j);
+			instr.parse(raw_instr);
+			instrs.push_back(instr);
 
-				j = i+1;
+			vi = allvars.find(instr.var_affected);
+			if ((vi == allvars.end()) && (instr.var_affected != "Unhandled"))
+				cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + instr.var_affected << endl;
+			else
+			{
+				delta_out.push_back((instr.val_at_end[0] == 'o') && (instr.val_at_end.substr(1) != vi->second->last.substr(1)));
+				vi->second->last = instr.val_at_end;
+				vi->second->width = max(vi->second->width, (uint16_t)(instr.val_at_end.length()-1));
 			}
-
 		}
 
+		cout << endl;
 
 		//Turn instructions into states!
 		//Remember as we add instructions to X out the appropriate vars when we change "important" inputs
-		for(curr_var = allvars.begin(); curr_var != allvars.end(); curr_var++){
-			states[curr_var->first].states.push_back(" X");
-			states[curr_var->first].var = curr_var->first;
+		for(vi = allvars.begin(); vi != allvars.end(); vi++)
+		{
+			xstate = "i";
+			for (i = 0; i < vi->second->width; i++)
+				xstate = xstate + "X";
+			states[vi->first].states.push_back(xstate);
+			states[vi->first].var = vi->first;
 
-			//We now need to check if any outputs change and kill all inputs if they do.
-
-			/*for(k = vars.begin(); (k != vars.end()) && (states[k->first].states.size()>1); k++){
-				ri = states[k->first].states.rbegin();
-				rj = ri;
-				rj++;
-				if(*ri != *rj){
-					was_output_change = true;
+			for (ii = instrs.begin(), di = delta_out.begin(); ii != instrs.end() && di != delta_out.end(); ii++, di++)
+			{
+				if (ii->val_at_end.length() < xstate.length())
+				{
+					state = ii->val_at_end[0];
+					for (i = 0; i < xstate.length() - ii->val_at_end.length(); i++)
+						state += "0";
+					state += ii->val_at_end.substr(1);
 				}
-			}*/
+				else
+					state = ii->val_at_end;
 
-			for(curr_instr = instrs.begin(); curr_instr != instrs.end(); curr_instr++){
-				/*if(was_output_change){
-					for(k = vars.begin(); (k != vars.end()) && (states[k->first].states.size()>1); k++){
-						if((*(states[curr_var->first].states.rbegin()) != " X") && (was_output_change && (*(states[curr_var->first].states.rbegin()))[0] == 'i')){
-							states[curr_var->first].states.push_back(" ?");
-						}
-					}
-				}*/
-
-				if ((curr_var->first == curr_instr->var_affected)&&(curr_instr->val_at_end != "NA")){
-					states[curr_var->first].states.push_back(curr_instr->val_at_end);
-
-				}else if(*(states[curr_var->first].states.rbegin()) != " X"){
-					if((was_output_change.begin()+curr_instr-instrs.begin())){
-						states[curr_var->first].states.push_back("v?");
-					}else{
-						states[curr_var->first].states.push_back(*(states[curr_var->first].states.rbegin()));
-					}
-				}else{
-					states[curr_var->first].states.push_back(" X");
-				}
+				if ((vi->first == ii->var_affected) && (ii->val_at_end != "NA"))
+					states[vi->first].states.push_back(state);
+				else if (!(*di) || (*(states[vi->first].states.rbegin()))[0] == 'o')
+					states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+				else
+					states[vi->first].states.push_back(xstate);
 
 			}
-			//was_output_change = false;
-			cout << states[curr_var->first]<< endl;
+
+			cout << states[vi->first]<< endl;
 		}
 
 
-		cout << (states["a.a"] == "X010110X0X") << endl;
+		cout << ("X010110X0X1" == states["l.a"]) << endl;
 
 
 
