@@ -135,9 +135,9 @@ struct block
 			states[curr_var->first].var = curr_var->first;
 			for(curr_instr = instrs.begin(); curr_instr != instrs.end(); curr_instr++){
 				if (curr_var->first == instr.var_affected){
-					states[instr.var_affected].states.push_back("o"+instr.val_at_end);
+					states[curr_var->first].states.push_back("o"+instr.val_at_end);
 				}else{
-					states[instr.var_affected].states.push_back("X");
+					states[curr_var->first].states.push_back(" X");
 
 				}
 			}
