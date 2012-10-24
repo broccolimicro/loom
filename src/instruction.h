@@ -45,7 +45,7 @@ struct instruction
 	{
 
 
-		cout << "\t\tInstruction:\t "+chp << endl;
+		cout << "\t\tInstruction:  \t "+chp << endl;
 
 		string::iterator i;
 		int name_end;

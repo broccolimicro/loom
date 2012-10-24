@@ -126,14 +126,13 @@ struct block
 					instr.parse(potential_instr);
 					instrs.push_back(instr);
 					if(vars.find(instr.var_affected) == vars.end() ){
-						cout << instr.var_affected << endl;
-						cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope" << endl;
+						cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + instr.var_affected << endl;
 					}
 				}else{					//This is when a 'vacuous' instruction is added
-					cout << "\t\tInstruction not handled: \t" + potential_instr << endl;
+					cout << "\t\tInstr not handled: " + potential_instr << endl;
 					instr.val_at_end = "Unhandled";
 					instr.val_at_end = "NA";
-					//instrs.push_back(instr);
+					instrs.push_back(instr);
 				}
 				j = i+1;
 			}
