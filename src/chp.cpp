@@ -76,18 +76,28 @@ struct block
 	{
 		raw = "";
 	}
-	block(string chp, map<string, variable> svars)
+	block(string chp, map<string, variable*> svars)
 	{
 		parse(chp, svars);
 	}
 	~block()
 	{
 		raw = "";
+
+		map<string, variable*>::iterator i;
+		for (i = locvars.begin(); i != locvars.end(); i++)
+		{
+			if (i->second != NULL)
+				delete i->second;
+			i->second = NULL;
+		}
+
+		locvars.clear();
 	}
 
 	string 					raw;							// the raw chp of this block
-	map<string, variable>	vars;
-	list<process*>			procs;		// a list of pointers to subprocesses
+	map<string, variable*>	locvars;
+	map<string, variable*>	allvars;
 	list<block>				blocks;		// a list of sub-blocks
 	list<instruction>		instrs;		// an ordered list of instructions in block
 	map<string, space>		states;		// the state space of this block. format "i####" or "o####"
@@ -96,16 +106,15 @@ struct block
 	block &operator=(block b)
 	{
 		raw = b.raw;
-		procs = b.procs;
 		blocks = b.blocks;
 		instrs = b.instrs;
 		states = b.states;
 		return *this;
 	}
 
-	void parse(string chp, map<string, variable> svars)
+	void parse(string chp, map<string, variable*> svars)
 	{
-		vars = svars;	//The variables this block uses.
+		allvars = svars;	//The variables this block uses.
 
 		instruction instr; 							//Lists are pass by value, right? Else this wont work
 
@@ -114,8 +123,9 @@ struct block
 		string rest_of_chp = chp; 					//The segment of CHP we have not yet parsed
 		string::iterator i,j;
 		list<instruction>::iterator curr_instr;  	//Used later to iterate through instr lists
-		map<string, variable>::iterator curr_var;
+		map<string, variable*>::iterator curr_var;
 		cout << "\tblock!  -> "+chp << endl;  		// Output the raw block
+		variable *v;
 
 
 		//Parse instructions!
@@ -125,9 +135,12 @@ struct block
 				instr.parse(potential_instr);
 				instrs.push_back(instr);
 
-				if((vars.find(instr.var_affected) == vars.end()) && (instr.var_affected!="Unhandled") ){
+				curr_var = allvars.find(instr.var_affected);
+				if((curr_var == allvars.end()) && (instr.var_affected!="Unhandled") ){
 					cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + instr.var_affected << endl;
 				}
+				else
+					curr_var->second->width = max(curr_var->second->width, (uint16_t)(instr.val_at_end.length()-1));
 
 				j = i+1;
 			}
@@ -136,7 +149,7 @@ struct block
 
 		//Turn instructions into states!
 		//Remember as we add instructions to X out the appropriate vars when we change "important" inputs
-		for(curr_var = vars.begin(); curr_var != vars.end(); curr_var++){
+		for(curr_var = allvars.begin(); curr_var != allvars.end(); curr_var++){
 			states[curr_var->first].states.push_back(" X");
 			states[curr_var->first].var = curr_var->first;
 			for(curr_instr = instrs.begin(); curr_instr != instrs.end(); curr_instr++){
@@ -194,11 +207,21 @@ struct process : keyword
 	{
 		name = "";
 		_kind = "process";
+
+		map<string, variable*>::iterator i;
+		for (i = io.begin(); i != io.end(); i++)
+		{
+			if (i->second != NULL)
+				delete i->second;
+			i->second = NULL;
+		}
+
+		io.clear();
 	}
 
 	block					def;	// the chp that defined this process
 	list<string>			prs;	// the final set of generated production rules
-	map<string, variable>	io;		// the input and output signals of this process
+	map<string, variable*>	io;		// the input and output signals of this process
 
 	process &operator=(process p)
 	{
@@ -220,8 +243,7 @@ struct process : keyword
 		string io_block;
 		string::iterator i, j;
 
-		map<string, variable> vars;
-		variable v;
+		map<string, variable*> vars;
 
 		name = chp.substr(name_start, name_end - name_start);
 		io_block = chp.substr(input_start, input_end - input_start);
@@ -233,12 +255,15 @@ struct process : keyword
 		{
 			if (*(i+1) == ',' || i+1 == io_block.end())
 			{
-				v.parse(io_block.substr(j-io_block.begin(), i+1 - j));
-				vars = expand(v, typ);
+				vars = expand(io_block.substr(j-io_block.begin(), i+1 - j), typ);
 				io.insert(vars.begin(), vars.end());
 				j = i+2;
 			}
 		}
+
+		map<string, variable*>::iterator vi;
+		for (vi = io.begin(); vi != io.end(); vi++)
+			cout << *(vi->second) << endl;
 
 		def.parse(chp.substr(block_start, block_end - block_start), io);
 	}

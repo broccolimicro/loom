@@ -14,6 +14,13 @@ variable::variable()
 	width = 0;
 }
 
+variable::variable(string n, string t, uint16_t w)
+{
+	name = n;
+	type = t;
+	width = w;
+}
+
 variable::variable(string chp)
 {
 	parse(chp);

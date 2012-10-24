@@ -22,13 +22,13 @@ struct record : keyword
 	record(string chp, map<string, keyword*>	typ);
 	~record();
 
-	map<string, variable> vars;	// the list of member variables that make up this record
+	map<string, variable*> vars;	// the list of member variables that make up this record
 
 	record &operator=(record r);
 	void parse(string chp, map<string, keyword*>	typ);
 };
 
-map<string, variable> expand(variable v, map<string, keyword*>	typ);
+map<string, variable*> expand(string chp, map<string, keyword*>	typ);
 ostream &operator<<(ostream &os, record s);
 
 #endif

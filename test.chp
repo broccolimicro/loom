@@ -4,11 +4,6 @@ struct channel
 	int<1> a;
 }
 
-proc fuck(channel a, channel b)
-{
-	a.a := 1; a.r := 1; b.r := 1; a.a := 0; b.a := 1; a.r := 0
-}
-
 proc fifo(channel l, channel r)
 {
 	*[1 ->

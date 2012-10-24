@@ -17,6 +17,7 @@
 struct variable
 {
 	variable();
+	variable(string n, string t, uint16_t w);
 	variable(string chp);
 	~variable();
 

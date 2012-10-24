@@ -26,6 +26,16 @@ record::~record()
 {
 	name = "";
 	_kind = "record";
+
+	map<string, variable*>::iterator i;
+	for (i = vars.begin(); i != vars.end(); i++)
+	{
+		if (i->second != NULL)
+			delete i->second;
+		i->second = NULL;
+	}
+
+	vars.clear();
 }
 
 record &record::operator=(record r)
@@ -44,8 +54,7 @@ void record::parse(string chp, map<string, keyword*>	typ)
 	string::iterator i, j;
 	string io_block;
 
-	variable v;
-	map<string, variable> expansion;
+	map<string, variable*> expansion;
 
 	name = chp.substr(name_start, name_end - name_start);
 	io_block = chp.substr(block_start, block_end - block_start);
@@ -57,9 +66,7 @@ void record::parse(string chp, map<string, keyword*>	typ)
 	{
 		if (*(i+1) == ';')
 		{
-			v.parse(io_block.substr(j-io_block.begin(), i+1 - j));
-			expansion = expand(v, typ);
-
+			expansion = expand(io_block.substr(j-io_block.begin(), i+1 - j), typ);
 			vars.insert(expansion.begin(), expansion.end());
 
 			j = i+2;
@@ -67,32 +74,39 @@ void record::parse(string chp, map<string, keyword*>	typ)
 	}
 }
 
-map<string, variable> expand(variable v, map<string, keyword*>	typ)
+map<string, variable*> expand(string chp, map<string, keyword*>	typ)
 {
-	map<string, variable> result;
+	map<string, variable*> result;
 	map<string, keyword*>::iterator var_type;
-	map<string, variable>::iterator mem_var;
+	map<string, variable*>::iterator mem_var;
+	variable *v = new variable(chp);
 	string name;
 
-	if ((var_type = typ.find(v.type)) != typ.end())
+	if ((var_type = typ.find(v->type)) != typ.end())
 	{
 		if (var_type->second->kind() == "keyword")
-			result.insert(pair<string, variable>(v.name, v));
+			result.insert(pair<string, variable*>(v->name, v));
 		else if (var_type->second->kind() == "record")
 		{
-			name = v.name;
+			name = v->name;
+			delete v;
 			for (mem_var = ((record*)var_type->second)->vars.begin(); mem_var != ((record*)var_type->second)->vars.end(); mem_var++)
 			{
 				v = mem_var->second;
-				v.name = name + "." + v.name;
-				result.insert(pair<string, variable>(v.name, v));
+				result.insert(pair<string, variable*>(name + "." + v->name, new variable(name + "." + v->name, v->type, v->width)));
 			}
 		}
 		else
+		{
 			cout << "Error: Invalid use of type " << var_type->second->kind() << " in record definition." << endl;
+			delete v;
+		}
 	}
 	else
-		cout << "Error: Invalid typename: " << v.type << endl;
+	{
+		cout << "Error: Invalid typename: " << v->type << endl;
+		delete v;
+	}
 
 	return result;
 }
@@ -100,10 +114,10 @@ map<string, variable> expand(variable v, map<string, keyword*>	typ)
 ostream &operator<<(ostream &os, record s)
 {
     os << s.name << "{";
-    map<string, variable>::iterator i;
+    map<string, variable*>::iterator i;
     for (i = s.vars.begin(); i != s.vars.end(); i++)
     {
-    	os << i->second << " ";
+    	os << *(i->second) << " ";
     }
     os << "}";
 
