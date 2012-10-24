@@ -12,7 +12,7 @@ proc fuck(channel a, channel b)
 proc fifo(channel l, channel r)
 {
 	*[1 ->
-		[l.r -> skip]; l.a := 1; [~l.r -> skip]; l.a := 0;
+		[l.r -> skip]; l.a := 1325; [~l.r -> skip]; l.a := 0;
 		r.a := 1; [r.r -> skip]; r.a := 0; [~r.r -> skip]
 	]
 }

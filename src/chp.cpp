@@ -155,8 +155,7 @@ struct block
 		}
 
 
-		cout << (states["l.a"] == states["x"]) << endl;
-		cout << (states["r.a"] == states["x"]) << endl;
+		cout << (states["a.a"] == "X010110X0X") << endl;
 
 		map<string, space>::iterator k, l;
 

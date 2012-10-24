@@ -33,4 +33,7 @@ string to_string(T n)
      return os.str();
 }
 
+string hex_to_bin(string str);
+string dec_to_bin(string str);
+
 #endif
