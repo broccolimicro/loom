@@ -152,6 +152,8 @@ struct block
 		}
 
 
+		cout << (states["l.a"] == states["r.a"]) << endl;
+
 		map<string, space>::iterator k, l;
 
 		for (k = states.begin(); k != states.end(); k++)

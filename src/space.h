@@ -47,6 +47,126 @@ ostream &operator<<(ostream &os, space s)
     return os;
 }
 
+space operator==(space s1, space s2)
+{
+	space result;
+	list<string>::iterator i, j;
+	string state;
+
+	result.var = s1.var + " == " + s2.var;
+
+	for (i = s1.states.begin(), j = s2.states.begin(); i != s1.states.end() && j != s2.states.end(); i++, j++)
+	{
+		if (i->substr(1, 1) == "X" || j->substr(1, 1) == "X")
+			state = "X";
+		else
+			state = to_string((int)(atoi(i->substr(1).c_str()) == atoi(j->substr(1).c_str())));
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
+space operator!=(space s1, space s2)
+{
+	space result;
+	list<string>::iterator i, j;
+	string state;
+
+	result.var = s1.var + " ~= " + s2.var;
+
+	for (i = s1.states.begin(), j = s2.states.begin(); i != s1.states.end() && j != s2.states.end(); i++, j++)
+	{
+		if (i->substr(1, 1) == "X" || j->substr(1, 1) == "X")
+			state = "X";
+		else
+			state = to_string((int)(atoi(i->substr(1).c_str()) != atoi(j->substr(1).c_str())));
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
+space operator>(space s1, space s2)
+{
+	space result;
+	list<string>::iterator i, j;
+	string state;
+
+	result.var = s1.var + " > " + s2.var;
+
+	for (i = s1.states.begin(), j = s2.states.begin(); i != s1.states.end() && j != s2.states.end(); i++, j++)
+	{
+		if (i->substr(1, 1) == "X" || j->substr(1, 1) == "X")
+			state = "X";
+		else
+			state = to_string((int)(atoi(i->substr(1).c_str()) > atoi(j->substr(1).c_str())));
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
+space operator<(space s1, space s2)
+{
+	space result;
+	list<string>::iterator i, j;
+	string state;
+
+	result.var = s1.var + " < " + s2.var;
+
+	for (i = s1.states.begin(), j = s2.states.begin(); i != s1.states.end() && j != s2.states.end(); i++, j++)
+	{
+		if (i->substr(1, 1) == "X" || j->substr(1, 1) == "X")
+			state = "X";
+		else
+			state = to_string((int)(atoi(i->substr(1).c_str()) < atoi(j->substr(1).c_str())));
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
+space operator>=(space s1, space s2)
+{
+	space result;
+	list<string>::iterator i, j;
+	string state;
+
+	result.var = s1.var + " >= " + s2.var;
+
+	for (i = s1.states.begin(), j = s2.states.begin(); i != s1.states.end() && j != s2.states.end(); i++, j++)
+	{
+		if (i->substr(1, 1) == "X" || j->substr(1, 1) == "X")
+			state = "X";
+		else
+			state = to_string((int)(atoi(i->substr(1).c_str()) >= atoi(j->substr(1).c_str())));
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
+space operator<=(space s1, space s2)
+{
+	space result;
+	list<string>::iterator i, j;
+	string state;
+
+	result.var = s1.var + " <= " + s2.var;
+
+	for (i = s1.states.begin(), j = s2.states.begin(); i != s1.states.end() && j != s2.states.end(); i++, j++)
+	{
+		if (i->substr(1, 1) == "X" || j->substr(1, 1) == "X")
+			state = "X";
+		else
+			state = to_string((int)(atoi(i->substr(1).c_str()) <= atoi(j->substr(1).c_str())));
+		result.states.push_back(i->substr(0, 1) + state);
+	}
+
+	return result;
+}
+
 space operator==(space s1, int s2)
 {
 	space result;
@@ -58,7 +178,7 @@ space operator==(space s1, int s2)
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 	{
 		if (i->substr(1, 1) == "X")
-			state = "1";
+			state = "X";
 		else
 			state = to_string((int)(atoi(i->substr(1).c_str()) == s2));
 		result.states.push_back(i->substr(0, 1) + state);
@@ -78,7 +198,7 @@ space operator==(int s2, space s1)
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 	{
 		if (i->substr(1, 1) == "X")
-			state = "1";
+			state = "X";
 		else
 			state = to_string((int)(atoi(i->substr(1).c_str()) == s2));
 		result.states.push_back(i->substr(0, 1) + state);
@@ -90,7 +210,7 @@ space operator==(int s2, space s1)
 space operator!=(space s1, int s2)
 {
 	space result;
-	result.var = s1.var + " != " + to_string(s2);
+	result.var = s1.var + " ~= " + to_string(s2);
 
 	list<string>::iterator i;
 	string state;
@@ -98,7 +218,7 @@ space operator!=(space s1, int s2)
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 	{
 		if (i->substr(1, 1) == "X")
-			state = "1";
+			state = "X";
 		else
 			state = to_string((int)(atoi(i->substr(1).c_str()) != s2));
 		result.states.push_back(i->substr(0, 1) + state);
@@ -110,7 +230,7 @@ space operator!=(space s1, int s2)
 space operator!=(int s2, space s1)
 {
 	space result;
-	result.var = to_string(s2) + " != " + s1.var;
+	result.var = to_string(s2) + " ~= " + s1.var;
 
 	list<string>::iterator i;
 	string state;
@@ -118,7 +238,7 @@ space operator!=(int s2, space s1)
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 	{
 		if (i->substr(1, 1) == "X")
-			state = "1";
+			state = "X";
 		else
 			state = to_string((int)(atoi(i->substr(1).c_str()) != s2));
 		result.states.push_back(i->substr(0, 1) + state);
@@ -138,7 +258,7 @@ space operator<(space s1, int s2)
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 	{
 		if (i->substr(1, 1) == "X")
-			state = "1";
+			state = "X";
 		else
 			state = to_string((int)(atoi(i->substr(1).c_str()) < s2));
 		result.states.push_back(i->substr(0, 1) + state);
@@ -158,7 +278,7 @@ space operator<(int s2, space s1)
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 	{
 		if (i->substr(1, 1) == "X")
-			state = "1";
+			state = "X";
 		else
 			state = to_string((int)(atoi(i->substr(1).c_str()) > s2));
 		result.states.push_back(i->substr(0, 1) + state);
@@ -178,7 +298,7 @@ space operator>(space s1, int s2)
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 	{
 		if (i->substr(1, 1) == "X")
-			state = "1";
+			state = "X";
 		else
 			state = to_string((int)(atoi(i->substr(1).c_str()) > s2));
 		result.states.push_back(i->substr(0, 1) + state);
@@ -198,7 +318,7 @@ space operator>(int s2, space s1)
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 	{
 		if (i->substr(1, 1) == "X")
-			state = "1";
+			state = "X";
 		else
 			state = to_string((int)(atoi(i->substr(1).c_str()) < s2));
 		result.states.push_back(i->substr(0, 1) + state);
@@ -218,7 +338,7 @@ space operator<=(space s1, int s2)
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 	{
 		if (i->substr(1, 1) == "X")
-			state = "1";
+			state = "X";
 		else
 			state = to_string((int)(atoi(i->substr(1).c_str()) <= s2));
 		result.states.push_back(i->substr(0, 1) + state);
@@ -238,7 +358,7 @@ space operator<=(int s2, space s1)
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 	{
 		if (i->substr(1, 1) == "X")
-			state = "1";
+			state = "X";
 		else
 			state = to_string((int)(atoi(i->substr(1).c_str()) >= s2));
 		result.states.push_back(i->substr(0, 1) + state);
@@ -258,7 +378,7 @@ space operator>=(space s1, int s2)
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 	{
 		if (i->substr(1, 1) == "X")
-			state = "1";
+			state = "X";
 		else
 			state = to_string((int)(atoi(i->substr(1).c_str()) >= s2));
 		result.states.push_back(i->substr(0, 1) + state);
@@ -278,7 +398,7 @@ space operator>=(int s2, space s1)
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 	{
 		if (i->substr(1, 1) == "X")
-			state = "1";
+			state = "X";
 		else
 			state = to_string((int)(atoi(i->substr(1).c_str()) <= s2));
 		result.states.push_back(i->substr(0, 1) + state);
