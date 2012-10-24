@@ -43,21 +43,26 @@ struct instruction
 
 	void parse(string chp)
 	{
-
-
-
-
 		string::iterator i;
 		int name_end;
 		int assign_start;
 
-		if(chp.find(":=") != chp.npos){
+		if(chp.find(":=") != chp.npos){				//Is it an assignment instruction?
 			name_end = chp.find_first_of(" =-!?;:|,*+()[]{}&<>@#");
 			var_affected = chp.substr(0,name_end);
 			cout << "\t\tInstruction:  \t "+chp << endl;
 
 			assign_start = chp.find_first_of(":");
 			val_at_end = chp.substr(assign_start+2);
+		}else if(chp.find("->skip") != chp.npos){	//Is it a [G->skip] instruction MULTIGUARD SELECTION STATEMENTS UNHANDLED
+			for(i = chp.begin();i != chp.end(); i++){
+				if (nc(*i)){
+
+
+				}
+			}
+			var_affected = "Unhandled";
+			val_at_end = "NA";
 		}else{
 			var_affected = "Unhandled";
 			val_at_end = "NA";

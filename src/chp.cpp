@@ -118,7 +118,7 @@ struct block
 		cout << "\tblock!  -> "+chp << endl;  		// Output the raw block
 
 
-		//Parse instructions
+		//Parse instructions!
 		for(i = chp.begin(), j = chp.begin();i != chp.end(); i++){				//Iterate through the entire string
 			if (*i == ';'){														//We nabbed an instruction!
 				potential_instr = chp.substr(j-chp.begin(), i-j);
@@ -137,7 +137,7 @@ struct block
 		//Turn instructions into states!
 		//Remember as we add instructions to X out the appropriate vars when we change "important" inputs
 		for(curr_var = vars.begin(); curr_var != vars.end(); curr_var++){
-			states[curr_var->first].states.push_back("X");
+			states[curr_var->first].states.push_back(" X");
 			states[curr_var->first].var = curr_var->first;
 			for(curr_instr = instrs.begin(); curr_instr != instrs.end(); curr_instr++){
 				if ((curr_var->first == curr_instr->var_affected)&&(curr_instr->val_at_end != "NA")){
@@ -151,28 +151,6 @@ struct block
 			cout << states[curr_var->first]<< endl;
 		}
 
-
-		/*list<string> s;
-		s.push_back(" X");
-		s.push_back("i1");
-		s.push_back(" X");
-		s.push_back("i0");
-		s.push_back(" X");
-
-		states["r"] = space("r", s);
-
-		s.clear();
-		s.push_back(" X");
-		s.push_back(" X");
-		s.push_back("o1");
-		s.push_back("o1");
-		s.push_back("o0");
-
-		states["a"] = space("a", s);
-
-		space test = (states["r"] == 0);
-
-		cout << test << endl;*/
 
 		map<string, space>::iterator k, l;
 
