@@ -51,7 +51,13 @@ struct instruction
 			name_end = chp.find_first_of(" =-!?;:|,*+()[]{}&<>@#");
 			var_affected = chp.substr(0,name_end);
 			assign_start = chp.find_first_of(":");
-			val_at_end = "o" + chp.substr(assign_start+2);
+
+			if (chp[assign_start+3] == 'x')
+				val_at_end = "o" + hex_to_bin(chp.substr(assign_start+4));
+			else if (chp[assign_start+3] == 'b')
+				val_at_end = "o" + chp.substr(assign_start+4);
+			else
+				val_at_end = "o" + dec_to_bin(chp.substr(assign_start+2));
 
 			cout << "\t\tInstruction:  \t "+chp << endl;
 

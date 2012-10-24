@@ -175,6 +175,13 @@ int dec_to_int(string str)
 string int_to_bin(int dec)
 {
 	string result = "";
+
+	if (dec == 0)
+		return "0";
+
+	while ((dec&0x80000000) == 0)
+		dec <<= 1;
+
 	while (dec != 0)
 	{
 		result += char('0' + ((dec&0x80000000) > 1));
