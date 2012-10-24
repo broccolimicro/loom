@@ -2,7 +2,7 @@
  * space.h
  *
  *  Created on: Oct 23, 2012
- *      Author: Ned Bingham
+ *      Author: Ned Bingham, Nicholas Kramer
  */
 
 #include "common.h"

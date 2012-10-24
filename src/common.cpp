@@ -2,14 +2,14 @@
  * common.cpp
  *
  *  Created on: Oct 23, 2012
- *      Author: Ned Bingham
+ *      Author: Ned Bingham, Nicholas Kramer
  */
 
 #include "common.h"
 
 /*Is this character a legal name starter character?
  */
-bool anc(char c)
+bool ac(char c)
 {
 	return ((c >= 'a' && c <= 'z') ||
 			(c >= 'A' && c <= 'Z') );

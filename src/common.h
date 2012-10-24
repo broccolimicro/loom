@@ -20,6 +20,7 @@
 
 using namespace std;
 
+bool ac(char c);
 bool nc(char c);
 bool oc(char c);
 bool sc(char c);

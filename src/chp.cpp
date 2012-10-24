@@ -142,7 +142,7 @@ struct block
 			for(curr_instr = instrs.begin(); curr_instr != instrs.end(); curr_instr++){
 				if ((curr_var->first == curr_instr->var_affected)&&(curr_instr->val_at_end != "NA")){
 
-					states[curr_var->first].states.push_back("o"+curr_instr->val_at_end);
+					states[curr_var->first].states.push_back(curr_instr->val_at_end);
 
 				}else if(*(states[curr_var->first].states.rbegin()) != " X"){
 					states[curr_var->first].states.push_back(*(states[curr_var->first].states.rbegin()));

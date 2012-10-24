@@ -2,7 +2,7 @@
  * instruction.h
  *
  *  Created on: Oct 23, 2012
- *      Author: Ned Bingham
+ *      Author: Ned Bingham, Nicholas Kramer
  */
 
 #include "common.h"
@@ -50,19 +50,33 @@ struct instruction
 		if(chp.find(":=") != chp.npos){				//Is it an assignment instruction?
 			name_end = chp.find_first_of(" =-!?;:|,*+()[]{}&<>@#");
 			var_affected = chp.substr(0,name_end);
+			assign_start = chp.find_first_of(":");
+			val_at_end = "o" + chp.substr(assign_start+2);
+
 			cout << "\t\tInstruction:  \t "+chp << endl;
 
-			assign_start = chp.find_first_of(":");
-			val_at_end = chp.substr(assign_start+2);
+
 		}else if(chp.find("->skip") != chp.npos){	//Is it a [G->skip] instruction MULTIGUARD SELECTION STATEMENTS UNHANDLED
+			name_start = 0;
 			for(i = chp.begin();i != chp.end(); i++){
-				if (nc(*i)){
 
-
+				if (ac(*i)){
+					var_affected = chp.substr(i-chp.begin(), chp.find_first_of("-")-(i-chp.begin()));
+					break;
+				}else{
+					name_start++;
 				}
 			}
-			var_affected = "Unhandled";
-			val_at_end = "NA";
+
+
+			if(chp.substr(name_start-1,name_start) == "~"){
+				val_at_end = "i1";
+			}else{
+				val_at_end = "i0";
+			}
+
+			cout << "\t\tInstruction:  \t "+chp << endl;
+
 		}else{
 			var_affected = "Unhandled";
 			val_at_end = "NA";
