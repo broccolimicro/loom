@@ -105,22 +105,22 @@ struct block
 
 	void parse(string chp, map<string, variable> svars)
 	{
-		vars = svars;
+		vars = svars;	//The variables this block uses.
 
-		instruction instr; //Lists are pass by value, right? Else this wont work
+		instruction instr; 							//Lists are pass by value, right? Else this wont work
 
 		raw = chp;
-		string potential_instr;
-		string rest_of_chp = chp;
+		string potential_instr;						//String of CHP code to be tested as an instruction
+		string rest_of_chp = chp; 					//The segment of CHP we have not yet parsed
 		string::iterator i,j;
-		list<instruction>::iterator curr_instr;  //Used later to iterate through instr lists
+		list<instruction>::iterator curr_instr;  	//Used later to iterate through instr lists
 		map<string, variable>::iterator curr_var;
-		cout << "\tblock!  -> "+chp << endl;  // Output the raw block
+		cout << "\tblock!  -> "+chp << endl;  		// Output the raw block
 
 
 		//Parse instructions
-		for(i = chp.begin(), j = chp.begin();i != chp.end(); i++){
-			if (*i == ';'){
+		for(i = chp.begin(), j = chp.begin();i != chp.end(); i++){				//Iterate through the entire string
+			if (*i == ';'){														//We nabbed an instruction!
 				potential_instr = chp.substr(j-chp.begin(), i-j);
 				if(potential_instr.find(":=") != potential_instr.npos){			//This is when a 'real' instruction is added
 					instr.parse(potential_instr);
@@ -130,6 +130,7 @@ struct block
 					}
 				}else{					//This is when a 'vacuous' instruction is added
 					cout << "\t\tInstr not handled: " + potential_instr << endl;
+
 					instr.val_at_end = "Unhandled";
 					instr.val_at_end = "NA";
 					instrs.push_back(instr);
@@ -140,13 +141,14 @@ struct block
 
 
 		//Turn instructions into states!
+		//Remember as we add instructions to X out the appropriate vars when we change "important" inputs
 		for(curr_var = vars.begin(); curr_var != vars.end(); curr_var++){
 			states[curr_var->first].states.push_back("X");
 			states[curr_var->first].var = curr_var->first;
 			for(curr_instr = instrs.begin(); curr_instr != instrs.end(); curr_instr++){
-				if (curr_var->first == instr.var_affected){
-					states[curr_var->first].states.push_back("o"+instr.val_at_end);
-				//	cout << instr.val_at_end<<endl;
+				if ((curr_var->first == curr_instr->var_affected)&&(curr_instr->val_at_end != "NA")){
+
+					states[curr_var->first].states.push_back("o"+curr_instr->val_at_end);
 				}else{
 					states[curr_var->first].states.push_back(" X");
 
