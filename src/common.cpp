@@ -72,7 +72,7 @@ int hex_to_int(string str)
 {
 	int result = 0;
 	int mul = 1;
-	string::iterator i;
+	string::reverse_iterator i;
 
 	for (i = str.rbegin(), mul = 1; i != str.rend(); i++, mul *= 16)
 	{
@@ -149,7 +149,7 @@ int dec_to_int(string str)
 {
 	int result = 0;
 	int mul = 1;
-	string::iterator i;
+	string::reverse_iterator i;
 
 	for (i = str.rbegin(), mul = 1; i != str.rend(); i++, mul *= 10)
 	{
