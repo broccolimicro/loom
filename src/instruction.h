@@ -54,7 +54,7 @@ struct instruction
 		{
 
 		}*/
-		name_end = chp.find_first_of(" .=-!?;:|,*+()[]{}&<>@#");
+		name_end = chp.find_first_of(" =-!?;:|,*+()[]{}&<>@#");
 		var_affected = chp.substr(0,name_end);
 		cout << "\t\t\tVariable affected -> " << var_affected << endl;
 

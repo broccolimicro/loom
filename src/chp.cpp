@@ -208,9 +208,9 @@ struct process : keyword
 		name = "";
 		_kind = "process";
 	}
-	process(string chp)
+	process(string chp, map<string, keyword*> typ)
 	{
-		parse(chp);
+		parse(chp, typ);
 		_kind = "process";
 	}
 	~process()
@@ -231,7 +231,7 @@ struct process : keyword
 		return *this;
 	}
 
-	void parse(string chp)
+	void parse(string chp, map<string, keyword*> typ)
 	{
 		cout << "process! -> " << chp << endl;
 		int name_start = chp.find_first_of(" ")+1;
@@ -243,6 +243,7 @@ struct process : keyword
 		string io_block;
 		string::iterator i, j;
 
+		map<string, variable> vars;
 		variable v;
 
 		name = chp.substr(name_start, name_end - name_start);
@@ -256,7 +257,8 @@ struct process : keyword
 			if (*(i+1) == ',' || i+1 == io_block.end())
 			{
 				v.parse(io_block.substr(j-io_block.begin(), i+1 - j));
-				io.insert(pair<string, variable>(v.name, v));
+				vars = expand(v, typ);
+				io.insert(vars.begin(), vars.end());
 				j = i+2;
 			}
 		}
@@ -353,7 +355,7 @@ struct program
 					// Is this a process?
 					if (cleaned_chp.compare(j-cleaned_chp.begin(), 5, "proc ") == 0)
 					{
-						p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1));
+						p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space);
 						type_space.insert(pair<string, process*>(p->name, p));
 					}
 					// This isn't a process, is it a record?
@@ -375,7 +377,7 @@ struct program
 						// Make sure we don't miss the next record or process though.
 						if (cleaned_chp.compare(j-cleaned_chp.begin(), 5, "proc ") == 0)
 						{
-							p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1));
+							p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space);
 							type_space.insert(pair<string, process*>(p->name, p));
 						}
 						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "struct ") == 0)
