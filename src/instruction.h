@@ -61,7 +61,7 @@ struct instruction
 			for(i = chp.begin();i != chp.end(); i++){
 
 				if (ac(*i)){
-					var_affected = chp.substr(i-chp.begin(), chp.find_first_of("-")-(i-chp.begin()));
+					var_affected = chp.substr(i-chp.begin(), chp.find_last_of("-")-(i-chp.begin()));
 					break;
 				}else{
 					name_start++;
