@@ -52,7 +52,7 @@ struct instruction
 		int assign_start;
 
 		if(chp.find(":=") != chp.npos){
-			name_end = chp.find_first_of(" .=-!?;:|,*+()[]{}&<>@#");
+			name_end = chp.find_first_of(" =-!?;:|,*+()[]{}&<>@#");
 			var_affected = chp.substr(0,name_end);
 			cout << "\t\tInstruction:  \t "+chp << endl;
 
