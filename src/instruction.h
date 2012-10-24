@@ -44,7 +44,7 @@ struct instruction
 	void parse(string chp)
 	{
 		string::iterator i;
-		int name_end;
+		int name_start, name_end;
 		int assign_start;
 
 		if(chp.find(":=") != chp.npos){				//Is it an assignment instruction?

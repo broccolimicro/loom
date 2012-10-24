@@ -143,9 +143,12 @@ struct block
 				if ((curr_var->first == curr_instr->var_affected)&&(curr_instr->val_at_end != "NA")){
 
 					states[curr_var->first].states.push_back("o"+curr_instr->val_at_end);
+
+				}else if(*(states[curr_var->first].states.rbegin()) != " X"){
+					states[curr_var->first].states.push_back(*(states[curr_var->first].states.rbegin()));
+
 				}else{
 					states[curr_var->first].states.push_back(" X");
-
 				}
 			}
 			cout << states[curr_var->first]<< endl;

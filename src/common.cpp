@@ -7,6 +7,15 @@
 
 #include "common.h"
 
+/*Is this character a legal name starter character?
+ */
+bool anc(char c)
+{
+	return ((c >= 'a' && c <= 'z') ||
+			(c >= 'A' && c <= 'Z') );
+}
+
+
 /* Is this character a character that is legal to have
  * in a type name or variable name? a-z A-Z 0-9 _
  */
