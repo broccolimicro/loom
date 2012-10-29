@@ -13,88 +13,30 @@
 /* This structure describes an instruction in the chp program, namely what lies between
  * two semicolons in a block of. This has not been expanded to ;S1||S2; type of composition.
  */
-
 struct instruction
 {
-	instruction()
-	{
-		var_affected = "";
-		val_at_end = "";
-	}
-	instruction(string chp)
-	{
-		parse(chp);
-	}
-	~instruction()
-	{
-		var_affected = "";
-		val_at_end = "";
-	}
+protected:
+	string _kind;
 
-	string		var_affected;	// the name of the variable this instruction operates on.
-	string		val_at_end;		// the value that the variable is set to. i0, i1, iX, o0, o1, oX, in, on
-
-	instruction &operator=(instruction v)
-	{
-		var_affected = v.var_affected;
-		val_at_end = v.val_at_end;
-		return *this;
-	}
-
-	void parse(string chp)
-	{
-		string::iterator i;
-		int name_start, name_end;
-		int assign_start;
-
-		if(chp.find(":=") != chp.npos){				//Is it an assignment instruction?
-			name_end = chp.find_first_of(" =-!?;:|,*+()[]{}&<>@#");
-			var_affected = chp.substr(0,name_end);
-			assign_start = chp.find_first_of(":");
-
-			if (chp[assign_start+3] == 'x')
-				val_at_end = "o" + hex_to_bin(chp.substr(assign_start+4));
-			else if (chp[assign_start+3] == 'b')
-				val_at_end = "o" + chp.substr(assign_start+4);
-			else
-				val_at_end = "o" + dec_to_bin(chp.substr(assign_start+2));
-
-			cout << "\t\tInstruction:  \t "+chp << endl;
+public:
+	instruction();
+	instruction(string raw);
+	~instruction();
 
 
-		}else if(chp.find("->skip") != chp.npos){	//Is it a [G->skip] instruction MULTIGUARD SELECTION STATEMENTS UNHANDLED
-			name_start = 0;
-			for(i = chp.begin();i != chp.end(); i++){
+	// The raw CHP of this instruction.
+	string chp;
+	/* the key is the name of the variable affected
+	 * the value is the value of that variable at the end of the instruction
+	 * 		the format of this value consists of 'i' or 'o' followed by n digits
+	 * 		with possible values '0', '1', and 'X'.
+	 */
+	map<string, string> result;
 
-				if (ac(*i)){
-					var_affected = chp.substr(i-chp.begin(), chp.find_last_of("-")-(i-chp.begin()));
-					break;
-				}else{
-					name_start++;
-				}
-			}
+	instruction &operator=(instruction i);
+	string kind();
 
-
-			if(chp.substr(name_start-1,name_start) == "~"){
-				val_at_end = "i1";
-			}else{
-				val_at_end = "i0";
-			}
-
-			cout << "\t\tInstruction:  \t "+chp << endl;
-
-		}else{
-			var_affected = "Unhandled";
-			val_at_end = "NA";
-			cout << "\t\tInstr not handled: "+chp << endl;
-		}
-		cout << "\t\t\tVariable affected -> " << var_affected << endl;
-		cout << "\t\t\tValue at end -> " << val_at_end << endl;
-
-
-
-
-	}
+	void parse(string raw);
 };
 
 #endif

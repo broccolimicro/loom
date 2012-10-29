@@ -6,6 +6,7 @@
  */
 
 #include "variable.h"
+#include "common.h"
 
 variable::variable()
 {
