@@ -13,6 +13,9 @@
 
 struct conditional : block
 {
+	conditional();
+	conditional(string raw);
+	~conditional();
 
 	void parse(string raw);
 };

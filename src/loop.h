@@ -13,7 +13,11 @@
 
 struct loop : conditional
 {
+	loop();
+	loop(string raw);
+	~loop();
 
+	void parse(string raw);
 };
 
 #endif

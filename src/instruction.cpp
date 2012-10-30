@@ -59,7 +59,7 @@ void instruction::parse(string raw)
 
 		result.insert(pair<string, string>(var, val));
 
-		cout << "\t\tInstruction:  \t "+chp << endl;
+		cout << "\t\tInstruction:\t"+chp << endl;
 	}
 	else if (chp.find_first_of("?!@") != chp.npos)
 	{

@@ -7,6 +7,8 @@
 
 #include "block.h"
 #include "common.h"
+#include "conditional.h"
+#include "loop.h"
 
 block::block()
 {
@@ -51,8 +53,8 @@ void block::parse(string raw, map<string, variable*> svars)
 
 	string raw_instr;							//String of CHP code to be tested as an instruction
 	instruction instr; 							//Lists are pass by value, right? Else this wont work
-	//conditional cond;
-	//loop		loopcond;
+	conditional cond;
+	loop		loopcond;
 
 	list<instruction>::iterator ii;  	//Used later to iterate through instr lists
 	map<string, variable*>::iterator vgi, vli, vi;
@@ -90,17 +92,15 @@ void block::parse(string raw, map<string, variable*> svars)
 			raw_instr = chp.substr(j-chp.begin(), i-j);
 			if (raw_instr.find("*[") != raw_instr.npos)			// Loop Block
 			{
-				//loopcond.parse(raw_instr);
-				//instrs.push_back(loopcond);
-				//instr = loopcond;
-				cout << "loop!\n";
+				loopcond.parse(raw_instr);
+				instrs.push_back(loopcond);
+				instr = loopcond;
 			}
 			else if (raw_instr.find("[") != raw_instr.npos)		// Conditional Block
 			{
-				//cond.parse(raw_instr);
-				//instrs.push_back(cond);
-				//instr = cond;
-				cout << "conditional!\n";
+				cond.parse(raw_instr);
+				instrs.push_back(cond);
+				instr = cond;
 			}
 			else if (raw_instr.find(" ") != raw_instr.npos)		// THIS IS WRONG!
 			{
