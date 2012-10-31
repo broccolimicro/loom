@@ -34,6 +34,8 @@ public:
 	 * 		with possible values '0', '1', and 'X'.
 	 */
 	map<string, state> result;
+
+	// This is the list of production rules that defines this instruction
 	list<string>		rules;
 
 	instruction &operator=(instruction i);

@@ -11,6 +11,11 @@
 #ifndef space_h
 #define space_h
 
+/* This structure represents a whole state
+ * space for a single variable. It contains
+ * the name of the variable it represents
+ * and a list of state structures.
+ */
 struct space
 {
 	space();

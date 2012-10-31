@@ -45,29 +45,39 @@ void instruction::parse(string raw, map<string, variable*> svars, string tab)
 	string var;
 	state val;
 
-	if (chp.find(":=") != chp.npos)				//Is it an assignment instruction?
+	// Parse assignment instructions
+	// Currently only handles single variable assignments
+	if (chp.find(":=") != chp.npos)
 	{
+		// Separate the two operands (the variable to be assigned and the value to assign)
 		name_end = chp.find_first_of(" =-!?;:|,*+()[]{}&<>@#");
 		var = chp.substr(0,name_end);
 		assign_start = chp.find_first_of(":");
 
-		if (chp[assign_start+3] == 'x')
+		// If this is a multi-bit number, then we need to make sure it is correctly parsed
+		if (chp[assign_start+3] == 'x')			// hexadecimal e.g. 0xFEEDFACE
 			val = state(hex_to_bin(chp.substr(assign_start+4)), true);
-		else if (chp[assign_start+3] == 'b')
+
+		else if (chp[assign_start+3] == 'b')	// binary      e.g. 0b01100110
 			val = state(chp.substr(assign_start+4), true);
-		else
+
+		else									// decimal     e.g. 20114
 			val = state(dec_to_bin(chp.substr(assign_start+2)), true);
 
 		result.insert(pair<string, state>(var, val));
 
 		cout << tab << "Instruction:\t"+chp << endl;
 	}
-	else if (chp.find_first_of("?!@") != chp.npos)
+	// Parse Communication instructions (send, receive, and probe)
+	// Currently unsupported
+	else if (chp.find_first_of("!?@") != chp.npos)
 	{
 
 	}
+	// Parse skip
 	else if (chp.find("skip") != chp.npos)
 		return;
+	// The I don't know block
 	else
 	{
 		var = "Unhandled Instruction";
@@ -77,30 +87,4 @@ void instruction::parse(string raw, map<string, variable*> svars, string tab)
 	}
 
 	cout << tab << "Result:\t" << var << ", " << val << endl;
-
-	/*else if(chp.find("->skip") != chp.npos)	//Is it a [G->skip] instruction MULTIGUARD SELECTION STATEMENTS UNHANDLED
-	{
-		name_start = 0;
-		for(i = chp.begin();i != chp.end(); i++)
-		{
-
-			if (ac(*i))
-			{
-				var_affected = chp.substr(i-chp.begin(), chp.find_last_of("-")-(i-chp.begin()));
-				break;
-			}
-			else
-				name_start++;
-		}
-
-
-		if(chp.substr(name_start-1,name_start) == "~")
-			val_at_end = "i1";
-		else
-			val_at_end = "i0";
-
-		cout << "\t\tInstruction:  \t "+chp << endl;
-
-	}
-	*/
 }

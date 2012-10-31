@@ -139,9 +139,7 @@ void block::parse(string raw, map<string, variable*> svars, string tab)
 	for(vi = affected.begin(); vi != affected.end(); vi++)
 	{
 		xstate.prs = false;
-		xstate.data = "";
-		for (k = 0; k < vi->second->width; k++)
-			xstate.data = xstate.data + "X";
+		xstate.data = string(vi->second->width, 'X');
 		states[vi->first].states.push_back(xstate);
 		states[vi->first].var = vi->first;
 

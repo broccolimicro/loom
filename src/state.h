@@ -10,6 +10,10 @@
 #ifndef state_h
 #define state_h
 
+/* This structure contains a single state for a single variable.
+ * It also flags whether or not this state should generate a
+ * production rule.
+ */
 struct state
 {
 	state();
@@ -17,7 +21,12 @@ struct state
 	~state();
 
 	string data;
-	bool prs;		// If this is 1, then we need to generate production rules for this state. Otherwise, we don't.
+
+	/* If this is 1, then we need to generate
+	 * production rules for this state. Otherwise,
+	 * we don't.
+	 */
+	bool prs;
 
 	state &operator=(state s);
 	state &operator=(string s);
