@@ -34,6 +34,8 @@ struct state
 	state &operator>>=(int n);
 };
 
+ostream &operator<<(ostream &os, state s);
+
 state operator+(state s1, state s2);
 state operator-(state s1, state s2);
 state operator*(state s1, state s2);

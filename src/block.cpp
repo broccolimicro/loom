@@ -58,7 +58,7 @@ void block::parse(string raw, map<string, variable*> svars, string tab)
 
 	list<instruction>::iterator ii;  	//Used later to iterate through instr lists
 	map<string, variable*>::iterator vi;
-	map<string, string>::iterator l;
+	map<string, state>::iterator l;
 	map<string, variable*> affected;
 	string::iterator i, j;
 	unsigned int k;
@@ -67,8 +67,8 @@ void block::parse(string raw, map<string, variable*> svars, string tab)
 	list<bool>::iterator di;
 	bool delta;
 
-	string xstate;
-	string state;
+	state xstate;
+	state tstate;
 
 	//Parse instructions!
 	int depth[3] = {0};
@@ -120,9 +120,9 @@ void block::parse(string raw, map<string, variable*> svars, string tab)
 					cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + l->first << endl;
 				else if (vi != global.end())
 				{
-					delta |= ((l->second[0] == 'o') && (l->second.substr(1) != vi->second->last.substr(1)));
+					delta |= ((l->second.prs) && (l->second.data != vi->second->last.data));
 					vi->second->last = l->second;
-					vi->second->width = max(vi->second->width, (uint16_t)(l->second.length()-1));
+					vi->second->width = max(vi->second->width, (uint16_t)(l->second.data.length()));
 					affected.insert(pair<string, variable*>(vi->first, vi->second));
 				}
 			}
@@ -138,9 +138,10 @@ void block::parse(string raw, map<string, variable*> svars, string tab)
 	//Remember as we add instructions to X out the appropriate vars when we change "important" inputs
 	for(vi = affected.begin(); vi != affected.end(); vi++)
 	{
-		xstate = "i";
+		xstate.prs = false;
+		xstate.data = "";
 		for (k = 0; k < vi->second->width; k++)
-			xstate = xstate + "X";
+			xstate.data = xstate.data + "X";
 		states[vi->first].states.push_back(xstate);
 		states[vi->first].var = vi->first;
 
@@ -148,19 +149,20 @@ void block::parse(string raw, map<string, variable*> svars, string tab)
 		{
 			for (l = ii->result.begin(); l != ii->result.end(); l++)
 			{
-				if (l->second.length() < xstate.length())
+				if (l->second.data.length() < xstate.data.length())
 				{
-					state = l->second[0];
-					for (k = 0; k < xstate.length() - l->second.length(); k++)
-						state += "0";
-					state += l->second.substr(1);
+					tstate.prs = l->second.prs;
+					tstate.data = l->second.data[0];
+					for (k = 0; k < xstate.data.length() - l->second.data.length(); k++)
+						tstate.data += "0";
+					tstate.data += l->second.data;
 				}
 				else
-					state = l->second;
+					tstate = l->second;
 
-				if ((vi->first == l->first) && (l->second != "NA"))
-					states[vi->first].states.push_back(state);
-				else if (!(*di) || (*(states[vi->first].states.rbegin()))[0] == 'o')
+				if ((vi->first == l->first) && (l->second.data != "NA"))
+					states[vi->first].states.push_back(tstate);
+				else if (!(*di) || (states[vi->first].states.rbegin())->prs)
 					states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
 				else
 					states[vi->first].states.push_back(xstate);

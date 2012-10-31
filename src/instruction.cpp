@@ -42,7 +42,8 @@ void instruction::parse(string raw, map<string, variable*> svars, string tab)
 	int name_start, name_end;
 	int assign_start;
 
-	string var, val;
+	string var;
+	state val;
 
 	if (chp.find(":=") != chp.npos)				//Is it an assignment instruction?
 	{
@@ -51,13 +52,13 @@ void instruction::parse(string raw, map<string, variable*> svars, string tab)
 		assign_start = chp.find_first_of(":");
 
 		if (chp[assign_start+3] == 'x')
-			val = "o" + hex_to_bin(chp.substr(assign_start+4));
+			val = state(hex_to_bin(chp.substr(assign_start+4)), true);
 		else if (chp[assign_start+3] == 'b')
-			val = "o" + chp.substr(assign_start+4);
+			val = state(chp.substr(assign_start+4), true);
 		else
-			val = "o" + dec_to_bin(chp.substr(assign_start+2));
+			val = state(dec_to_bin(chp.substr(assign_start+2)), true);
 
-		result.insert(pair<string, string>(var, val));
+		result.insert(pair<string, state>(var, val));
 
 		cout << tab << "Instruction:\t"+chp << endl;
 	}
@@ -70,7 +71,8 @@ void instruction::parse(string raw, map<string, variable*> svars, string tab)
 	else
 	{
 		var = "Unhandled Instruction";
-		val = "NA";
+		val.data = "NA";
+		val.prs = false;
 		cout << "\t\tError: Instruction not handled: "+chp << endl;
 	}
 

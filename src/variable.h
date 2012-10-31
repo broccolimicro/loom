@@ -6,6 +6,7 @@
  */
 
 #include "common.h"
+#include "state.h"
 
 #ifndef variable_h
 #define variable_h
@@ -24,7 +25,7 @@ struct variable
 	string		name;		// the name of the instantiated variable
 	string		type;		// the name of the type of the instantiated variable
 	uint16_t	width;		// the bit width of the instantiated variable
-	string		last;
+	state		last;
 
 	variable &operator=(variable v);
 	void parse(string chp);

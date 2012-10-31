@@ -6,6 +6,7 @@
  */
 
 #include "common.h"
+#include "state.h"
 
 #ifndef space_h
 #define space_h
@@ -13,17 +14,86 @@
 struct space
 {
 	space();
-	space(string v, list<string> s);
+	space(string v, list<state> s);
 	~space();
 
 	string			var;
-	list<string>	states;
+	list<state>		states;
 
 	space &operator=(space s);
+
+	space &operator+=(space s);
+	space &operator-=(space s);
+	space &operator*=(space s);
+	space &operator/=(space s);
+
+	space &operator&=(space s);
+	space &operator|=(space s);
+
+	space &operator+=(state s);
+	space &operator-=(state s);
+	space &operator*=(state s);
+	space &operator/=(state s);
+
+	space &operator&=(state s);
+	space &operator|=(state s);
+
+	space &operator<<=(int n);
+	space &operator>>=(int n);
 };
 
 ostream &operator<<(ostream &os, space s);
-space operator==(space s1, string s2);
-space operator==(string s1, space s2);
+
+space operator+(space s1, space s2);
+space operator-(space s1, space s2);
+space operator*(space s1, space s2);
+space operator/(space s1, space s2);
+
+space operator+(space s1, state s2);
+space operator-(space s1, state s2);
+space operator*(space s1, state s2);
+space operator/(space s1, state s2);
+
+space operator+(state s1, space s2);
+space operator-(state s1, space s2);
+space operator*(state s1, space s2);
+space operator/(state s1, space s2);
+
+space operator-(space s);
+
+space operator&(space s1, space s2);
+space operator|(space s1, space s2);
+
+space operator&(space s1, state s2);
+space operator|(space s1, state s2);
+
+space operator&(state s1, space s2);
+space operator|(state s1, space s2);
+
+space operator~(space s);
+
+space operator<<(space s, int n);
+space operator>>(space s, int n);
+
+space operator==(space s1, space s2);
+space operator!=(space s1, space s2);
+space operator<=(space s1, space s2);
+space operator>=(space s1, space s2);
+space operator<(space s1, space s2);
+space operator>(space s1, space s2);
+
+space operator==(space s1, state s2);
+space operator!=(space s1, state s2);
+space operator<=(space s1, state s2);
+space operator>=(space s1, state s2);
+space operator<(space s1, state s2);
+space operator>(space s1, state s2);
+
+space operator==(state s1, space s2);
+space operator!=(state s1, space s2);
+space operator<=(state s1, space s2);
+space operator>=(state s1, space s2);
+space operator<(state s1, space s2);
+space operator>(state s1, space s2);
 
 #endif

@@ -91,6 +91,12 @@ state &state::operator>>=(int n)
 	return *this;
 }
 
+ostream &operator<<(ostream &os, state s)
+{
+	os << (s.prs ? "o" : "i") << s.data;
+	return os;
+}
+
 state operator+(state s1, state s2)
 {
 	string::reverse_iterator j, k;
@@ -137,7 +143,22 @@ state operator-(state s1, state s2)
 
 state operator*(state s1, state s2)
 {
+	state result;
+	state mult = s1;
 
+	string::reverse_iterator j;
+
+	for (j = s2.data.rbegin(); j != s2.data.rend(); j++)
+	{
+		if (*j == '1')
+			result += mult;
+		else if (*j == 'X')
+			result += (mult & state(string(mult.data.length(), 'X'), false));
+
+		mult += mult;
+	}
+
+	return result;
 }
 
 state operator/(state s1, state s2)
@@ -147,17 +168,55 @@ state operator/(state s1, state s2)
 
 state operator-(state s)
 {
-
+	return ~s + state("1", false);
 }
 
 state operator&(state s1, state s2)
 {
+	string::iterator j, k;
+	state result;
+	char a, b;
 
+	for (j = s1.data.begin(), k = s2.data.begin(); j != s1.data.end() || k != s2.data.end();)
+	{
+		a = j != s1.data.end() ? *j++ : '0';
+		b = k != s2.data.end() ? *k++ : '0';
+
+		if (a == '0' || b == '0')
+			result.data += '0';
+		else if (a == 'X' || b == 'X')
+			result.data += 'X';
+		else
+			result.data += '1';
+	}
+
+	result.prs = false;
+
+	return result;
 }
 
 state operator|(state s1, state s2)
 {
+	string::iterator j, k;
+	state result;
+	char a, b;
 
+	for (j = s1.data.begin(), k = s2.data.begin(); j != s1.data.end() || k != s2.data.end();)
+	{
+		a = j != s1.data.end() ? *j++ : '0';
+		b = k != s2.data.end() ? *k++ : '0';
+
+		if (a == '1' || b == '1')
+			result.data += '1';
+		else if (a == 'X' || b == 'X')
+			result.data += 'X';
+		else
+			result.data += '0';
+	}
+
+	result.prs = false;
+
+	return result;
 }
 
 state operator~(state s)
@@ -182,10 +241,7 @@ state operator~(state s)
 
 state operator<<(state s, int n)
 {
-	string str = "";
-	for (int i = 0; i < n; i++)
-		str += "0";
-	return state(s.data.substr(n) + str, false);
+	return state(s.data + string(n, '0'), false);
 }
 
 state operator>>(state s, int n)
@@ -195,12 +251,50 @@ state operator>>(state s, int n)
 
 state operator==(state s1, state s2)
 {
+	string::iterator j, k;
+	char a, b;
+	state result;
 
+	result.data = "1";
+
+	for (j = s1.data.begin(), k = s2.data.begin(); j != s1.data.end() || k != s2.data.end();)
+	{
+		a = j != s1.data.end() ? *j++ : '0';
+		b = k != s2.data.end() ? *k++ : '0';
+
+		if ((a == '1' && b == '0') || (a == '0' && b == '1'))
+			return state("0", false);
+		else if (a == 'X' || b == 'X')
+			result.data = "X";
+	}
+
+	result.prs = false;
+
+	return result;
 }
 
 state operator!=(state s1, state s2)
 {
+	string::iterator j, k;
+	char a, b;
+	state result;
 
+	result.data = "0";
+
+	for (j = s1.data.begin(), k = s2.data.begin(); j != s1.data.end() || k != s2.data.end();)
+	{
+		a = j != s1.data.end() ? *j++ : '0';
+		b = k != s2.data.end() ? *k++ : '0';
+
+		if ((a == '1' && b == '0') || (a == '0' && b == '1'))
+			return state("1", false);
+		else if (a == 'X' || b == 'X')
+			result.data = "X";
+	}
+
+	result.prs = false;
+
+	return result;
 }
 
 state operator<=(state s1, state s2)

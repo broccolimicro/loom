@@ -6,6 +6,7 @@
  */
 
 #include "common.h"
+#include "state.h"
 #include "variable.h"
 
 #ifndef instruction_h
@@ -32,7 +33,7 @@ public:
 	 * 		the format of this value consists of 'i' or 'o' followed by n digits
 	 * 		with possible values '0', '1', and 'X'.
 	 */
-	map<string, string> result;
+	map<string, state> result;
 	list<string>		rules;
 
 	instruction &operator=(instruction i);
