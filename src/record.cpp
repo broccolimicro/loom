@@ -44,7 +44,7 @@ record &record::operator=(record r)
 	return *this;
 }
 
-void record::parse(string chp, map<string, keyword*>	typ)
+void record::parse(string chp, map<string, keyword*> typ)
 {
 	cout << "record! -> " << chp << endl;
 	int name_start = chp.find_first_of(" ")+1;

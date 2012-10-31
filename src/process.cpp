@@ -79,5 +79,5 @@ void process::parse(string chp, map<string, keyword*> typ)
 	for (vi = io.begin(); vi != io.end(); vi++)
 		cout << *(vi->second) << endl;
 
-	def.parse(chp.substr(block_start, block_end - block_start), io);
+	def.parse(chp.substr(block_start, block_end - block_start), io, "\t");
 }

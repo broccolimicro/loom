@@ -11,13 +11,23 @@
 #ifndef conditional_h
 #define conditional_h
 
+enum conditional_type
+{
+	unknown = 0,
+	mutex = 1,
+	choice = 2
+};
+
 struct conditional : block
 {
 	conditional();
-	conditional(string raw);
+	conditional(string raw, map<string, variable*> svars, string tab);
 	~conditional();
 
-	void parse(string raw);
+	conditional_type type;
+	map<string, instruction>		instrs;
+
+	void parse(string raw, map<string, variable*> svars, string tab);
 };
 
 #endif

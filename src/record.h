@@ -19,13 +19,13 @@
 struct record : keyword
 {
 	record();
-	record(string chp, map<string, keyword*>	typ);
+	record(string chp, map<string, keyword*> typ);
 	~record();
 
 	map<string, variable*> vars;	// the list of member variables that make up this record
 
 	record &operator=(record r);
-	void parse(string chp, map<string, keyword*>	typ);
+	void parse(string chp, map<string, keyword*> typ);
 };
 
 map<string, variable*> expand(string chp, map<string, keyword*>	typ);

@@ -15,10 +15,10 @@ block::block()
 	chp = "";
 	_kind = "block";
 }
-block::block(string raw, map<string, variable*> svars)
+block::block(string raw, map<string, variable*> svars, string tab)
 {
 	_kind = "block";
-	parse(raw, svars);
+	parse(raw, svars, tab);
 }
 block::~block()
 {
@@ -44,9 +44,9 @@ block &block::operator=(block b)
 	return *this;
 }
 
-void block::parse(string raw, map<string, variable*> svars)
+void block::parse(string raw, map<string, variable*> svars, string tab)
 {
-	cout << "\tblock!  -> "+raw << endl;  		// Output the raw block
+	cout << tab << "Block: " << raw << endl;  		// Output the raw block
 
 	global = svars;						//The variables this block uses.
 	chp = raw;
@@ -57,7 +57,7 @@ void block::parse(string raw, map<string, variable*> svars)
 	loop		loopcond;
 
 	list<instruction>::iterator ii;  	//Used later to iterate through instr lists
-	map<string, variable*>::iterator vgi, vli, vi;
+	map<string, variable*>::iterator vi;
 	map<string, string>::iterator l;
 	map<string, variable*> affected;
 	string::iterator i, j;
@@ -92,46 +92,38 @@ void block::parse(string raw, map<string, variable*> svars)
 			raw_instr = chp.substr(j-chp.begin(), i-j);
 			if (raw_instr.find("*[") != raw_instr.npos)			// Loop Block
 			{
-				loopcond.parse(raw_instr);
+				loopcond.parse(raw_instr, global, tab+"\t");
 				instrs.push_back(loopcond);
 				instr = loopcond;
 			}
 			else if (raw_instr.find("[") != raw_instr.npos)		// Conditional Block
 			{
-				cond.parse(raw_instr);
+				cond.parse(raw_instr, global, tab+"\t");
 				instrs.push_back(cond);
 				instr = cond;
 			}
 			else if (raw_instr.find(" ") != raw_instr.npos)		// THIS IS WRONG!
 			{
-				cout << "variable definition!\n";
+				cout << tab << "variable definition!\n";
 			}
 			else if (raw_instr.length() != 0)					// Assignment Instruction
 			{
-				instr.parse(raw_instr);
+				instr.parse(raw_instr, global, tab+"\t");
 				instrs.push_back(instr);
 			}
 
 			delta = false;
 			for (l = instr.result.begin(); l != instr.result.end(); l++)
 			{
-				vgi = global.find(l->first);
-				vli = local.find(l->first);
-				if (vgi == global.end() && vli == global.end() && l->first != "Unhandled")
+				vi = global.find(l->first);
+				if (vi == global.end() && l->first != "Unhandled")
 					cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + l->first << endl;
-				else if (vgi != global.end())
+				else if (vi != global.end())
 				{
-					delta |= ((l->second[0] == 'o') && (l->second.substr(1) != vgi->second->last.substr(1)));
-					vgi->second->last = l->second;
-					vgi->second->width = max(vgi->second->width, (uint16_t)(l->second.length()-1));
-					affected.insert(pair<string, variable*>(vgi->first, vgi->second));
-				}
-				else if (vli != local.end())
-				{
-					delta |= ((l->second[0] == 'o') && (l->second.substr(1) != vli->second->last.substr(1)));
-					vli->second->last = l->second;
-					vli->second->width = max(vli->second->width, (uint16_t)(l->second.length()-1));
-					affected.insert(pair<string, variable*>(vli->first, vli->second));
+					delta |= ((l->second[0] == 'o') && (l->second.substr(1) != vi->second->last.substr(1)));
+					vi->second->last = l->second;
+					vi->second->width = max(vi->second->width, (uint16_t)(l->second.length()-1));
+					affected.insert(pair<string, variable*>(vi->first, vi->second));
 				}
 			}
 			delta_out.push_back(delta);
@@ -176,9 +168,6 @@ void block::parse(string raw, map<string, variable*> svars)
 
 		}
 
-		cout << states[vi->first]<< endl;
+		cout << tab << states[vi->first] << endl;
 	}
-
-
-	cout << ("X010110X0X1" == states["l.a"]) << endl;
 }

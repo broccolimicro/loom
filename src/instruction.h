@@ -6,6 +6,7 @@
  */
 
 #include "common.h"
+#include "variable.h"
 
 #ifndef instruction_h
 #define instruction_h
@@ -20,7 +21,7 @@ protected:
 
 public:
 	instruction();
-	instruction(string raw);
+	instruction(string raw, map<string, variable*> svars, string tab);
 	~instruction();
 
 
@@ -32,11 +33,12 @@ public:
 	 * 		with possible values '0', '1', and 'X'.
 	 */
 	map<string, string> result;
+	list<string>		rules;
 
 	instruction &operator=(instruction i);
 	string kind();
 
-	void parse(string raw);
+	void parse(string raw, map<string, variable*> svars, string tab);
 };
 
 #endif

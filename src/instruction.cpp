@@ -12,10 +12,10 @@ instruction::instruction()
 {
 	_kind = "instruction";
 }
-instruction::instruction(string raw)
+instruction::instruction(string raw, map<string, variable*> svars, string tab)
 {
 	_kind = "instruction";
-	parse(raw);
+	parse(raw, svars, tab);
 }
 instruction::~instruction()
 {
@@ -34,7 +34,7 @@ string instruction::kind()
 	return _kind;
 }
 
-void instruction::parse(string raw)
+void instruction::parse(string raw, map<string, variable*> svars, string tab)
 {
 	chp = raw;
 
@@ -59,7 +59,7 @@ void instruction::parse(string raw)
 
 		result.insert(pair<string, string>(var, val));
 
-		cout << "\t\tInstruction:\t"+chp << endl;
+		cout << tab << "Instruction:\t"+chp << endl;
 	}
 	else if (chp.find_first_of("?!@") != chp.npos)
 	{
@@ -74,8 +74,7 @@ void instruction::parse(string raw)
 		cout << "\t\tError: Instruction not handled: "+chp << endl;
 	}
 
-	cout << "\t\t\tVariable affected -> " << var << endl;
-	cout << "\t\t\tValue at end -> " << val << endl;
+	cout << tab << "Result:\t" << var << ", " << val << endl;
 
 	/*else if(chp.find("->skip") != chp.npos)	//Is it a [G->skip] instruction MULTIGUARD SELECTION STATEMENTS UNHANDLED
 	{

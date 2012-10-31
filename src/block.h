@@ -24,18 +24,17 @@
 struct block : instruction
 {
 	block();
-	block(string raw, map<string, variable*> svars);
+	block(string raw, map<string, variable*> svars, string tab);
 	~block();
 
 	map<string, variable*>	local;
 	map<string, variable*>	global;
 	list<instruction>		instrs;		// an ordered list of instructions in block
 	map<string, space>		states;		// the state space of this block. format "i####" or "o####"
-	list<string>			prs;
 
 	block &operator=(block b);
 
-	void parse(string raw, map<string, variable*> svars);
+	void parse(string raw, map<string, variable*> svars, string tab);
 };
 
 #endif
