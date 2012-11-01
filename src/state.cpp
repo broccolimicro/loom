@@ -116,11 +116,11 @@ state operator+(state s1, state s2)
 		o = (a == '0') + (b == '0') + (carry == '0');
 
 		if (x == 0 && 2*(i/2) != i)
-			result.data += "1";
+			result.data = "1" + result.data;
 		else if (x == 0)
-			result.data += "0";
+			result.data = "0" + result.data;
 		else
-			result.data += "X";
+			result.data = "X" + result.data;
 
 		if (i >= 2)
 			carry = '1';
@@ -130,7 +130,6 @@ state operator+(state s1, state s2)
 			carry = 'X';
 	}
 
-	reverse(result.data.begin(), result.data.end());
 	result.prs = false;
 
 	return result;
@@ -173,21 +172,21 @@ state operator-(state s)
 
 state operator&(state s1, state s2)
 {
-	string::iterator j, k;
+	string::reverse_iterator j, k;
 	state result;
 	char a, b;
 
-	for (j = s1.data.begin(), k = s2.data.begin(); j != s1.data.end() || k != s2.data.end();)
+	for (j = s1.data.rbegin(), k = s2.data.rbegin(); j != s1.data.rend() || k != s2.data.rend();)
 	{
-		a = j != s1.data.end() ? *j++ : '0';
-		b = k != s2.data.end() ? *k++ : '0';
+		a = j != s1.data.rend() ? *j++ : '0';
+		b = k != s2.data.rend() ? *k++ : '0';
 
 		if (a == '0' || b == '0')
-			result.data += '0';
+			result.data = "0" + result.data;
 		else if (a == 'X' || b == 'X')
-			result.data += 'X';
+			result.data = "X" + result.data;
 		else
-			result.data += '1';
+			result.data = "1" + result.data;
 	}
 
 	result.prs = false;
@@ -197,21 +196,21 @@ state operator&(state s1, state s2)
 
 state operator|(state s1, state s2)
 {
-	string::iterator j, k;
+	string::reverse_iterator j, k;
 	state result;
 	char a, b;
 
-	for (j = s1.data.begin(), k = s2.data.begin(); j != s1.data.end() || k != s2.data.end();)
+	for (j = s1.data.rbegin(), k = s2.data.rbegin(); j != s1.data.rend() || k != s2.data.rend();)
 	{
-		a = j != s1.data.end() ? *j++ : '0';
-		b = k != s2.data.end() ? *k++ : '0';
+		a = j != s1.data.rend() ? *j++ : '0';
+		b = k != s2.data.rend() ? *k++ : '0';
 
 		if (a == '1' || b == '1')
-			result.data += '1';
+			result.data = "1" + result.data;
 		else if (a == 'X' || b == 'X')
-			result.data += 'X';
+			result.data = "X" + result.data;
 		else
-			result.data += '0';
+			result.data = "0" + result.data;
 	}
 
 	result.prs = false;
@@ -251,16 +250,16 @@ state operator>>(state s, int n)
 
 state operator==(state s1, state s2)
 {
-	string::iterator j, k;
+	string::reverse_iterator j, k;
 	char a, b;
 	state result;
 
 	result.data = "1";
 
-	for (j = s1.data.begin(), k = s2.data.begin(); j != s1.data.end() || k != s2.data.end();)
+	for (j = s1.data.rbegin(), k = s2.data.rbegin(); j != s1.data.rend() || k != s2.data.rend();)
 	{
-		a = j != s1.data.end() ? *j++ : '0';
-		b = k != s2.data.end() ? *k++ : '0';
+		a = j != s1.data.rend() ? *j++ : '0';
+		b = k != s2.data.rend() ? *k++ : '0';
 
 		if ((a == '1' && b == '0') || (a == '0' && b == '1'))
 			return state("0", false);
@@ -275,16 +274,16 @@ state operator==(state s1, state s2)
 
 state operator!=(state s1, state s2)
 {
-	string::iterator j, k;
+	string::reverse_iterator j, k;
 	char a, b;
 	state result;
 
 	result.data = "0";
 
-	for (j = s1.data.begin(), k = s2.data.begin(); j != s1.data.end() || k != s2.data.end();)
+	for (j = s1.data.rbegin(), k = s2.data.rbegin(); j != s1.data.rend() || k != s2.data.rend();)
 	{
-		a = j != s1.data.end() ? *j++ : '0';
-		b = k != s2.data.end() ? *k++ : '0';
+		a = j != s1.data.rend() ? *j++ : '0';
+		b = k != s2.data.rend() ? *k++ : '0';
 
 		if ((a == '1' && b == '0') || (a == '0' && b == '1'))
 			return state("1", false);
@@ -309,7 +308,18 @@ state operator>=(state s1, state s2)
 
 state operator<(state s1, state s2)
 {
+	int j, k;
+	int l0 = s1.data.length(), l1 = s2.data.length();
 
+	for (j = s1.data.find_first_of("1"), k = s2.data.find_first_of("1"); j > 0 && k > 0; j = s1.data.find_first_of("1", j+1), k = s2.data.find_first_of("1", k+1))
+	{
+		if (l0 - j < l1 - k)
+			return state("1", false);
+		else if (l0 - j > l1 - k)
+			return state("0", false);
+	}
+
+	return state("0", false);
 }
 
 state operator>(state s1, state s2)
