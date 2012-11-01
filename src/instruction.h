@@ -43,5 +43,6 @@ public:
 
 	void parse(string raw, map<string, variable*> svars, string tab);
 };
+state expr_eval(string raw);
 
 #endif
