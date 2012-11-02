@@ -130,6 +130,9 @@ state operator+(state s1, state s2)
 			carry = 'X';
 	}
 
+	if(carry!='0'){
+		result.data = carry + result.data;
+	}
 	result.prs = false;
 
 	return result;
