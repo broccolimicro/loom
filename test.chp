@@ -7,7 +7,7 @@ struct channel
 proc fifo(channel l, channel r)
 {
 	int<3> x = 0;
-	*[  x == 0 -> ([l.r -> skip]; l.a := 1 + 5 * 3) || ([~l.r -> skip]; l.a := 0); x := 1
+	*[  x == 0 -> ([l.r -> skip]; l.a := -1 + 2 - 3 * 4 + -5 * 6 + 7 * -8 ) || ([~l.r -> skip]; l.a := 0); x := 1
 	 [] x == 1 -> r.a := 1 || [r.r -> skip] || r.a := 0 || [~r.r -> skip]; x := 0
 	 ]
 }

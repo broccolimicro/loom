@@ -35,33 +35,70 @@ string instruction::kind()
 }
 
 state expr_eval(string raw){
-	int first_plus = raw.find_first_of("+");
-	int first_minus = raw.find_first_of("-");
-
-	int first_mul = raw.find_first_of("*");
-	int first_div = raw.find_first_of("/");
+	// Paren, vars, negatives, booleans, all the operators in state are in wish list!
+	int first_addsub = raw.find_first_of("+-");
+	int first_muldiv = raw.find_first_of("*/");
 
 	state result;
-/*
-	cout << first_plus << endl;
-	cout << first_minus << endl;
-	cout << (first_plus < first_minus) << endl;
-	if((first_plus < first_minus)&&((first_plus != raw.npos)||(first_minus != raw.npos))){
+
+	if(first_addsub != raw.npos){			//There is a plus or a minus!
+		if (raw[first_addsub] == '+'){		//It is a plus!
+			//recurse splitting the first occurrence of the weakest binder.
+			cout << "Doing an add between " + raw.substr(0,first_addsub) + " and " +raw.substr(first_addsub+1) << endl;
+			result = expr_eval(raw.substr(0,first_addsub)) + expr_eval(raw.substr(first_addsub+1));
+			cout << "Result is: " + result.data << endl;
+			return result;
+		}else{								//It is a minus sign!
+			//We need to handle whether this is a minus or a negative
+			if( first_addsub == 0 ){//|| raw[first_addsub-1] == '+' || raw[first_addsub-1] == '-'|| raw[first_addsub-1] == '*'|| raw[first_addsub-1] == '/'){
+				raw = raw.substr(0,first_addsub) + "0" + raw.substr(first_addsub);
+				return expr_eval(raw);
+			}else{			//This negative does not need to be 'fixed'
+				//recurse splitting the first occurrence of the weakest binder.
+				cout << "Doing an sub between " + raw.substr(0,first_addsub) + " and " +raw.substr(first_addsub+1) << endl;
+				result = expr_eval(raw.substr(0,first_addsub)) - expr_eval(raw.substr(first_addsub+1));
+				cout << "Result is: " + result.data << endl;
+				return result;
+			}
+
+
+		}
+	}
+
+	if(first_muldiv != raw.npos){		//There is a mul or a div!
+		if(raw[first_muldiv] == '*'){	//It is a mul!
+			//recurse splitting the first occurrence of the weakest binder.
+			cout << "Doing an mul between " + raw.substr(0,first_muldiv) + " and " +raw.substr(first_muldiv+1) << endl;
+			result = expr_eval(raw.substr(0,first_muldiv)) * expr_eval(raw.substr(first_muldiv+1));
+			cout << "Result is: " + result.data << endl;
+			return result;
+		}else{							//It is a div!
+			//recurse splitting the first occurrence of the weakest binder.
+			cout << "Doing an div between " + raw.substr(0,first_muldiv) + " and " +raw.substr(first_muldiv+1) << endl;
+			result = expr_eval(raw.substr(0,first_muldiv)) / expr_eval(raw.substr(first_muldiv+1));
+			cout << "Result is: " + result.data << endl;
+			return result;
+		}
+	}
+
+
+	//Failed implementations for legacy
+	/*if((first_plus*(first_plus+1) < (first_minus+1)*first_minus) && ((first_plus != raw.npos)||(first_minus != raw.npos))){
+//	if((((first_plus < first_minus) && (first_plus!= raw.npos))||(first_minus==raw.npos||first_plus!=raw.npos))&&((first_plus != raw.npos)||(first_minus != raw.npos))){
 		//recurse splitting the first occurrence of the weakest binder.
 		cout << "Doing an add between " + raw.substr(0,first_plus) + " and " +raw.substr(first_plus+1) << endl;
 		result = expr_eval(raw.substr(0,first_plus)) + expr_eval(raw.substr(first_plus+1));
 		cout << "Result is: " + result.data << endl;
 		return result;
-	}else if((first_plus != raw.npos)||(first_minus != raw.npos)){
+	}else if(first_minus != raw.npos){
 		//recurse splitting the first occurrence of the weakest binder.
 		cout << "Doing an sub between " + raw.substr(0,first_minus) + " and " +raw.substr(first_minus+1) << endl;
 		result = expr_eval(raw.substr(0,first_minus)) - expr_eval(raw.substr(first_minus+1));
 		cout << "Result is: " + result.data << endl;
 		return result;
-
 	}
 
-	if((first_mul < first_div)&&((first_mul != raw.npos)||(first_div != raw.npos))){
+	if(((first_mul < first_div)||(first_div==raw.npos||first_mul!=raw.npos))&&((first_mul != raw.npos)||(first_div != raw.npos))){
 		//recurse splitting the first occurrence of the weakest binder.
 		cout << "Doing an mul between " + raw.substr(0,first_mul) + " and " +raw.substr(first_mul+1) << endl;
 		result = expr_eval(raw.substr(0,first_mul)) * expr_eval(raw.substr(first_mul+1));
@@ -73,9 +110,8 @@ state expr_eval(string raw){
 		result = expr_eval(raw.substr(0,first_div)) / expr_eval(raw.substr(first_div+1));
 		cout << "Result is: " + result.data << endl;
 		return result;
-
 	} */
-
+/*
 	if((first_plus != raw.npos)||(first_minus != raw.npos)){	//We have adds and/or subtracts!
 		if ((first_plus != raw.npos)&&(first_minus != raw.npos)){	//We have at least one add and a sub.
 			//evaluate left to right...
@@ -136,8 +172,7 @@ state expr_eval(string raw){
 				return result;
 			}
 		}
-	}
-
+	}*/
 
 	// If this is a multi-bit number, then we need to make sure it is correctly parsed
 	if (raw[1] == 'x')			// hexadecimal e.g. 0xFEEDFACE
