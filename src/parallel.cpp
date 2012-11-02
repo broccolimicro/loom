@@ -1,30 +1,29 @@
 /*
- * block.cpp
+ * parallel.cpp
  *
- *  Created on: Oct 29, 2012
+ *  Created on: Nov 1, 2012
  *      Author: Ned Bingham
  */
 
-#include "block.h"
-#include "common.h"
+#include "parallel.h"
 #include "conditional.h"
 #include "loop.h"
-#include "parallel.h"
+#include "block.h"
 
-block::block()
+parallel::parallel()
 {
 	chp = "";
-	_kind = "block";
+	_kind = "parallel";
 }
-block::block(string raw, map<string, variable*> svars, string tab)
+parallel::parallel(string raw, map<string, variable*> svars, string tab)
 {
-	_kind = "block";
+	_kind = "parallel";
 	parse(raw, svars, tab);
 }
-block::~block()
+parallel::~parallel()
 {
 	chp = "";
-	_kind = "block";
+	_kind = "parallel";
 
 	map<string, variable*>::iterator i;
 	for (i = local.begin(); i != local.end(); i++)
@@ -37,26 +36,17 @@ block::~block()
 	local.clear();
 }
 
-block &block::operator=(block b)
+void parallel::parse(string raw, map<string, variable*> svars, string tab)
 {
-	chp = b.chp;
-	instrs = b.instrs;
-	states = b.states;
-	return *this;
-}
+	cout << tab << "parallel: " << raw << endl;  		// Output the raw parallel
 
-void block::parse(string raw, map<string, variable*> svars, string tab)
-{
-	cout << tab << "Block: " << raw << endl;  		// Output the raw block
-
-	global = svars;						//The variables this block uses.
+	global = svars;						//The variables this parallel uses.
 	chp = raw;
 
 	string raw_instr;							//String of CHP code to be tested as an instruction
 	instruction instr; 							//Lists are pass by value, right? Else this wont work
 	conditional cond;
 	loop		loopcond;
-	parallel	para;
 	block		blk;
 
 	list<instruction>::iterator ii;  	//Used later to iterate through instr lists
@@ -69,7 +59,6 @@ void block::parse(string raw, map<string, variable*> svars, string tab)
 	list<bool> delta_out;
 	list<bool>::iterator di;
 	bool delta;
-	bool parallel = false;
 
 	state xstate;
 	state tstate;
@@ -91,17 +80,10 @@ void block::parse(string raw, map<string, variable*> svars, string tab)
 		else if (*i == '}')
 			depth[2]--;
 
-		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && (*i == ';' || i == chp.end()))
+		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) == '|') || i == chp.end()))
 		{
 			raw_instr = chp.substr(j-chp.begin(), i-j);
-
-			if (parallel)
-			{
-				para.parse(raw_instr, global, tab+"\t");
-				instrs.push_back(para);
-				instr = para;
-			}
-			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
+			if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
 			{
 				blk.parse(raw_instr.substr(1, raw_instr.length()-2), global, tab+"\t");
 				instrs.push_back(blk);
@@ -145,11 +127,8 @@ void block::parse(string raw, map<string, variable*> svars, string tab)
 			}
 			delta_out.push_back(delta);
 
-			j = i+1;
-			parallel = false;
+			j = i+2;
 		}
-		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) == '|') || i == chp.end()))
-			parallel = true;
 	}
 
 	cout << endl;

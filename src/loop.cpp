@@ -52,7 +52,7 @@ void loop::parse(string raw, map<string, variable*> svars, string tab)
 		else if (*i == '}')
 			depth[2]--;
 
-		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) != '|') || (i == chp.end() && type == choice)))
+		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) != '|' && *(i-1) != '|') || (i == chp.end() && type == choice)))
 		{
 			cout << tab << "Choice\n";
 			if (type == unknown)
