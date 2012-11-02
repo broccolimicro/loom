@@ -125,18 +125,15 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			{
 				vdef = false;
 				for (t = types.begin(); t != types.end(); t++)
-				{
 					if (raw_instr.find(t->first) != raw_instr.npos)		// THIS IS WRONG!
 					{
-						cout << tab << "variable definition!\n";
-
-
+						vdef = true;
+						break;
 					}
-				}
 
 				if (vdef)
 				{
-
+					cout << tab << "variable definition!\n";
 				}
 				else if (raw_instr.length() != 0)					// Assignment Instruction
 				{
