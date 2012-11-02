@@ -15,10 +15,10 @@ parallel::parallel()
 	chp = "";
 	_kind = "parallel";
 }
-parallel::parallel(string raw, map<string, variable*> svars, string tab)
+parallel::parallel(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
 {
 	_kind = "parallel";
-	parse(raw, svars, tab);
+	parse(raw, types, vars, tab);
 }
 parallel::~parallel()
 {
@@ -36,11 +36,11 @@ parallel::~parallel()
 	local.clear();
 }
 
-void parallel::parse(string raw, map<string, variable*> svars, string tab)
+void parallel::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
 {
 	cout << tab << "parallel: " << raw << endl;  		// Output the raw parallel
 
-	global = svars;						//The variables this parallel uses.
+	global = vars;						//The variables this parallel uses.
 	chp = raw;
 
 	string raw_instr;							//String of CHP code to be tested as an instruction
@@ -85,19 +85,19 @@ void parallel::parse(string raw, map<string, variable*> svars, string tab)
 			raw_instr = chp.substr(j-chp.begin(), i-j);
 			if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
 			{
-				blk.parse(raw_instr.substr(1, raw_instr.length()-2), global, tab+"\t");
+				blk.parse(raw_instr.substr(1, raw_instr.length()-2), types, global, tab+"\t");
 				instrs.push_back(blk);
 				instr = blk;
 			}
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')			// Loop Block
 			{
-				loopcond.parse(raw_instr, global, tab+"\t");
+				loopcond.parse(raw_instr, types, global, tab+"\t");
 				instrs.push_back(loopcond);
 				instr = loopcond;
 			}
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')		// Conditional Block
 			{
-				cond.parse(raw_instr, global, tab+"\t");
+				cond.parse(raw_instr, types, global, tab+"\t");
 				instrs.push_back(cond);
 				instr = cond;
 			}
@@ -107,7 +107,7 @@ void parallel::parse(string raw, map<string, variable*> svars, string tab)
 			}
 			else if (raw_instr.length() != 0)					// Assignment Instruction
 			{
-				instr.parse(raw_instr, global, tab+"\t");
+				instr.parse(raw_instr, types, global, tab+"\t");
 				instrs.push_back(instr);
 			}
 

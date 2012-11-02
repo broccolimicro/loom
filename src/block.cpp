@@ -16,10 +16,10 @@ block::block()
 	chp = "";
 	_kind = "block";
 }
-block::block(string raw, map<string, variable*> svars, string tab)
+block::block(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
 {
 	_kind = "block";
-	parse(raw, svars, tab);
+	parse(raw, types, vars, tab);
 }
 block::~block()
 {
@@ -45,11 +45,11 @@ block &block::operator=(block b)
 	return *this;
 }
 
-void block::parse(string raw, map<string, variable*> svars, string tab)
+void block::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
 {
 	cout << tab << "Block: " << raw << endl;  		// Output the raw block
 
-	global = svars;						//The variables this block uses.
+	global = vars;						//The variables this block uses.
 	chp = raw;
 
 	string raw_instr;							//String of CHP code to be tested as an instruction
@@ -63,6 +63,7 @@ void block::parse(string raw, map<string, variable*> svars, string tab)
 	map<string, variable*>::iterator vi;
 	map<string, state>::iterator l;
 	map<string, variable*> affected;
+	map<string, keyword*>::iterator t;
 	string::iterator i, j;
 	unsigned int k;
 
@@ -70,6 +71,7 @@ void block::parse(string raw, map<string, variable*> svars, string tab)
 	list<bool>::iterator di;
 	bool delta;
 	bool parallel = false;
+	bool vdef = false;
 
 	state xstate;
 	state tstate;
@@ -97,36 +99,50 @@ void block::parse(string raw, map<string, variable*> svars, string tab)
 
 			if (parallel)
 			{
-				para.parse(raw_instr, global, tab+"\t");
+				para.parse(raw_instr, types, global, tab+"\t");
 				instrs.push_back(para);
 				instr = para;
 			}
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
 			{
-				blk.parse(raw_instr.substr(1, raw_instr.length()-2), global, tab+"\t");
+				blk.parse(raw_instr.substr(1, raw_instr.length()-2), types, global, tab+"\t");
 				instrs.push_back(blk);
 				instr = blk;
 			}
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')			// Loop Block
 			{
-				loopcond.parse(raw_instr, global, tab+"\t");
+				loopcond.parse(raw_instr, types, global, tab+"\t");
 				instrs.push_back(loopcond);
 				instr = loopcond;
 			}
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')		// Conditional Block
 			{
-				cond.parse(raw_instr, global, tab+"\t");
+				cond.parse(raw_instr, types, global, tab+"\t");
 				instrs.push_back(cond);
 				instr = cond;
 			}
-			else if (raw_instr.find(" ") != raw_instr.npos)		// THIS IS WRONG!
+			else
 			{
-				cout << tab << "variable definition!\n";
-			}
-			else if (raw_instr.length() != 0)					// Assignment Instruction
-			{
-				instr.parse(raw_instr, global, tab+"\t");
-				instrs.push_back(instr);
+				vdef = false;
+				for (t = types.begin(); t != types.end(); t++)
+				{
+					if (raw_instr.find(t->first) != raw_instr.npos)		// THIS IS WRONG!
+					{
+						cout << tab << "variable definition!\n";
+
+
+					}
+				}
+
+				if (vdef)
+				{
+
+				}
+				else if (raw_instr.length() != 0)					// Assignment Instruction
+				{
+					instr.parse(raw_instr, types, global, tab+"\t");
+					instrs.push_back(instr);
+				}
 			}
 
 			delta = false;

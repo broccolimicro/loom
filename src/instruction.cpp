@@ -12,10 +12,10 @@ instruction::instruction()
 {
 	_kind = "instruction";
 }
-instruction::instruction(string raw, map<string, variable*> svars, string tab)
+instruction::instruction(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
 {
 	_kind = "instruction";
-	parse(raw, svars, tab);
+	parse(raw, types, vars, tab);
 }
 instruction::~instruction()
 {
@@ -86,7 +86,7 @@ state expr_eval(string raw){
 
 }
 
-void instruction::parse(string raw, map<string, variable*> svars, string tab)
+void instruction::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
 {
 	chp = raw;
 

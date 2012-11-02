@@ -9,6 +9,7 @@
 #include "instruction.h"
 #include "variable.h"
 #include "space.h"
+#include "keyword.h"
 
 #ifndef block_h
 #define block_h
@@ -24,7 +25,7 @@
 struct block : instruction
 {
 	block();
-	block(string raw, map<string, variable*> svars, string tab);
+	block(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab);
 	~block();
 
 	map<string, variable*>	local;
@@ -34,7 +35,7 @@ struct block : instruction
 
 	block &operator=(block b);
 
-	void parse(string raw, map<string, variable*> svars, string tab);
+	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab);
 };
 
 #endif

@@ -14,10 +14,10 @@ conditional::conditional()
 	type = unknown;
 }
 
-conditional::conditional(string raw, map<string, variable*> svars, string tab)
+conditional::conditional(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
 {
 	_kind = "conditional";
-	parse(raw, svars, tab);
+	parse(raw, types, vars, tab);
 }
 
 conditional::~conditional()
@@ -26,10 +26,10 @@ conditional::~conditional()
 	type = unknown;
 }
 
-void conditional::parse(string raw, map<string, variable*> svars, string tab)
+void conditional::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
 {
 	chp = raw.substr(1, raw.length()-2);
-	global = svars;						//The variables this block uses.
+	global = vars;						//The variables this block uses.
 	type = unknown;
 	string expr, eval;
 
@@ -67,7 +67,7 @@ void conditional::parse(string raw, map<string, variable*> svars, string tab)
 			expr = eval.substr(0, k-eval.begin());
 			eval = eval.substr(k-eval.begin()+2);
 
-			instrs.insert(pair<string, instruction>(expr, block(eval, global, tab+"\t")));
+			instrs.insert(pair<string, instruction>(expr, block(eval, types, global, tab+"\t")));
 			j = i+1;
 		}
 		else if (depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '[' && *(i+1) == ']') || i == chp.end()))
@@ -83,7 +83,7 @@ void conditional::parse(string raw, map<string, variable*> svars, string tab)
 			expr = eval.substr(0, k-eval.begin());
 			eval = eval.substr(k-eval.begin()+2);
 
-			instrs.insert(pair<string, instruction>(expr, block(eval, global, tab+"\t")));
+			instrs.insert(pair<string, instruction>(expr, block(eval, types, global, tab+"\t")));
 			j = i+2;
 		}
 	}

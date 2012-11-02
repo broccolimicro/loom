@@ -6,6 +6,7 @@
  */
 
 #include "block.h"
+#include "keyword.h"
 
 #ifndef parallel_h
 #define parallel_h
@@ -13,10 +14,10 @@
 struct parallel : block
 {
 	parallel();
-	parallel(string raw, map<string, variable*> svars, string tab);
+	parallel(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab);
 	~parallel();
 
-	void parse(string raw, map<string, variable*> svars, string tab);
+	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab);
 };
 
 #endif

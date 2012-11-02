@@ -21,7 +21,7 @@
 struct process : keyword
 {
 	process();
-	process(string chp, map<string, keyword*> typ);
+	process(string chp, map<string, keyword*> types);
 	~process();
 
 	block					def;	// the chp that defined this process
@@ -30,7 +30,7 @@ struct process : keyword
 
 	process &operator=(process p);
 
-	void parse(string chp, map<string, keyword*> typ);
+	void parse(string chp, map<string, keyword*> types);
 };
 
 #endif

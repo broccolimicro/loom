@@ -13,10 +13,10 @@ loop::loop()
 	_kind = "loop";
 }
 
-loop::loop(string raw, map<string, variable*> svars, string tab)
+loop::loop(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
 {
 	_kind = "loop";
-	parse(raw, svars, tab);
+	parse(raw, types, vars, tab);
 }
 
 loop::~loop()
@@ -24,10 +24,10 @@ loop::~loop()
 	_kind = "loop";
 }
 
-void loop::parse(string raw, map<string, variable*> svars, string tab)
+void loop::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
 {
 	chp = raw.substr(2, raw.length()-3);
-	global = svars;						//The variables this block uses.
+	global = vars;						//The variables this block uses.
 	type = unknown;
 	string expr, eval;
 
@@ -65,7 +65,7 @@ void loop::parse(string raw, map<string, variable*> svars, string tab)
 			expr = eval.substr(0, k-eval.begin());
 			eval = eval.substr(k-eval.begin()+2);
 
-			instrs.insert(pair<string, instruction>(expr, block(eval, global, tab+"\t")));
+			instrs.insert(pair<string, instruction>(expr, block(eval, types, global, tab+"\t")));
 			j = i+1;
 		}
 		else if (depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '[' && *(i+1) == ']') || i == chp.end()))
@@ -81,7 +81,7 @@ void loop::parse(string raw, map<string, variable*> svars, string tab)
 			expr = eval.substr(0, k-eval.begin());
 			eval = eval.substr(k-eval.begin()+2);
 
-			instrs.insert(pair<string, instruction>(expr, block(eval, global, tab+"\t")));
+			instrs.insert(pair<string, instruction>(expr, block(eval, types, global, tab+"\t")));
 			j = i+2;
 		}
 	}

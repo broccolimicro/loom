@@ -8,6 +8,7 @@
 #include "common.h"
 #include "state.h"
 #include "variable.h"
+#include "keyword.h"
 
 #ifndef instruction_h
 #define instruction_h
@@ -22,7 +23,7 @@ protected:
 
 public:
 	instruction();
-	instruction(string raw, map<string, variable*> svars, string tab);
+	instruction(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab);
 	~instruction();
 
 
@@ -41,7 +42,7 @@ public:
 	instruction &operator=(instruction i);
 	string kind();
 
-	void parse(string raw, map<string, variable*> svars, string tab);
+	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab);
 };
 state expr_eval(string raw);
 

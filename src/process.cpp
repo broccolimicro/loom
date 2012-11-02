@@ -15,9 +15,9 @@ process::process()
 	_kind = "process";
 }
 
-process::process(string chp, map<string, keyword*> typ)
+process::process(string chp, map<string, keyword*> types)
 {
-	parse(chp, typ);
+	parse(chp, types);
 	_kind = "process";
 }
 
@@ -45,7 +45,7 @@ process &process::operator=(process p)
 	return *this;
 }
 
-void process::parse(string chp, map<string, keyword*> typ)
+void process::parse(string chp, map<string, keyword*> types)
 {
 	cout << "process! -> " << chp << endl;
 	int name_start = chp.find_first_of(" ")+1;
@@ -69,7 +69,7 @@ void process::parse(string chp, map<string, keyword*> typ)
 	{
 		if (*(i+1) == ',' || i+1 == io_block.end())
 		{
-			vars = expand(io_block.substr(j-io_block.begin(), i+1 - j), typ);
+			vars = expand(io_block.substr(j-io_block.begin(), i+1 - j), types);
 			io.insert(vars.begin(), vars.end());
 			j = i+2;
 		}
@@ -79,5 +79,5 @@ void process::parse(string chp, map<string, keyword*> typ)
 	for (vi = io.begin(); vi != io.end(); vi++)
 		cout << *(vi->second) << endl;
 
-	def.parse(chp.substr(block_start, block_end - block_start), io, "\t");
+	def.parse(chp.substr(block_start, block_end - block_start), types, io, "\t");
 }
