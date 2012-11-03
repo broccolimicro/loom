@@ -241,11 +241,12 @@ state operator~(state s)
 	return result;
 }
 
+//NED!! This should be a state state operation
 state operator<<(state s, int n)
 {
 	return state(s.data + string(n, '0'), false);
 }
-
+//NED!! This should be a state state operation
 state operator>>(state s, int n)
 {
 	return state(s.data.substr(0, s.data.length()-n), false);
