@@ -16,9 +16,9 @@ record::record()
 	_kind = "record";
 }
 
-record::record(string chp, map<string, keyword*>	typ)
+record::record(string chp, map<string, keyword*>	types)
 {
-	parse(chp, typ);
+	parse(chp, types);
 	_kind = "record";
 }
 
@@ -44,7 +44,7 @@ record &record::operator=(record r)
 	return *this;
 }
 
-void record::parse(string chp, map<string, keyword*> typ)
+void record::parse(string chp, map<string, keyword*> types)
 {
 	cout << "record! -> " << chp << endl;
 	int name_start = chp.find_first_of(" ")+1;
@@ -66,7 +66,7 @@ void record::parse(string chp, map<string, keyword*> typ)
 	{
 		if (*(i+1) == ';')
 		{
-			expansion = expand(io_block.substr(j-io_block.begin(), i+1 - j), typ);
+			expansion = expand(io_block.substr(j-io_block.begin(), i+1 - j), types);
 			vars.insert(expansion.begin(), expansion.end());
 
 			j = i+2;
@@ -74,7 +74,7 @@ void record::parse(string chp, map<string, keyword*> typ)
 	}
 }
 
-map<string, variable*> expand(string chp, map<string, keyword*>	typ)
+map<string, variable*> expand(string chp, map<string, keyword*>	types)
 {
 	map<string, variable*> result;
 	map<string, keyword*>::iterator var_type;
@@ -82,7 +82,7 @@ map<string, variable*> expand(string chp, map<string, keyword*>	typ)
 	variable *v = new variable(chp);
 	string name;
 
-	if ((var_type = typ.find(v->type)) != typ.end())
+	if ((var_type = types.find(v->type)) != types.end())
 	{
 		if (var_type->second->kind() == "keyword")
 			result.insert(pair<string, variable*>(v->name, v));

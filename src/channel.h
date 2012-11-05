@@ -13,6 +13,11 @@
 
 struct channel : record
 {
+	channel(){}
+	channel(string raw, map<string, keyword*> types) : record(raw, types)
+	{
+	}
+	~channel(){}
 
 };
 

@@ -58,6 +58,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	loop		loopcond;
 	parallel	para;
 	block		blk;
+	variable *v;
 
 	list<instruction>::iterator ii;  	//Used later to iterate through instr lists
 	map<string, variable*>::iterator vi;
@@ -133,7 +134,9 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 				if (vdef)
 				{
-					cout << tab << "variable definition!\n";
+					v = new variable(raw_instr);
+					local.insert(pair<string, variable*>(v->name, v));
+					global.insert(pair<string, variable*>(v->name, v));
 				}
 				else if (raw_instr.length() != 0)					// Assignment Instruction
 				{

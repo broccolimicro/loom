@@ -60,6 +60,7 @@
 #include "record.h"
 #include "block.h"
 #include "process.h"
+#include "channel.h"
 
 /* This structure describes a whole program. It contains a record of all
  * of the types described in this program and all of the global variables
@@ -153,9 +154,15 @@ struct program
 						type_space.insert(pair<string, process*>(p->name, p));
 					}
 					// This isn't a process, is it a record?
-					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "struct ") == 0)
+					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "record ") == 0)
 					{
 						r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space);
+						type_space.insert(pair<string, record*>(r->name, r));
+					}
+					// Is it a channel definition?
+					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "chan ") == 0)
+					{
+						r = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space);
 						type_space.insert(pair<string, record*>(r->name, r));
 					}
 					// This isn't either a process or a record, this is an error.
@@ -163,7 +170,7 @@ struct program
 					{
 						error = "Error: CHP block outside of process.\nIgnoring block:\t";
 						error_start = j-cleaned_chp.begin();
-						error_len = min(cleaned_chp.find("proc ", error_start), cleaned_chp.find("struct ", error_start)) - error_start;
+						error_len = min(min(cleaned_chp.find("proc ", error_start), cleaned_chp.find("record ", error_start)), cleaned_chp.find("chan ", error_start)) - error_start;
 						error += cleaned_chp.substr(error_start, error_len);
 						cout << error << endl;
 						j += error_len;
@@ -174,9 +181,14 @@ struct program
 							p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space);
 							type_space.insert(pair<string, process*>(p->name, p));
 						}
-						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "struct ") == 0)
+						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "record ") == 0)
 						{
 							r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space);
+							type_space.insert(pair<string, record*>(r->name, r));
+						}
+						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "chan ") == 0)
+						{
+							r = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space);
 							type_space.insert(pair<string, record*>(r->name, r));
 						}
 					}
