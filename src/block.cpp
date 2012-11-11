@@ -255,10 +255,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				states[vi->first].states.push_back(xstate);
 			// there is no delta in the output variables or this is an output variable
 			else
-			{
 				states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
-				//states[vi->first].states.rbegin()->prs = false;
-			}
 		}
 
 		result.insert(pair<string, state>(vi->first, *(states[vi->first].states.rbegin())));
@@ -270,18 +267,23 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 	// Generate the production rules
 	string rule;
+	string oldstate = "";
 	int cmin = 99999999;
 	int c;
 	int ins_idx;
 	int tmp_idx;
-	string vname;
+	space rspace, tspace;
+	bool first = true;
 
 	for (si = states.begin(); si != states.end(); si++)
 	{
 		ins_idx = 0;
 		for (a = si->second.states.begin(); a != si->second.states.end(); a++)
 		{
-			if (a->prs)
+			rspace.states.clear();
+			rspace.var = "";
+			first = true;
+			if (a->prs && a->data != oldstate)
 			{
 				rule = "->" + si->first;
 				if ((*a == state("0",false)).data == "1")
@@ -289,7 +291,6 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				else
 					rule += "+";
 
-				cout << *a << endl;
 				cmin = 99999999;
 				for (sj = states.begin(); sj != states.end(); sj++)
 				{
@@ -297,21 +298,27 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 					{
 						for (b = sj->second.states.begin(), tmp_idx = 0; b != sj->second.states.end() && tmp_idx < (ins_idx-1); b++, tmp_idx++);
 
-						c = count(sj->second == *b);
-						if (c < cmin)
+						tspace = (sj->second == *b);
+
+						if (first)
+							c = count(tspace);
+						else
+							c = count(rspace & tspace);
+						if (c > 0 && c < cmin && rspace.var.find(tspace.var) == rspace.var.npos && b->data.find_first_of("X") == b->data.npos)
 						{
 							cmin = c;
-							if ((*b == state("0",false)).data == "1")
-								vname = "~" + sj->first;
+							if (first)
+								rspace = tspace;
 							else
-								vname = sj->first;
-							cout << vname << endl;
+								rspace = rspace & tspace;
+							first = false;
 						}
 					}
 				}
-				cout << vname << rule << " " << cmin << endl;
+				cout << rspace.var << rule << " " << cmin << endl;
 			}
 			ins_idx++;
+			oldstate = a->data;
 		}
 		cout << endl;
 	}
