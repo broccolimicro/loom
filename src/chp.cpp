@@ -156,13 +156,13 @@ struct program
 					// This isn't a process, is it a record?
 					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "record ") == 0)
 					{
-						r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space);
+						r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "");
 						type_space.insert(pair<string, record*>(r->name, r));
 					}
 					// Is it a channel definition?
 					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "chan ") == 0)
 					{
-						r = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space);
+						r = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "");
 						type_space.insert(pair<string, record*>(r->name, r));
 					}
 					// This isn't either a process or a record, this is an error.
@@ -183,12 +183,12 @@ struct program
 						}
 						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "record ") == 0)
 						{
-							r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space);
+							r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "");
 							type_space.insert(pair<string, record*>(r->name, r));
 						}
 						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "chan ") == 0)
 						{
-							r = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space);
+							r = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "");
 							type_space.insert(pair<string, record*>(r->name, r));
 						}
 					}
@@ -197,7 +197,7 @@ struct program
 			}
 		}
 
-		main.parse("main m()");
+		main.parse("main m()", "");
 	}
 };
 

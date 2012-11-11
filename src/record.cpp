@@ -16,9 +16,9 @@ record::record()
 	_kind = "record";
 }
 
-record::record(string chp, map<string, keyword*>	types)
+record::record(string chp, map<string, keyword*> types, string tab)
 {
-	parse(chp, types);
+	parse(chp, types, tab);
 	_kind = "record";
 }
 
@@ -44,9 +44,9 @@ record &record::operator=(record r)
 	return *this;
 }
 
-void record::parse(string chp, map<string, keyword*> types)
+void record::parse(string chp, map<string, keyword*> types, string tab)
 {
-	cout << "record! -> " << chp << endl;
+	cout << tab << "Record: " << chp << endl;
 	int name_start = chp.find_first_of(" ")+1;
 	int name_end = chp.find_first_of("{");
 	int block_start = chp.find_first_of("{")+1;
@@ -59,14 +59,14 @@ void record::parse(string chp, map<string, keyword*> types)
 	name = chp.substr(name_start, name_end - name_start);
 	io_block = chp.substr(block_start, block_end - block_start);
 
-	cout << "\tname!   -> " << name << endl;
-	cout << "\tblock!  -> " << io_block << endl;
+	cout << tab << "\tName:  " << name << endl;
+	cout << tab << "\tBlock: " << io_block << endl;
 
 	for (i = io_block.begin(), j = io_block.begin(); i != io_block.end(); i++)
 	{
 		if (*(i+1) == ';')
 		{
-			expansion = expand(io_block.substr(j-io_block.begin(), i+1 - j), types);
+			expansion = expand(io_block.substr(j-io_block.begin(), i+1 - j), types, tab+"\t");
 			vars.insert(expansion.begin(), expansion.end());
 
 			j = i+2;
@@ -74,12 +74,12 @@ void record::parse(string chp, map<string, keyword*> types)
 	}
 }
 
-map<string, variable*> expand(string chp, map<string, keyword*>	types)
+map<string, variable*> expand(string chp, map<string, keyword*>	types, string tab)
 {
 	map<string, variable*> result;
 	map<string, keyword*>::iterator var_type;
 	map<string, variable*>::iterator mem_var;
-	variable *v = new variable(chp);
+	variable *v = new variable(chp, tab+"\t");
 	string name;
 
 	if ((var_type = types.find(v->type)) != types.end())

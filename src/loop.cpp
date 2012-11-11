@@ -26,6 +26,12 @@ loop::~loop()
 
 void loop::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
 {
+	result.clear();
+	local.clear();
+	global.clear();
+	instrs.clear();
+	states.clear();
+
 	chp = raw.substr(2, raw.length()-3);
 	global = vars;						//The variables this block uses.
 	type = unknown;
@@ -65,7 +71,7 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 			expr = eval.substr(0, k-eval.begin());
 			eval = eval.substr(k-eval.begin()+2);
 
-			instrs.insert(pair<string, instruction>(expr, block(eval, types, global, tab+"\t")));
+			instrs.insert(pair<string, instruction>(expr, block(eval, types, global,  map<string, state>(), tab+"\t")));
 			j = i+1;
 		}
 		else if (depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '[' && *(i+1) == ']') || i == chp.end()))
@@ -81,7 +87,7 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 			expr = eval.substr(0, k-eval.begin());
 			eval = eval.substr(k-eval.begin()+2);
 
-			instrs.insert(pair<string, instruction>(expr, block(eval, types, global, tab+"\t")));
+			instrs.insert(pair<string, instruction>(expr, block(eval, types, global,  map<string, state>(), tab+"\t")));
 			j = i+2;
 		}
 	}

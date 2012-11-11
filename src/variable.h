@@ -19,7 +19,7 @@ struct variable
 {
 	variable();
 	variable(string n, string t, uint16_t w);
-	variable(string chp);
+	variable(string chp, string tab);
 	~variable();
 
 	string		name;		// the name of the instantiated variable
@@ -28,7 +28,7 @@ struct variable
 	state		last;
 
 	variable &operator=(variable v);
-	void parse(string chp);
+	void parse(string chp, string tab);
 };
 
 ostream &operator<<(ostream &os, variable s);

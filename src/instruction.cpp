@@ -304,6 +304,8 @@ state expr_eval(string raw){
 
 void instruction::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
 {
+	result.clear();
+
 	chp = raw;
 
 	string::iterator i;

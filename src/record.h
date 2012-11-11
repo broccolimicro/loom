@@ -19,16 +19,16 @@
 struct record : keyword
 {
 	record();
-	record(string chp, map<string, keyword*> types);
+	record(string chp, map<string, keyword*> types, string tab);
 	~record();
 
 	map<string, variable*> vars;	// the list of member variables that make up this record
 
 	record &operator=(record r);
-	void parse(string chp, map<string, keyword*> types);
+	void parse(string chp, map<string, keyword*> types, string tab);
 };
 
-map<string, variable*> expand(string chp, map<string, keyword*>	types);
+map<string, variable*> expand(string chp, map<string, keyword*>	types, string tab);
 ostream &operator<<(ostream &os, record s);
 
 #endif

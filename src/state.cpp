@@ -436,3 +436,25 @@ state operator>(state s1, state s2)
 	return state("0", false);
 }
 
+state operator||(state s1, state s2)
+{
+	string::reverse_iterator j, k;
+	state result;
+	string a, b;
+
+	for (j = s1.data.rbegin(), k = s2.data.rbegin(); j != s1.data.rend() || k != s2.data.rend();)
+	{
+		a = j != s1.data.rend() ? *j++ : '0';
+		b = k != s2.data.rend() ? *k++ : '0';
+
+		if (a == b)
+			result.data = a + result.data;
+		else
+			result.data = "X" + result.data;
+	}
+
+	result.prs = false;
+
+	return result;
+}
+

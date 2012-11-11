@@ -25,7 +25,7 @@
 struct block : instruction
 {
 	block();
-	block(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab);
+	block(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab);
 	~block();
 
 	map<string, variable*>	local;
@@ -35,7 +35,7 @@ struct block : instruction
 
 	block &operator=(block b);
 
-	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab);
+	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab);
 };
 
 #endif

@@ -1,25 +1,7 @@
-chan channel
+record channel
 {
-	
-	int r;
 	int a;
-
-	void send()
-	{
-		r+;[a];r-;[~a]
-	}
-	
-	void recv()
-	{
-		[r];a+;[~r];a-
-	}
-	
-	int probe()
-	{
-		[   r -> return 1;
-		[] ~r -> return 0;
-		]
-	}
+	int r;
 }
 
 proc fifo(channel l, channel r)
@@ -32,7 +14,7 @@ proc fifo(channel l, channel r)
 
 proc clean_fifo(channel l, channel r)
 {
-	*[1 -> [l.r -> skip] || l.a := 1; [~l.r -> skip] || l.a := 0; r.a := 1 || [r.r -> skip]; r.a := 0 || [~r.r -> skip]]
+	[l.r & ~r.r -> skip]; l.a := 1; [~l.r -> skip]; l.a := 0; r.a := 1; [r.r -> skip]; r.a := 0; [~r.r -> skip]
 }
 
 proc main()

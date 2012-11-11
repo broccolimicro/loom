@@ -101,4 +101,6 @@ space operator>=(state s1, space s2);
 space operator<(state s1, space s2);
 space operator>(state s1, space s2);
 
+int count(space s);
+
 #endif

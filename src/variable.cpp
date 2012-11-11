@@ -24,9 +24,9 @@ variable::variable(string n, string t, uint16_t w)
 	last = "X";
 }
 
-variable::variable(string chp)
+variable::variable(string chp, string tab)
 {
-	parse(chp);
+	parse(chp, tab);
 	last = "X";
 }
 
@@ -47,9 +47,9 @@ variable &variable::operator=(variable v)
 	return *this;
 }
 
-void variable::parse(string chp)
+void variable::parse(string chp, string tab)
 {
-	cout << "\t\tvariable! -> "+chp << endl;
+	cout << tab << "Variable: " << chp << endl;
 
 	int width_start = chp.find_first_of("< ");
 	int name_start = chp.find_first_of("> ");
@@ -61,9 +61,9 @@ void variable::parse(string chp)
 	else
 		width = 0;
 
-	cout << "\t\t\ttype! -> " << type << endl;
-	cout << "\t\t\twidth!-> " << width << endl;
-	cout << "\t\t\tname! -> " << name << endl;
+	cout << tab << "\tType:  " << type << endl;
+	cout << tab << "\tWidth: " << width << endl;
+	cout << tab << "\tName:  " << name << endl;
 }
 
 ostream &operator<<(ostream &os, variable s)

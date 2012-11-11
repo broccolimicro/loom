@@ -691,3 +691,15 @@ space operator>(state s1, space s2)
 	return result;
 }
 
+int count(space s)
+{
+	int result = 0;
+	list<state>::iterator i;
+	for (i = s.states.begin(); i != s.states.end(); i++)
+	{
+		if (i->data == "1" || i->data == "X")
+			result++;
+	}
+
+	return result;
+}

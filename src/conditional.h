@@ -31,4 +31,6 @@ struct conditional : block
 	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab);
 };
 
+map<string, state> guard(string raw, string tab);
+
 #endif

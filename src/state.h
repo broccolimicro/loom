@@ -67,4 +67,6 @@ state operator>=(state s1, state s2);
 state operator<(state s1, state s2);
 state operator>(state s1, state s2);
 
+state operator||(state s1, state s2);
+
 #endif

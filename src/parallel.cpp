@@ -38,6 +38,12 @@ parallel::~parallel()
 
 void parallel::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
 {
+	result.clear();
+	local.clear();
+	global.clear();
+	instrs.clear();
+	states.clear();
+
 	cout << tab << "parallel: " << raw << endl;  		// Output the raw parallel
 
 	global = vars;						//The variables this parallel uses.
@@ -85,7 +91,7 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 			raw_instr = chp.substr(j-chp.begin(), i-j);
 			if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
 			{
-				blk.parse(raw_instr.substr(1, raw_instr.length()-2), types, global, tab+"\t");
+				blk.parse(raw_instr.substr(1, raw_instr.length()-2), types, global,  map<string, state>(), tab+"\t");
 				instrs.push_back(blk);
 				instr = blk;
 			}
