@@ -62,6 +62,7 @@
 #include "process.h"
 #include "channel.h"
 
+
 /* This structure describes a whole program. It contains a record of all
  * of the types described in this program and all of the global variables
  * defined in this program. It also contains a list of all of the errors

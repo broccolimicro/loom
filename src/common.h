@@ -26,6 +26,7 @@ bool nc(char c);
 bool oc(char c);
 bool sc(char c);
 
+
 template <typename T>
 string to_string(T n)
 {

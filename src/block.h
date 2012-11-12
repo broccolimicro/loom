@@ -31,7 +31,7 @@ struct block : instruction
 	map<string, variable*>	local;
 	map<string, variable*>	global;
 	list<instruction>		instrs;		// an ordered list of instructions in block
-	map<string, space>		states;		// the state space of this block. format "i####" or "o####"
+	map<string, space>		states;		// (indexed by variable) the state space of this block. format "i####" or "o####"
 
 	block &operator=(block b);
 
