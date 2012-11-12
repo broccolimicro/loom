@@ -226,6 +226,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		}
 	}
 
+	map<string, state> states_at_begin;
 	// Loop through the instructions and add a state for each instruction
 	for (ii = instrs.begin(), di = delta_out.begin(); ii != instrs.end() && di != delta_out.end(); ii++, di++)
 	{
@@ -248,7 +249,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 						tstate.data += "0";
 					if(l->second.data[0] == '='){
 						cout << "Expr eval here!" << l->second << endl;
-						tstate.data += expr_eval(l->second.data.substr(1)).data;
+						tstate.data += expr_eval(l->second.data.substr(1),states_at_begin).data;
 					}else{
 						cout << "No expr eval here." << l->second << endl;
 						tstate.data += l->second.data;
@@ -258,15 +259,17 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				else{
 					if(l->second.data[0] == '='){
 						cout << "Expr eval here!"<< l->second << endl;
-						tstate = expr_eval(l->second.data.substr(1));
+						tstate = expr_eval(l->second.data.substr(1),states_at_begin);
 					}else{
 						cout << "No expr eval here!"<< l->second << endl;
-						tstate = l->second.data;
+						tstate = l->second;
 					}
 				}
 
 				// this is the state change we are looking for.
 				states[vi->first].states.push_back(tstate);
+				states_at_begin[vi->first] = tstate;	//*
+				cout << "I declare  "<< vi->first << " is now " << tstate <<endl;
 			}
 			// we need to X the variable out because there was a delta and this variable
 			// is an input variable.
@@ -383,7 +386,12 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 }
 
 
-state expr_eval(string raw){
+state expr_eval(string raw, map<string, state> init){
+	//Tested to be fairly functional:
+	//Adds, subtracts
+	//Multiplies
+	//Ands and Ors
+	//Variables
 
 	// TODO:
 	//Add paren!
@@ -395,7 +403,7 @@ state expr_eval(string raw){
 
 	// Supported operators: + - * / & | << >> == != <= >= < >
 	//Find occurrences in strings!
-	// Weakest bind set below
+	// Weakest bind set below:
 	// |
 	int first_or = raw.find("|");
 
@@ -451,14 +459,14 @@ state expr_eval(string raw){
 	//Any ors?
 	if(first_or != raw.npos){
 		cout << "Doing an or between " + raw.substr(0,first_or) + " and " +raw.substr(first_or+1) << endl;
-		result = expr_eval(raw.substr(0,first_or)) | expr_eval(raw.substr(first_or+1));
+		result = expr_eval(raw.substr(0,first_or), init) | expr_eval(raw.substr(first_or+1), init);
 		cout << "Result of or is: " + result.data << endl;
 		return result;
 	}
 	//Any ands?
 	if(first_and != raw.npos){
 		cout << "Doing an and between " + raw.substr(0,first_and) + " and " +raw.substr(first_and+1) << endl;
-		result = expr_eval(raw.substr(0,first_and)) & expr_eval(raw.substr(first_and+1));
+		result = expr_eval(raw.substr(0,first_and), init) & expr_eval(raw.substr(first_and+1), init);
 		cout << "Result of and is: " + result.data << endl;
 		return result;
 	}
@@ -466,12 +474,12 @@ state expr_eval(string raw){
 	if(first_comp != raw.npos){
 		if(raw[first_comp] == '='){		//It is a '=='!
 			cout << "Doing an == between " + raw.substr(0,first_comp) + " and " +raw.substr(first_comp+2) << endl;
-			result = expr_eval(raw.substr(0,first_comp)) == expr_eval(raw.substr(first_comp+2));
+			result = expr_eval(raw.substr(0,first_comp), init) == expr_eval(raw.substr(first_comp+2), init);
 			cout << "Result of == is: " + result.data << endl;
 			return result;
 		}else{							//It is a '!='!
 			cout << "Doing an != between " + raw.substr(0,first_comp) + " and " +raw.substr(first_comp+2) << endl;
-			result = expr_eval(raw.substr(0,first_comp)) != expr_eval(raw.substr(first_comp+2));
+			result = expr_eval(raw.substr(0,first_comp), init) != expr_eval(raw.substr(first_comp+2), init);
 			cout << "Result of != is: " + result.data << endl;
 			return result;
 		}
@@ -480,12 +488,12 @@ state expr_eval(string raw){
 	if(first_ltgtequal != raw.npos){
 		if(raw[first_ltgtequal] == '>'){		//It is a '>='!
 			cout << "Doing an >= between " + raw.substr(0,first_ltgtequal) + " and " +raw.substr(first_ltgtequal+2) << endl;
-			result = expr_eval(raw.substr(0,first_ltgtequal)) >= expr_eval(raw.substr(first_ltgtequal+2));
+			result = expr_eval(raw.substr(0,first_ltgtequal), init) >= expr_eval(raw.substr(first_ltgtequal+2), init);
 			cout << "Result of >= is: " + result.data << endl;
 			return result;
 		}else{							//It is a '<='!
 			cout << "Doing an <= between " + raw.substr(0,first_ltgtequal) + " and " +raw.substr(first_ltgtequal+2) << endl;
-			result = expr_eval(raw.substr(0,first_ltgtequal)) <= expr_eval(raw.substr(first_ltgtequal+2));
+			result = expr_eval(raw.substr(0,first_ltgtequal), init) <= expr_eval(raw.substr(first_ltgtequal+2), init);
 			cout << "Result of <= is: " + result.data << endl;
 			return result;
 		}
@@ -496,12 +504,12 @@ state expr_eval(string raw){
 	if(first_shift != raw.npos){
 		if(raw[first_shift] == '>'){		//It is a '>>'!
 			cout << "Doing an >> between " + raw.substr(0,first_shift) + " and " +raw.substr(first_shift+2) << endl;
-			result = expr_eval(raw.substr(0,first_shift)) >> expr_eval(raw.substr(first_shift+2));
+			result = expr_eval(raw.substr(0,first_shift), init) >> expr_eval(raw.substr(first_shift+2), init);
 			cout << "Result of >> is: " + result.data << endl;
 			return result;
 		}else{							//It is a '<<'!
 			cout << "Doing an << between " + raw.substr(0,first_shift) + " and " +raw.substr(first_shift+2) << endl;
-			result = expr_eval(raw.substr(0,first_shift)) << expr_eval(raw.substr(first_shift+2));
+			result = expr_eval(raw.substr(0,first_shift), init) << expr_eval(raw.substr(first_shift+2), init);
 			cout << "Result of << is: " + result.data << endl;
 			return result;
 		}
@@ -511,19 +519,19 @@ state expr_eval(string raw){
 		if (raw[first_addsub] == '+'){		//It is a plus!
 			//recurse splitting the first occurrence of the weakest binder.
 			cout << "Doing an add between " + raw.substr(0,first_addsub) + " and " +raw.substr(first_addsub+1) << endl;
-			result = expr_eval(raw.substr(0,first_addsub)) + expr_eval(raw.substr(first_addsub+1));
+			result = expr_eval(raw.substr(0,first_addsub), init) + expr_eval(raw.substr(first_addsub+1), init);
 			cout << "Result of add is: " + result.data << endl;
 			return result;
 		}else{								//It is a minus sign!
 			//We need to handle whether this is a minus or a negative
 			if(( first_addsub == 0 ) || (raw[first_addsub-1] == '+') || (raw[first_addsub-1] == '-') || (raw[first_addsub-1] == '*') || (raw[first_addsub-1] == '/')){
 				raw = raw.substr(0,first_addsub) + "0" + raw.substr(first_addsub);
-				return expr_eval(raw);
+				return expr_eval(raw, init);
 				// a * -b + c*d
 			}else{			//This negative does not need to be 'fixed'
 				//recurse splitting the first occurrence of the weakest binder.
 				cout << "Doing an sub between " + raw.substr(0,first_addsub) + " and " +raw.substr(first_addsub+1) << endl;
-				result = expr_eval(raw.substr(0,first_addsub)) - expr_eval(raw.substr(first_addsub+1));
+				result = expr_eval(raw.substr(0,first_addsub), init) - expr_eval(raw.substr(first_addsub+1), init);
 				cout << "Result of sub is: " + result.data << endl;
 				return result;
 			}
@@ -533,13 +541,13 @@ state expr_eval(string raw){
 		if(raw[first_muldiv] == '*'){	//It is a mul!
 			//recurse splitting the first occurrence of the weakest binder.
 			cout << "Doing an mul between " + raw.substr(0,first_muldiv) + " and " +raw.substr(first_muldiv+1) << endl;
-			result = expr_eval(raw.substr(0,first_muldiv)) * expr_eval(raw.substr(first_muldiv+1));
+			result = expr_eval(raw.substr(0,first_muldiv), init) * expr_eval(raw.substr(first_muldiv+1), init);
 			cout << "Result of mul is: " + result.data << endl;
 			return result;
 		}else{							//It is a div!
 			//recurse splitting the first occurrence of the weakest binder.
 			cout << "Doing an div between " + raw.substr(0,first_muldiv) + " and " +raw.substr(first_muldiv+1) << endl;
-			result = expr_eval(raw.substr(0,first_muldiv)) / expr_eval(raw.substr(first_muldiv+1));
+			result = expr_eval(raw.substr(0,first_muldiv), init) / expr_eval(raw.substr(first_muldiv+1), init);
 			cout << "Result of div is: " + result.data << endl;
 			return result;
 		}
@@ -548,8 +556,8 @@ state expr_eval(string raw){
 	//If the recursion gets down to here, it means we are at a 'basecase' i.e. a variable or number
 
 	if( ac(raw[0]) ){		//Return a variable name!
-		cout << "Parsing a variable!" + raw << endl;
-		return state(raw, true);
+		cout << "Parsing a variable!" + raw + " = " << init[raw]<< endl;
+		return init[raw];
 	}else{					//Return a number
 		// If this is a multi-bit number, then we need to make sure it is correctly parsed
 		if (raw[1] == 'x')			// hexadecimal e.g. 0xFEEDFACE

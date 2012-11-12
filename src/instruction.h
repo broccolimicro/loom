@@ -44,6 +44,6 @@ public:
 
 	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab);
 };
-state expr_eval(string raw);
+state expr_eval(string raw, map<string, state> init);
 
 #endif
