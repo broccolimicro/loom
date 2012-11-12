@@ -10,6 +10,7 @@
 #include "conditional.h"
 #include "loop.h"
 #include "parallel.h"
+#include "rule.h"
 
 block::block()
 {
@@ -283,33 +284,70 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		result.insert(pair<string, state>(vi->first, *(states[vi->first].states.rbegin())));
 	}
 
+	//
+	map<string, space> invars;
+	int bititer;
+	int icount, pcount, ncount;
+	int micount, mpcount, mncount;
+	space negspace, posspace;
+	rule r;
+
+	for (si = states.begin(); si != states.end(); si++)
+	{
+		for (bititer = 0; bititer < global.find(si->first)->second->width; bititer++)
+		{
+			posspace = up(si->second[bititer]);
+			negspace = down(si->second[bititer]);
+
+			cout << posspace << "\t" << count(posspace) << "\t" << strict_count(posspace) << endl;
+			cout << negspace << "\t" << count(negspace) << "\t" << strict_count(negspace) << endl;
+
+			invars = states;
+			invars.erase(si->first);
+			r.clear(si->second.states.size());
+			r.var = si->first;
+
+			for (sj = invars.begin(); sj != invars.end(); sj++)
+			{
+
+			}
+		}
+	}
+
 	// Generate the production rules
-	string rule;
-	string oldstate = "";
+	/*string oldstate = "";
 	int cmin = 99999999;
 	int c;
 	int ins_idx;
 	int tmp_idx;
-	space rspace, tspace;
+	space *rspace, tspace;
 	bool first = true;
+	char op;
 
 	for (si = states.begin(); si != states.end(); si++)
 	{
+		cout << up(si->second) << endl;
+		cout << down(si->second) << endl;
+		r.clear(si->second.states.size());
+		r.var = si->first;
 		ins_idx = 0;
 		for (a = si->second.states.begin(); a != si->second.states.end(); a++)
 		{
-			rspace.states.clear();
-			rspace.var = "";
 			first = true;
 			if (a->prs && a->data != oldstate)
 			{
-				rule = "->" + si->first;
 				if ((*a == state("0",false)).data == "1")
-					rule += "-";
+				{
+					rspace = &r.minus;
+					op = '-';
+				}
 				else
-					rule += "+";
+				{
+					rspace = &r.plus;
+					op = '+';
+				}
 
-				cmin = 99999999;
+				cmin = si->second.states.size();
 				for (sj = states.begin(); sj != states.end(); sj++)
 				{
 					if (sj != si)
@@ -321,25 +359,27 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 						if (first)
 							c = count(tspace);
 						else
-							c = count(rspace & tspace);
-						if (c > 0 && c < cmin && rspace.var.find(tspace.var) == rspace.var.npos && b->data.find_first_of("X") == b->data.npos)
+							c = count((*rspace) & tspace);
+						if (c > 0 && c < cmin && rspace->var.find(tspace.var) == rspace->var.npos && b->data.find_first_of("X") == b->data.npos)
 						{
 							cmin = c;
 							if (first)
-								rspace = tspace;
+								*rspace = tspace;
 							else
-								rspace = rspace & tspace;
+								*rspace = *rspace & tspace;
 							first = false;
 						}
 					}
 				}
-				cout << rspace.var << rule << " " << cmin << endl;
+				cout << rspace->var << " -> " << r.var << op << " " << cmin << "/" << count(si->second == *a) << endl;
+				cout << *rspace << endl;
+				cout << r.check() << endl << endl;
 			}
 			ins_idx++;
 			oldstate = a->data;
 		}
 		cout << endl;
-	}
+	}*/
 }
 
 

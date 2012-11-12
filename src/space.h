@@ -45,6 +45,8 @@ struct space
 
 	space &operator<<=(int n);
 	space &operator>>=(int n);
+
+	space operator[](int i);
 };
 
 ostream &operator<<(ostream &os, space s);
@@ -80,6 +82,9 @@ space operator~(space s);
 space operator<<(space s, int n);
 space operator>>(space s, int n);
 
+space operator<(space s1, int n);
+space operator>(space s1, int n);
+
 space operator==(space s1, space s2);
 space operator!=(space s1, space s2);
 space operator<=(space s1, space s2);
@@ -102,5 +107,8 @@ space operator<(state s1, space s2);
 space operator>(state s1, space s2);
 
 int count(space s);
+int strict_count(space s);
+space up(space s);
+space down(space s);
 
 #endif

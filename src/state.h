@@ -41,6 +41,8 @@ struct state
 
 	state &operator<<=(int n);
 	state &operator>>=(int n);
+
+	state operator[](int i);
 };
 
 ostream &operator<<(ostream &os, state s);

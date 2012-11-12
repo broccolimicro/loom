@@ -91,6 +91,15 @@ state &state::operator>>=(int n)
 	return *this;
 }
 
+state state::operator[](int i)
+{
+	stringstream str;
+	string s;
+	str << data[i];
+	str >> s;
+	return state(s, prs);
+}
+
 ostream &operator<<(ostream &os, state s)
 {
 	os << (s.prs ? "o" : "i") << s.data;
