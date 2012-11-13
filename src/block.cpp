@@ -394,10 +394,10 @@ state expr_eval(string raw, map<string, state> init){
 	//Ands and Ors
 	//Variables
 	//Parens
+	//Nested Parens
 
 	//Known problems to fix:
-	//Sometimes parens with adds work weirdly.
-	// Mul with 0 state state fails hardcore.
+	// Mul with 0 fails due to state state definitions
 	//Test harder. Some kinks to work out.
 
 	// TODO:
@@ -465,7 +465,7 @@ state expr_eval(string raw, map<string, state> init){
 	//Deal with parens
 	if(first_paren != raw.npos && last_paren != raw.npos){
 		cout << "Paren is " + raw.substr(0,first_paren) + " paren start " + raw.substr(first_paren + 1,last_paren - 3) + " paren end " +raw.substr(last_paren + 1) << endl;
-		raw = raw.substr(0,first_paren) + expr_eval(raw.substr(first_paren + 1,last_paren - 3), init).data + raw.substr(last_paren + 1);
+		raw = raw.substr(0,first_paren) + "0b" + expr_eval(raw.substr(first_paren + 1,last_paren - 3), init).data + raw.substr(last_paren + 1);
 		cout << "The result of paren is:  " + raw << endl;
 		result = expr_eval(raw,init);
 		return result;

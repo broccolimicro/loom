@@ -152,6 +152,7 @@ state operator-(state s1, state s2)
 	return s1 + ~s2 + state("1", false);
 }
 
+//Add corner case when one operand == 0
 state operator*(state s1, state s2)
 {
 	state result;
