@@ -758,7 +758,7 @@ space up(space s)
 		str = "";
 		for (si = i->data.begin(), sj = j->data.begin(); si != i->data.end() && sj != j->data.end(); si++, sj++)
 		{
-			if (*sj == '1' && *si != '1')
+			if (*sj == '1' && *si != '1' && j->prs)
 				str = str + "1";
 			else if (*sj == '1' && *si == '1')
 				str = str + "X";
@@ -787,7 +787,7 @@ space down(space s)
 		str = "";
 		for (si = i->data.begin(), sj = j->data.begin(); si != i->data.end() && sj != j->data.end(); si++, sj++)
 		{
-			if (*sj == '0' && *si != '0')
+			if (*sj == '0' && *si != '0' && j->prs)
 				str = str + "1";
 			else if (*sj == '0' && *si == '0')
 				str = str + "X";
@@ -796,6 +796,16 @@ space down(space s)
 		}
 		result.states.push_back(state(str, j->prs));
 	}
+
+	return result;
+}
+
+bool drive(space s)
+{
+	bool result = false;
+	list<state>::iterator i;
+	for (i = s.states.begin(); i != s.states.end(); i++)
+		result = result || i->prs;
 
 	return result;
 }

@@ -187,7 +187,10 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				{
 					delta |= ((l->second.prs) && (l->second.data != vi->second->last.data));
 					vi->second->last = l->second;
-					vi->second->width = max(vi->second->width, (uint16_t)(l->second.data.length()));
+					if (l->second.data[0] == '=')
+						vi->second->width = max(vi->second->width, (uint16_t)(l->second.data.length()-1));
+					else
+						vi->second->width = max(vi->second->width, (uint16_t)(l->second.data.length()));
 					if (affected.find(vi->first) == affected.end())
 						affected.insert(pair<string, variable*>(vi->first, vi->second));
 				}
@@ -289,30 +292,162 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 	//
 	map<string, space> invars;
-	int bititer;
-	int icount, pcount, ncount;
-	int micount, mpcount, mncount;
+	int bi0, bi1;
+	int scount, ccount;
+	int mscount, mcount;
 	space negspace, posspace;
+	space tempspace, setspace;
+	string invar;
 	rule r;
+	bool firstpos, firstneg;
 
 	for (si = states.begin(); si != states.end(); si++)
 	{
-		for (bititer = 0; bititer < global.find(si->first)->second->width; bititer++)
+		for (bi0 = 0; bi0 < global.find(si->first)->second->width; bi0++)
 		{
-			posspace = up(si->second[bititer]);
-			negspace = down(si->second[bititer]);
-
-			cout << posspace << "\t" << count(posspace) << "\t" << strict_count(posspace) << endl;
-			cout << negspace << "\t" << count(negspace) << "\t" << strict_count(negspace) << endl;
-
-			invars = states;
-			invars.erase(si->first);
-			r.clear(si->second.states.size());
-			r.var = si->first;
-
-			for (sj = invars.begin(); sj != invars.end(); sj++)
+			if (drive(si->second[bi0]))
 			{
+				posspace = up(si->second[bi0]);
+				negspace = down(si->second[bi0]);
 
+				cout << posspace << "\t" << count(posspace) << "\t" << strict_count(posspace) << endl;
+
+				r.clear(si->second.states.size());
+				r.var = si->first + to_string(bi0);
+
+				mscount = strict_count(posspace);
+				mcount = posspace.states.size();
+
+				invars.clear();
+				for (sj = states.begin(); sj != states.end(); sj++)
+				{
+					for (bi1 = 0; bi1 < global.find(sj->first)->second->width; bi1++)
+						if (sj != si || bi0 != bi1)
+							invars.insert(pair<string, space>(sj->first + to_string(bi1), sj->second[bi1]));
+				}
+
+				firstpos = true;
+				firstneg = true;
+
+				setspace.var = "loop";
+				while (invars.size() > 0 && r.plus.var.find(setspace.var) == r.plus.var.npos && count(r.plus) > count(posspace))
+				{
+					setspace = r.plus;
+
+					for (sj = invars.begin(); sj != invars.end(); sj++)
+					{
+						if (firstpos)
+							tempspace = sj->second;
+						else
+							tempspace = r.plus & sj->second;
+
+						scount = strict_count(posspace & tempspace);
+						ccount = count(tempspace);
+
+						if (ccount < mcount && scount >= mscount && r.plus.var.find(tempspace.var) == r.plus.var.npos)
+						{
+							setspace = tempspace;
+							invar = sj->first;
+							mcount = ccount;
+							mscount = scount;
+						}
+
+						cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+
+						if (firstpos)
+							tempspace = ~sj->second;
+						else
+							tempspace = r.plus & (~sj->second);
+
+						scount = strict_count(posspace & tempspace);
+						ccount = count(tempspace);
+
+						if (ccount < mcount && scount >= mscount && r.plus.var.find(tempspace.var) == r.plus.var.npos)
+						{
+							setspace = tempspace;
+							invar = sj->first;
+							mcount = ccount;
+							mscount = scount;
+						}
+
+						cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+					}
+
+					if (r.plus.var.find(setspace.var) == r.plus.var.npos)
+					{
+						r.plus = setspace;
+						invars.erase(invar);
+						firstpos = false;
+					}
+					cout << "loop: " << invar << endl;
+				}
+
+				mscount = strict_count(negspace);
+				mcount = negspace.states.size();
+
+				invars.clear();
+				for (sj = states.begin(); sj != states.end(); sj++)
+					for (bi1 = 0; bi1 < global.find(sj->first)->second->width; bi1++)
+						if (sj != si || bi0 != bi1)
+							invars.insert(pair<string, space>(sj->first + to_string(bi1), sj->second[bi1]));
+
+				cout << negspace << "\t" << count(negspace) << "\t" << strict_count(negspace) << endl;
+
+				setspace.var = "loop";
+				while (invars.size() > 0 && r.minus.var.find(setspace.var) == r.minus.var.npos && count(r.minus) > count(negspace))
+				{
+					setspace = r.minus;
+
+					for (sj = invars.begin(); sj != invars.end(); sj++)
+					{
+						if (firstneg)
+							tempspace = sj->second;
+						else
+							tempspace = r.minus & (sj->second);
+
+						scount = strict_count(negspace & tempspace);
+						ccount = count(tempspace);
+
+						if (ccount < mcount && scount >= mscount && r.minus.var.find(tempspace.var) == r.minus.var.npos)
+						{
+							setspace = tempspace;
+							invar = sj->first;
+							mcount = ccount;
+							mscount = scount;
+						}
+
+						cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+
+						if (firstneg)
+							tempspace = ~sj->second;
+						else
+							tempspace = r.minus & (~sj->second);
+
+						scount = strict_count(negspace & (tempspace < 1));
+						ccount = count(tempspace);
+
+						if (ccount < mcount && scount >= mscount && r.minus.var.find(tempspace.var) == r.minus.var.npos)
+						{
+							setspace = tempspace;
+							invar = sj->first;
+							mcount = ccount;
+							mscount = scount;
+						}
+
+						cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+					}
+
+					if (r.minus.var.find(setspace.var) == r.minus.var.npos)
+					{
+						r.minus = setspace;
+						invars.erase(invar);
+						firstneg = false;
+					}
+					cout << "loop: " << invar << endl;
+				}
+
+				cout << r.plus.var << " -> " << r.var << "+" << endl;
+				cout << r.minus.var << " -> " << r.var << "-" << endl;
 			}
 		}
 	}

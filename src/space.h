@@ -110,5 +110,6 @@ int count(space s);
 int strict_count(space s);
 space up(space s);
 space down(space s);
+bool drive(space s);
 
 #endif

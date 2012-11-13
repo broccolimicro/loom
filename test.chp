@@ -14,7 +14,7 @@ proc fifo(channel l, channel r)
 
 proc clean_fifo(channel l, channel r)
 {
-	[l.r & ~r.r -> skip]; l.a := l.r + r.r; [~l.r -> skip]; l.a := 1 + (3 * 2) + 4; r.a := 1; [r.r -> skip]; r.a := 0; [~r.r -> skip]
+	[l.r -> skip]; l.a := 1; [~l.r -> skip]; l.a := 0; r.a := 1; [r.r -> skip]; r.a := 0; [~r.r -> skip]
 }
 
 proc main()
