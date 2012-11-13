@@ -387,15 +387,20 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 
 state expr_eval(string raw, map<string, state> init){
+
 	//Tested to be fairly functional:
 	//Adds, subtracts
 	//Multiplies
 	//Ands and Ors
 	//Variables
+	//Parens
+
+	//Known problems to fix:
+	//Sometimes parens with adds work weirdly.
+	// Mul with 0 state state fails hardcore.
+	//Test harder. Some kinks to work out.
 
 	// TODO:
-	//Add paren!
-	//Read variables
 	//Less than, greater than
 	//Add negative support for variables before operators besides +- (ex. a*-b should not be a*0-b)
 	//NEEDS TESTING!
@@ -450,11 +455,22 @@ state expr_eval(string raw, map<string, state> init){
 	int first_muldiv = raw.find_first_of("*/");
 
 	//()
-	//Not yet supported
+	int first_paren = raw.find_first_of("(");
+	int last_paren = raw.find_last_of(")");
 
 	//Strongest bind set above
 
 	state result; 	//The value we are to return.
+
+	//Deal with parens
+	if(first_paren != raw.npos && last_paren != raw.npos){
+		cout << "Paren is " + raw.substr(0,first_paren) + " paren start " + raw.substr(first_paren + 1,last_paren - 3) + " paren end " +raw.substr(last_paren + 1) << endl;
+		raw = raw.substr(0,first_paren) + expr_eval(raw.substr(first_paren + 1,last_paren - 3), init).data + raw.substr(last_paren + 1);
+		cout << "The result of paren is:  " + raw << endl;
+		result = expr_eval(raw,init);
+		return result;
+
+	}
 
 	//Any ors?
 	if(first_or != raw.npos){
