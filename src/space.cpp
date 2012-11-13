@@ -119,7 +119,10 @@ space &space::operator>>=(int n)
 space space::operator[](int i)
 {
 	space result;
-	result.var = var + to_string(i);
+	result.var = var;
+	if (states.begin()->data.length() > 1)
+		result.var += to_string(i);
+
 	list<state>::iterator j;
 	for (j = states.begin(); j != states.end(); j++)
 		result.states.push_back((*j)[i]);

@@ -315,7 +315,9 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				cout << posspace << "\t" << count(posspace) << "\t" << strict_count(posspace) << endl;
 
 				r.clear(si->second.states.size());
-				r.var = si->first + to_string(bi0);
+				r.var = si->first;
+				if (global.find(si->first)->second->width > 1)
+					r.var += to_string(bi0);
 
 				mscount = strict_count(posspace);
 				mcount = posspace.states.size() - count(posspace);
