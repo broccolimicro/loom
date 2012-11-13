@@ -318,7 +318,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				r.var = si->first + to_string(bi0);
 
 				mscount = strict_count(posspace);
-				mcount = posspace.states.size();
+				mcount = posspace.states.size() - count(posspace);
 
 				invars.clear();
 				for (sj = states.begin(); sj != states.end(); sj++)
@@ -346,7 +346,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 							tempspace = r.plus & sj->second;
 
 						scount = strict_count(posspace & tempspace);
-						ccount = count(tempspace);
+						ccount = count(tempspace) - count(tempspace & posspace);
 
 						if (ccount < mcount && scount >= mscount && r.plus.var.find(tempspace.var) == r.plus.var.npos)
 						{
@@ -364,7 +364,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 							tempspace = r.plus & (~sj->second);
 
 						scount = strict_count(posspace & tempspace);
-						ccount = count(tempspace);
+						ccount = count(tempspace) - count(tempspace & posspace);
 
 						if (ccount < mcount && scount >= mscount && r.plus.var.find(tempspace.var) == r.plus.var.npos)
 						{
@@ -386,12 +386,12 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 					}
 				}
 
-				cout << endl << r.plus.var << " -> " << r.var << "+" << "\t" << r.plus << "\t" << mcount << "/" << count(posspace) << "\t" << mscount << "/" << strict_count(posspace) << endl;
+				cout << endl << r.plus.var << " -> " << r.var << "+" << "\t" << r.plus << "\t" << mcount << "/" << posspace.states.size() - count(posspace) << "\t" << mscount << "/" << strict_count(posspace) << endl;
 
 				cout << "-----------------------------------------------" << endl;
 
 				mscount = strict_count(negspace);
-				mcount = negspace.states.size();
+				mcount = negspace.states.size() - count(negspace);
 
 				invars.clear();
 				for (sj = states.begin(); sj != states.end(); sj++)
@@ -416,7 +416,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 							tempspace = r.minus & (sj->second);
 
 						scount = strict_count(negspace & tempspace);
-						ccount = count(tempspace);
+						ccount = count(tempspace) - count(tempspace & negspace);
 
 						if (ccount < mcount && scount >= mscount && r.minus.var.find(tempspace.var) == r.minus.var.npos)
 						{
@@ -434,7 +434,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 							tempspace = r.minus & (~sj->second);
 
 						scount = strict_count(negspace & (tempspace < 1));
-						ccount = count(tempspace);
+						ccount = count(tempspace) - count(tempspace & negspace);
 
 						if (ccount < mcount && scount >= mscount && r.minus.var.find(tempspace.var) == r.minus.var.npos)
 						{
@@ -456,7 +456,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 					}
 				}
 
-				cout << endl << r.minus.var << " -> " << r.var << "-" << "\t" << r.minus << "\t" << mcount << "/" << count(negspace) << "\t" << mscount << "/" << strict_count(negspace) << endl;
+				cout << endl << r.minus.var << " -> " << r.var << "-" << "\t" << r.minus << "\t" << mcount << "/" << negspace.states.size() - count(negspace) << "\t" << mscount << "/" << strict_count(negspace) << endl;
 			}
 		}
 	}
