@@ -276,8 +276,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			}
 			// we need to X the variable out because there was a delta and this variable
 			// is an input variable.
-			else if ((*di) && !states[vi->first].states.rbegin()->prs)
-				states[vi->first].states.push_back(xstate);
+			//else if ((*di) && !states[vi->first].states.rbegin()->prs)
+			//	states[vi->first].states.push_back(xstate);
 			// there is no delta in the output variables or this is an output variable
 			else
 				states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
@@ -299,7 +299,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	space tempspace, setspace;
 	string invar;
 	rule r;
-	bool firstpos, firstneg;
+	bool firstpos, firstneg, found;
 
 	for (si = states.begin(); si != states.end(); si++)
 	{
@@ -307,6 +307,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		{
 			if (drive(si->second[bi0]))
 			{
+				cout << "================Production Rule================" << endl;
+				cout << "+++++++++++++++++++++++++++++++++++++++++++++++" << endl;
 				posspace = up(si->second[bi0]);
 				negspace = down(si->second[bi0]);
 
@@ -329,11 +331,13 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				firstpos = true;
 				firstneg = true;
 
-				setspace.var = "loop";
-				while (invars.size() > 0 && r.plus.var.find(setspace.var) == r.plus.var.npos && count(r.plus) > count(posspace))
+				found = true;
+				while (invars.size() > 0 && found && count(r.plus) > count(posspace))
 				{
+					cout << "...................Iteration..................." << endl;
 					setspace = r.plus;
 
+					found = false;
 					for (sj = invars.begin(); sj != invars.end(); sj++)
 					{
 						if (firstpos)
@@ -378,9 +382,13 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 						r.plus = setspace;
 						invars.erase(invar);
 						firstpos = false;
+						found = true;
 					}
-					cout << "loop: " << invar << endl;
 				}
+
+				cout << endl << r.plus.var << " -> " << r.var << "+" << "\t" << r.plus << "\t" << mcount << "/" << count(posspace) << "\t" << mscount << "/" << strict_count(posspace) << endl;
+
+				cout << "-----------------------------------------------" << endl;
 
 				mscount = strict_count(negspace);
 				mcount = negspace.states.size();
@@ -393,11 +401,13 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 				cout << negspace << "\t" << count(negspace) << "\t" << strict_count(negspace) << endl;
 
-				setspace.var = "loop";
-				while (invars.size() > 0 && r.minus.var.find(setspace.var) == r.minus.var.npos && count(r.minus) > count(negspace))
+				found = true;
+				while (invars.size() > 0 && found && count(r.minus) > count(negspace))
 				{
-					setspace = r.minus;
+					cout << "...................Iteration..................." << endl;
 
+					setspace = r.minus;
+					found = false;
 					for (sj = invars.begin(); sj != invars.end(); sj++)
 					{
 						if (firstneg)
@@ -442,12 +452,11 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 						r.minus = setspace;
 						invars.erase(invar);
 						firstneg = false;
+						found = true;
 					}
-					cout << "loop: " << invar << endl;
 				}
 
-				cout << r.plus.var << " -> " << r.var << "+" << endl;
-				cout << r.minus.var << " -> " << r.var << "-" << endl;
+				cout << endl << r.minus.var << " -> " << r.var << "-" << "\t" << r.minus << "\t" << mcount << "/" << count(negspace) << "\t" << mscount << "/" << strict_count(negspace) << endl;
 			}
 		}
 	}
