@@ -20,8 +20,12 @@ struct rule
 	space plus;
 	space minus;
 
+	rule &operator=(rule s);
+
 	int check();
 	void clear(int n);
 };
+
+ostream &operator<<(ostream &os, rule r);
 
 #endif

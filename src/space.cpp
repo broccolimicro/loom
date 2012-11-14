@@ -747,12 +747,18 @@ int strict_count(space s)
 
 int delta_count(space s)
 {
-	/*int cnt = 0;
-	for (i = s.states.begin(); j != s.states.end(); i++, j++)
+	list<state>::iterator i;
+	string last = "";
+	int cnt = 0;
+
+	for (i = s.states.begin(); i != s.states.end(); i++)
 	{
-		if ((*sj == '0' && *si == '1') || (*sj == '0' && *si == 'X'))
+		if (i->data == "1" && last != "1" && i->prs)
 			cnt++;
-	}*/
+		last = i->data;
+	}
+
+	return cnt;
 }
 
 space up(space s)
@@ -791,6 +797,7 @@ space up(space s, int idx)
 	string str;
 	string::iterator si, sj;
 	int cnt = 0;
+	bool one = false;
 
 	result.var = s.var + "+";
 
@@ -804,13 +811,21 @@ space up(space s, int idx)
 		{
 			if (*sj == '1' && *si != '1' && j->prs && cnt == idx)
 				str = str + "1";
-			else if (*sj == '1' && *si == '1' && cnt == idx)
+			else if (*sj == '1' && *si != '1' && j->prs && cnt != idx)
+				str = str + "X";
+			else if (*sj == '1' && *si == '1')
 				str = str + "X";
 			else
 				str = str + "0";
 
-			if ((*sj == '0' && *si == '1') || (*sj == '0' && *si == 'X'))
+			if (*sj == '1')
+				one = true;
+
+			if (*sj == '0' && one)
+			{
 				cnt++;
+				one = false;
+			}
 		}
 		result.states.push_back(state(str, j->prs));
 	}
@@ -854,6 +869,7 @@ space down(space s, int idx)
 	string str;
 	string::iterator si, sj;
 	int cnt = 0;
+	bool one = false;
 	result.var = s.var + "-";
 
 	j = s.states.begin();
@@ -866,13 +882,21 @@ space down(space s, int idx)
 		{
 			if (*sj == '0' && *si != '0' && j->prs && cnt == idx)
 				str = str + "1";
-			else if (*sj == '0' && *si == '0' && cnt == idx)
+			else if (*sj == '0' && *si != '0' && j->prs && cnt != idx)
+				str = str + "X";
+			else if (*sj == '0' && *si == '0')
 				str = str + "X";
 			else
 				str = str + "0";
 
-			if ((*sj == '1' && *si == '0') || (*sj == '1' && *si == 'X'))
+			if (*sj == '1')
+				one = true;
+
+			if (*sj == '0' && one)
+			{
 				cnt++;
+				one = false;
+			}
 		}
 		result.states.push_back(state(str, j->prs));
 	}

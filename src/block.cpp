@@ -276,8 +276,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			}
 			// we need to X the variable out because there was a delta and this variable
 			// is an input variable.
-			//else if ((*di) && !states[vi->first].states.rbegin()->prs)
-			//	states[vi->first].states.push_back(xstate);
+			else if ((*di) && !states[vi->first].states.rbegin()->prs)
+				states[vi->first].states.push_back(xstate);
 			// there is no delta in the output variables or this is an output variable
 			else
 				states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
@@ -292,27 +292,28 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 	// Generate the production rules
 	map<string, space> invars;
-	int bi0, bi1;
+	int bi0, bi1, o;
 	int scount, ccount;
 	int mscount, mcount;
 	space negspace, posspace;
 	space tempspace, setspace;
 	string invar;
-	rule r;
+	rule r, f;
 	bool firstpos, firstneg, found;
 
 	for (si = states.begin(); si != states.end(); si++)
 	{
 		for (bi0 = 0; bi0 < global.find(si->first)->second->width; bi0++)
 		{
-			if (drive(si->second[bi0]))
+			for (o = 0; o < delta_count(si->second[bi0]); o++)
 			{
-				cout << "================Production Rule================" << endl;
-				cout << "+++++++++++++++++++++++++++++++++++++++++++++++" << endl;
-				posspace = up(si->second[bi0], 0);
-				negspace = down(si->second[bi0], 0);
+				//cout << "================Production Rule================" << endl;
+				//cout << si->second[bi0] << "\t" << delta_count(si->second[bi0]) << endl;
+				//cout << "+++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+				posspace = up(si->second[bi0], o);
+				negspace = down(si->second[bi0], o);
 
-				cout << posspace << "\t" << count(posspace) << "\t" << strict_count(posspace) << endl;
+				//cout << posspace << "\t" << o << "\t" << count(posspace) << "\t" << strict_count(posspace) << endl;
 
 				r.clear(si->second.states.size());
 				r.var = si->first;
@@ -336,7 +337,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				found = true;
 				while (invars.size() > 0 && found && count(r.plus) > count(posspace))
 				{
-					cout << "...................Iteration..................." << endl;
+					//cout << "...................Iteration..................." << endl;
 					setspace = r.plus;
 
 					found = false;
@@ -358,7 +359,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 							mscount = scount;
 						}
 
-						cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+						//cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
 
 						if (firstpos)
 							tempspace = ~sj->second;
@@ -376,7 +377,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 							mscount = scount;
 						}
 
-						cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+						//cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
 					}
 
 					if (r.plus.var.find(setspace.var) == r.plus.var.npos)
@@ -388,9 +389,9 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 					}
 				}
 
-				cout << endl << r.plus.var << " -> " << r.var << "+" << "\t" << r.plus << "\t" << mcount << "/" << posspace.states.size() - count(posspace) << "\t" << mscount << "/" << strict_count(posspace) << endl;
+				//cout << endl << r.plus.var << " -> " << r.var << "+" << "\t" << r.plus << "\t" << mcount << "/" << posspace.states.size() - count(posspace) << "\t" << mscount << "/" << strict_count(posspace) << endl;
 
-				cout << "-----------------------------------------------" << endl;
+				//cout << "-----------------------------------------------" << endl;
 
 				mscount = strict_count(negspace);
 				mcount = negspace.states.size() - count(negspace);
@@ -401,12 +402,12 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 						if (sj != si || bi0 != bi1)
 							invars.insert(pair<string, space>(sj->first + to_string(bi1), sj->second[bi1]));
 
-				cout << negspace << "\t" << count(negspace) << "\t" << strict_count(negspace) << endl;
+				//cout << negspace << "\t" << count(negspace) << "\t" << strict_count(negspace) << endl;
 
 				found = true;
 				while (invars.size() > 0 && found && count(r.minus) > count(negspace))
 				{
-					cout << "...................Iteration..................." << endl;
+					//cout << "...................Iteration..................." << endl;
 
 					setspace = r.minus;
 					found = false;
@@ -428,7 +429,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 							mscount = scount;
 						}
 
-						cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+						//cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
 
 						if (firstneg)
 							tempspace = ~sj->second;
@@ -446,7 +447,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 							mscount = scount;
 						}
 
-						cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+						//cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
 					}
 
 					if (r.minus.var.find(setspace.var) == r.minus.var.npos)
@@ -458,8 +459,18 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 					}
 				}
 
-				cout << endl << r.minus.var << " -> " << r.var << "-" << "\t" << r.minus << "\t" << mcount << "/" << negspace.states.size() - count(negspace) << "\t" << mscount << "/" << strict_count(negspace) << endl;
+				//cout << endl << r.minus.var << " -> " << r.var << "-" << "\t" << r.minus << "\t" << mcount << "/" << negspace.states.size() - count(negspace) << "\t" << mscount << "/" << strict_count(negspace) << endl;
+				if (o == 0)
+					f = r;
+				else
+				{
+					f.plus = f.plus | r.plus;
+					f.minus = f.minus | r.minus;
+				}
 			}
+
+			if (delta_count(si->second[bi0]) > 0)
+				cout << f << endl;
 		}
 	}
 }
