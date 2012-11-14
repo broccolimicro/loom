@@ -14,10 +14,10 @@ conditional::conditional()
 	type = unknown;
 }
 
-conditional::conditional(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
+conditional::conditional(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
 {
 	_kind = "conditional";
-	parse(raw, types, vars, tab);
+	parse(raw, types, vars, init, tab);
 }
 
 conditional::~conditional()
@@ -26,7 +26,7 @@ conditional::~conditional()
 	type = unknown;
 }
 
-void conditional::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
+void conditional::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
 {
 	result.clear();
 	local.clear();
@@ -42,9 +42,14 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 
 	cout << tab << "Conditional:\t" << chp << endl;
 
+	map<string, state> guardresult, temp;
+
 	map<string, instruction>::iterator ii;
 	map<string, state>::iterator si, sj;
 	string::iterator i, j, k;
+	string::reverse_iterator ri, rj, rk;
+
+	guardresult = init;
 
 	//Parse instructions!
 	int depth[3] = {0};
@@ -76,9 +81,32 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 			expr = eval.substr(0, k-eval.begin());
 			eval = eval.substr(k-eval.begin()+2);
 
-			instrs.insert(pair<string, instruction>(expr, block(eval, types, global, guard(expr, tab+"\t"), tab+"\t")));
+			cout << "Before\n";
+			for (si = guardresult.begin(); si != guardresult.end(); si++)
+				cout << si->first << " -> " << si->second << endl;
+
+			cout << "Guard\n";
+			temp = guard(expr, tab+"\t");
+			for (si = temp.begin(); si != temp.end(); si++)
+			{
+				if ((sj = guardresult.find(si->first)) == guardresult.end())
+					guardresult.insert(pair<string, state>(si->first, si->second));
+				else
+					for (ri = si->second.data.rbegin(), rj = sj->second.data.rbegin(); ri != si->second.data.rend() && rj != sj->second.data.rend(); ri++, rj++)
+						if (*ri != 'X')
+							*rj = *ri;
+
+				cout << si->first << " -> " << si->second << endl;
+			}
+
+			cout << "After\n";
+			for (si = guardresult.begin(); si != guardresult.end(); si++)
+				cout << si->first << " -> " << si->second << endl;
+
+			instrs.insert(pair<string, instruction>(expr, block(eval, types, global, guardresult, tab+"\t")));
 			j = i+1;
 			guarded = true;
+			guardresult = init;
 		}
 		else if (!guarded && depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '[' && *(i+1) == ']') || i == chp.end()))
 		{
@@ -93,9 +121,32 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 			expr = eval.substr(0, k-eval.begin());
 			eval = eval.substr(k-eval.begin()+2);
 
-			instrs.insert(pair<string, instruction>(expr, block(eval, types, global, guard(expr, tab+"\t"), tab+"\t")));
+			cout << "Before\n";
+			for (si = guardresult.begin(); si != guardresult.end(); si++)
+				cout << si->first << " -> " << si->second << endl;
+
+			cout << "Guard\n";
+			temp = guard(expr, tab+"\t");
+			for (si = temp.begin(); si != temp.end(); si++)
+			{
+				if ((sj = guardresult.find(si->first)) == guardresult.end())
+					guardresult.insert(pair<string, state>(si->first, si->second));
+				else
+					for (ri = si->second.data.rbegin(), rj = sj->second.data.rbegin(); ri != si->second.data.rend() && rj != sj->second.data.rend(); ri++, rj++)
+						if (*ri != 'X')
+							*rj = *ri;
+
+				cout << si->first << " -> " << si->second << endl;
+			}
+
+			cout << "After\n";
+			for (si = guardresult.begin(); si != guardresult.end(); si++)
+				cout << si->first << " -> " << si->second << endl;
+
+			instrs.insert(pair<string, instruction>(expr, block(eval, types, global, guardresult, tab+"\t")));
 			j = i+2;
 			guarded = true;
+			guardresult = init;
 		}
 		else if (depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '-' && *(i+1) == '>') || i == chp.end()))
 			guarded = false;

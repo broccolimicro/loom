@@ -103,7 +103,7 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 			}
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')		// Conditional Block
 			{
-				cond.parse(raw_instr, types, global, tab+"\t");
+				cond.parse(raw_instr, types, global, map<string, state>(), tab+"\t");
 				instrs.push_back(cond);
 				instr = cond;
 			}

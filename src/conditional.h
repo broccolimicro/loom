@@ -22,13 +22,13 @@ enum conditional_type
 struct conditional : block
 {
 	conditional();
-	conditional(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab);
+	conditional(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab);
 	~conditional();
 
 	conditional_type type;
 	map<string, instruction>		instrs;
 
-	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab);
+	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab);
 };
 
 map<string, state> guard(string raw, string tab);

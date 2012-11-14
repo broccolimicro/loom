@@ -68,6 +68,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	block		blk;		// sequential execution parser
 	variable	*v;			// variable instantiation parser
 
+	map<string, state> current_state;
+
 	list<instruction>		::iterator	ii;
 	map<string, variable*>	::iterator	vi;
 	map<string, space>		::iterator	si, sj, sk;
@@ -140,7 +142,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
 			{
-				cond.parse(raw_instr, types, global, tab+"\t");
+				cond.parse(raw_instr, types, global, map<string, state>(), tab+"\t");
 				instrs.push_back(cond);
 				instr = cond;
 			}
@@ -300,7 +302,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				r.clear(si->second.states.size());
 				r.var = si->first;
 				if (global.find(si->first)->second->width > 1)
-					r.var += to_string(bi0);
+					r.var += "[" + to_string(bi0) + "]";
 
 				mscount = strict_count(posspace);
 				mcount = posspace.states.size() - count(posspace);

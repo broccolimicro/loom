@@ -32,13 +32,16 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 	instrs.clear();
 	states.clear();
 
-	chp = raw.substr(2, raw.length()-3);
+	chp = raw.substr(1, raw.length()-2);
 	global = vars;						//The variables this block uses.
 	type = unknown;
 	string expr, eval;
+	bool guarded = true;
 
 	cout << tab << "Loop:\t" << chp << endl;
 
+	map<string, instruction>::iterator ii;
+	map<string, state>::iterator si, sj;
 	string::iterator i, j, k;
 
 	//Parse instructions!
@@ -58,7 +61,7 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 		else if (*i == '}')
 			depth[2]--;
 
-		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) != '|' && *(i-1) != '|') || (i == chp.end() && type == choice)))
+		if (!guarded && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) != '|' && *(i-1) != '|') || (i == chp.end() && type == choice)))
 		{
 			cout << tab << "Choice\n";
 			if (type == unknown)
@@ -71,10 +74,11 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 			expr = eval.substr(0, k-eval.begin());
 			eval = eval.substr(k-eval.begin()+2);
 
-			instrs.insert(pair<string, instruction>(expr, block(eval, types, global,  map<string, state>(), tab+"\t")));
+			instrs.insert(pair<string, instruction>(expr, block(eval, types, global, guard(expr, tab+"\t"), tab+"\t")));
 			j = i+1;
+			guarded = true;
 		}
-		else if (depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '[' && *(i+1) == ']') || i == chp.end()))
+		else if (!guarded && depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '[' && *(i+1) == ']') || i == chp.end()))
 		{
 			cout << tab << "Mutex\n";
 			if (type == unknown)
@@ -87,8 +91,28 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 			expr = eval.substr(0, k-eval.begin());
 			eval = eval.substr(k-eval.begin()+2);
 
-			instrs.insert(pair<string, instruction>(expr, block(eval, types, global,  map<string, state>(), tab+"\t")));
+			instrs.insert(pair<string, instruction>(expr, block(eval, types, global, guard(expr, tab+"\t"), tab+"\t")));
 			j = i+2;
+			guarded = true;
+		}
+		else if (depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '-' && *(i+1) == '>') || i == chp.end()))
+			guarded = false;
+	}
+
+	for (ii = instrs.begin(); ii != instrs.end(); ii++)
+	{
+		for (si = ii->second.result.begin(); si != ii->second.result.end(); si++)
+		{
+			if ((sj = result.find(si->first)) != result.end())
+				sj->second = sj->second || si->second;
+			else
+				result.insert(pair<string, state>(si->first, si->second));
 		}
 	}
+
+	cout << tab << "Result:\t";
+
+	for (si = result.begin(); si != result.end(); si++)
+		cout << "{" << si->first << " = " << si->second << "} ";
+	cout << endl;
 }
