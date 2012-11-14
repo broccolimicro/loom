@@ -259,58 +259,11 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			}
 			// we need to X the variable out because there was a delta and this variable
 			// is an input variable.
-			//else if ((*di) && !states[vi->first].states.rbegin()->prs)
-			//	states[vi->first].states.push_back(xstate);
-			// there is no delta in the output variables or this is an output variable
-			else
-				states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
-			/*
-			l = ii->result.find(vi->first);
-
-			if (l != ii->result.end() && l->second.data != "NA")
-			{
-
-				// If the states of the two variables aren't the same size, then we
-				// need to zero extend the smaller one
-				if (l->second.data.length() < xstate.data.length())
-				{
-					tstate.prs = l->second.prs;
-					tstate.data = l->second.data[0];
-					for (k = 0; k < xstate.data.length() - l->second.data.length(); k++)
-						tstate.data += "0";
-					if(l->second.data[0] == '='){
-						cout << "Expr eval here!" << l->second << endl;
-						tstate.data += expr_eval(l->second.data.substr(1),states_at_begin).data;
-					}else{
-						cout << "No expr eval here." << l->second << endl;
-						tstate.data += l->second.data;
-					}
-
-				}
-				else{
-					if(l->second.data[0] == '='){
-						cout << "Expr eval here!"<< l->second << endl;
-						tstate = expr_eval(l->second.data.substr(1),states_at_begin);
-					}else{
-						cout << "No expr eval here!"<< l->second << endl;
-						tstate = l->second;
-					}
-				}
-
-				// this is the state change we are looking for.
-				states[vi->first].states.push_back(tstate);
-				states_at_begin[vi->first] = tstate;	// ?
-				cout << "I declare  "<< vi->first << " is now " << tstate <<endl;
-			}
-			// we need to X the variable out because there was a delta and this variable
-			// is an input variable.
 			else if ((*di) && !states[vi->first].states.rbegin()->prs)
-				states[vi->first].states.push_back(xstate);
+				states[vi->first].states.push_back(state(string(vi->second->width, 'X'), false));
 			// there is no delta in the output variables or this is an output variable
 			else
 				states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
-			*/
-
 		}
 	}
 
