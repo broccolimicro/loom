@@ -248,7 +248,6 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 					cout << "No expr eval here." << l->second << endl;
 					tstate.data = l->second.data;
 				}
-				cout << tstate.data.length() << endl;
 				while (vi->second->width - tstate.data.length() > 0)
 					tstate.data = "0" + tstate.data;
 
@@ -461,27 +460,25 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 state expr_eval(string raw, map<string, state> init){
 
+	// Supported operators: + - * / & | << >> == != <= >= < >
+
 	//Tested to be fairly functional:
 	//Adds, subtracts
 	//Multiplies
+	//lte gte
+	//== !=
 	//Ands and Ors
 	//Variables
 	//Parens
 
-
+	// TODO:
+	//Add negative support for variables before operators besides +- (ex. a*-b should not be a*0-b)
+	//Weirdly never bothered to add lt gt
+	//Test functionality
 	//Known problems to fix:
-	// Mul with 0 fails due to state state definitions
-	//Test harder. Some kinks to work out.
 	//Nested paren sometimes wonks out.
 
-	// TODO:
-	//Less than, greater than
-	//Add negative support for variables before operators besides +- (ex. a*-b should not be a*0-b)
-	//NEEDS TESTING!
-	//Test functionality
 
-	// Supported operators: + - * / & | << >> == != <= >= < >
-	//Find occurrences in strings!
 	// Weakest bind set below:
 	// |
 	int first_or = raw.find("|");
@@ -493,7 +490,7 @@ state expr_eval(string raw, map<string, state> init){
 	int first_equal = raw.find("==");
 	int first_nequal = raw.find("!=");
 	int first_comp = raw.npos;
-	if((first_equal != raw.npos)&&(first_equal < first_nequal)){
+	if((first_equal != raw.npos)&&(first_equal > first_nequal)){
 		first_comp = first_equal;
 	}else if(first_nequal != raw.npos){
 		first_comp = first_nequal;
@@ -503,7 +500,7 @@ state expr_eval(string raw, map<string, state> init){
 	int first_ltequal = raw.find("<=");
 	int first_gtequal = raw.find(">=");
 	int first_ltgtequal = raw.npos;
-	if((first_ltequal != raw.npos)&&(first_ltequal < first_gtequal)){
+	if((first_ltequal != raw.npos)&&(first_ltequal > first_gtequal)){
 		first_ltgtequal = first_ltequal;
 	}else if(first_gtequal != raw.npos){
 		first_ltgtequal = first_gtequal;
@@ -516,7 +513,7 @@ state expr_eval(string raw, map<string, state> init){
 	int first_shift_l = raw.find("<<");
 	int first_shift_r = raw.find(">>");
 	int first_shift = raw.npos;
-	if((first_shift_l != raw.npos)&&(first_shift_l < first_shift_r)){
+	if((first_shift_l != raw.npos)&&(first_shift_l > first_shift_r)){
 		first_shift = first_shift_l;
 	}else if(first_shift_r != raw.npos){
 		first_shift = first_shift_r;
@@ -543,7 +540,6 @@ state expr_eval(string raw, map<string, state> init){
 		cout << "The result of paren is:  " + raw << endl;
 		result = expr_eval(raw,init);
 		return result;
-
 	}
 
 	//Any ors?
@@ -589,8 +585,6 @@ state expr_eval(string raw, map<string, state> init){
 		}
 	}
 	//Any >> <<?
-	/*
-	// NOT SUPPORTED! WAITING FOR NED TO MAKE << >> A STATE STATE OPERATION
 	if(first_shift != raw.npos){
 		if(raw[first_shift] == '>'){		//It is a '>>'!
 			cout << "Doing an >> between " + raw.substr(0,first_shift) + " and " +raw.substr(first_shift+2) << endl;
@@ -603,7 +597,8 @@ state expr_eval(string raw, map<string, state> init){
 			cout << "Result of << is: " + result.data << endl;
 			return result;
 		}
-	}*/
+	}
+
 	//Any +/-?
 	if(first_addsub != raw.npos){			//There is a plus or a minus!
 		if (raw[first_addsub] == '+'){		//It is a plus!
@@ -646,7 +641,9 @@ state expr_eval(string raw, map<string, state> init){
 	//If the recursion gets down to here, it means we are at a 'basecase' i.e. a variable or number
 
 	if( ac(raw[0]) ){		//Return a variable name!
-		cout << "Parsing a variable!" + raw + " = " << init[raw]<< endl;
+		cout << "Loading a variable!" + raw + " = " << init[raw]<< endl;
+		result = init[raw];
+		result.prs = 1;
 		return init[raw];
 	}else{					//Return a number
 		// If this is a multi-bit number, then we need to make sure it is correctly parsed
@@ -659,8 +656,9 @@ state expr_eval(string raw, map<string, state> init){
 		else									// decimal     e.g. 20114
 			raw = dec_to_bin(raw);
 
-		cout << "Output of bin conv is " + raw << endl;
-		return state(raw, true);
+		result = state(raw, true);
+		result.prs = 1;
+		return result;
 
 	}
 

@@ -154,14 +154,14 @@ state operator+(state s1, state s2)
 	if(carry!='0'){
 		result.data = carry + result.data;
 	}
-	result.prs = false;
+	result.prs = true;
 
 	return result;
 }
 
 state operator-(state s1, state s2)
 {
-	return s1 + ~s2 + state("1", false);
+	return s1 + ~s2 + state("1", true);
 }
 
 state operator*(state s1, state s2)
@@ -176,7 +176,7 @@ state operator*(state s1, state s2)
 		if (*j == '1')
 			result += mult;
 		else if (*j == 'X')
-			result += (mult & state(string(mult.data.length(), 'X'), false));
+			result += (mult & state(string(mult.data.length(), 'X'), true));
 
 		mult += mult;
 	}
@@ -189,12 +189,12 @@ state operator*(state s1, state s2)
 
 state operator/(state s1, state s2)
 {
-	return state("", false);
+	return state("", true);
 }
 
 state operator-(state s)
 {
-	return ~s + state("1", false);
+	return ~s + state("1", true);
 }
 
 state operator&(state s1, state s2)
@@ -216,7 +216,7 @@ state operator&(state s1, state s2)
 			result.data = "1" + result.data;
 	}
 
-	result.prs = false;
+	result.prs = true;
 
 	return result;
 }
@@ -240,7 +240,7 @@ state operator|(state s1, state s2)
 			result.data = "0" + result.data;
 	}
 
-	result.prs = false;
+	result.prs = true;
 
 	return result;
 }
@@ -260,19 +260,19 @@ state operator~(state s)
 			result.data += "X";
 	}
 
-	result.prs = false;
+	result.prs = true;
 
 	return result;
 }
 
 state operator<<(state s, int n)
 {
-	return state(s.data + string(n, '0'), false);
+	return state(s.data + string(n, '0'), true);
 }
 
 state operator>>(state s, int n)
 {
-	return state((string(n, '0') + s.data).substr(0, s.data.length()), false);
+	return state((string(n, '0') + s.data).substr(0, s.data.length()), true);
 }
 
 state operator<<(state s1, state s2)
@@ -289,7 +289,7 @@ state operator<<(state s1, state s2)
 		mult += mult;
 	}
 
-	return state(s1.data + zeros, false);
+	return state(s1.data + zeros, true);
 }
 
 state operator>>(state s1, state s2)
@@ -306,7 +306,7 @@ state operator>>(state s1, state s2)
 		mult += mult;
 	}
 
-	return state((zeros + s1.data).substr(0, s1.data.length()), false);
+	return state((zeros + s1.data).substr(0, s1.data.length()), true);
 }
 
 state operator==(state s1, state s2)
@@ -323,12 +323,12 @@ state operator==(state s1, state s2)
 		b = k != s2.data.rend() ? *k++ : '0';
 
 		if ((a == '1' && b == '0') || (a == '0' && b == '1'))
-			return state("0", false);
+			return state("0", true);
 		else if (a == 'X' || b == 'X')
 			result.data = "X";
 	}
 
-	result.prs = false;
+	result.prs = true;
 
 	return result;
 }
@@ -347,12 +347,12 @@ state operator!=(state s1, state s2)
 		b = k != s2.data.rend() ? *k++ : '0';
 
 		if ((a == '1' && b == '0') || (a == '0' && b == '1'))
-			return state("1", false);
+			return state("1", true);
 		else if (a == 'X' || b == 'X')
 			result.data = "X";
 	}
 
-	result.prs = false;
+	result.prs = true;
 
 	return result;
 }
@@ -363,7 +363,7 @@ state operator<=(state s1, state s2)
 	int l0 = s1.data.length(), l1 = s2.data.length();
 	string::iterator a, b;
 
-	for (j = s1.data.find_first_of("1X"), k = s2.data.find_first_of("1X"); j > 0 && k > 0; j = s1.data.find_first_of("1X", j+1), k = s2.data.find_first_of("1X", k+1))
+	for (j = s1.data.find_first_of("1X"), k = s2.data.find_first_of("1X"); j >= 0 && k >= 0; j = s1.data.find_first_of("1X", j+1), k = s2.data.find_first_of("1X", k+1))
 	{
 		a = s1.data.begin() + j;
 		b = s2.data.begin() + k;
@@ -371,24 +371,27 @@ state operator<=(state s1, state s2)
 		if (l0 - j < l1 - k)
 		{
 			if (*b == '1')
-				return state("1", false);
+				return state("1", true);
 			else if (*b == 'X')
-				return state("X", false);
+				return state("X", true);
 		}
 		else if (l0 - j > l1 - k)
 		{
 			if (*a == '1')
-				return state("0", false);
+				return state("0", true);
 			else if (*a == 'X')
-				return state("X", false);
+				return state("X", true);
 		}
 		else
 			if (*a == 'X' || *b == 'X')
-				return state("X", false);
+				return state("X", true);
 
 	}
 
-	return state("1", false);
+	if (j >= 0 && k < 0)
+		return state("0", true);
+
+	return state("1", true);
 }
 
 state operator>=(state s1, state s2)
@@ -396,33 +399,37 @@ state operator>=(state s1, state s2)
 	int j, k;
 	int l0 = s1.data.length(), l1 = s2.data.length();
 	string::iterator a, b;
-
-	for (j = s1.data.find_first_of("1X"), k = s2.data.find_first_of("1X"); j > 0 && k > 0; j = s1.data.find_first_of("1X", j+1), k = s2.data.find_first_of("1X", k+1))
+	//cout << "jinit = " <<  s1.data.find_first_of("1X") << " and kinit = " << s2.data.find_first_of("1X") << endl;
+	for (j = s1.data.find_first_of("1X"), k = s2.data.find_first_of("1X"); j >= 0 && k >= 0; j = s1.data.find_first_of("1X", j+1), k = s2.data.find_first_of("1X", k+1))
 	{
+		//cout << "j = " << j << " k = " << k <<endl;
 		a = s1.data.begin() + j;
 		b = s2.data.begin() + k;
-
+		//cout << "a = " << *a << " b = " << *b << endl;
 		if (l0 - j < l1 - k)
 		{
 			if (*b == '1')
-				return state("0", false);
+				return state("0", true);
 			else if (*b == 'X')
-				return state("X", false);
+				return state("X", true);
 		}
 		else if (l0 - j > l1 - k)
 		{
 			if (*a == '1')
-				return state("1", false);
+				return state("1", true);
 			else if (*a == 'X')
-				return state("X", false);
+				return state("X", true);
 		}
 		else
 			if (*a == 'X' || *b == 'X')
-				return state("X", false);
+				return state("X", true);
 
 	}
 
-	return state("1", false);
+	if (j < 0 && k >= 0)
+		return state("0", true);
+
+	return state("1", true);
 }
 
 state operator<(state s1, state s2)
@@ -431,7 +438,7 @@ state operator<(state s1, state s2)
 	int l0 = s1.data.length(), l1 = s2.data.length();
 	string::iterator a, b;
 
-	for (j = s1.data.find_first_of("1X"), k = s2.data.find_first_of("1X"); j > 0 && k > 0; j = s1.data.find_first_of("1X", j+1), k = s2.data.find_first_of("1X", k+1))
+	for (j = s1.data.find_first_of("1X"), k = s2.data.find_first_of("1X"); j >= 0 && k >= 0; j = s1.data.find_first_of("1X", j+1), k = s2.data.find_first_of("1X", k+1))
 	{
 		a = s1.data.begin() + j;
 		b = s2.data.begin() + k;
@@ -439,24 +446,27 @@ state operator<(state s1, state s2)
 		if (l0 - j < l1 - k)
 		{
 			if (*b == '1')
-				return state("1", false);
+				return state("1", true);
 			else if (*b == 'X')
-				return state("X", false);
+				return state("X", true);
 		}
 		else if (l0 - j > l1 - k)
 		{
 			if (*a == '1')
-				return state("0", false);
+				return state("0", true);
 			else if (*a == 'X')
-				return state("X", false);
+				return state("X", true);
 		}
 		else
 			if (*a == 'X' || *b == 'X')
-				return state("X", false);
+				return state("X", true);
 
 	}
 
-	return state("0", false);
+	if (j < 0 && k >= 0)
+		return state("1", true);
+
+	return state("0", true);
 }
 
 state operator>(state s1, state s2)
@@ -465,7 +475,7 @@ state operator>(state s1, state s2)
 	int l0 = s1.data.length(), l1 = s2.data.length();
 	string::iterator a, b;
 
-	for (j = s1.data.find_first_of("1X"), k = s2.data.find_first_of("1X"); j > 0 && k > 0; j = s1.data.find_first_of("1X", j+1), k = s2.data.find_first_of("1X", k+1))
+	for (j = s1.data.find_first_of("1X"), k = s2.data.find_first_of("1X"); j >= 0 && k >= 0; j = s1.data.find_first_of("1X", j+1), k = s2.data.find_first_of("1X", k+1))
 	{
 		a = s1.data.begin() + j;
 		b = s2.data.begin() + k;
@@ -473,24 +483,27 @@ state operator>(state s1, state s2)
 		if (l0 - j < l1 - k)
 		{
 			if (*b == '1')
-				return state("0", false);
+				return state("0", true);
 			else if (*b == 'X')
-				return state("X", false);
+				return state("X", true);
 		}
 		else if (l0 - j > l1 - k)
 		{
 			if (*a == '1')
-				return state("1", false);
+				return state("1", true);
 			else if (*a == 'X')
-				return state("X", false);
+				return state("X", true);
 		}
 		else
 			if (*a == 'X' || *b == 'X')
-				return state("X", false);
+				return state("X", true);
 
 	}
 
-	return state("0", false);
+	if (j >= 0 && k < 0)
+		return state("1", true);
+
+	return state("0", true);
 }
 
 state operator||(state s1, state s2)
@@ -510,7 +523,7 @@ state operator||(state s1, state s2)
 			result.data = "X" + result.data;
 	}
 
-	result.prs = false;
+	result.prs = true;
 
 	return result;
 }

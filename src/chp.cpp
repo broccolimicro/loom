@@ -205,9 +205,21 @@ struct program
 
 int main(int argc, char **argv)
 {
-	ifstream t("test.chp");
-	string prgm((istreambuf_iterator<char>(t)),
-	             istreambuf_iterator<char>());
+	//This is here in the least logical place ever to remind me that zero extending an X is weird
+	//ex 0bX1X and 0b111 = X...XX?
+//	ifstream t("test.chp");
+//	string prgm((istreambuf_iterator<char>(t)),
+//	             istreambuf_iterator<char>());
+	map<string, state> s;
+	state x,y, z;
+	x.data = "00";
+	y.data = "00";
+	x.prs = "1";
+	y.prs = "1";
+	z.prs = "1";
+	z = x>y;
 
-	program p(prgm);
+	z = expr_eval("5>>1", s);
+	cout << z << endl;
+//	program p(prgm);
 }
