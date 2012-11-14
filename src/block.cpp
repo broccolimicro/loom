@@ -187,10 +187,10 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				{
 					delta |= ((l->second.prs) && (l->second.data != vi->second->last.data));
 					vi->second->last = l->second;
-					if (l->second.data[0] == '=')
+					/*if (l->second.data[0] == '=')
 						vi->second->width = max(vi->second->width, (uint16_t)(l->second.data.length()-1));
 					else
-						vi->second->width = max(vi->second->width, (uint16_t)(l->second.data.length()));
+						vi->second->width = max(vi->second->width, (uint16_t)(l->second.data.length()));*/
 					if (affected.find(vi->first) == affected.end())
 						affected.insert(pair<string, variable*>(vi->first, vi->second));
 				}
@@ -290,7 +290,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		result.insert(pair<string, state>(vi->first, *(states[vi->first].states.rbegin())));
 	}
 
-	//
+	// Generate the production rules
 	map<string, space> invars;
 	int bi0, bi1;
 	int scount, ccount;
@@ -309,8 +309,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			{
 				cout << "================Production Rule================" << endl;
 				cout << "+++++++++++++++++++++++++++++++++++++++++++++++" << endl;
-				posspace = up(si->second[bi0]);
-				negspace = down(si->second[bi0]);
+				posspace = up(si->second[bi0], 0);
+				negspace = down(si->second[bi0], 0);
 
 				cout << posspace << "\t" << count(posspace) << "\t" << strict_count(posspace) << endl;
 
@@ -462,73 +462,6 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			}
 		}
 	}
-
-	// Generate the production rules
-	/*string oldstate = "";
-	int cmin = 99999999;
-	int c;
-	int ins_idx;
-	int tmp_idx;
-	space *rspace, tspace;
-	bool first = true;
-	char op;
-
-	for (si = states.begin(); si != states.end(); si++)
-	{
-		cout << up(si->second) << endl;
-		cout << down(si->second) << endl;
-		r.clear(si->second.states.size());
-		r.var = si->first;
-		ins_idx = 0;
-		for (a = si->second.states.begin(); a != si->second.states.end(); a++)
-		{
-			first = true;
-			if (a->prs && a->data != oldstate)
-			{
-				if ((*a == state("0",false)).data == "1")
-				{
-					rspace = &r.minus;
-					op = '-';
-				}
-				else
-				{
-					rspace = &r.plus;
-					op = '+';
-				}
-
-				cmin = si->second.states.size();
-				for (sj = states.begin(); sj != states.end(); sj++)
-				{
-					if (sj != si)
-					{
-						for (b = sj->second.states.begin(), tmp_idx = 0; b != sj->second.states.end() && tmp_idx < (ins_idx-1); b++, tmp_idx++);
-
-						tspace = (sj->second == *b);
-
-						if (first)
-							c = count(tspace);
-						else
-							c = count((*rspace) & tspace);
-						if (c > 0 && c < cmin && rspace->var.find(tspace.var) == rspace->var.npos && b->data.find_first_of("X") == b->data.npos)
-						{
-							cmin = c;
-							if (first)
-								*rspace = tspace;
-							else
-								*rspace = *rspace & tspace;
-							first = false;
-						}
-					}
-				}
-				cout << rspace->var << " -> " << r.var << op << " " << cmin << "/" << count(si->second == *a) << endl;
-				cout << *rspace << endl;
-				cout << r.check() << endl << endl;
-			}
-			ins_idx++;
-			oldstate = a->data;
-		}
-		cout << endl;
-	}*/
 }
 
 

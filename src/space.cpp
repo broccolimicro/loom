@@ -745,6 +745,16 @@ int strict_count(space s)
 	return result;
 }
 
+int delta_count(space s)
+{
+	/*int cnt = 0;
+	for (i = s.states.begin(); j != s.states.end(); i++, j++)
+	{
+		if ((*sj == '0' && *si == '1') || (*sj == '0' && *si == 'X'))
+			cnt++;
+	}*/
+}
+
 space up(space s)
 {
 	list<state>::iterator i, j;
@@ -774,6 +784,40 @@ space up(space s)
 	return result;
 }
 
+space up(space s, int idx)
+{
+	list<state>::iterator i, j;
+	space result;
+	string str;
+	string::iterator si, sj;
+	int cnt = 0;
+
+	result.var = s.var + "+";
+
+	j = s.states.begin();
+	j++;
+
+	for (i = s.states.begin(); j != s.states.end(); i++, j++)
+	{
+		str = "";
+		for (si = i->data.begin(), sj = j->data.begin(); si != i->data.end() && sj != j->data.end(); si++, sj++)
+		{
+			if (*sj == '1' && *si != '1' && j->prs && cnt == idx)
+				str = str + "1";
+			else if (*sj == '1' && *si == '1' && cnt == idx)
+				str = str + "X";
+			else
+				str = str + "0";
+
+			if ((*sj == '0' && *si == '1') || (*sj == '0' && *si == 'X'))
+				cnt++;
+		}
+		result.states.push_back(state(str, j->prs));
+	}
+
+	return result;
+}
+
 space down(space s)
 {
 	list<state>::iterator i, j;
@@ -796,6 +840,39 @@ space down(space s)
 				str = str + "X";
 			else
 				str = str + "0";
+		}
+		result.states.push_back(state(str, j->prs));
+	}
+
+	return result;
+}
+
+space down(space s, int idx)
+{
+	list<state>::iterator i, j;
+	space result;
+	string str;
+	string::iterator si, sj;
+	int cnt = 0;
+	result.var = s.var + "-";
+
+	j = s.states.begin();
+	j++;
+
+	for (i = s.states.begin(); j != s.states.end(); i++, j++)
+	{
+		str = "";
+		for (si = i->data.begin(), sj = j->data.begin(); si != i->data.end() && sj != j->data.end(); si++, sj++)
+		{
+			if (*sj == '0' && *si != '0' && j->prs && cnt == idx)
+				str = str + "1";
+			else if (*sj == '0' && *si == '0' && cnt == idx)
+				str = str + "X";
+			else
+				str = str + "0";
+
+			if ((*sj == '1' && *si == '0') || (*sj == '1' && *si == 'X'))
+				cnt++;
 		}
 		result.states.push_back(state(str, j->prs));
 	}

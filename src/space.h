@@ -108,8 +108,11 @@ space operator>(state s1, space s2);
 
 int count(space s);
 int strict_count(space s);
+int delta_count(space s);
 space up(space s);
+space up(space s, int idx);
 space down(space s);
+space down(space s, int idx);
 bool drive(space s);
 
 #endif
