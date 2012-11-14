@@ -461,7 +461,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 
 state expr_eval(string raw, map<string, state> init){
-
+	cout << "E:" + raw << endl;
 	// Supported operators: + - * / & | << >> == != <= >= < >
 
 	//Tested to be fairly functional:
@@ -528,8 +528,21 @@ state expr_eval(string raw, map<string, state> init){
 	int first_muldiv = raw.find_first_of("*/");
 
 	//()
-	int first_paren = raw.find_first_of("(");
-	int last_paren = raw.find_last_of(")");
+	int first_paren = raw.npos;
+	int last_paren = raw.npos;
+
+	string::iterator i;
+	int depth = 0;
+	for (i = raw.begin(); i != raw.end(); i++){
+		if (*i == '(' && !depth++){
+			first_paren = i - raw.begin();
+		}
+		else if (*i == ')' && !--depth){
+			last_paren = i - raw.begin();
+			i = raw.end()-1;
+			cout << "first paren: " << first_paren << " last paren: " << last_paren <<endl;
+		}
+	}
 
 	//Strongest bind set above
 
@@ -537,8 +550,8 @@ state expr_eval(string raw, map<string, state> init){
 
 	//Deal with parens
 	if(first_paren != raw.npos && last_paren != raw.npos){
-		cout << "Paren is " + raw.substr(0,first_paren) + " paren start " + raw.substr(first_paren + 1,last_paren - 3) + " paren end " +raw.substr(last_paren + 1) << endl;
-		raw = raw.substr(0,first_paren) + "0b" + expr_eval(raw.substr(first_paren + 1,last_paren - 3), init).data + raw.substr(last_paren + 1);
+		cout << "Paren parses to " + raw.substr(0,first_paren) + " '(' " + raw.substr(first_paren + 1,last_paren - first_paren -1) + " ')' " +raw.substr(last_paren + 1 ) << endl;
+		raw = raw.substr(0,first_paren) + "0b" + expr_eval(raw.substr(first_paren + 1,last_paren - first_paren -1), init).data + raw.substr(last_paren + 1);
 		cout << "The result of paren is:  " + raw << endl;
 		result = expr_eval(raw,init);
 		return result;

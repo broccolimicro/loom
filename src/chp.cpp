@@ -205,8 +205,6 @@ struct program
 
 int main(int argc, char **argv)
 {
-	//This is here in the least logical place ever to remind me that zero extending an X is weird
-	//ex 0bX1X and 0b111 = X...XX?
 //	ifstream t("test.chp");
 //	string prgm((istreambuf_iterator<char>(t)),
 //	             istreambuf_iterator<char>());
@@ -219,7 +217,7 @@ int main(int argc, char **argv)
 	z.prs = "1";
 	z = x>y;
 
-	z = expr_eval("5>>1", s);
+	z = expr_eval("((1+2))", s);
 	cout << z << endl;
 //	program p(prgm);
 }
