@@ -1,15 +1,12 @@
 record channel
 {
-	int<1> a;
-	int<1> r;
+	int<4> a;
+	int<4> r;
 }
 
 proc fifo(channel l, channel r)
 {
-	int<3> x;
-	*[  x == 0 -> ([l.r -> skip]; l.a := 0b0100 & 0b1100 ) || ([~l.r -> skip]; l.a := 0); x := 1
-	 [] x == 1 -> r.a := 1 || [r.r -> skip] || r.a := 0 || [~r.r -> skip]; x := 0
-	 ]
+	int<1> x; x := 0; [l.r -> skip]; l.a := 1; [~l.r -> skip]; x := 1; l.a := 0; r.a := 1; [r.r -> skip]; r.a := 0; [~r.r -> skip]; x := 0; [l.r -> skip]; l.a := 1; [~l.r -> skip]; x := 1; l.a := 0; r.a := 1; [r.r -> skip]; r.a := 0; [~r.r -> skip]
 }
 
 proc clean_fifo(channel l, channel r)

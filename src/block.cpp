@@ -236,7 +236,35 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		// Check to see if this instruction affects this particular variable
 		for(vi = affected.begin(); vi != affected.end(); vi++)
 		{
+			l = ii->result.find(vi->first);
 
+			if (l != ii->result.end() && l->second.data != "NA")
+			{
+				tstate.prs = l->second.prs;
+				if(l->second.data[0] == '='){
+					cout << "Expr eval here!" << l->second << endl;
+					tstate.data = expr_eval(l->second.data.substr(1),states_at_begin).data;
+				}else{
+					cout << "No expr eval here." << l->second << endl;
+					tstate.data = l->second.data;
+				}
+				cout << tstate.data.length() << endl;
+				while (vi->second->width - tstate.data.length() > 0)
+					tstate.data = "0" + tstate.data;
+
+				states[vi->first].states.push_back(tstate);
+				states_at_begin[vi->first] = tstate;
+				cout << "I declare  "<< vi->first << " is now " << tstate <<endl;
+
+			}
+			// we need to X the variable out because there was a delta and this variable
+			// is an input variable.
+			//else if ((*di) && !states[vi->first].states.rbegin()->prs)
+			//	states[vi->first].states.push_back(xstate);
+			// there is no delta in the output variables or this is an output variable
+			else
+				states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+			/*
 			l = ii->result.find(vi->first);
 
 			if (l != ii->result.end() && l->second.data != "NA")
@@ -271,7 +299,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 				// this is the state change we are looking for.
 				states[vi->first].states.push_back(tstate);
-				states_at_begin[vi->first] = tstate;	//*
+				states_at_begin[vi->first] = tstate;	// ?
 				cout << "I declare  "<< vi->first << " is now " << tstate <<endl;
 			}
 			// we need to X the variable out because there was a delta and this variable
@@ -281,6 +309,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			// there is no delta in the output variables or this is an output variable
 			else
 				states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+			*/
+
 		}
 	}
 
@@ -484,11 +514,12 @@ state expr_eval(string raw, map<string, state> init){
 	//Ands and Ors
 	//Variables
 	//Parens
-	//Nested Parens
+
 
 	//Known problems to fix:
 	// Mul with 0 fails due to state state definitions
 	//Test harder. Some kinks to work out.
+	//Nested paren sometimes wonks out.
 
 	// TODO:
 	//Less than, greater than
