@@ -35,6 +35,9 @@ struct space
 	space &operator&=(space s);
 	space &operator|=(space s);
 
+	space &operator<<=(space s);
+	space &operator>>=(space s);
+
 	space &operator+=(state s);
 	space &operator-=(state s);
 	space &operator*=(state s);
@@ -42,6 +45,9 @@ struct space
 
 	space &operator&=(state s);
 	space &operator|=(state s);
+
+	space &operator<<=(state s);
+	space &operator>>=(state s);
 
 	space &operator<<=(int n);
 	space &operator>>=(int n);
@@ -78,6 +84,15 @@ space operator&(state s1, space s2);
 space operator|(state s1, space s2);
 
 space operator~(space s);
+
+space operator<<(space s1, space s2);
+space operator>>(space s1, space s2);
+
+space operator<<(space s1, state s2);
+space operator>>(space s1, state s2);
+
+space operator<<(state s1, space s2);
+space operator>>(state s1, space s2);
 
 space operator<<(space s, int n);
 space operator>>(space s, int n);

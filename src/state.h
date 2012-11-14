@@ -39,6 +39,9 @@ struct state
 	state &operator&=(state s);
 	state &operator|=(state s);
 
+	state &operator<<=(state s);
+	state &operator>>=(state s);
+
 	state &operator<<=(int n);
 	state &operator>>=(int n);
 
@@ -61,6 +64,9 @@ state operator~(state s);
 
 state operator<<(state s, int n);
 state operator>>(state s, int n);
+
+state operator<<(state s1, state s2);
+state operator>>(state s1, state s2);
 
 state operator==(state s1, state s2);
 state operator!=(state s1, state s2);

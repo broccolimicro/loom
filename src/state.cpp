@@ -79,6 +79,18 @@ state &state::operator|=(state s)
 	return *this;
 }
 
+state &state::operator<<=(state s)
+{
+	*this = *this << s;
+	return *this;
+}
+
+state &state::operator>>=(state s)
+{
+	*this = *this >> s;
+	return *this;
+}
+
 state &state::operator<<=(int n)
 {
 	*this = *this << n;
@@ -152,7 +164,6 @@ state operator-(state s1, state s2)
 	return s1 + ~s2 + state("1", false);
 }
 
-//Add corner case when one operand == 0
 state operator*(state s1, state s2)
 {
 	state result;
@@ -169,6 +180,9 @@ state operator*(state s1, state s2)
 
 		mult += mult;
 	}
+
+	if (result.data.empty())
+		result.data = "0";
 
 	return result;
 }
@@ -251,15 +265,48 @@ state operator~(state s)
 	return result;
 }
 
-//NED!! This should be a state state operation
 state operator<<(state s, int n)
 {
 	return state(s.data + string(n, '0'), false);
 }
-//NED!! This should be a state state operation
+
 state operator>>(state s, int n)
 {
-	return state(s.data.substr(0, s.data.length()-n), false);
+	return state((string(n, '0') + s.data).substr(0, s.data.length()), false);
+}
+
+state operator<<(state s1, state s2)
+{
+	string zeros;
+	string mult = "0";
+	string::reverse_iterator i;
+
+	for (i = s2.data.rbegin(); i != s2.data.rend(); i++)
+	{
+		if (*i == '1')
+			zeros += mult;
+
+		mult += mult;
+	}
+
+	return state(s1.data + zeros, false);
+}
+
+state operator>>(state s1, state s2)
+{
+	string zeros;
+	string mult = "0";
+	string::reverse_iterator i;
+
+	for (i = s2.data.rbegin(); i != s2.data.rend(); i++)
+	{
+		if (*i == '1')
+			zeros += mult;
+
+		mult += mult;
+	}
+
+	return state((zeros + s1.data).substr(0, s1.data.length()), false);
 }
 
 state operator==(state s1, state s2)

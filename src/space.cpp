@@ -56,6 +56,18 @@ space &space::operator/=(space s)
 	return *this;
 }
 
+space &space::operator<<=(space s)
+{
+	*this = *this << s;
+	return *this;
+}
+
+space &space::operator>>=(space s)
+{
+	*this = *this >> s;
+	return *this;
+}
+
 space &space::operator&=(space s)
 {
 	*this = *this & s;
@@ -101,6 +113,18 @@ space &space::operator&=(state s)
 space &space::operator|=(state s)
 {
 	*this = *this | s;
+	return *this;
+}
+
+space &space::operator<<=(state s)
+{
+	*this = *this << s;
+	return *this;
+}
+
+space &space::operator>>=(state s)
+{
+	*this = *this >> s;
 	return *this;
 }
 
@@ -419,6 +443,78 @@ space operator~(space s)
 	result.var =  "~" + s.var;
 	for (i = s.states.begin(); i != s.states.end(); i++)
 		result.states.push_back(~*i);
+
+	return result;
+}
+
+space operator<<(space s1, space s2)
+{
+	space result;
+	list<state>::iterator i, j;
+
+	result.var = s1.var + " << " + s2.var;
+	for (i = s1.states.begin(), j = s2.states.begin(); i != s1.states.end() && j != s2.states.end(); i++, j++)
+		result.states.push_back(*i << *j);
+
+	return result;
+}
+
+space operator>>(space s1, space s2)
+{
+	space result;
+	list<state>::iterator i, j;
+
+	result.var = s1.var + " >> " + s2.var;
+	for (i = s1.states.begin(), j = s2.states.begin(); i != s1.states.end() && j != s2.states.end(); i++, j++)
+		result.states.push_back(*i >> *j);
+
+	return result;
+}
+
+space operator<<(space s1, state s2)
+{
+	space result;
+	list<state>::iterator i;
+
+	result.var = s1.var + " << " + s2.data;
+	for (i = s1.states.begin(); i != s1.states.end(); i++)
+		result.states.push_back(*i << s2);
+
+	return result;
+}
+
+space operator>>(space s1, state s2)
+{
+	space result;
+	list<state>::iterator i;
+
+	result.var = s1.var + " >> " + s2.data;
+	for (i = s1.states.begin(); i != s1.states.end(); i++)
+		result.states.push_back(*i >> s2);
+
+	return result;
+}
+
+space operator<<(state s1, space s2)
+{
+	space result;
+	list<state>::iterator i, j;
+
+	result.var = s1.data + " << " + s2.var;
+	for (i = s2.states.begin(); i != s2.states.end(); i++)
+		result.states.push_back(s1 << *i);
+
+	return result;
+}
+
+space operator>>(state s1, space s2)
+{
+	space result;
+	list<state>::iterator i;
+
+	result.var = s1.data + " >> " + s2.var;
+	for (i = s2.states.begin(); i != s2.states.end(); i++)
+		result.states.push_back(s1 >> *i);
 
 	return result;
 }
