@@ -14,10 +14,10 @@
 struct loop : conditional
 {
 	loop();
-	loop(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab);
+	loop(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab);
 	~loop();
 
-	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab);
+	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab);
 };
 
 #endif

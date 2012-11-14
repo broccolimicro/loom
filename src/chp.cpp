@@ -205,19 +205,8 @@ struct program
 
 int main(int argc, char **argv)
 {
-//	ifstream t("test.chp");
-//	string prgm((istreambuf_iterator<char>(t)),
-//	             istreambuf_iterator<char>());
-	map<string, state> s;
-	state x,y, z;
-	x.data = "00";
-	y.data = "00";
-	x.prs = "1";
-	y.prs = "1";
-	z.prs = "1";
-	z = x>y;
-
-	z = expr_eval("((1+2))", s);
-	cout << z << endl;
-//	program p(prgm);
+	ifstream t("test.chp");
+	string prgm((istreambuf_iterator<char>(t)),
+	             istreambuf_iterator<char>());
+	program p(prgm);
 }

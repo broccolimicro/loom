@@ -23,7 +23,7 @@ protected:
 
 public:
 	instruction();
-	instruction(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab);
+	instruction(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab);
 	~instruction();
 
 
@@ -42,7 +42,7 @@ public:
 	instruction &operator=(instruction i);
 	string kind();
 
-	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab);
+	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab);
 };
 state expr_eval(string raw, map<string, state> init);
 

@@ -60,6 +60,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	chp = raw;
 
 	string		raw_instr;	// chp of a sub block
+	int			idx_instr;
 
 	instruction instr; 		// instruction parser
 	conditional cond;		// conditional parser
@@ -94,6 +95,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		affected.insert(pair<string, variable*>(l->first, vars[l->first]));
 
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
+	idx_instr = 0;
 	int depth[3] = {0};
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()+1; i++)
 	{
@@ -121,28 +123,28 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (parallel)
 			{
-				para.parse(raw_instr, types, global, tab+"\t");
+				para.parse(raw_instr, types, global, current_state, tab+"\t");
 				instrs.push_back(para);
 				instr = para;
 			}
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
 			{
-				blk.parse(raw_instr.substr(1, raw_instr.length()-2), types, global, map<string, state>(), tab+"\t");
+				blk.parse(raw_instr.substr(1, raw_instr.length()-2), types, global, current_state, tab+"\t");
 				instrs.push_back(blk);
 				instr = blk;
 			}
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')
 			{
-				loopcond.parse(raw_instr, types, global, tab+"\t");
+				loopcond.parse(raw_instr, types, global, current_state, tab+"\t");
 				instrs.push_back(loopcond);
 				instr = loopcond;
 			}
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
 			{
-				cond.parse(raw_instr, types, global, map<string, state>(), tab+"\t");
+				cond.parse(raw_instr, types, global, current_state, tab+"\t");
 				instrs.push_back(cond);
 				instr = cond;
 			}
@@ -167,7 +169,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				// This sub block is an assignment instruction.
 				else if (raw_instr.length() != 0)
 				{
-					instr.parse(raw_instr, types, global, tab+"\t");
+					instr.parse(raw_instr, types, global, current_state, tab+"\t");
 					instrs.push_back(instr);
 				}
 			}
@@ -189,18 +191,68 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				{
 					delta |= ((l->second.prs) && (l->second.data != vi->second->last.data));
 					vi->second->last = l->second;
-					/*if (l->second.data[0] == '=')
-						vi->second->width = max(vi->second->width, (uint16_t)(l->second.data.length()-1));
-					else
-						vi->second->width = max(vi->second->width, (uint16_t)(l->second.data.length()));*/
 					if (affected.find(vi->first) == affected.end())
 						affected.insert(pair<string, variable*>(vi->first, vi->second));
 				}
 			}
 			delta_out.push_back(delta);
 
+			// Fill in the state space based upon the recorded delta values from instruction parsing above.
+			// Right now, we X out the input variables when an instruction changes an output value. This will
+			// have to be modified in the future so that we only X out the input variables depending upon the
+			// communication protocol.
+			for(vi = affected.begin(); vi != affected.end(); vi++)
+			{
+				if (states.find(vi->first) == states.end())
+				{
+					states.insert(pair<string, space>(vi->first, space(vi->first, list<state>())));
+					xstate = state(string(vi->second->width, 'X'), false);
+					// The first state for every variable is always all X
+					if ((l = init.find(vi->first)) != init.end())
+					{
+						states[vi->first].states.push_back(l->second);
+						states[vi->first].var = vi->first;
+					}
+					else
+					{
+						states[vi->first].states.push_back(xstate);
+						states[vi->first].var = vi->first;
+					}
+				}
+
+				for (ii = instrs.begin(), di = delta_out.begin(), k = 0; ii != instrs.end() && di != delta_out.end() && k < states[vi->first].states.size(); ii++, di++, k++);
+
+				for (; ii != instrs.end() && di != delta_out.end(); ii++, di++)
+				{
+					l = ii->result.find(vi->first);
+
+					if (l != ii->result.end() && l->second.data != "NA")
+					{
+						tstate.prs = l->second.prs;
+						if(l->second.data[0] == '='){
+							cout << "Expr eval here!" << l->second << endl;
+							tstate.data = expr_eval(l->second.data.substr(1),current_state).data;
+						}else{
+							cout << "No expr eval here." << l->second << endl;
+							tstate.data = l->second.data;
+						}
+
+						states[vi->first].states.push_back(tstate);
+						current_state[vi->first] = tstate;
+						cout << "I declare  "<< vi->first << " is now " << tstate <<endl;
+
+					}
+					else if ((*di) && !states[vi->first].states.rbegin()->prs)
+						states[vi->first].states.push_back(state(string(vi->second->width, 'X'), false));
+					// there is no delta in the output variables or this is an output variable
+					else
+						states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+				}
+			}
 			j = i+1;
 			parallel = false;
+
+			idx_instr++;
 		}
 		// We are in the current scope, and the current character
 		// is a parallel bar or the end of the chp string. This is
@@ -210,63 +262,6 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	}
 
 	cout << endl;
-
-	// Fill in the state space based upon the recorded delta values from instruction parsing above.
-	// Right now, we X out the input variables when an instruction changes an output value. This will
-	// have to be modified in the future so that we only X out the input variables depending upon the
-	// communication protocol.
-	for(vi = affected.begin(); vi != affected.end(); vi++)
-	{
-		xstate = state(string(vi->second->width, 'X'), false);
-		// The first state for every variable is always all X
-		if ((l = init.find(vi->first)) != init.end())
-		{
-			states[vi->first].states.push_back(l->second);
-			states[vi->first].var = vi->first;
-		}
-		else
-		{
-			states[vi->first].states.push_back(xstate);
-			states[vi->first].var = vi->first;
-		}
-	}
-
-	map<string, state> states_at_begin;
-	// Loop through the instructions and add a state for each instruction
-	for (ii = instrs.begin(), di = delta_out.begin(); ii != instrs.end() && di != delta_out.end(); ii++, di++)
-	{
-		// Check to see if this instruction affects this particular variable
-		for(vi = affected.begin(); vi != affected.end(); vi++)
-		{
-			l = ii->result.find(vi->first);
-
-			if (l != ii->result.end() && l->second.data != "NA")
-			{
-				tstate.prs = l->second.prs;
-				if(l->second.data[0] == '='){
-					cout << "Expr eval here!" << l->second << endl;
-					tstate.data = expr_eval(l->second.data.substr(1),states_at_begin).data;
-				}else{
-					cout << "No expr eval here." << l->second << endl;
-					tstate.data = l->second.data;
-				}
-				while (vi->second->width - tstate.data.length() > 0)
-					tstate.data = "0" + tstate.data;
-
-				states[vi->first].states.push_back(tstate);
-				states_at_begin[vi->first] = tstate;
-				cout << "I declare  "<< vi->first << " is now " << tstate <<endl;
-
-			}
-			// we need to X the variable out because there was a delta and this variable
-			// is an input variable.
-			else if ((*di) && !states[vi->first].states.rbegin()->prs)
-				states[vi->first].states.push_back(state(string(vi->second->width, 'X'), false));
-			// there is no delta in the output variables or this is an output variable
-			else
-				states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
-		}
-	}
 
 	for(vi = affected.begin(); vi != affected.end(); vi++)
 	{
@@ -309,11 +304,9 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 				invars.clear();
 				for (sj = states.begin(); sj != states.end(); sj++)
-				{
 					for (bi1 = 0; bi1 < global.find(sj->first)->second->width; bi1++)
 						if (sj != si || bi0 != bi1)
 							invars.insert(pair<string, space>(sj->first + to_string(bi1), sj->second[bi1]));
-				}
 
 				firstpos = true;
 				firstneg = true;

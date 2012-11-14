@@ -107,7 +107,12 @@ state state::operator[](int i)
 {
 	stringstream str;
 	string s;
-	str << data[i];
+
+	if (i < data.length())
+		str << data[i];
+	else
+		str << '0';
+
 	str >> s;
 	return state(s, prs);
 }

@@ -13,10 +13,10 @@ loop::loop()
 	_kind = "loop";
 }
 
-loop::loop(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
+loop::loop(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
 {
 	_kind = "loop";
-	parse(raw, types, vars, tab);
+	parse(raw, types, vars, init, tab);
 }
 
 loop::~loop()
@@ -24,7 +24,7 @@ loop::~loop()
 	_kind = "loop";
 }
 
-void loop::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
+void loop::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
 {
 	result.clear();
 	local.clear();

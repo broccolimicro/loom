@@ -15,10 +15,10 @@ parallel::parallel()
 	chp = "";
 	_kind = "parallel";
 }
-parallel::parallel(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
+parallel::parallel(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
 {
 	_kind = "parallel";
-	parse(raw, types, vars, tab);
+	parse(raw, types, vars, init, tab);
 }
 parallel::~parallel()
 {
@@ -36,7 +36,7 @@ parallel::~parallel()
 	local.clear();
 }
 
-void parallel::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
+void parallel::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
 {
 	result.clear();
 	local.clear();
@@ -91,13 +91,13 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 			raw_instr = chp.substr(j-chp.begin(), i-j);
 			if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
 			{
-				blk.parse(raw_instr.substr(1, raw_instr.length()-2), types, global,  map<string, state>(), tab+"\t");
+				blk.parse(raw_instr.substr(1, raw_instr.length()-2), types, global, map<string, state>(), tab+"\t");
 				instrs.push_back(blk);
 				instr = blk;
 			}
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')			// Loop Block
 			{
-				loopcond.parse(raw_instr, types, global, tab+"\t");
+				loopcond.parse(raw_instr, types, global, map<string, state>(), tab+"\t");
 				instrs.push_back(loopcond);
 				instr = loopcond;
 			}
@@ -113,7 +113,7 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 			}
 			else if (raw_instr.length() != 0)					// Assignment Instruction
 			{
-				instr.parse(raw_instr, types, global, tab+"\t");
+				instr.parse(raw_instr, types, global, map<string, state>(), tab+"\t");
 				instrs.push_back(instr);
 			}
 

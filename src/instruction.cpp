@@ -12,10 +12,10 @@ instruction::instruction()
 {
 	_kind = "instruction";
 }
-instruction::instruction(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
+instruction::instruction(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
 {
 	_kind = "instruction";
-	parse(raw, types, vars, tab);
+	parse(raw, types, vars, init, tab);
 }
 instruction::~instruction()
 {
@@ -34,7 +34,7 @@ string instruction::kind()
 	return _kind;
 }
 
-void instruction::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, string tab)
+void instruction::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
 {
 	result.clear();
 

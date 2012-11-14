@@ -25,6 +25,7 @@ struct variable
 	string		name;		// the name of the instantiated variable
 	string		type;		// the name of the type of the instantiated variable
 	uint16_t	width;		// the bit width of the instantiated variable
+	bool		fixed;		// is the bit width of this variable fixed or variable?
 	state		last;
 
 	variable &operator=(variable v);
