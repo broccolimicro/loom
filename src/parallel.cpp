@@ -44,7 +44,7 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 	instrs.clear();
 	states.clear();
 
-	cout << tab << "Block: " << raw << endl;
+	cout << tab << "Parallel: " << raw << endl;
 
 	global = vars;
 	chp = raw;
@@ -64,7 +64,7 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 	list<instruction>		::iterator	ii;
 	map<string, variable*>	::iterator	vi;
 	map<string, space>		::iterator	si, sj, sk;
-	map<string, state>		::iterator	l;
+	map<string, state>		::iterator	l, m;
 	list<state>				::iterator	a, b;
 	map<string, keyword*>	::iterator	t;
 	list<bool>				::iterator	di;
@@ -239,7 +239,7 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 						states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
 				}
 			}
-			j = i+1;
+			j = i+2;
 			parallel = false;
 
 			idx_instr++;
@@ -251,16 +251,27 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 			parallel = true;
 	}
 
-	/*cout << endl;
+	cout << endl;
 
-	for(vi = affected.begin(); vi != affected.end(); vi++)
+	for (ii = instrs.begin(); ii != instrs.end(); ii++)
 	{
-		cout << tab << states[vi->first] << endl;
-		result.insert(pair<string, state>(vi->first, *(states[vi->first].states.rbegin())));
+		for(l = ii->result.begin(); l != ii->result.end(); l++)
+		{
+			m = result.find(l->first);
+			if (m == result.end())
+				result.insert(pair<string, state>(l->first, l->second));
+			else
+				result[l->first] = result[l->first] || l->second;
+		}
+	}
+
+	for (l = result.begin(); l != result.end(); l++)
+	{
+		cout << tab << l->first << ": " << result[l->first] << endl;
 	}
 
 	// Generate the production rules
-	map<string, space> invars;
+	/*map<string, space> invars;
 	int bi0, bi1, o;
 	int scount, ccount;
 	int mscount, mcount;
