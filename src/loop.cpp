@@ -22,6 +22,16 @@ loop::loop(string raw, map<string, keyword*> types, map<string, variable*> vars,
 loop::~loop()
 {
 	_kind = "loop";
+
+	map<string, instruction*>::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		if (i->second != NULL)
+			delete i->second;
+		i->second = NULL;
+	}
+
+	instrs.clear();
 }
 
 void loop::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
@@ -32,7 +42,7 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 	instrs.clear();
 	states.clear();
 
-	chp = raw.substr(1, raw.length()-2);
+	chp = raw.substr(2, raw.length()-3);
 	global = vars;						//The variables this block uses.
 	type = unknown;
 	string expr, eval;
@@ -40,7 +50,7 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 
 	cout << tab << "Loop:\t" << chp << endl;
 
-	map<string, instruction>::iterator ii;
+	map<string, instruction*>::iterator ii;
 	map<string, state>::iterator si, sj;
 	string::iterator i, j, k;
 
@@ -74,7 +84,7 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 			expr = eval.substr(0, k-eval.begin());
 			eval = eval.substr(k-eval.begin()+2);
 
-			instrs.insert(pair<string, instruction>(expr, block(eval, types, global, guard(expr, tab+"\t"), tab+"\t")));
+			instrs.insert(pair<string, instruction*>(expr, new block(eval, types, global, guard(expr, vars, tab+"\t"), tab+"\t")));
 			j = i+1;
 			guarded = true;
 		}
@@ -91,7 +101,7 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 			expr = eval.substr(0, k-eval.begin());
 			eval = eval.substr(k-eval.begin()+2);
 
-			instrs.insert(pair<string, instruction>(expr, block(eval, types, global, guard(expr, tab+"\t"), tab+"\t")));
+			instrs.insert(pair<string, instruction*>(expr, new block(eval, types, global, guard(expr, vars, tab+"\t"), tab+"\t")));
 			j = i+2;
 			guarded = true;
 		}
@@ -101,7 +111,7 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 
 	for (ii = instrs.begin(); ii != instrs.end(); ii++)
 	{
-		for (si = ii->second.result.begin(); si != ii->second.result.end(); si++)
+		for (si = ii->second->result.begin(); si != ii->second->result.end(); si++)
 		{
 			if ((sj = result.find(si->first)) != result.end())
 				sj->second = sj->second || si->second;

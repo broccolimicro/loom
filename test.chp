@@ -1,23 +1,16 @@
-record differentChannel
-{
-	int<4> a;
-	int<4> r;
-}
-
-#include "test2.chp"
-
-/* This is a comment to be ignored.
-None of this will mess up CHP generation.
-Isn't that great?  */
-
-//This won't be noticed by the compiler either.
-
+#include "fifo.chp"
 
 proc main()
 {
-	channel a;
-	channel b;
-	channel c;
-	fifo f1(a, b);
-	fifo f2(b, c);
+	chan0b a;
+	chan0b b;
+	chan0b c;
+	fifo0b f1(a, b);
+	fifo0b f2(b, c);
+	
+	chan0b x;
+	chan0b y;
+	chan0b z;
+	chan1b s;
+	mux0b2(x, y, z, s);
 }

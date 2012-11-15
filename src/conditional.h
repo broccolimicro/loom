@@ -26,12 +26,12 @@ struct conditional : block
 	~conditional();
 
 	conditional_type type;
-	map<string, instruction>		instrs;		//Guards index instructions
+	map<string, instruction*> instrs;		//Guards index instructions
 
 
 	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab);
 };
 
-map<string, state> guard(string raw, string tab);
+map<string, state> guard(string raw, map<string, variable*> vars, string tab);
 
 #endif

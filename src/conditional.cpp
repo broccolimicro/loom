@@ -24,6 +24,16 @@ conditional::~conditional()
 {
 	_kind = "conditional";
 	type = unknown;
+
+	map<string, instruction*>::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		if (i->second != NULL)
+			delete i->second;
+		i->second = NULL;
+	}
+
+	instrs.clear();
 }
 // [G -> S]
 void conditional::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
@@ -44,7 +54,7 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 
 	map<string, state> guardresult, temp;
 
-	map<string, instruction>::iterator ii;
+	map<string, instruction*>::iterator ii;
 	map<string, state>::iterator si, sj;
 	string::iterator i, j, k;
 	string::reverse_iterator ri, rj, rk;
@@ -86,7 +96,7 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 				cout << si->first << " -> " << si->second << endl;
 
 			cout << "Guard\n";
-			temp = guard(expr, tab+"\t");
+			temp = guard(expr, vars, tab+"\t");
 			for (si = temp.begin(); si != temp.end(); si++)
 			{
 				if ((sj = guardresult.find(si->first)) == guardresult.end())
@@ -103,7 +113,7 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 			for (si = guardresult.begin(); si != guardresult.end(); si++)
 				cout << si->first << " -> " << si->second << endl;
 
-			instrs.insert(pair<string, instruction>(expr, block(eval, types, global, guardresult, tab+"\t")));
+			instrs.insert(pair<string, instruction*>(expr, new block(eval, types, global, guardresult, tab+"\t")));
 			j = i+1;
 			guarded = true;
 			guardresult = init;
@@ -126,7 +136,7 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 				cout << tab << si->first << " -> " << si->second << endl;
 
 			cout << tab << "Guard\n";
-			temp = guard(expr, tab+"\t");
+			temp = guard(expr, vars, tab+"\t");
 			for (si = temp.begin(); si != temp.end(); si++)
 			{
 				if ((sj = guardresult.find(si->first)) == guardresult.end())
@@ -141,7 +151,7 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 			for (si = guardresult.begin(); si != guardresult.end(); si++)
 				cout << tab << si->first << " -> " << si->second << endl;
 
-			instrs.insert(pair<string, instruction>(expr, block(eval, types, global, guardresult, tab+"\t")));
+			instrs.insert(pair<string, instruction*>(expr, new block(eval, types, global, guardresult, tab+"\t")));
 			j = i+2;
 			guarded = true;
 			guardresult = init;
@@ -152,7 +162,7 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 
 	for (ii = instrs.begin(); ii != instrs.end(); ii++)
 	{
-		for (si = ii->second.result.begin(); si != ii->second.result.end(); si++)
+		for (si = ii->second->result.begin(); si != ii->second->result.end(); si++)
 		{
 			if ((sj = result.find(si->first)) != result.end())
 				sj->second = sj->second || si->second;
@@ -168,7 +178,7 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 	cout << endl;
 }
 
-map<string, state> guard(string raw, string tab)
+map<string, state> guard(string raw,  map<string, variable*> vars, string tab)
 {
 	map<string, state> outcomes;
 	map<string, state> a, b;
@@ -189,8 +199,8 @@ map<string, state> guard(string raw, string tab)
 
 		if (depth == 0 && *i == '|')
 		{
-			a = guard(raw.substr(j-raw.begin(), i-j), tab+"\t");
-			b = guard(raw.substr(i+1-raw.begin()), tab+"\t");
+			a = guard(raw.substr(j-raw.begin(), i-j), vars, tab+"\t");
+			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t");
 
 			for (ai = a.begin(); ai != a.end(); ai++)
 			{
@@ -228,8 +238,8 @@ map<string, state> guard(string raw, string tab)
 
 		if (depth == 0 && *i == '&')
 		{
-			a = guard(raw.substr(j-raw.begin(), i-j), tab+"\t");
-			b = guard(raw.substr(i+1-raw.begin()), tab+"\t");
+			a = guard(raw.substr(j-raw.begin(), i-j), vars, tab+"\t");
+			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t");
 
 			outcomes.insert(a.begin(), a.end());
 
@@ -249,7 +259,7 @@ map<string, state> guard(string raw, string tab)
 		}
 	}
 
-	depth = 0;
+	/*depth = 0;
 	for (i = raw.begin(), j = raw.begin(); i != raw.end()+1; i++)
 	{
 		if (*i == '(')
@@ -321,7 +331,7 @@ map<string, state> guard(string raw, string tab)
 
 			return outcomes;
 		}
-	}
+	}*/
 
 	// TODO: << >> + - * /
 	// For shifting, reverse the shift. For add, you subtract and visa versa. For multiple, you divide and visa versa
@@ -336,7 +346,7 @@ map<string, state> guard(string raw, string tab)
 
 		if (depth == 0 && *i == '~')
 		{
-			b = guard(raw.substr(i+1-raw.begin()), tab+"\t");
+			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t");
 
 			for (bi = b.begin(); bi != b.end(); bi++)
 				outcomes.insert(pair<string, state>(bi->first, ~(bi->second)));
@@ -352,7 +362,7 @@ map<string, state> guard(string raw, string tab)
 	unsigned long e = raw.find_last_of(")");
 	if (s != raw.npos && e != raw.npos)
 	{
-		a = guard(raw.substr(s+1, e-s-1), tab+"\t");
+		a = guard(raw.substr(s+1, e-s-1), vars, tab+"\t");
 
 		outcomes.insert(a.begin(), a.end());
 
@@ -362,7 +372,8 @@ map<string, state> guard(string raw, string tab)
 		return outcomes;
 	}
 
-	outcomes.insert(pair<string, state>(raw, state("1", false)));
+	if (vars.find(raw) != vars.end())
+		outcomes.insert(pair<string, state>(raw, state("1", false)));
 
 	for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
 		cout << tab << ai->first << ": " << ai->second << endl;

@@ -34,6 +34,16 @@ parallel::~parallel()
 	}
 
 	local.clear();
+
+	list<instruction*>::iterator j;
+	for (j = instrs.begin(); j != instrs.end(); j++)
+	{
+		if (*j != NULL)
+			delete *j;
+		*j = NULL;
+	}
+
+	instrs.clear();
 }
 
 void parallel::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
@@ -50,18 +60,13 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 	chp = raw;
 
 	string		raw_instr;	// chp of a sub block
-	int			idx_instr;
 
-	instruction instr; 		// instruction parser
-	conditional cond;		// conditional parser
-	loop		loopcond;	// loop parser
-	parallel	para;		// parallel execution parser
-	block		blk;		// sequential execution parser
+	instruction *instr; 	// instruction parser
 	variable	*v;			// variable instantiation parser
 
 	map<string, state> current_state;
 
-	list<instruction>		::iterator	ii, ij;
+	list<instruction*>		::iterator	ii, ij;
 	map<string, variable*>	::iterator	vi;
 	map<string, space>		::iterator	si, sj, sk;
 	map<string, state>		::iterator	l, m;
@@ -85,7 +90,6 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 		affected.insert(pair<string, variable*>(l->first, vars[l->first]));
 
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
-	idx_instr = 0;
 	int depth[3] = {0};
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()+1; i++)
 	{
@@ -110,34 +114,20 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 			// Get the block string.
 			raw_instr = chp.substr(j-chp.begin(), i-j);
 
+			instr = NULL;
+
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (sequential)
-			{
-				para.parse(raw_instr, types, global, init, tab+"\t");
-				instrs.push_back(para);
-				instr = para;
-			}
+				instr = new parallel(raw_instr, types, global, init, tab+"\t");
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
-			{
-				blk.parse(raw_instr.substr(1, raw_instr.length()-2), types, global, init, tab+"\t");
-				instrs.push_back(blk);
-				instr = blk;
-			}
+				instr = new block(raw_instr.substr(1, raw_instr.length()-2), types, global, init, tab+"\t");
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')
-			{
-				loopcond.parse(raw_instr, types, global, init, tab+"\t");
-				instrs.push_back(loopcond);
-				instr = loopcond;
-			}
+				instr = new loop(raw_instr, types, global, init, tab+"\t");
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
-			{
-				cond.parse(raw_instr, types, global, init, tab+"\t");
-				instrs.push_back(cond);
-				instr = cond;
-			}
+				instr = new conditional(raw_instr, types, global, init, tab+"\t");
 			// This sub block is either a variable definition or an assignment instruction.
 			else
 			{
@@ -158,62 +148,62 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 				}
 				// This sub block is an assignment instruction.
 				else if (raw_instr.length() != 0)
-				{
-					instr.parse(raw_instr, types, global, init, tab+"\t");
-					instrs.push_back(instr);
-				}
+					instr = new instruction(raw_instr, types, global, init, tab+"\t");
 			}
 
-			// Now that we have parsed the sub block, we need to
-			// check the resulting state space deltas of that sub block.
-			// Loop through all of the affected variables.
-			delta = false;
-			for (l = instr.result.begin(); l != instr.result.end(); l++)
+			if (instr != NULL)
 			{
-				// If this variable exists, then we check the resultant value against
-				// its current bitwidth and adjust the bitwidth to fit the resultant value.
-				// We also need to mark whether or not we need to generate a production rule
-				// for this instruction.
-				vi = global.find(l->first);
-				if (vi == global.end() && l->first != "Unhandled")
-					cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + l->first << endl;
-				else if (vi != global.end())
-				{
-					delta |= ((l->second.prs) && (l->second.data != vi->second->last.data));
-					vi->second->last = l->second;
-					if (affected.find(vi->first) == affected.end())
-						affected.insert(pair<string, variable*>(vi->first, vi->second));
-				}
-			}
-			delta_out.push_back(delta);
+				instrs.push_back(instr);
 
-			// Fill in the state space based upon the recorded delta values from instruction parsing above.
-			// Right now, we X out the input variables when an instruction changes an output value. This will
-			// have to be modified in the future so that we only X out the input variables depending upon the
-			// communication protocol.
-			for(vi = affected.begin(); vi != affected.end(); vi++)
-			{
-				if (states.find(vi->first) == states.end())
+				// Now that we have parsed the sub block, we need to
+				// check the resulting state space deltas of that sub block.
+				// Loop through all of the affected variables.
+				delta = false;
+				for (l = instr->result.begin(); l != instr->result.end(); l++)
 				{
-					states.insert(pair<string, space>(vi->first, space(vi->first, list<state>())));
-					xstate = state(string(vi->second->width, 'X'), false);
-					// The first state for every variable is always all X
-					if ((l = init.find(vi->first)) != init.end())
+					// If this variable exists, then we check the resultant value against
+					// its current bitwidth and adjust the bitwidth to fit the resultant value.
+					// We also need to mark whether or not we need to generate a production rule
+					// for this instruction.
+					vi = global.find(l->first);
+					if (vi == global.end() && l->first != "Unhandled")
+						cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + l->first << endl;
+					else if (vi != global.end())
 					{
-						states[vi->first].states.push_back(l->second);
-						states[vi->first].var = vi->first;
+						delta |= ((l->second.prs) && (l->second.data != vi->second->last.data));
+						vi->second->last = l->second;
+						if (affected.find(vi->first) == affected.end())
+							affected.insert(pair<string, variable*>(vi->first, vi->second));
 					}
-					else
+				}
+				delta_out.push_back(delta);
+
+				// Fill in the state space based upon the recorded delta values from instruction parsing above.
+				// Right now, we X out the input variables when an instruction changes an output value. This will
+				// have to be modified in the future so that we only X out the input variables depending upon the
+				// communication protocol.
+				for(vi = affected.begin(); vi != affected.end(); vi++)
+				{
+					if (states.find(vi->first) == states.end())
 					{
-						states[vi->first].states.push_back(xstate);
-						states[vi->first].var = vi->first;
+						states.insert(pair<string, space>(vi->first, space(vi->first, list<state>())));
+						xstate = state(string(vi->second->width, 'X'), false);
+						// The first state for every variable is always all X
+						if ((l = init.find(vi->first)) != init.end())
+						{
+							states[vi->first].states.push_back(l->second);
+							states[vi->first].var = vi->first;
+						}
+						else
+						{
+							states[vi->first].states.push_back(xstate);
+							states[vi->first].var = vi->first;
+						}
 					}
 				}
 			}
 			j = i+2;
 			sequential = false;
-
-			idx_instr++;
 		}
 		// We are in the current scope, and the current character
 		// is a parallel bar or the end of the chp string. This is
@@ -234,7 +224,7 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 			cout << ii->chp << "\t" << ij->chp << endl;
 		}*/
 
-		for(l = ii->result.begin(); l != ii->result.end(); l++)
+		for (l = (*ii)->result.begin(); l != (*ii)->result.end(); l++)
 		{
 			m = result.find(l->first);
 			if (m == result.end())
