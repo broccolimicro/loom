@@ -1,21 +1,17 @@
-record channel
+record differentChannel
 {
 	int<4> a;
 	int<4> r;
 }
 
-proc fifo(channel l, channel r)
-{
-	int<1> x; x := 0; [l.r -> skip]; l.a := 1; [~l.r -> skip]; x := 5+2+3+4+5-4-2+4-3; l.a := 0; r.a := 1; [r.r -> skip]; r.a := 0; [~r.r -> skip]; x := 0; [l.r -> skip]; l.a := 1; [~l.r -> skip]; x := 1; l.a := 0; r.a := 1; [r.r -> skip]; r.a := 0; [~r.r -> skip]
-}
+#include "test2.chp"
 
-proc clean_fifo(channel l, channel r)
-{
-	int<1> x;
-	[  ((l.r & r.a) | (l.r & r.r))	-> x = 0
-	[] ~(l.r & r.a | l.r & r.r)	-> x = 1
-	]
-}
+/* This is a comment to be ignored.
+None of this will mess up CHP generation.
+Isn't that great?  */
+
+//This won't be noticed by the compiler either.
+
 
 proc main()
 {

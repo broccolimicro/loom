@@ -116,6 +116,25 @@ struct program
 		// Define the basic types. In this case, 'int'
 		type_space.insert(pair<string, keyword*>("int", new keyword("int")));
 
+
+		//Remove block comments:
+		size_t comment_begin = chp.find("/*");
+		size_t comment_end = chp.find("*/");
+		while (comment_begin != chp.npos && comment_end != chp.npos){
+			chp = chp.substr(0,comment_begin) + chp.substr(comment_end+2);
+			comment_begin = chp.find("/*");
+			comment_end = chp.find("*/");
+		}
+
+		//Remove line comments:
+		comment_begin = chp.find("//");
+		comment_end = chp.find("\n", comment_begin);
+		while (comment_begin != chp.npos && comment_end != chp.npos){
+			chp = chp.substr(0,comment_begin) + chp.substr(comment_end);
+			comment_begin = chp.find("//");
+			comment_end = chp.find("\n", comment_begin);
+		}
+
 		// remove extraneous whitespace
 		for (i = chp.begin(); i != chp.end(); i++)
 		{
@@ -124,6 +143,8 @@ struct program
 			else if (nc(*(i-1)) && (i == chp.end()-1 || nc(*(i+1))))
 				cleaned_chp += ' ';
 		}
+
+
 
 		// split the program into records and processes
 		int depth[3] = {0};
@@ -205,15 +226,18 @@ struct program
 
 int main(int argc, char **argv)
 {
+	//Open the top level file
 	ifstream t("test.chp");
 	string prgm((istreambuf_iterator<char>(t)),
 	             istreambuf_iterator<char>());
-	program p(prgm);
 
 	size_t i;
 	size_t open, close;
+
+	//While there are and #includes (of the form #include "foo.chp") in the program
 	while ((i = prgm.find("#include")) != prgm.npos)
 	{
+		//Find the file name
 		open = prgm.find_first_of("\"", i+1);
 		close = prgm.find_first_of("\"", open+1);
 
@@ -221,7 +245,10 @@ int main(int argc, char **argv)
 		string f((istreambuf_iterator<char>(s)),
 	             istreambuf_iterator<char>());
 
+		//Place the contents of the file where the #include statement was
 		prgm = prgm.substr(0, i) + f + prgm.substr(close+1);
+
 	}
 
+	program p(prgm);
 }
