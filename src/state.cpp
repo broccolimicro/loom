@@ -295,6 +295,11 @@ state operator>>(state s, int n)
 	return state((string(n, '0') + s.data).substr(0, s.data.length()), true);
 }
 
+// DOES NOT HANDLE X VALUES
+/* To handle X values, unroll the X values, do a separate
+ * shift operation for every unrolled element, then union
+ * all of the results together.
+ */
 state operator<<(state s1, state s2)
 {
 	string zeros;
@@ -312,6 +317,11 @@ state operator<<(state s1, state s2)
 	return state(s1.data + zeros, true);
 }
 
+// DOES NOT HANDLE X VALUES
+/* To handle X values, unroll the X values, do a separate
+ * shift operation for every unrolled element, then union
+ * all of the results together.
+ */
 state operator>>(state s1, state s2)
 {
 	string zeros;

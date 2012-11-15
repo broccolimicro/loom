@@ -209,6 +209,24 @@ int main(int argc, char **argv)
 	string prgm((istreambuf_iterator<char>(t)),
 	             istreambuf_iterator<char>());
 	program p(prgm);
+
+	size_t i;
+	size_t open, close;
+	while ((i = prgm.find("#include")) != prgm.npos)
+	{
+		open = prgm.find_first_of("\"", i+1);
+		close = prgm.find_first_of("\"", open+1);
+
+		ifstream s(prgm.substr(open+1, close-open-1));
+		string f((istreambuf_iterator<char>(s)),
+	             istreambuf_iterator<char>());
+
+		prgm = prgm.substr(0, i) + f + prgm.substr(close+1);
+	}
+
+
+
+
 	state x,y,z;
 	x.data = "00001111XXXX____";
 	y.data = "01X_01X_01X_01X_";

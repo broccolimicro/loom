@@ -258,6 +258,83 @@ map<string, state> guard(string raw, string tab)
 		else if (*i == ')')
 			depth--;
 
+		if (depth == 0 && *i == '=')
+		{
+			if (*(i-1) == '=')
+			{
+				a = guard(raw.substr(j-raw.begin(), i-j-1), tab+"\t");
+				b = guard(raw.substr(i+1-raw.begin()), tab+"\t");
+
+				for (bi = b.begin(); bi != b.end(); bi++)
+					outcomes.insert(pair<string, state>(bi->first, bi->second || ~(bi->second)));
+
+				for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
+					cout << tab << ai->first << ": " << ai->second << endl;
+			}
+			else if (*(i-1) == '~')
+			{
+				a = guard(raw.substr(j-raw.begin(), i-j-1), tab+"\t");
+				b = guard(raw.substr(i+1-raw.begin()), tab+"\t");
+
+				for (bi = b.begin(); bi != b.end(); bi++)
+					outcomes.insert(pair<string, state>(bi->first, bi->second || ~(bi->second)));
+
+				for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
+					cout << tab << ai->first << ": " << ai->second << endl;
+			}
+
+			return outcomes;
+		}
+	}
+
+	depth = 0;
+	for (i = raw.begin(), j = raw.begin(); i != raw.end()+1; i++)
+	{
+		if (*i == '(')
+			depth++;
+		else if (*i == ')')
+			depth--;
+
+		if (depth == 0 && ((*i == '<' && *(i+1) != '<') || (*i == '>' && *(i+1) != '>')))
+		{
+			if (*(i+1) == '=')
+			{
+				a = guard(raw.substr(j-raw.begin(), i-j), tab+"\t");
+				b = guard(raw.substr(i+2-raw.begin()), tab+"\t");
+
+				for (bi = b.begin(); bi != b.end(); bi++)
+					outcomes.insert(pair<string, state>(bi->first, bi->second || ~(bi->second)));
+
+				for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
+					cout << tab << ai->first << ": " << ai->second << endl;
+			}
+			else
+			{
+				a = guard(raw.substr(j-raw.begin(), i-j), tab+"\t");
+				b = guard(raw.substr(i+1-raw.begin()), tab+"\t");
+
+				for (bi = b.begin(); bi != b.end(); bi++)
+					outcomes.insert(pair<string, state>(bi->first, bi->second || ~(bi->second)));
+
+				for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
+					cout << tab << ai->first << ": " << ai->second << endl;
+			}
+
+			return outcomes;
+		}
+	}
+
+	// TODO: << >> + - * /
+	// For shifting, reverse the shift. For add, you subtract and visa versa. For multiple, you divide and visa versa
+
+	depth = 0;
+	for (i = raw.begin(), j = raw.begin(); i != raw.end()+1; i++)
+	{
+		if (*i == '(')
+			depth++;
+		else if (*i == ')')
+			depth--;
+
 		if (depth == 0 && *i == '~')
 		{
 			b = guard(raw.substr(i+1-raw.begin()), tab+"\t");
