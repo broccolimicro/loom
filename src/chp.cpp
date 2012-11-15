@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 	//y.data = '0b11';
 	x.prs = 1;
 	y.prs = 1;
-	z = x && y;
+	z = x || y;
 	cout << x << endl;
 	cout << y << endl;
 	cout << z << endl;

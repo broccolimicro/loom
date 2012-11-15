@@ -72,7 +72,7 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 
 	map<string, variable*>				affected;
 	list<bool>							delta_out;
-	unsigned int						k;
+
 
 	bool delta		= false;
 	bool sequential	= false;

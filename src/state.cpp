@@ -103,7 +103,7 @@ state &state::operator>>=(int n)
 	return *this;
 }
 
-state state::operator[](int i)
+state state::operator[](size_t i)
 {
 	stringstream str;
 	string s;
