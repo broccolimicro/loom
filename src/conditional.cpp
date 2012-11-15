@@ -157,7 +157,7 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 		for (si = ii->second.result.begin(); si != ii->second.result.end(); si++)
 		{
 			if ((sj = result.find(si->first)) != result.end())
-				sj->second = sj->second || si->second;
+				si->second = si->second || si->second;
 			else
 				result.insert(pair<string, state>(si->first, si->second));
 		}

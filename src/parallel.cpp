@@ -113,28 +113,28 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (parallel)
 			{
-				para.parse(raw_instr, types, global, current_state, tab+"\t");
+				para.parse(raw_instr, types, global, init, tab+"\t");
 				instrs.push_back(para);
 				instr = para;
 			}
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
 			{
-				blk.parse(raw_instr.substr(1, raw_instr.length()-2), types, global, current_state, tab+"\t");
+				blk.parse(raw_instr.substr(1, raw_instr.length()-2), types, global, init, tab+"\t");
 				instrs.push_back(blk);
 				instr = blk;
 			}
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')
 			{
-				loopcond.parse(raw_instr, types, global, current_state, tab+"\t");
+				loopcond.parse(raw_instr, types, global, init, tab+"\t");
 				instrs.push_back(loopcond);
 				instr = loopcond;
 			}
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
 			{
-				cond.parse(raw_instr, types, global, current_state, tab+"\t");
+				cond.parse(raw_instr, types, global, init, tab+"\t");
 				instrs.push_back(cond);
 				instr = cond;
 			}
@@ -159,7 +159,7 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 				// This sub block is an assignment instruction.
 				else if (raw_instr.length() != 0)
 				{
-					instr.parse(raw_instr, types, global, current_state, tab+"\t");
+					instr.parse(raw_instr, types, global, init, tab+"\t");
 					instrs.push_back(instr);
 				}
 			}
@@ -217,26 +217,14 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 					l = ii->result.find(vi->first);
 
 					if (l != ii->result.end() && l->second.data != "NA")
-					{
-						tstate.prs = l->second.prs;
-						if(l->second.data[0] == '='){
-							cout << "Expr eval here!" << l->second << endl;
-							tstate.data = expr_eval(l->second.data.substr(1),current_state).data;
-						}else{
-							cout << "No expr eval here." << l->second << endl;
-							tstate.data = l->second.data;
-						}
-
-						states[vi->first].states.push_back(tstate);
-						current_state[vi->first] = tstate;
-						cout << "I declare  "<< vi->first << " is now " << tstate <<endl;
-
-					}
+						states[vi->first].states.push_back(l->second);
 					else if ((*di) && !states[vi->first].states.rbegin()->prs)
 						states[vi->first].states.push_back(state(string(vi->second->width, 'X'), false));
 					// there is no delta in the output variables or this is an output variable
 					else
 						states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+
+					current_state[vi->first] = *states[vi->first].states.rbegin();
 				}
 			}
 			j = i+2;
