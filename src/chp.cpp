@@ -217,7 +217,7 @@ int main(int argc, char **argv)
 		open = prgm.find_first_of("\"", i+1);
 		close = prgm.find_first_of("\"", open+1);
 
-		ifstream s(prgm.substr(open+1, close-open-1));
+		ifstream s(prgm.substr(open+1, close-open-1).c_str());
 		string f((istreambuf_iterator<char>(s)),
 	             istreambuf_iterator<char>());
 
