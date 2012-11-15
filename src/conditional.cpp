@@ -168,7 +168,6 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 	cout << endl;
 }
 
-// + - * / - & | ~ << >> == != <= >= < >
 map<string, state> guard(string raw, string tab)
 {
 	map<string, state> outcomes;
