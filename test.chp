@@ -6,7 +6,7 @@ record channel
 
 proc fifo(channel l, channel r)
 {
-	int<1> x; x := 0; [l.r -> skip]; l.a := 1; [~l.r -> skip]; x := 0 <= 1; l.a := 0; r.a := 1; [r.r -> skip]; r.a := 0; [~r.r -> skip]; x := 0; [l.r -> skip]; l.a := 1; [~l.r -> skip]; x := 1; l.a := 0; r.a := 1; [r.r -> skip]; r.a := 0; [~r.r -> skip]
+	int<1> x; x := 0; [l.r -> skip]; l.a := 1; [~l.r -> skip]; x := l.r <= 1; l.a := 0; r.a := 1; [r.r -> skip]; r.a := 0; [~r.r -> skip]; x := 0; [l.r -> skip]; l.a := 1; [~l.r -> skip]; x := 1; l.a := 0; r.a := 1; [r.r -> skip]; r.a := 0; [~r.r -> skip]
 }
 
 proc clean_fifo(channel l, channel r)
