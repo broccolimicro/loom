@@ -209,4 +209,15 @@ int main(int argc, char **argv)
 	string prgm((istreambuf_iterator<char>(t)),
 	             istreambuf_iterator<char>());
 	program p(prgm);
+	state x,y,z;
+	x.data = "00001111XXXX____";
+	y.data = "01X_01X_01X_01X_";
+	//x.data = '0b11';
+	//y.data = '0b11';
+	x.prs = 1;
+	y.prs = 1;
+	z = x && y;
+	cout << x << endl;
+	cout << y << endl;
+	cout << z << endl;
 }

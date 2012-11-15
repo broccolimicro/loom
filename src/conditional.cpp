@@ -25,7 +25,7 @@ conditional::~conditional()
 	_kind = "conditional";
 	type = unknown;
 }
-
+// [G -> S]
 void conditional::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
 {
 	result.clear();

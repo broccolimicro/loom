@@ -298,7 +298,7 @@ state expr_eval(string raw, map<string, state> init){
 	//If the recursion gets down to here, it means we are at a 'basecase' i.e. a variable or number
 
 	if( ac(raw[0]) ){		//Return a variable name!
-		cout << "Loading a variable!" + raw + " = " << init[raw]<< endl;
+		//cout << "Loading a variable!" + raw + " = " << init[raw]<< endl;
 		result = init[raw];
 		result.prs = 1;
 		return init[raw];

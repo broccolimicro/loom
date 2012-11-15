@@ -592,3 +592,36 @@ state operator||(state s1, state s2)
 	return result;
 }
 
+
+//There can be four states: 1, 0, X, _ where underscore is empty set and X is full set.
+state operator&&(state s1, state s2)
+{
+	string::reverse_iterator j, k;
+	state result;
+	string a, b;
+
+
+	result.data = "";
+	for (j = s1.data.rbegin(), k = s2.data.rbegin(); j != s1.data.rend() || k != s2.data.rend(); j++, k++)
+	{
+
+		a = j != s1.data.rend() ? *j : '0';
+		b = k != s2.data.rend() ? *k : '0';
+
+		if (a == "X")
+			result.data = b + result.data;
+		else if(b == "X")
+			result.data = a + result.data;
+		else if (a == b)
+			result.data = a + result.data;
+		else if( a == "_" || b == "_")
+			result.data = "_" + result.data;
+		else
+			result.data = "_" + result.data;
+	}
+
+	result.prs = true;
+
+	return result;
+}
+
