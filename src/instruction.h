@@ -9,6 +9,7 @@
 #include "state.h"
 #include "variable.h"
 #include "keyword.h"
+#include "rule.h"
 
 #ifndef instruction_h
 #define instruction_h
@@ -37,7 +38,7 @@ public:
 	map<string, state> result;
 
 	// This is the list of production rules that defines this instruction
-	list<string>		rules;
+	list<rule>		rules;
 
 	instruction &operator=(instruction i);
 	string kind();

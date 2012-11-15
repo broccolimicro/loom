@@ -38,4 +38,6 @@ struct block : instruction
 	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab);
 };
 
+list<rule> production_rule(map<string, space>	states, map<string, variable*> global);
+
 #endif

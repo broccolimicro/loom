@@ -11,7 +11,10 @@ proc fifo(channel l, channel r)
 
 proc clean_fifo(channel l, channel r)
 {
-	int<1> x; x := 0; [l.r -> skip]; l.a := 1; [~l.r -> skip]; x := 1 || l.a := 0110 || r.a := 1 || l.a := 0101; [r.r -> skip]; r.a := 0; [~r.r -> skip]; x := 0; [l.r -> skip]; l.a := 1; [~l.r -> skip]; x := 1; l.a := 0; r.a := 1; [r.r -> skip]; r.a := 0; [~r.r -> skip]
+	int<1> x;
+	[  ((l.r & r.a) | (l.r & r.r))	-> x = 0
+	[] ~(l.r & r.a | l.r & r.r)	-> x = 1
+	]
 }
 
 proc main()

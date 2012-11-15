@@ -257,8 +257,18 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		result.insert(pair<string, state>(vi->first, *(states[vi->first].states.rbegin())));
 	}
 
+	rules = production_rule(states, global);
+
+	list<rule>::iterator ri;
+	for (ri = rules.begin(); ri != rules.end(); ri++)
+		cout << *ri << endl;
+}
+
+list<rule> production_rule(map<string, space> states, map<string, variable*> global)
+{
 	// Generate the production rules
 	map<string, space> invars;
+	map<string, space>		::iterator	si, sj;
 	int bi0, bi1, o;
 	int scount, ccount;
 	int mscount, mcount;
@@ -266,6 +276,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	space tempspace, setspace;
 	string invar;
 	rule r, f;
+	list<rule> rules;
 	bool firstpos, firstneg, found;
 
 	for (si = states.begin(); si != states.end(); si++)
@@ -435,9 +446,11 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			}
 
 			if (delta_count(si->second[bi0]) > 0)
-				cout << f << endl;
+				rules.push_back(f);
 		}
 	}
+
+	return rules;
 }
 
 
