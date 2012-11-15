@@ -75,7 +75,7 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 	unsigned int						k;
 
 	bool delta		= false;
-	bool parallel	= false;
+	bool sequential	= false;
 	bool vdef		= false;
 
 	state xstate;
@@ -111,7 +111,7 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 			raw_instr = chp.substr(j-chp.begin(), i-j);
 
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
-			if (parallel)
+			if (sequential)
 			{
 				para.parse(raw_instr, types, global, init, tab+"\t");
 				instrs.push_back(para);
@@ -209,34 +209,17 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 						states[vi->first].var = vi->first;
 					}
 				}
-
-				for (ii = instrs.begin(), di = delta_out.begin(), k = 0; ii != instrs.end() && di != delta_out.end() && k < states[vi->first].states.size(); ii++, di++, k++);
-
-				for (; ii != instrs.end() && di != delta_out.end(); ii++, di++)
-				{
-					l = ii->result.find(vi->first);
-
-					if (l != ii->result.end() && l->second.data != "NA")
-						states[vi->first].states.push_back(l->second);
-					else if ((*di) && !states[vi->first].states.rbegin()->prs)
-						states[vi->first].states.push_back(state(string(vi->second->width, 'X'), false));
-					// there is no delta in the output variables or this is an output variable
-					else
-						states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
-
-					current_state[vi->first] = *states[vi->first].states.rbegin();
-				}
 			}
 			j = i+2;
-			parallel = false;
+			sequential = false;
 
 			idx_instr++;
 		}
 		// We are in the current scope, and the current character
 		// is a parallel bar or the end of the chp string. This is
 		// the middle of a parallel sub block.
-		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) == '|') || i == chp.end()))
-			parallel = true;
+		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && (*i == ';' || i == chp.end()))
+			sequential = true;
 	}
 
 	cout << endl;

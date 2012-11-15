@@ -125,6 +125,9 @@ ostream &operator<<(ostream &os, state s)
 
 state operator+(state s1, state s2)
 {
+	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
+		return state("_", true);
+
 	string::reverse_iterator j, k;
 	state result;
 	char carry = '0';
@@ -166,11 +169,17 @@ state operator+(state s1, state s2)
 
 state operator-(state s1, state s2)
 {
+	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
+		return state("_", true);
+
 	return s1 + ~s2 + state("1", true);
 }
 
 state operator*(state s1, state s2)
 {
+	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
+		return state("_", true);
+
 	state result;
 	state mult = s1;
 
@@ -194,11 +203,17 @@ state operator*(state s1, state s2)
 
 state operator/(state s1, state s2)
 {
+	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
+		return state("_", true);
+
 	return state("", true);
 }
 
 state operator-(state s)
 {
+	if (s.data.find_first_of("_") != s.data.npos)
+		return state("_", true);
+
 	return ~s + state("1", true);
 }
 
@@ -316,6 +331,9 @@ state operator>>(state s1, state s2)
 
 state operator==(state s1, state s2)
 {
+	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
+		return state("_", true);
+
 	string::reverse_iterator j, k;
 	char a, b;
 	state result;
@@ -340,6 +358,9 @@ state operator==(state s1, state s2)
 
 state operator!=(state s1, state s2)
 {
+	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
+		return state("_", true);
+
 	string::reverse_iterator j, k;
 	char a, b;
 	state result;
@@ -364,6 +385,9 @@ state operator!=(state s1, state s2)
 
 state operator<=(state s1, state s2)
 {
+	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
+		return state("_", true);
+
 	int j, k;
 	int l0 = s1.data.length(), l1 = s2.data.length();
 	string::iterator a, b;
@@ -401,6 +425,9 @@ state operator<=(state s1, state s2)
 
 state operator>=(state s1, state s2)
 {
+	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
+		return state("_", true);
+
 	int j, k;
 	int l0 = s1.data.length(), l1 = s2.data.length();
 	string::iterator a, b;
@@ -439,6 +466,9 @@ state operator>=(state s1, state s2)
 
 state operator<(state s1, state s2)
 {
+	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
+		return state("_", true);
+
 	int j, k;
 	int l0 = s1.data.length(), l1 = s2.data.length();
 	string::iterator a, b;
@@ -476,6 +506,9 @@ state operator<(state s1, state s2)
 
 state operator>(state s1, state s2)
 {
+	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
+		return state("_", true);
+
 	int j, k;
 	int l0 = s1.data.length(), l1 = s2.data.length();
 	string::iterator a, b;
@@ -509,6 +542,28 @@ state operator>(state s1, state s2)
 		return state("1", true);
 
 	return state("0", true);
+}
+
+state operator!(state s)
+{
+	string::iterator j;
+	state result;
+
+	for (j = s.data.begin(); j != s.data.end(); j++)
+	{
+		if (*j == '_')
+			result.data += "X";
+		else if (*j == '0')
+			result.data += "1";
+		else if (*j == '1')
+			result.data += "0";
+		else
+			result.data += "_";
+	}
+
+	result.prs = true;
+
+	return result;
 }
 
 state operator||(state s1, state s2)
