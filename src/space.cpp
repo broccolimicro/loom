@@ -149,7 +149,7 @@ space space::operator[](int i)
 
 	list<state>::iterator j;
 	for (j = states.begin(); j != states.end(); j++)
-		result.states.push_back((*j)[i]);
+		result.states.push_back((*j)[(size_t)i]);
 
 	return result;
 }
