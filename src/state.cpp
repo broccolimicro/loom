@@ -577,7 +577,11 @@ state operator||(state s1, state s2)
 		a = j != s1.data.rend() ? *j++ : '0';
 		b = k != s2.data.rend() ? *k++ : '0';
 
-		if (a == b)
+		if (a == "_")
+			result.data = b + result.data;
+		else if (b == "_")
+			result.data = a + result.data;
+		else if (a == b)
 			result.data = a + result.data;
 		else
 			result.data = "X" + result.data;
