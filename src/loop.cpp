@@ -56,9 +56,9 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 
 	//Check for the shorthand *[S] and replace it with *[1 -> S]
 	if(chp.find("->") == chp.npos){
-		cout << tab <<"I am replacing " << chp << endl;
+		cout << tab <<"Expanding " << chp;
 		chp = "1->" + chp;
-		cout << tab << "with " << chp << endl;
+		cout << " to " << chp << endl;
 	}
 
 	//Parse instructions!

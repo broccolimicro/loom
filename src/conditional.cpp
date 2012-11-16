@@ -63,9 +63,9 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 
 	//Check for the shorthand [var] and replace it with [var -> skip]
 	if(chp.find("->") == chp.npos){
-		cout << tab <<"I am replacing " << chp << endl;
+		cout << tab <<"Expanding " << chp;
 		chp = chp + "->skip";
-		cout << tab << "with " << chp << endl;
+		cout << " to " << chp << endl;
 	}
 
 	//Parse instructions!
