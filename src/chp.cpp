@@ -30,7 +30,7 @@
  *	Communication
  * 	 x!y
  * 	 x?y
- * 	 @x
+ * 	 x@
  *
  *	Miscellaneous
  * 	 skip

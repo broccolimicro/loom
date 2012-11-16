@@ -66,7 +66,7 @@ void record::parse(string chp, map<string, keyword*> types, string tab)
 	{
 		if (*(i+1) == ';')
 		{
-			expansion = expand(io_block.substr(j-io_block.begin(), i+1 - j), types, tab+"\t");
+			expansion = expand(io_block.substr(j-io_block.begin(), i+1 - j), name, types, tab+"\t");
 			vars.insert(expansion.begin(), expansion.end());
 
 			j = i+2;
@@ -74,39 +74,32 @@ void record::parse(string chp, map<string, keyword*> types, string tab)
 	}
 }
 
-map<string, variable*> expand(string chp, map<string, keyword*>	types, string tab)
+map<string, variable*> expand(string chp, string super, map<string, keyword*> types, string tab)
 {
 	map<string, variable*> result;
 	map<string, keyword*>::iterator var_type;
 	map<string, variable*>::iterator mem_var;
-	variable *v = new variable(chp, tab+"\t");
+	variable *v = new variable(chp, super, tab+"\t");
 	string name;
 
 	if ((var_type = types.find(v->type)) != types.end())
 	{
-		if (var_type->second->kind() == "keyword")
-			result.insert(pair<string, variable*>(v->name, v));
-		else if (var_type->second->kind() == "record")
+		result.insert(pair<string, variable*>(v->name, v));
+
+		if (var_type->second->kind() == "record" || var_type->second->kind() == "channel")
 		{
 			name = v->name;
-			delete v;
 			for (mem_var = ((record*)var_type->second)->vars.begin(); mem_var != ((record*)var_type->second)->vars.end(); mem_var++)
 			{
 				v = mem_var->second;
-				result.insert(pair<string, variable*>(name + "." + v->name, new variable(name + "." + v->name, v->type, v->width)));
+				result.insert(pair<string, variable*>(name + "." + v->name, new variable(name + "." + v->name, v->type, var_type->first, v->width)));
 			}
 		}
-		else
-		{
+		else if (var_type->second->kind() == "process")
 			cout << "Error: Invalid use of type " << var_type->second->kind() << " in record definition." << endl;
-			delete v;
-		}
 	}
 	else
-	{
 		cout << "Error: Invalid typename: " << v->type << endl;
-		delete v;
-	}
 
 	return result;
 }

@@ -87,7 +87,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 	map<string, variable*>				affected;
 	list<bool>							delta_out;
-	unsigned int						k;
+	size_t								k;
 
 	bool delta		= false;
 	bool para	= false;
@@ -148,7 +148,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				// This sub block is a variable definition. keyword<bitwidth> name
 				if (vdef)
 				{
-					v = new variable(raw_instr, tab);
+					v = new variable(raw_instr, "", tab);
 					local.insert(pair<string, variable*>(v->name, v));
 					global.insert(pair<string, variable*>(v->name, v));
 				}

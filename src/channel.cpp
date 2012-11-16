@@ -81,7 +81,7 @@ void channel::parse(string chp, map<string, keyword*> types, string tab)
 
 		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == ';')
 		{
-			expansion = expand(io_block.substr(j-io_block.begin(), i - j), types, tab+"\t");
+			expansion = expand(io_block.substr(j-io_block.begin(), i - j), name, types, tab+"\t");
 			vars.insert(expansion.begin(), expansion.end());
 
 			j = i+1;

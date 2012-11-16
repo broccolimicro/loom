@@ -18,21 +18,20 @@ channel chan
 	
 	proc send()
 	{
-		r := 1;[a -> skip];r := 0;[~a -> skip]
+		r+;[a];r-;[~a]
 	}
 	
 	proc recv()
 	{
-		[r -> skip];a := 1;[~r -> skip];a := 0
+		[r];a+;[~r];a-
 	}
 }
 
-proc fifo0b(chan0b l, chan0b r)
+proc fifo0b(chan l, chan r)
 {
-	// *[1 -> l?;r!]
-	// *[1 -> [l.r -> skip];l.x+;[~l.r -> skip];l.a-;r.r+;[r.a -> skip];r.r-;[~r.a -> skip]]
-
-	*[[l.r];r.r+;[r.a];r.r-;[~r.a];l.a+;[~l.r];l.a-]
+	*[l?;r!]
+	//*[[l.r];l.x+;[~l.r];l.a-;r.r+;[r.a];r.r-;[~r.a]]
+	//*[[l.r];r.r+;[r.a];r.r-;[~r.a];l.a+;[~l.r];l.a-]
 }
 
 /* This process represents an asynchronous 1 to 2 multiplexer
@@ -40,20 +39,20 @@ proc fifo0b(chan0b l, chan0b r)
 proc mux0b2(chan0b i, chan0b o1, chan0b o2, chan1b s)
 {
 	// initialize variables at reset
-	i.a := 0;
-	o1.r := 0;
-	o2.r := 0;
-	s.ra := 0;
+	i.a-;
+	o1.r-;
+	o2.r-;
+	s.ra-;
 	*[1 -> 
 		// wait for a request
-		[s.t | s.f -> skip];
+		[s.t | s.f];
 		// service the request
-		[  s.f -> [i.r -> skip];o1.r := 1;[o1.a -> skip];i.a := 1;[~i.r -> skip];o1.r := 0;[~o1.a -> skip];i.a := 0
-		[] s.t -> [i.r -> skip];o2.r := 1;[o2.a -> skip];i.a := 1;[~i.r -> skip];o2.r := 0;[~o2.a -> skip];i.a := 0
+		[  s.f -> [i.r];o1.r+;[o1.a];i.a+;[~i.r];o1.r-;[~o1.a];i.a-
+		[] s.t -> [i.r];o2.r+;[o2.a];i.a+;[~i.r];o2.r-;[~o2.a];i.a-
 		];
 		// clean up
-		s.ra := 1;
-		[~s.t & ~s.f -> skip];
-		s.ra := 0;
+		s.ra+;
+		[~s.t & ~s.f];
+		s.ra-;
 	]
 }

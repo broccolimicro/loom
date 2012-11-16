@@ -12,26 +12,29 @@ variable::variable()
 {
 	name = "";
 	type = "";
+	super = "";
 	width = 0;
 	last = "iX";
 	reset = "iX";
 	fixed = false;
 }
 
-variable::variable(string n, string t, uint16_t w)
+variable::variable(string n, string t, string s, uint16_t w)
 {
 	name = n;
 	type = t;
+	super = s;
 	width = w;
 	last = "iX";
 	reset = "iX";
 	fixed = true;
 }
 
-variable::variable(string chp, string tab)
+variable::variable(string chp, string spr, string tab)
 {
 	last = "iX";
 	reset = "iX";
+	super = spr;
 	parse(chp, tab);
 }
 
@@ -39,6 +42,7 @@ variable::~variable()
 {
 	name = "";
 	type = "";
+	super = "";
 	width = 0;
 	last = "iX";
 	reset = "iX";
@@ -49,6 +53,7 @@ variable &variable::operator=(variable v)
 {
 	name = v.name;
 	type = v.type;
+	super = v.super;
 	width = v.width;
 	last = v.last;
 	reset = v.reset;

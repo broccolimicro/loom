@@ -142,7 +142,7 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 				// This sub block is a variable definition. keyword<bitwidth> name
 				if (vdef)
 				{
-					v = new variable(raw_instr, tab);
+					v = new variable(raw_instr, "", tab);
 					local.insert(pair<string, variable*>(v->name, v));
 					global.insert(pair<string, variable*>(v->name, v));
 				}

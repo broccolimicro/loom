@@ -28,7 +28,7 @@ struct record : keyword
 	void parse(string chp, map<string, keyword*> types, string tab);
 };
 
-map<string, variable*> expand(string chp, map<string, keyword*>	types, string tab);
+map<string, variable*> expand(string chp, string super, map<string, keyword*> types, string tab);
 ostream &operator<<(ostream &os, record s);
 
 #endif
