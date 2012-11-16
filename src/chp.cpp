@@ -112,6 +112,7 @@ struct program
 
 		process *p;
 		record *r;
+		channel *c;
 
 		// Define the basic types. In this case, 'int'
 		type_space.insert(pair<string, keyword*>("int", new keyword("int")));
@@ -173,7 +174,7 @@ struct program
 					// Is this a process?
 					if (cleaned_chp.compare(j-cleaned_chp.begin(), 5, "proc ") == 0)
 					{
-						p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space);
+						p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, map<string, variable*>());
 						type_space.insert(pair<string, process*>(p->name, p));
 					}
 					// This isn't a process, is it a record?
@@ -183,17 +184,17 @@ struct program
 						type_space.insert(pair<string, record*>(r->name, r));
 					}
 					// Is it a channel definition?
-					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "chan ") == 0)
+					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "channel ") == 0)
 					{
-						r = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "");
-						type_space.insert(pair<string, record*>(r->name, r));
+						c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "");
+						type_space.insert(pair<string, channel*>(c->name, c));
 					}
 					// This isn't either a process or a record, this is an error.
 					else
 					{
 						error = "Error: CHP block outside of process.\nIgnoring block:\t";
 						error_start = j-cleaned_chp.begin();
-						error_len = min(min(cleaned_chp.find("proc ", error_start), cleaned_chp.find("record ", error_start)), cleaned_chp.find("chan ", error_start)) - error_start;
+						error_len = min(min(cleaned_chp.find("proc ", error_start), cleaned_chp.find("record ", error_start)), cleaned_chp.find("channel ", error_start)) - error_start;
 						error += cleaned_chp.substr(error_start, error_len);
 						cout << error << endl;
 						j += error_len;
@@ -201,7 +202,7 @@ struct program
 						// Make sure we don't miss the next record or process though.
 						if (cleaned_chp.compare(j-cleaned_chp.begin(), 5, "proc ") == 0)
 						{
-							p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space);
+							p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, map<string, variable*>());
 							type_space.insert(pair<string, process*>(p->name, p));
 						}
 						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "record ") == 0)
@@ -209,10 +210,10 @@ struct program
 							r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "");
 							type_space.insert(pair<string, record*>(r->name, r));
 						}
-						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "chan ") == 0)
+						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "channel ") == 0)
 						{
-							r = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "");
-							type_space.insert(pair<string, record*>(r->name, r));
+							c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "");
+							type_space.insert(pair<string, channel*>(c->name, c));
 						}
 					}
 				}

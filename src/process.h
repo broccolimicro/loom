@@ -21,16 +21,17 @@
 struct process : keyword
 {
 	process();
-	process(string chp, map<string, keyword*> types);
+	process(string chp, map<string, keyword*> types, map<string, variable*> vars);
 	~process();
 
 	block					def;	// the chp that defined this process
 	list<string>			prs;	// the final set of generated production rules
-	map<string, variable*>	io;		// the input and output signals of this process
+	map<string, variable*>	global;	// globally defined variables: only used for channel definitions
+	map<string, variable*>	local;	// the input and output signals of this process
 
 	process &operator=(process p);
 
-	void parse(string chp, map<string, keyword*> types);
+	void parse(string chp, map<string, keyword*> types, map<string, variable*> vars);
 };
 
 #endif
