@@ -54,6 +54,13 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 	map<string, state>::iterator si, sj;
 	string::iterator i, j, k;
 
+	//Check for the shorthand *[S] and replace it with *[1 -> S]
+	if(chp.find("->") == chp.npos){
+		cout << tab <<"I am replacing " << chp << endl;
+		chp = "1->" + chp;
+		cout << tab << "with " << chp << endl;
+	}
+
 	//Parse instructions!
 	int depth[3] = {0};
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()+1; i++)

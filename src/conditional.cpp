@@ -61,6 +61,13 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 
 	guardresult = init;
 
+	//Check for the shorthand [var] and replace it with [var -> skip]
+	if(chp.find("->") == chp.npos){
+		cout << tab <<"I am replacing " << chp << endl;
+		chp = chp + "->skip";
+		cout << tab << "with " << chp << endl;
+	}
+
 	//Parse instructions!
 	int depth[3] = {0};
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()+1; i++)
