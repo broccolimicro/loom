@@ -156,7 +156,8 @@ space space::operator[](int i)
 
 ostream &operator<<(ostream &os, space s)
 {
-    os << s.var << " : ";
+    os << s.var << "\t: ";
+
     list<state>::iterator i;
     for (i = s.states.begin(); i != s.states.end(); i++)
     	os << *i << " ";
@@ -866,6 +867,17 @@ space up(space s)
 	result.var = s.var + "+";
 
 	j = s.states.begin();
+
+	/*str = "";
+	for (sj = j->data.begin(); sj != j->data.end(); sj++)
+	{
+		if (*sj == '1' && j->prs)
+			str = str + "1";
+		else
+			str = str + "0";
+	}
+	result.states.push_back(state(str, j->prs));*/
+
 	j++;
 
 	for (i = s.states.begin(); j != s.states.end(); i++, j++)
@@ -898,6 +910,28 @@ space up(space s, int idx)
 	result.var = s.var + "+";
 
 	j = s.states.begin();
+
+	/*str = "";
+	for (sj = j->data.begin(); sj != j->data.end(); sj++)
+	{
+		if (*sj == '1' && j->prs && cnt == idx)
+			str = str + "1";
+		else if (*sj == '1' && j->prs && cnt != idx)
+			str = str + "X";
+		else
+			str = str + "0";
+
+		if (*sj == '1')
+			one = true;
+
+		if (*sj == '0' && one)
+		{
+			cnt++;
+			one = false;
+		}
+	}
+	result.states.push_back(state(str, j->prs));*/
+
 	j++;
 
 	for (i = s.states.begin(); j != s.states.end(); i++, j++)
@@ -938,6 +972,16 @@ space down(space s)
 	result.var = s.var + "-";
 
 	j = s.states.begin();
+	/*str = "";
+	for (sj = j->data.begin(); sj != j->data.end(); sj++)
+	{
+		if (*sj == '0' && j->prs)
+			str = str + "1";
+		else
+			str = str + "0";
+	}
+	result.states.push_back(state(str, j->prs));*/
+
 	j++;
 
 	for (i = s.states.begin(); j != s.states.end(); i++, j++)
@@ -965,10 +1009,32 @@ space down(space s, int idx)
 	string str;
 	string::iterator si, sj;
 	int cnt = 0;
-	bool one = false;
+	bool zero = false;
 	result.var = s.var + "-";
 
 	j = s.states.begin();
+
+	/*str = "";
+	for (sj = j->data.begin(); sj != j->data.end(); sj++)
+	{
+		if (*sj == '0' && j->prs && cnt == idx)
+			str = str + "1";
+		else if (*sj == '0' && j->prs && cnt != idx)
+			str = str + "X";
+		else
+			str = str + "0";
+
+		if (*sj == '0')
+			zero = true;
+
+		if (*sj == '1' && zero)
+		{
+			cnt++;
+			zero = false;
+		}
+	}
+	result.states.push_back(state(str, j->prs));*/
+
 	j++;
 
 	for (i = s.states.begin(); j != s.states.end(); i++, j++)
@@ -985,13 +1051,13 @@ space down(space s, int idx)
 			else
 				str = str + "0";
 
-			if (*sj == '1')
-				one = true;
+			if (*sj == '0')
+				zero = true;
 
-			if (*sj == '0' && one)
+			if (*sj == '1' && zero)
 			{
 				cnt++;
-				one = false;
+				zero = false;
 			}
 		}
 		result.states.push_back(state(str, j->prs));

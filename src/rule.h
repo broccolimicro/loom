@@ -16,13 +16,10 @@ struct rule
 	rule();
 	~rule();
 
-	string var;
-	space plus;
-	space minus;
+	space left, right;
 
 	rule &operator=(rule s);
 
-	int check();
 	void clear(int n);
 };
 

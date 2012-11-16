@@ -93,9 +93,6 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	bool para	= false;
 	bool vdef		= false;
 
-	state xstate;
-	state tstate;
-
 	for (l = init.begin(); l != init.end(); l++)
 		affected.insert(pair<string, variable*>(l->first, vars[l->first]));
 
@@ -196,7 +193,6 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 					if (states.find(vi->first) == states.end())
 					{
 						states.insert(pair<string, space>(vi->first, space(vi->first, list<state>())));
-						xstate = state(string(vi->second->width, 'X'), false);
 						// The first state for every variable is always all X
 						if ((l = init.find(vi->first)) != init.end())
 						{
@@ -205,7 +201,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 						}
 						else
 						{
-							states[vi->first].states.push_back(xstate);
+							states[vi->first].states.push_back(vi->second->reset);
 							states[vi->first].var = vi->first;
 						}
 					}
@@ -218,8 +214,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 						if (l != (*ii)->result.end() && l->second.data != "NA")
 							states[vi->first].states.push_back(l->second);
-						//else if ((*di) && !states[vi->first].states.rbegin()->prs)
-						//	states[vi->first].states.push_back(state(string(vi->second->width, 'X'), false));
+						else if ((*di) && !states[vi->first].states.rbegin()->prs)
+							states[vi->first].states.push_back(state(string(vi->second->width, 'X'), false));
 						// there is no delta in the output variables or this is an output variable
 						else
 							states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
@@ -261,34 +257,27 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 	int bi0, bi1, o;
 	int scount, ccount;
 	int mscount, mcount;
-	space negspace, posspace;
 	space tempspace, setspace;
 	string invar;
 	rule r, f;
 	list<rule> rules;
-	bool firstpos, firstneg, found;
+	bool first, found;
 
 	for (si = states.begin(); si != states.end(); si++)
 	{
 		for (bi0 = 0; bi0 < global.find(si->first)->second->width; bi0++)
 		{
-			for (o = 0; o < delta_count(si->second[bi0]); o++)
+			cout << "================Production Rule================" << endl;
+			f.right = up(si->second[bi0]);
+			cout << "+++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+			cout << f.right << "\t" << count(f.right) << "\t" << strict_count(f.right) << endl;
+			for (o = 0; o < delta_count(f.right); o++)
 			{
-				//cout << "================Production Rule================" << endl;
-				//cout << si->second[bi0] << "\t" << delta_count(si->second[bi0]) << endl;
-				//cout << "+++++++++++++++++++++++++++++++++++++++++++++++" << endl;
-				posspace = up(si->second[bi0], o);
-				negspace = down(si->second[bi0], o);
-
-				//cout << posspace << "\t" << o << "\t" << count(posspace) << "\t" << strict_count(posspace) << endl;
-
 				r.clear(si->second.states.size());
-				r.var = si->first;
-				if (global.find(si->first)->second->width > 1)
-					r.var += "[" + to_string(bi0) + "]";
+				r.right = up(si->second[bi0], o);
 
-				mscount = strict_count(posspace);
-				mcount = posspace.states.size() - count(posspace);
+				mscount = strict_count(r.right);
+				mcount = r.right.states.size() - count(r.right);
 
 				invars.clear();
 				for (sj = states.begin(); sj != states.end(); sj++)
@@ -296,27 +285,25 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 						if (sj != si || bi0 != bi1)
 							invars.insert(pair<string, space>(sj->first + to_string(bi1), sj->second[bi1]));
 
-				firstpos = true;
-				firstneg = true;
-
+				first = true;
 				found = true;
-				while (invars.size() > 0 && found && count(r.plus) > count(posspace))
+				while (invars.size() > 0 && found && count(r.left) > count(r.right))
 				{
-					//cout << "...................Iteration..................." << endl;
-					setspace = r.plus;
+					cout << "...................Iteration..................." << endl;
+					setspace = r.left;
 
 					found = false;
 					for (sj = invars.begin(); sj != invars.end(); sj++)
 					{
-						if (firstpos)
+						if (first)
 							tempspace = sj->second;
 						else
-							tempspace = r.plus & sj->second;
+							tempspace = r.left & sj->second;
 
-						scount = strict_count(posspace & tempspace);
-						ccount = count(tempspace) - count(tempspace & posspace);
+						scount = strict_count(r.right & tempspace);
+						ccount = count(tempspace) - count(r.right & tempspace);
 
-						if (ccount < mcount && scount >= mscount && r.plus.var.find(tempspace.var) == r.plus.var.npos)
+						if (ccount < mcount && scount >= mscount && r.left.var.find(tempspace.var) == r.left.var.npos)
 						{
 							setspace = tempspace;
 							invar = sj->first;
@@ -324,17 +311,17 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 							mscount = scount;
 						}
 
-						//cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+						cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
 
-						if (firstpos)
+						if (first)
 							tempspace = ~sj->second;
 						else
-							tempspace = r.plus & (~sj->second);
+							tempspace = r.left & (~sj->second);
 
-						scount = strict_count(posspace & tempspace);
-						ccount = count(tempspace) - count(tempspace & posspace);
+						scount = strict_count(r.right & tempspace);
+						ccount = count(tempspace) - count(r.right & tempspace);
 
-						if (ccount < mcount && scount >= mscount && r.plus.var.find(tempspace.var) == r.plus.var.npos)
+						if (ccount < mcount && scount >= mscount && r.left.var.find(tempspace.var) == r.left.var.npos)
 						{
 							setspace = tempspace;
 							invar = sj->first;
@@ -342,99 +329,109 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 							mscount = scount;
 						}
 
-						//cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+						cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
 					}
 
-					if (r.plus.var.find(setspace.var) == r.plus.var.npos)
+					if (r.left.var.find(setspace.var) == r.left.var.npos)
 					{
-						r.plus = setspace;
+						r.left = setspace;
 						invars.erase(invar);
-						firstpos = false;
+						first = false;
 						found = true;
 					}
 				}
 
-				//cout << endl << r.plus.var << " -> " << r.var << "+" << "\t" << r.plus << "\t" << mcount << "/" << posspace.states.size() - count(posspace) << "\t" << mscount << "/" << strict_count(posspace) << endl;
-
-				//cout << "-----------------------------------------------" << endl;
-
-				mscount = strict_count(negspace);
-				mcount = negspace.states.size() - count(negspace);
-
-				invars.clear();
-				for (sj = states.begin(); sj != states.end(); sj++)
-					for (bi1 = 0; bi1 < global.find(sj->first)->second->width; bi1++)
-						if (sj != si || bi0 != bi1)
-							invars.insert(pair<string, space>(sj->first + to_string(bi1), sj->second[bi1]));
-
-				//cout << negspace << "\t" << count(negspace) << "\t" << strict_count(negspace) << endl;
-
-				found = true;
-				while (invars.size() > 0 && found && count(r.minus) > count(negspace))
-				{
-					//cout << "...................Iteration..................." << endl;
-
-					setspace = r.minus;
-					found = false;
-					for (sj = invars.begin(); sj != invars.end(); sj++)
-					{
-						if (firstneg)
-							tempspace = sj->second;
-						else
-							tempspace = r.minus & (sj->second);
-
-						scount = strict_count(negspace & tempspace);
-						ccount = count(tempspace) - count(tempspace & negspace);
-
-						if (ccount < mcount && scount >= mscount && r.minus.var.find(tempspace.var) == r.minus.var.npos)
-						{
-							setspace = tempspace;
-							invar = sj->first;
-							mcount = ccount;
-							mscount = scount;
-						}
-
-						//cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
-
-						if (firstneg)
-							tempspace = ~sj->second;
-						else
-							tempspace = r.minus & (~sj->second);
-
-						scount = strict_count(negspace & (tempspace < 1));
-						ccount = count(tempspace) - count(tempspace & negspace);
-
-						if (ccount < mcount && scount >= mscount && r.minus.var.find(tempspace.var) == r.minus.var.npos)
-						{
-							setspace = tempspace;
-							invar = sj->first;
-							mcount = ccount;
-							mscount = scount;
-						}
-
-						//cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
-					}
-
-					if (r.minus.var.find(setspace.var) == r.minus.var.npos)
-					{
-						r.minus = setspace;
-						invars.erase(invar);
-						firstneg = false;
-						found = true;
-					}
-				}
-
-				//cout << endl << r.minus.var << " -> " << r.var << "-" << "\t" << r.minus << "\t" << mcount << "/" << negspace.states.size() - count(negspace) << "\t" << mscount << "/" << strict_count(negspace) << endl;
 				if (o == 0)
 					f = r;
 				else
-				{
-					f.plus = f.plus | r.plus;
-					f.minus = f.minus | r.minus;
-				}
+					f.left = f.left | r.left;
 			}
 
-			if (delta_count(si->second[bi0]) > 0)
+			if (delta_count(f.right) > 0)
+				rules.push_back(f);
+
+
+			f.right = down(si->second[bi0]);
+
+			cout << "-----------------------------------------------" << endl;
+			cout << f.right << "\t" << count(f.right) << "\t" << strict_count(f.right) << endl;
+			for (o = 0; o < delta_count(f.right); o++)
+			{
+				r.clear(si->second.states.size());
+				r.right = down(si->second[bi0], o);
+
+				mscount = strict_count(r.right);
+				mcount = r.right.states.size() - count(r.right);
+
+				invars.clear();
+				for (sj = states.begin(); sj != states.end(); sj++)
+					for (bi1 = 0; bi1 < global.find(sj->first)->second->width; bi1++)
+						if (sj != si || bi0 != bi1)
+							invars.insert(pair<string, space>(sj->first + to_string(bi1), sj->second[bi1]));
+
+				first = true;
+				found = true;
+				while (invars.size() > 0 && found && count(r.left) > count(r.right))
+				{
+					cout << "...................Iteration..................." << endl;
+					setspace = r.left;
+
+					found = false;
+					for (sj = invars.begin(); sj != invars.end(); sj++)
+					{
+						if (first)
+							tempspace = sj->second;
+						else
+							tempspace = r.left & sj->second;
+
+						scount = strict_count(r.right & tempspace);
+						ccount = count(tempspace) - count(r.right & tempspace);
+
+						if (ccount < mcount && scount >= mscount && r.left.var.find(tempspace.var) == r.left.var.npos)
+						{
+							setspace = tempspace;
+							invar = sj->first;
+							mcount = ccount;
+							mscount = scount;
+						}
+
+						cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+
+						if (first)
+							tempspace = ~sj->second;
+						else
+							tempspace = r.left & (~sj->second);
+
+						scount = strict_count(r.right & tempspace);
+						ccount = count(tempspace) - count(r.right & tempspace);
+
+						if (ccount < mcount && scount >= mscount && r.left.var.find(tempspace.var) == r.left.var.npos)
+						{
+							setspace = tempspace;
+							invar = sj->first;
+							mcount = ccount;
+							mscount = scount;
+						}
+
+						cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+					}
+
+					if (r.left.var.find(setspace.var) == r.left.var.npos)
+					{
+						r.left = setspace;
+						invars.erase(invar);
+						first = false;
+						found = true;
+					}
+				}
+
+				if (o == 0)
+					f = r;
+				else
+					f.left = f.left | r.left;
+			}
+
+			if (delta_count(f.right) > 0)
 				rules.push_back(f);
 		}
 	}

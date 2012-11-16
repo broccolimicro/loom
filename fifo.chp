@@ -11,9 +11,28 @@ record chan1b
 	int<1> f;
 }
 
+/*channel chan
+{
+	int<1> r := 0;
+	int<1> a := 0;
+	
+	proc send()
+	{
+		r := 1;[a -> skip];r := 0; x:= 0;[~a -> skip]; x := 5
+	}
+	
+	proc recv()
+	{
+		[r -> skip];x := 1;[~r -> skip];a := 0
+	}
+}*/
+
 proc fifo0b(chan0b l, chan0b r)
 {
-	*[1 -> [l.r -> skip];l.a := 1;[~l.r -> skip];l.a := 0;r.r := 1;[r.a -> skip];r.r := 0;[~r.a -> skip]];
+	//*[1 -> l?;r!]
+	//*[1 -> [l.r -> skip];l.x := 1;[~l.r -> skip];l.a := 0;r.r := 1;[r.a -> skip];r.r := 0;[~r.a -> skip]]
+
+	*[1 -> [l.r -> skip];r.r := 1;[r.a -> skip];r.r := 0;[~r.a -> skip];l.a := 1;[~l.r -> skip];l.a := 0]
 }
 
 /* This process represents an asynchronous 1 to 2 multiplexer
