@@ -116,24 +116,25 @@ struct program
 		// Define the basic types. In this case, 'int'
 		type_space.insert(pair<string, keyword*>("int", new keyword("int")));
 
+		//Remove line comments:
+		size_t comment_begin = chp.find("//");
+		size_t comment_end = chp.find("\n", comment_begin);
+		while (comment_begin != chp.npos && comment_end != chp.npos){
+			chp = chp.substr(0,comment_begin) + chp.substr(comment_end);
+			comment_begin = chp.find("//");
+			comment_end = chp.find("\n", comment_begin);
+		}
 
 		//Remove block comments:
-		size_t comment_begin = chp.find("/*");
-		size_t comment_end = chp.find("*/");
+		comment_begin = chp.find("/*");
+		comment_end = chp.find("*/");
 		while (comment_begin != chp.npos && comment_end != chp.npos){
 			chp = chp.substr(0,comment_begin) + chp.substr(comment_end+2);
 			comment_begin = chp.find("/*");
 			comment_end = chp.find("*/");
 		}
 
-		//Remove line comments:
-		comment_begin = chp.find("//");
-		comment_end = chp.find("\n", comment_begin);
-		while (comment_begin != chp.npos && comment_end != chp.npos){
-			chp = chp.substr(0,comment_begin) + chp.substr(comment_end);
-			comment_begin = chp.find("//");
-			comment_end = chp.find("\n", comment_begin);
-		}
+
 
 		// remove extraneous whitespace
 		for (i = chp.begin(); i != chp.end(); i++)
