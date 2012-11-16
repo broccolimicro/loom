@@ -55,6 +55,21 @@ void instruction::parse(string raw, map<string, keyword*> types, map<string, var
 
 	cout << tab << "Instruction:\t"+chp << endl;
 	// Parse assignment instructions
+
+	//Convert ;var+; to ;var:=1;
+	if(chp.find(":=") == chp.npos && chp.find("+") != chp.npos){
+		//Note: Leave these debug statements here until we know this doesn't suffer false positives.
+		cout << tab << "I am replacing " << chp << endl;
+		chp = chp.substr(0,chp.find("+")) + ":=1";
+		cout << tab << "with " << chp << endl;
+	}
+	//Convert ;var-; to ;var:=0;
+	if(chp.find(":=") == chp.npos && chp.find("-") != chp.npos){
+		//Note: Leave these debug statements here until we know this doesn't suffer false positives.
+		cout << tab << "I am replacing " << chp << endl;
+		chp = chp.substr(0,chp.find("+")) + ":=0";
+		cout << tab << "with " << chp << endl;
+	}
 	// Currently only handles single variable assignments
 	if (chp.find(":=") != chp.npos)
 	{

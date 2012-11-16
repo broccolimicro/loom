@@ -30,9 +30,9 @@ channel chan
 proc fifo0b(chan0b l, chan0b r)
 {
 	// *[1 -> l?;r!]
-	// *[1 -> [l.r -> skip];l.x := 1;[~l.r -> skip];l.a := 0;r.r := 1;[r.a -> skip];r.r := 0;[~r.a -> skip]]
+	// *[1 -> [l.r -> skip];l.x+;[~l.r -> skip];l.a - ;r.r + ;[r.a -> skip];r.r-;[~r.a -> skip]]
 
-	*[1 -> [l.r -> skip];r.r := 1;[r.a -> skip];r.r := 0;[~r.a -> skip];l.a := 1;[~l.r -> skip];l.a := 0]
+	*[1 -> [l.r -> skip];r.r+;[r.a -> skip];r.r-;[~r.a -> skip];l.a +;[~l.r -> skip];l.a-]
 }
 
 /* This process represents an asynchronous 1 to 2 multiplexer
