@@ -45,7 +45,7 @@ channel chan2p0b
 
 proc fifo0b4p(chan4p0b l, chan4p0b r)
 {
-	*[l?;r!]
+	l.a-;l.r := ~l.a;*[l?;r!]
 }
 
 proc fifo0b2p(chan2p0b l, chan2p0b r)
@@ -67,7 +67,7 @@ proc fifo0b2p(chan2p0b l, chan2p0b r)
 		// wait for a request
 		[s.t | s.f];
 		// service the request
-		[  s.f -> [i.r];o1.r+;[o1.a];i.a+;[~i.r];o1.r-;[~o1.a];i.a-
+		[  s.f -> [i.r];o1.r;[o1.a];i.a+;[~i.r];o1.r-;[~o1.a];i.a-
 		[] s.t -> [i.r];o2.r+;[o2.a];i.a+;[~i.r];o2.r-;[~o2.a];i.a-
 		];
 		// clean up

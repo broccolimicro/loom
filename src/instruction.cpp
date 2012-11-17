@@ -121,7 +121,7 @@ void instruction::parse(string raw, map<string, keyword*> types, map<string, var
 
 state expr_eval(string raw, map<string, state> init, string tab){
 	cout << tab <<"Expression: " + raw << endl;
-	// Supported operators: + - * / & | << >> == != <= >= < >
+	// Supported operators: + - * / & | << >> == != <= >= < > ~
 
 	//Tested to be fairly functional:
 	//Adds, subtracts
@@ -201,6 +201,8 @@ state expr_eval(string raw, map<string, state> init, string tab){
 		}
 	}
 
+	//~
+	size_t first_not = raw.find_first_of("~");
 	//Strongest bind set above
 
 	state result; 	//The value we are to return.
@@ -311,10 +313,19 @@ state expr_eval(string raw, map<string, state> init, string tab){
 		}
 	}
 
+	//Any nots?
+	if(first_not != raw.npos){
+		cout << tab << "Doing a not on " << raw.substr(first_not+1) << endl;
+		result =  ~expr_eval(raw.substr(first_not+1), init,tab + "\t");
+		cout << tab << "Result: " + result.data << endl;
+		return result;
+	}
+
 	//If the recursion gets down to here, it means we are at a 'basecase' i.e. a variable or number
 
 	if( ac(raw[0]) ){		//Return a variable name!
 		//cout << "Loading a variable!" + raw + " = " << init[raw]<< endl;
+		cout << tab << "Result:" + raw + " = " << init[raw]<< endl;
 		result = init[raw];
 		result.prs = 1;
 		return init[raw];
