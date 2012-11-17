@@ -376,8 +376,22 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	rules = production_rule(states, global, tab);
 
 	list<rule>::iterator ri;
-	for (ri = rules.begin(); ri != rules.end(); ri++)
+	list<int> state_locations; 	//See where_state_var's return for details of how this is being used.
+	list<int>::iterator li;
+	list<int> temp;
+	for (ri = rules.begin(); ri != rules.end(); ri++){
 		cout << tab << *ri << endl;
+		cout << tab << "Production rules vs. desired functionality: ";
+		temp = where_state_var(ri->left, ri->right, tab);
+		state_locations.merge(temp);
+	}
+
+	//instruction *state_inst_up, *state_instr_down;
+	for (li = state_locations.begin(); li != state_locations.end(); li ++){
+		cout << tab << *li << endl;
+
+		cout << tab << *(++li) << endl;
+	}
 }
 
 list<rule> production_rule(map<string, space> states, map<string, variable*> global, string tab)
@@ -570,5 +584,57 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 	return rules;
 }
 
+//There can be four states: 1, 0, X, _ where underscore is empty set and X is full set.
+//The return list will be even by design. Each pair is a different state variable. The first
+//element of the pair is the index of state up, the second is state down.
+//Ex: 0, 1, 5, 7 means sv0 goes high at 0, low at 1, and s2 goes high at 5, and low at 7.
+list<int> where_state_var(space left, space right, string tab)
+{
+	list<state> left_list, right_list;
+	list<state>::iterator i,j;
+	list<int> state_locations;
+	state result;
+	string a, b, conflicts = "";
+	left_list = left.states;
+	right_list = right.states;
 
+	//Loop through all of the production rule states (left) and the corresponding desired functionality (right)
+	for (i = left_list.begin(),j = right_list.begin() ; i != left_list.end() && j != right_list.end(); i++, j++)
+	{
+		if(i->data == "0" && j->data == "0" )
+			conflicts += ".";		//Doesn't fire, shouldn't fire. Good.
+		else if(i->data == "0" && j->data == "1" ){
+			cout << "ERROR: Production rule doesn't fire during a place where it should." << endl;
+			conflicts += "E";	//Error fire! Our PRS aren't good enough.
+		}
+		else if(i->data == "1" && j->data == "0" )
+			conflicts += "C";  // Illegal fire (fires when it shouldn't)
+		else if(i->data == "1" && j->data == "1" )
+			conflicts += "!";  // This fires, and it must keep firing after we after we add a state var
+		else if(j->data == "X" )
+			conflicts += "."; 	//Don't really care if it fires or not. Ambivalence.
+		else{
+			cout << "ERROR! State var generate is very confused right now. " << endl;
+			conflicts += "E";	//Error fire! Not quite sure how you got here...
+		}
+	}
+	cout << conflicts << endl;
+	if(conflicts.find_first_of("C") == conflicts.npos)
+	{
+		return state_locations;		//No conflicts! We are golden.
+	}
+	// For now, I am simply going to surround the conflicting state with a state variable. This is probably not optimal.
+	size_t st = conflicts.find_first_of("C");
+	while (st != conflicts.npos)
+	{
+		state_locations.push_back(st);
+		state_locations.push_back(st+1);
+		conflicts = conflicts.substr(0,st) + "." + conflicts.substr(st+1);
+		//Get the next conflict
+		cout << tab << conflicts << endl;
+		st = conflicts.find_first_of("C");
+	}
+	return state_locations;
+
+}
 
