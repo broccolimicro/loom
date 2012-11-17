@@ -93,8 +93,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	bool para	= false;
 	bool vdef		= false;
 
-	for (l = init.begin(); l != init.end(); l++)
-		affected.insert(pair<string, variable*>(l->first, vars[l->first]));
+
 
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
 	int depth[3] = {0};
@@ -124,7 +123,9 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			instr = NULL;
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (para)
+			{
 				instr = new parallel(raw_instr, types, global, current_state, tab+"\t");
+			}
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
 				instr = new block(raw_instr.substr(1, raw_instr.length()-2), types, global, current_state, tab+"\t");
@@ -206,7 +207,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 						}
 					}
 
-					for (ii = instrs.begin(), di = delta_out.begin(), k = 0; ii != instrs.end() && di != delta_out.end() && k < states[vi->first].states.size(); ii++, di++, k++);
+					for (ii = instrs.begin(), di = delta_out.begin(), k = 0; ii != instrs.end() && di != delta_out.end() && k < states[vi->first].states.size()-1; ii++, di++, k++);
 
 					for (; ii != instrs.end() && di != delta_out.end(); ii++, di++)
 					{
@@ -221,6 +222,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 							states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
 
 						current_state[vi->first] = *states[vi->first].states.rbegin();
+
 					}
 				}
 			}
@@ -236,17 +238,24 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 	cout << endl;
 
-	for(vi = affected.begin(); vi != affected.end(); vi++)
+	for(si = states.begin(); si != states.end(); si++)
 	{
-		cout << tab << states[vi->first] << endl;
-		result.insert(pair<string, state>(vi->first, *(states[vi->first].states.rbegin())));
+		cout << si->second << endl;
+		result.insert(pair<string, state>(si->first, *(si->second.states.rbegin())));
 	}
-
+cout << "======================" << endl;
+	for (l = result.begin(); l != result.end(); l++)
+	{
+		cout << l->first << " -> " << l->second << endl;
+	}
+	/* THIS IS NICHOLAS' FAULT. UNCOMMENT THIS. HE GOT SICK OF PRS SPAM.
 	rules = production_rule(states, global);
 
 	list<rule>::iterator ri;
 	for (ri = rules.begin(); ri != rules.end(); ri++)
 		cout << *ri << endl;
+
+		*/
 }
 
 list<rule> production_rule(map<string, space> states, map<string, variable*> global)

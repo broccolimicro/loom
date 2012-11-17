@@ -216,21 +216,51 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 
 	for (ii = instrs.begin(); ii != instrs.end(); ii++)
 	{
+
+		ij = ii;
+
+		//Look at all of the instructions contained by the block we are in.
+		for (; ij != instrs.end(); ij++)
+		{
+			// If this block contains any sub blocks
+			if ( (*ij)->kind() == "block" )
+			{
+				//cout << tab << "FINDBLOCKS" << endl;
+				//cout << tab << (*ij)->chp << endl;
+				//Load the results from the sub state into a local variable
+				//cout << "Starting sub parse" << endl;
+				//instruction *sub_instr = new parallel((*ij)->chp, types, global, current_state, tab+"\t");
+				//cout << "Ending sub parse" << endl;
+				map<string, state> sub_result = ((block*)(*ij))->result;
+				//Iterate through all of the elements of the results map
+				for (l = sub_result.begin(); l != sub_result.end(); l++)
+				{
+					//Add the subresults to our initial results list.
+					cout << tab << "Adding " << l->first << " and " << l->second << endl;
+					result.insert(pair<string, state>(l->first, l->second));
+					//result[l->first] = l->second;
+				}
+
+			}
+		}
+
+
 		//Loop through all variables affected by these instructions
 		for (l = (*ii)->result.begin(); l != (*ii)->result.end(); l++)
 		{
+			cout << l->first << " " << l->second << endl;
 			m = result.find(l->first);
-			//If
+			//If this variable hasn't been seen yet...
 			if (m == result.end())
 			{
 				result.insert(pair<string, state>(l->first, l->second));
 			}
 			else
 			{
-				cout << tab << "Warning: Variable " << l->first << " has multiple outcomes depending on execution order" << endl;
+				cout << tab << "Variable " << l->first << " has multiple outcomes depending on execution order" << endl;
 				cout << tab << "To reconcile this, the state " << result[l->first] << " is unioned with " << l->second << " yielding ";
-				result[l->first] = result[l->first] || l->second;
-				cout << result[l->first] << endl;
+				m->second = m->second || l->second;
+				cout << m->second << endl;
 			}
 
 		}

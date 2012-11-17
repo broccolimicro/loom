@@ -1,6 +1,6 @@
 proc simple_par(chan l, chan r)
 {
-	l.a-; r.a- ; l.a := 3 || l.a := 2;
-	//l.a-; r.a- ; l.a := 1 || l.a := 1; l.a-; r.a- ;  r.a:= 3 || (r.a:= 2 || r.a := 2); 
-	//l.a-; r.a- ; l.a := 1 || l.a := 1; l.a-; r.a- ; ((l.a:= 2; r.a+) || l.a := 2) || l.a:= 3 ; l.a+ || r.a-;  r.a:= 3 || (r.a:= 2 || r.a := 2)  ; 
+	//l.a-; r.a- ; l.a := 3 || l.a := 2;
+	//l.a-; r.a- ; l.a := 1 || l.a := 1; l.a-; r.a- ; (r.a:= 2 || r.a := 2) || r.a:= 3; 
+	l.a-; r.a- ; l.a := 1 || l.a := 1; l.a-; r.a- ; ((l.a:= 2; r.a+) || l.a := 2) || l.a:= 3 ; l.a+ || r.a-;  r.a:= 3 || (r.a:= 2 || r.a := 2)  ; l.a-; r.a- ; r.a := 5 || r.a := 3
 }
