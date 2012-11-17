@@ -74,12 +74,12 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	instruction *instr; 	// instruction parser
 	variable	*v;			// variable instantiation parser
 
-	map<string, state> current_state;
+	map<string, state> current_state, change_state;
 
-	list<instruction*>		::iterator	ii;
+	list<instruction*>		::iterator	ii, ij;
 	map<string, variable*>	::iterator	vi;
 	map<string, space>		::iterator	si, sj, sk;
-	map<string, state>		::iterator	l;
+	map<string, state>		::iterator	l, m;
 	list<state>				::iterator	a, b;
 	map<string, keyword*>	::iterator	t;
 	list<bool>				::iterator	di;
@@ -95,7 +95,10 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 	for (l = init.begin(); l != init.end(); l++)
 		if ((vi = vars.find(l->first)) != vars.end())
+		{
 			affected.insert(pair<string, variable*>(vi->first, vi->second));
+			current_state.insert(pair<string, state>(l->first, l->second));
+		}
 
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
 	int depth[3] = {0};
@@ -161,6 +164,24 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			if (instr != NULL)
 			{
 				instrs.push_back(instr);
+				if (instrs.size() == 1)
+					ij = instrs.begin();
+				else
+					ij++;
+
+				if (instr->kind() == "conditional")
+				{
+					/*change_state.clear();
+					for (vi = affected.begin(); vi != affected.end(); vi++)
+					{
+						if ((si = states.find(vi->first)) != states.end())
+						{
+							change_state.insert(pair<string, state>((*waits.rbegin())));
+						}
+					}
+					changes.push_back(change_state);
+					waits.push_back(ij);*/
+				}
 
 				// Now that we have parsed the sub block, we need to
 				// check the resulting state space deltas of that sub block.

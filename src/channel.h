@@ -18,6 +18,12 @@
  * contains a bunch of member variables that help you index
  * segments of bits within the multibit signal.
  */
+/* Requirements:
+ * All variables are boolean valued
+ * There are no communication actions
+ * All assignment statements have only constant expressions, only true or false
+ */
+
 struct channel : record
 {
 	channel();

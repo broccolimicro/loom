@@ -34,12 +34,16 @@ channel chan2p0b
 	
 	proc send()
 	{
-		r:=~r;[a==r]
+		[   r -> r-;[~a]
+		[] ~r -> r+;[ a]
+		]
 	}
 	
 	proc recv()
 	{
-		[r!=a];a:=~a
+		[   a -> [~r];a-
+		[] ~a -> [ r];a+
+		]
 	}
 }
 
