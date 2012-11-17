@@ -51,7 +51,7 @@ channel chan2p0b
 
 proc fifo0b4p(chan4p0b l, chan4p0b r)
 {
-	l.a-;l.r := ~l.a;*[l?;r!]
+	*[l?;r!]
 }
 
 proc fifo0b2p(chan2p0b l, chan2p0b r)

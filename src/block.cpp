@@ -11,6 +11,7 @@
 #include "loop.h"
 #include "parallel.h"
 #include "rule.h"
+#include "channel.h"
 
 block::block()
 {
@@ -77,25 +78,34 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	map<string, state> current_state, change_state;
 
 	list<instruction*>		::iterator	ii;
-	map<string, variable*>	::iterator	vi;
+	map<string, variable*>	::iterator	vi, vj;
 	map<string, space>		::iterator	si, sj, sk;
 	map<string, state>		::iterator	l, m;
 	list<state>				::iterator	a, b;
 	map<string, keyword*>	::iterator	t;
-	list<bool>				::iterator	di;
+	list<list<variable*> >	::iterator	di;
+	list<variable*>			::iterator	dvi;
 	string					::iterator	i, j;
 	size_t								ij, ik;
 
+	list<map<string, state> > :: iterator xi;
 	map<string, variable*>				affected;
-	list<bool>							delta_out;
-	size_t								k;
+	list<list<variable*> >				delta_out;
+	list<variable*> delta;
+
+	map<string, size_t>					prgm_ctr;
+	map<string, size_t>		::iterator	pi;
+	list<size_t>			::iterator  pj;
+
+	size_t								k, p;
 	state								tstate;
 
-	bool delta		= false;
 	bool para		= false;
 	bool vdef		= false;
 	bool first		= false;
 
+	// Add the initial states into the affected variable list
+	// This makes sure that evaluated guards pass through skip blocks
 	for (l = init.begin(); l != init.end(); l++)
 		if ((vi = vars.find(l->first)) != vars.end())
 		{
@@ -168,41 +178,12 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			if (instr != NULL)
 			{
 				instrs.push_back(instr);
-				ij++;
 
-				if (instr->kind() == "conditional")
-				{
-					change_state.clear();
-					for (vi = affected.begin(); vi != affected.end(); vi++)
-					{
-						if ((si = states.find(vi->first)) != states.end())
-						{
-							first = true;
-							for (ik = 0, a = si->second.states.begin(); waits.size() > 0 && ik < (*waits.rbegin()) && a != si->second.states.end(); ik++, a++);
-							for (; ik < ij && a != si->second.states.end(); ik++, a++)
-							{
-								cout << ik << ", ";
-								if (first)
-									tstate = *a;
-								else
-									tstate = tstate || *a;
-
-								first = false;
-							}
-							cout << "\nChange: " << vi->first << ": " << tstate << endl;
-
-							change_state.insert(pair<string, state>(vi->first, tstate));
-						}
-					}
-					changes.push_back(change_state);
-					waits.push_back(ij);
-					cout << "Wait: " << ij << endl;
-				}
 
 				// Now that we have parsed the sub block, we need to
 				// check the resulting state space deltas of that sub block.
 				// Loop through all of the affected variables.
-				delta = false;
+				delta.clear();
 				for (l = instr->result.begin(); l != instr->result.end(); l++)
 				{
 					// If this variable exists, then we check the resultant value against
@@ -214,7 +195,13 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 						cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + l->first << endl;
 					else if (vi != global.end())
 					{
-						delta |= ((l->second.prs) && (l->second.data != vi->second->last.data));
+						if ((l->second.prs) && (l->second.data != vi->second->last.data))
+						{
+							vj = global.find(l->first.substr(0, l->first.find_first_of(".")));
+							if (vj != global.end())
+								delta.push_back(vj->second);
+						}
+
 						vi->second->last = l->second;
 						if (affected.find(vi->first) == affected.end())
 							affected.insert(pair<string, variable*>(vi->first, vi->second));
@@ -244,29 +231,109 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 						}
 					}
 
-					for (ii = instrs.begin(), di = delta_out.begin(), k = 0; ii != instrs.end() && di != delta_out.end() && k < states[vi->first].states.size()-1; ii++, di++, k++);
 
-					for (; ii != instrs.end() && di != delta_out.end(); ii++, di++)
+					for (ii = instrs.begin(), di = delta_out.begin(), k = 0; ii != instrs.end() && di != delta_out.end(); ii++, di++, k++)
 					{
-						l = (*ii)->result.find(vi->first);
-
-						if (l != (*ii)->result.end() && l->second.data != "NA")
-							states[vi->first].states.push_back(l->second);
-						else if ((*di) && !states[vi->first].states.rbegin()->prs)
+						if (k >= states[vi->first].states.size()-1)
 						{
-							// Use channel send and recv functions to determine whether or not we need to X out the state
-							cout << "X OUT: " << vi->first << endl;
+							l = (*ii)->result.find(vi->first);
+							vj = global.find(vi->first.substr(0, vi->first.find_first_of(".")));
+							if (vj != global.end())
+							{
+								t = types.find(vj->second->type);
+								pi = prgm_ctr.find(vj->first);
+							}
 
-							//states[vi->first].states.push_back(state(string(vi->second->width, 'X'), false));
-							states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+							if (l != (*ii)->result.end() && l->second.data != "NA")
+							{
+								states[vi->first].states.push_back(l->second);
+
+								if (vj != global.end())
+								{
+									if(pi == prgm_ctr.end())
+									{
+										if (t != types.end() && t->second->kind() == "channel")
+										{
+											prgm_ctr.insert(pair<string, size_t>(vj->second->name, 0));
+											cout << tab << "New Program Counter: " << vj->second->name << " 0" << endl;
+										}
+									}
+									else
+									{
+										pi->second = k > pi->second ? k : pi->second;
+										cout << tab << "Increment Program Counter: " << vj->second->name << " " << pi->second << endl;
+									}
+								}
+							}
+							else if (di->size() > 0 && !states[vi->first].states.rbegin()->prs)
+							{
+
+								// Use channel send and recv functions to determine whether or not we need to X out the state
+								cout << tab << "Maybe X Out: " << vi->first << " " << pi->second << endl;
+								/*if (t != types.end() && t->second->kind() == "channel" && pi != prgm_ctr.end())
+								{
+									p = pi->second;
+									for (pj = waits.begin(), xi = ((channel*)t->second)->send.def.changes.begin(); pj != waits.end() && p > *pj && xi != ((channel*)t->second)->send.def.changes.end(); p -= *pj, pj++);
+									cout << "BLARG! " << vi->first << endl;
+									for (m = xi->begin(); m != xi->end(); m++)
+										cout << m->first << " " << m->second << endl;
+									m = xi->find(vi->first.substr(vi->first.find_first_of(".")+1));
+									if (m != xi->end())
+									{
+										states[vi->first].states.push_back(*(states[vi->first].states.rbegin()) || m->second);
+										cout << m->second << endl;
+									}
+									else
+									{
+										states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+										cout << "Fail" << endl;
+									}
+								}
+								else
+								{*/
+									states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+									//cout << "Fail" << endl;
+								//}
+							}
+							// there is no delta in the output variables or this is an output variable
+							else
+								states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+							current_state[vi->first] = *states[vi->first].states.rbegin();
 						}
-						// there is no delta in the output variables or this is an output variable
-						else
-							states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
-						current_state[vi->first] = *states[vi->first].states.rbegin();
-
 					}
 				}
+
+				// This counts wait instructions and figures out
+				// what states changes in between wait instructions
+				if (instr->kind() == "conditional" || i == chp.end())
+				{
+					change_state.clear();
+					for (vi = affected.begin(); vi != affected.end(); vi++)
+					{
+						if ((si = states.find(vi->first)) != states.end())
+						{
+							first = true;
+							for (ik = 0, a = si->second.states.begin(); waits.size() > 0 && ik <= (*waits.rbegin()) && a != si->second.states.end(); ik++, a++);
+							for (; ((instr->kind() != "conditional" && i == chp.end()) || ik <= ij) && a != si->second.states.end(); ik++, a++)
+							{
+								tstate = first ? *a : tstate || *a;
+
+								first = false;
+							}
+
+							change_state.insert(pair<string, state>(vi->first, tstate));
+						}
+					}
+
+					if (instr->kind() != "conditional" && i == chp.end())
+						ij++;
+
+					changes.push_back(change_state);
+					waits.push_back(ij);
+				}
+
+				ij++;
+
 			}
 			j = i+1;
 			para = false;
@@ -280,11 +347,25 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 	cout << endl;
 
+	cout << tab << chp << endl;
 	for(si = states.begin(); si != states.end(); si++)
 	{
 		cout << tab << si->second << endl;
 		result.insert(pair<string, state>(si->first, *(si->second.states.rbegin())));
 	}
+	cout << tab << "Waits: ";
+	for (pj = waits.begin(); pj != waits.end(); pj++)
+		cout << *pj << " ";
+	cout << endl;
+
+	cout << tab << "Changes: ";
+	for (xi = changes.begin(); xi != changes.end(); xi++)
+	{
+		for (m = xi->begin(); m != xi->end(); m++)
+			cout << m->first << ":" << m->second << " ";
+		cout << ", ";
+	}
+	cout << endl;
 
 	cout << tab << "Result:\t";
 
@@ -292,14 +373,14 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		cout << "{" << l->first << " = " << l->second << "} ";
 	cout << endl;
 
-	rules = production_rule(states, global);
+	rules = production_rule(states, global, tab);
 
 	list<rule>::iterator ri;
 	for (ri = rules.begin(); ri != rules.end(); ri++)
-		cout << *ri << endl;
+		cout << tab << *ri << endl;
 }
 
-list<rule> production_rule(map<string, space> states, map<string, variable*> global)
+list<rule> production_rule(map<string, space> states, map<string, variable*> global, string tab)
 {
 	// Generate the production rules
 	map<string, space> invars;
@@ -317,10 +398,10 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 	{
 		for (bi0 = 0; bi0 < global.find(si->first)->second->width; bi0++)
 		{
-			cout << "================Production Rule================" << endl;
+			cout << tab << "================Production Rule================" << endl;
 			f.right = up(si->second[bi0]);
-			cout << "+++++++++++++++++++++++++++++++++++++++++++++++" << endl;
-			cout << f.right << "\t" << count(f.right) << "\t" << strict_count(f.right) << endl;
+			cout << tab << "+++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+			cout << tab << f.right << "\t" << count(f.right) << "\t" << strict_count(f.right) << endl;
 			for (o = 0; o < delta_count(f.right); o++)
 			{
 				r.clear(si->second.states.size());
@@ -339,7 +420,7 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 				found = true;
 				while (invars.size() > 0 && found && count(r.left) > count(r.right))
 				{
-					cout << "...................Iteration..................." << endl;
+					cout << tab << "...................Iteration..................." << endl;
 					setspace = r.left;
 
 					found = false;
@@ -361,7 +442,7 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 							mscount = scount;
 						}
 
-						cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+						cout << tab << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
 
 						if (first)
 							tempspace = ~sj->second;
@@ -379,7 +460,7 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 							mscount = scount;
 						}
 
-						cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+						cout << tab << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
 					}
 
 					if (r.left.var.find(setspace.var) == r.left.var.npos)
@@ -403,8 +484,8 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 
 			f.right = down(si->second[bi0]);
 
-			cout << "-----------------------------------------------" << endl;
-			cout << f.right << "\t" << count(f.right) << "\t" << strict_count(f.right) << endl;
+			cout << tab << "-----------------------------------------------" << endl;
+			cout << tab << f.right << "\t" << count(f.right) << "\t" << strict_count(f.right) << endl;
 			for (o = 0; o < delta_count(f.right); o++)
 			{
 				r.clear(si->second.states.size());
@@ -423,7 +504,7 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 				found = true;
 				while (invars.size() > 0 && found && count(r.left) > count(r.right))
 				{
-					cout << "...................Iteration..................." << endl;
+					cout << tab << "...................Iteration..................." << endl;
 					setspace = r.left;
 
 					found = false;
@@ -445,7 +526,7 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 							mscount = scount;
 						}
 
-						cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+						cout << tab << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
 
 						if (first)
 							tempspace = ~sj->second;
@@ -463,7 +544,7 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 							mscount = scount;
 						}
 
-						cout << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+						cout << tab << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
 					}
 
 					if (r.left.var.find(setspace.var) == r.left.var.npos)
