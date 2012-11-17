@@ -217,33 +217,6 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 	for (ii = instrs.begin(); ii != instrs.end(); ii++)
 	{
 
-		ij = ii;
-
-		//Look at all of the instructions contained by the block we are in.
-		for (; ij != instrs.end(); ij++)
-		{
-			// If this block contains any sub blocks
-			if ( (*ij)->kind() == "block" )
-			{
-				//cout << tab << "FINDBLOCKS" << endl;
-				//cout << tab << (*ij)->chp << endl;
-				//Load the results from the sub state into a local variable
-				//cout << "Starting sub parse" << endl;
-				//instruction *sub_instr = new parallel((*ij)->chp, types, global, current_state, tab+"\t");
-				//cout << "Ending sub parse" << endl;
-				map<string, state> sub_result = ((block*)(*ij))->result;
-				//Iterate through all of the elements of the results map
-				for (l = sub_result.begin(); l != sub_result.end(); l++)
-				{
-					//Add the subresults to our initial results list.
-					cout << tab << "Adding " << l->first << " and " << l->second << endl;
-					result.insert(pair<string, state>(l->first, l->second));
-					//result[l->first] = l->second;
-				}
-
-			}
-		}
-
 
 		//Loop through all variables affected by these instructions
 		for (l = (*ii)->result.begin(); l != (*ii)->result.end(); l++)
