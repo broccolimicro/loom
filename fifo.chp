@@ -43,7 +43,7 @@ proc mux0b2(chan0b i, chan0b o1, chan0b o2, chan1b s)
 	o1.r-;
 	o2.r-;
 	s.ra-;
-	*[1 -> 
+	*[
 		// wait for a request
 		[s.t | s.f];
 		// service the request

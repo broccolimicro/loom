@@ -58,7 +58,7 @@ void process::parse(string chp, map<string, keyword*> types, map<string, variabl
 	size_t input_end = chp.find_first_of(")");
 	size_t block_start = chp.find_first_of("{")+1;
 	size_t block_end = chp.length()-1;
-	size_t comm, comm_s, comm_e;
+	size_t comm, comm_s, comm_e, var;
 	string io_block;
 	string def_block;
 	string::iterator i, j;
@@ -83,11 +83,12 @@ void process::parse(string chp, map<string, keyword*> types, map<string, variabl
 		}
 	}
 
-	map<string, variable*>::iterator vi;
+	map<string, variable*>::iterator vi, vj;
 	//for (vi = local.begin(); vi != local.end(); vi++)
 	//	cout << *(vi->second) << endl;
 
-	string right, left;
+	string right, left, replace;
+	int skip;
 	def_block = chp.substr(block_start, block_end - block_start);
 	while ((comm = def_block.find_first_of("@?!")) != def_block.npos)
 	{
@@ -105,9 +106,9 @@ void process::parse(string chp, map<string, keyword*> types, map<string, variabl
 					if (ti->second->kind() == "channel")
 					{
 						if (def_block[comm] == '!')
-							def_block = def_block.substr(0, comm_s+1) + ((channel*)(ti->second))->send.def.chp + def_block.substr(comm_e);
+							replace = ((channel*)(ti->second))->send.def.chp;
 						else if (def_block[comm] == '?')
-							def_block = def_block.substr(0, comm_s+1) + ((channel*)(ti->second))->recv.def.chp + def_block.substr(comm_e);
+							replace = ((channel*)(ti->second))->recv.def.chp;
 						//else if (def_block[comm] == '@')
 						//	def_block = def_block.substr(0, comm_s+1) + ((channel*)(ti->second))->probe.def.chp + def_block.substr(comm_e);
 						else
@@ -115,6 +116,23 @@ void process::parse(string chp, map<string, keyword*> types, map<string, variabl
 							cout << "Error: Unknown operation " << def_block[comm] << endl;
 							break;
 						}
+
+						for (vj = ((channel*)(ti->second))->vars.begin(); vj != ((channel*)(ti->second))->vars.end(); vj++)
+						{
+							var = replace.find(vj->first);
+							do
+							{
+								if (replace[var + vj->first.length()] != '.')
+								{
+									replace = replace.substr(0, var) + vi->first + "." + replace.substr(var);
+									skip = vj->first.length() + vi->first.length() + 1;
+								}
+								else
+									skip = vj->first.length();
+							} while ((var = replace.find(vj->first, var + skip)) != replace.npos);
+						}
+
+						def_block = def_block.substr(0, comm_s+1) + replace + def_block.substr(comm_e);
 					}
 					else
 					{
