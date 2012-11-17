@@ -51,7 +51,7 @@ process &process::operator=(process p)
 void process::parse(string chp, map<string, keyword*> types, map<string, variable*> vars)
 {
 	global = vars;
-	cout << "process! -> " << chp << endl;
+	cout << "Process:\t" << chp << endl;
 	size_t name_start = chp.find_first_of(" ")+1;
 	size_t name_end = chp.find_first_of("(");
 	size_t input_start = chp.find_first_of("(")+1;
@@ -69,8 +69,8 @@ void process::parse(string chp, map<string, keyword*> types, map<string, variabl
 	name = chp.substr(name_start, name_end - name_start);
 	io_block = chp.substr(input_start, input_end - input_start);
 
-	cout << "\tname!   -> "+name << endl;
-	cout << "\tinputs! -> "+io_block << endl;
+	cout << "\tName:\t" << name << endl;
+	cout << "\tInputs:\t" << io_block << endl;
 
 	for (i = io_block.begin(), j = io_block.begin(); i != io_block.end(); i++)
 	{
@@ -120,8 +120,9 @@ void process::parse(string chp, map<string, keyword*> types, map<string, variabl
 						for (vj = ((channel*)(ti->second))->vars.begin(); vj != ((channel*)(ti->second))->vars.end(); vj++)
 						{
 							var = replace.find(vj->first);
-							do
+							while (var != replace.npos)
 							{
+								cout << var << endl;
 								if (replace[var + vj->first.length()] != '.' && replace[((var - 1) < 0) ? var : var - 1] != '.')
 								{
 									replace = replace.substr(0, var) + vi->first + "." + replace.substr(var);
@@ -129,7 +130,9 @@ void process::parse(string chp, map<string, keyword*> types, map<string, variabl
 								}
 								else
 									skip = vj->first.length();
-							} while ((var = replace.find(vj->first, var + skip)) != replace.npos);
+
+								var = replace.find(vj->first, var + skip);
+							}
 						}
 
 						def_block = def_block.substr(0, comm_s+1) + replace + def_block.substr(comm_e);

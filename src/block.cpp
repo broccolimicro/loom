@@ -76,7 +76,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 	map<string, state> current_state, change_state;
 
-	list<instruction*>		::iterator	ii, ij;
+	list<instruction*>		::iterator	ii;
 	map<string, variable*>	::iterator	vi;
 	map<string, space>		::iterator	si, sj, sk;
 	map<string, state>		::iterator	l, m;
@@ -84,14 +84,17 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	map<string, keyword*>	::iterator	t;
 	list<bool>				::iterator	di;
 	string					::iterator	i, j;
+	size_t								ij, ik;
 
 	map<string, variable*>				affected;
 	list<bool>							delta_out;
 	size_t								k;
+	state								tstate;
 
 	bool delta		= false;
-	bool para	= false;
+	bool para		= false;
 	bool vdef		= false;
+	bool first		= false;
 
 	for (l = init.begin(); l != init.end(); l++)
 		if ((vi = vars.find(l->first)) != vars.end())
@@ -102,6 +105,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
 	int depth[3] = {0};
+	ij = 0;
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()+1; i++)
 	{
 		if (*i == '(')
@@ -164,23 +168,35 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			if (instr != NULL)
 			{
 				instrs.push_back(instr);
-				if (instrs.size() == 1)
-					ij = instrs.begin();
-				else
-					ij++;
+				ij++;
 
 				if (instr->kind() == "conditional")
 				{
-					/*change_state.clear();
+					change_state.clear();
 					for (vi = affected.begin(); vi != affected.end(); vi++)
 					{
 						if ((si = states.find(vi->first)) != states.end())
 						{
-							change_state.insert(pair<string, state>((*waits.rbegin())));
+							first = true;
+							for (ik = 0, a = si->second.states.begin(); waits.size() > 0 && ik < (*waits.rbegin()) && a != si->second.states.end(); ik++, a++);
+							for (; ik < ij && a != si->second.states.end(); ik++, a++)
+							{
+								cout << ik << ", ";
+								if (first)
+									tstate = *a;
+								else
+									tstate = tstate || *a;
+
+								first = false;
+							}
+							cout << "\nChange: " << vi->first << ": " << tstate << endl;
+
+							change_state.insert(pair<string, state>(vi->first, tstate));
 						}
 					}
 					changes.push_back(change_state);
-					waits.push_back(ij);*/
+					waits.push_back(ij);
+					cout << "Wait: " << ij << endl;
 				}
 
 				// Now that we have parsed the sub block, we need to
