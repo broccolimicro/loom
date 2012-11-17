@@ -12,29 +12,26 @@ variable::variable()
 {
 	name = "";
 	type = "";
-	super = "";
 	width = 0;
 	last = "iX";
 	reset = "iX";
 	fixed = false;
 }
 
-variable::variable(string n, string t, string s, uint16_t w)
+variable::variable(string n, string t, state r, uint16_t w)
 {
 	name = n;
 	type = t;
-	super = s;
 	width = w;
 	last = "iX";
-	reset = "iX";
+	reset = r;
 	fixed = true;
 }
 
-variable::variable(string chp, string spr, string tab)
+variable::variable(string chp, string tab)
 {
 	last = "iX";
 	reset = "iX";
-	super = spr;
 	parse(chp, tab);
 }
 
@@ -42,7 +39,6 @@ variable::~variable()
 {
 	name = "";
 	type = "";
-	super = "";
 	width = 0;
 	last = "iX";
 	reset = "iX";
@@ -53,7 +49,6 @@ variable &variable::operator=(variable v)
 {
 	name = v.name;
 	type = v.type;
-	super = v.super;
 	width = v.width;
 	last = v.last;
 	reset = v.reset;
@@ -72,7 +67,7 @@ void variable::parse(string chp, string tab)
 	if (reset_start != chp.npos)
 	{
 		name = chp.substr(name_start+1, reset_start - (name_start+1));
-		reset.prs = true;
+		reset.prs = false;
 		reset.data = chp.substr(reset_start+2);
 		if (reset.data[1] == 'x')				// hexadecimal e.g. 0xFEEDFACE
 			reset.data = hex_to_bin(reset.data.substr(2));

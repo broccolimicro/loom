@@ -1,7 +1,4 @@
-
 #include "fifo.chp"
-#include "par_test.chp"
-
 
 proc main()
 {

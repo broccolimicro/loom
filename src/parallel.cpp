@@ -142,7 +142,7 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 				// This sub block is a variable definition. keyword<bitwidth> name
 				if (vdef)
 				{
-					v = new variable(raw_instr, "", tab);
+					v = new variable(raw_instr, tab);
 					local.insert(pair<string, variable*>(v->name, v));
 					global.insert(pair<string, variable*>(v->name, v));
 				}
@@ -216,32 +216,31 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 
 	for (ii = instrs.begin(); ii != instrs.end(); ii++)
 	{
+		// TODO We need to check to see that every instruction's variable space is mutually exclusive here
+		// If it isn't mutually exclusive, then it violates the no shared variables and non-interference rules
+		/*ij = ii;
+		ij++;
 
+		for (; ij != instrs.end(); ij++)
+			for (l = (*ij)->result.begin(); l != (*ij)->result.end(); l++)
+				if ((*ii)->result.find(l->first) != (*ii)->result.end())
+					cout << "Error: Shared variable " << l->first << " violates non-interference: " << chp << endl;*/
 
 		//Loop through all variables affected by these instructions
 		for (l = (*ii)->result.begin(); l != (*ii)->result.end(); l++)
 		{
-			cout << l->first << " " << l->second << endl;
 			m = result.find(l->first);
 			//If this variable hasn't been seen yet...
 			if (m == result.end())
-			{
 				result.insert(pair<string, state>(l->first, l->second));
-			}
 			else
-			{
-				cout << tab << "Variable " << l->first << " has multiple outcomes depending on execution order" << endl;
-				cout << tab << "To reconcile this, the state " << result[l->first] << " is unioned with " << l->second << " yielding ";
 				m->second = m->second || l->second;
-				cout << m->second << endl;
-			}
-
 		}
 	}
 
+	cout << tab << "Result:\t";
 
 	for (l = result.begin(); l != result.end(); l++)
-	{
-		cout << tab << l->first << ": " << result[l->first] << endl;
-	}
+		cout << "{" << l->first << " = " << l->second << "} ";
+	cout << endl;
 }

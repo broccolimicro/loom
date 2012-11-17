@@ -62,11 +62,8 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 	guardresult = init;
 
 	//Check for the shorthand [var] and replace it with [var -> skip]
-	if(chp.find("->") == chp.npos){
-		cout << tab <<"Expanding " << chp;
+	if(chp.find("->") == chp.npos)
 		chp = chp + "->skip";
-		cout << " to " << chp << endl;
-	}
 
 	//Parse instructions!
 	int depth[3] = {0};

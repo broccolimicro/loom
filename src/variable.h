@@ -18,13 +18,12 @@
 struct variable
 {
 	variable();
-	variable(string n, string t, string s, uint16_t w);
-	variable(string chp, string spr, string tab);
+	variable(string n, string t, state r, uint16_t w);
+	variable(string chp, string tab);
 	~variable();
 
 	string		name;		// the name of the instantiated variable
 	string		type;		// the name of the type of the instantiated variable
-	string		super;		// the name of the type of the record or channel that this variable belongs to (empty if not)
 	uint16_t	width;		// the bit width of the instantiated variable
 	bool		fixed;		// is the bit width of this variable fixed or variable?
 	state		last;

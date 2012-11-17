@@ -93,7 +93,9 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	bool para	= false;
 	bool vdef		= false;
 
-
+	for (l = init.begin(); l != init.end(); l++)
+		if ((vi = vars.find(l->first)) != vars.end())
+			affected.insert(pair<string, variable*>(vi->first, vi->second));
 
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
 	int depth[3] = {0};
@@ -123,9 +125,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			instr = NULL;
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (para)
-			{
 				instr = new parallel(raw_instr, types, global, current_state, tab+"\t");
-			}
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
 				instr = new block(raw_instr.substr(1, raw_instr.length()-2), types, global, current_state, tab+"\t");
@@ -149,7 +149,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				// This sub block is a variable definition. keyword<bitwidth> name
 				if (vdef)
 				{
-					v = new variable(raw_instr, "", tab);
+					v = new variable(raw_instr, tab);
 					local.insert(pair<string, variable*>(v->name, v));
 					global.insert(pair<string, variable*>(v->name, v));
 				}
@@ -216,11 +216,16 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 						if (l != (*ii)->result.end() && l->second.data != "NA")
 							states[vi->first].states.push_back(l->second);
 						else if ((*di) && !states[vi->first].states.rbegin()->prs)
-							states[vi->first].states.push_back(state(string(vi->second->width, 'X'), false));
+						{
+							// Use channel send and recv functions to determine whether or not we need to X out the state
+							cout << "X OUT: " << vi->first << endl;
+
+							//states[vi->first].states.push_back(state(string(vi->second->width, 'X'), false));
+							states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+						}
 						// there is no delta in the output variables or this is an output variable
 						else
 							states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
-
 						current_state[vi->first] = *states[vi->first].states.rbegin();
 
 					}
@@ -240,22 +245,21 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 	for(si = states.begin(); si != states.end(); si++)
 	{
-		cout << si->second << endl;
+		cout << tab << si->second << endl;
 		result.insert(pair<string, state>(si->first, *(si->second.states.rbegin())));
 	}
-cout << "======================" << endl;
+
+	cout << tab << "Result:\t";
+
 	for (l = result.begin(); l != result.end(); l++)
-	{
-		cout << l->first << " -> " << l->second << endl;
-	}
-	/* THIS IS NICHOLAS' FAULT. UNCOMMENT THIS. HE GOT SICK OF PRS SPAM.
+		cout << "{" << l->first << " = " << l->second << "} ";
+	cout << endl;
+
 	rules = production_rule(states, global);
 
 	list<rule>::iterator ri;
 	for (ri = rules.begin(); ri != rules.end(); ri++)
 		cout << *ri << endl;
-
-		*/
 }
 
 list<rule> production_rule(map<string, space> states, map<string, variable*> global)

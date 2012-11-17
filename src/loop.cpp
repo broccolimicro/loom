@@ -46,7 +46,7 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 	global = vars;						//The variables this block uses.
 	type = unknown;
 	string expr, eval;
-	bool guarded = true;
+	bool guarded;
 
 	cout << tab << "Loop:\t" << chp << endl;
 
@@ -55,14 +55,42 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 	string::iterator i, j, k;
 
 	//Check for the shorthand *[S] and replace it with *[1 -> S]
-	if(chp.find("->") == chp.npos){
+	int depth[3] = {0};
+	guarded = false;
+	for (i = chp.begin(), j = chp.begin(); i != chp.end()-1; i++)
+	{
+		if (*i == '(')
+			depth[0]++;
+		else if (*i == '[')
+			depth[1]++;
+		else if (*i == '{')
+			depth[2]++;
+		else if (*i == ')')
+			depth[0]--;
+		else if (*i == ']')
+			depth[1]--;
+		else if (*i == '}')
+			depth[2]--;
+
+		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && (*i == '-' && *(i+1) == '>'))
+		{
+			guarded = true;
+			break;
+		}
+	}
+
+	if(!guarded)
+	{
 		cout << tab <<"Expanding " << chp;
 		chp = "1->" + chp;
 		cout << " to " << chp << endl;
 	}
 
 	//Parse instructions!
-	int depth[3] = {0};
+	guarded = true;
+	depth[0] = 0;
+	depth[1] = 0;
+	depth[2] = 0;
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()+1; i++)
 	{
 		if (*i == '(')
@@ -112,7 +140,7 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 			j = i+2;
 			guarded = true;
 		}
-		else if (depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '-' && *(i+1) == '>') || i == chp.end()))
+		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '-' && *(i+1) == '>') || i == chp.end()))
 			guarded = false;
 	}
 

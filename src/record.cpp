@@ -79,7 +79,7 @@ map<string, variable*> expand(string chp, string super, map<string, keyword*> ty
 	map<string, variable*> result;
 	map<string, keyword*>::iterator var_type;
 	map<string, variable*>::iterator mem_var;
-	variable *v = new variable(chp, super, tab+"\t");
+	variable *v = new variable(chp, tab+"\t");
 	string name;
 
 	if ((var_type = types.find(v->type)) != types.end())
@@ -92,7 +92,7 @@ map<string, variable*> expand(string chp, string super, map<string, keyword*> ty
 			for (mem_var = ((record*)var_type->second)->vars.begin(); mem_var != ((record*)var_type->second)->vars.end(); mem_var++)
 			{
 				v = mem_var->second;
-				result.insert(pair<string, variable*>(name + "." + v->name, new variable(name + "." + v->name, v->type, var_type->first, v->width)));
+				result.insert(pair<string, variable*>(name + "." + v->name, new variable(name + "." + v->name, v->type, v->reset, v->width)));
 			}
 		}
 		else if (var_type->second->kind() == "process")
