@@ -216,23 +216,26 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 
 	for (ii = instrs.begin(); ii != instrs.end(); ii++)
 	{
-		/* TODO
-		ij = ii;
-		ij++;
-		for (; ij != instrs.end(); ij++)
-		{
-			cout << ii->chp << "\t" << ij->chp << endl;
-		}*/
-
+		//Loop through all variables affected by these instructions
 		for (l = (*ii)->result.begin(); l != (*ii)->result.end(); l++)
 		{
 			m = result.find(l->first);
+			//If
 			if (m == result.end())
+			{
 				result.insert(pair<string, state>(l->first, l->second));
+			}
 			else
+			{
+				cout << tab << "Warning: Variable " << l->first << " has multiple outcomes depending on execution order" << endl;
+				cout << tab << "To reconcile this, the state " << result[l->first] << " is unioned with " << l->second << " yielding ";
 				result[l->first] = result[l->first] || l->second;
+				cout << result[l->first] << endl;
+			}
+
 		}
 	}
+
 
 	for (l = result.begin(); l != result.end(); l++)
 	{

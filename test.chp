@@ -1,16 +1,33 @@
+
 #include "fifo.chp"
+#include "par_test.chp"
+
 
 proc main()
 {
+	
 	chan0b a;
 	chan0b b;
 	chan0b c;
+	
+	// Hook two FIFOs to each other
 	fifo0b f1(a, b);
 	fifo0b f2(b, c);
+	
+	/* This is a more complex example.
+	 * It is a split unit. 
+	 * This is a long comment. 
+	 * It requires multiple lines. */
 	
 	chan0b x;
 	chan0b y;
 	chan0b z;
 	chan1b s;
 	mux0b2(x, y, z, s);
+	
+	//Test the parallel functionality
+	chan0b d;
+	chan0b e;
+	simple_par(d,e);
+	
 }
