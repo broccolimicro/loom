@@ -122,7 +122,7 @@ void process::parse(string chp, map<string, keyword*> types, map<string, variabl
 							var = replace.find(vj->first);
 							do
 							{
-								if (replace[var + vj->first.length()] != '.')
+								if (replace[var + vj->first.length()] != '.' && replace[((var - 1) < 0) ? var : var - 1] != '.')
 								{
 									replace = replace.substr(0, var) + vi->first + "." + replace.substr(var);
 									skip = vj->first.length() + vi->first.length() + 1;
