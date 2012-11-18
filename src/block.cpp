@@ -94,11 +94,15 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	list<variable*> delta;
 
 	map<string, size_t>					prgm_ctr;
+	map<string, string>					prgm_protocol;
+	map<string, string>		::iterator	proti;
 	map<string, size_t>		::iterator	pi;
 	list<size_t>			::iterator  pj;
 
 	size_t								k, p;
 	state								tstate;
+
+	string search0, search1, search2;
 
 	bool para		= false;
 	bool vdef		= false;
@@ -242,11 +246,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 							{
 								t = types.find(vj->second->type);
 								pi = prgm_ctr.find(vj->first);
-							}
-
-							if (l != (*ii)->result.end() && l->second.data != "NA")
-							{
-								states[vi->first].states.push_back(l->second);
+								proti = prgm_protocol.find(vj->second->name);
 
 								if (vj != global.end())
 								{
@@ -256,49 +256,84 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 										{
 											prgm_ctr.insert(pair<string, size_t>(vj->second->name, 0));
 											cout << tab << "New Program Counter: " << vj->second->name << " 0" << endl;
+
+										}
+									}
+									else if (k > pi->second)
+									{
+										pi->second = k;
+										cout << tab << "Increment Program Counter: " << vj->second->name << " " << pi->second << endl;
+									}
+
+									if (t != types.end() && t->second->kind() == "channel" && (proti == prgm_protocol.end() || proti->second == "?"))
+									{
+										search0 = (*ii)->chp;
+										while ((p = search0.find(vj->first + ".")) != search0.npos)
+											search0 = search0.substr(0, p) + search0.substr(p + vj->first.length() + 1);
+
+										search1 = (*((channel*)t->second)->send.def.instrs.begin())->chp;
+										search2 = (*((channel*)t->second)->recv.def.instrs.begin())->chp;
+										cout << tab << "Send: " << search0 << " in " << search1 << " " << search1.find(search0) << endl;
+										cout << tab << "Recv: " << search0 << " in " << search2 << " " << search2.find(search0) << endl;
+										if (search1.find(search0) != search1.npos && search2.find(search0) != search2.npos)
+											prgm_protocol.insert(pair<string, string>(vj->second->name, "?"));
+										else if (search1.find(search0) != search1.npos)
+											prgm_protocol.insert(pair<string, string>(vj->second->name, "send"));
+										else if (search2.find(search0) != search2.npos)
+											prgm_protocol.insert(pair<string, string>(vj->second->name, "recv"));
+										else
+											cout << "Ah Hell... How in the name of his noodly goodness did I end up here?" << endl;
+									}
+								}
+
+								if (l != (*ii)->result.end() && l->second.data != "NA")
+									states[vi->first].states.push_back(l->second);
+								else if (di->size() > 0 && !states[vi->first].states.rbegin()->prs)
+								{
+
+									// Use channel send and recv functions to determine whether or not we need to X out the state
+									/*cout << tab << "Maybe X Out: " << vi->first << " " << pi->second << endl;
+									if (t != types.end() && t->second->kind() == "channel" && pi != prgm_ctr.end())
+									{
+										p = pi->second;
+
+										if (proti == prgm_protocol.end())
+											cout << "Ok... Another place that has issues" << endl;
+										else
+										{
+											if (proti->second == "send")
+												for (pj = waits.begin(), xi = ((channel*)t->second)->recv.def.changes.begin(); pj != waits.end() && p > *pj && xi != ((channel*)t->second)->recv.def.changes.end(); p -= *pj, pj++);
+											else if (proti->second == "recv")
+												for (pj = waits.begin(), xi = ((channel*)t->second)->send.def.changes.begin(); pj != waits.end() && p > *pj && xi != ((channel*)t->second)->send.def.changes.end(); p -= *pj, pj++);
+
+											cout << "BLARG! " << proti->second << " " << vi->first << endl;
+											for (m = xi->begin(); m != xi->end(); m++)
+												cout << m->first << " " << m->second << endl;
+											m = xi->find(vi->first.substr(vi->first.find_first_of(".")+1));
+											if (m != xi->end())
+											{
+												states[vi->first].states.push_back(*(states[vi->first].states.rbegin()) || m->second);
+												cout << m->second << endl;
+											}
+											else
+											{
+												states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+												cout << "Fail" << endl;
+											}
 										}
 									}
 									else
-									{
-										pi->second = k > pi->second ? k : pi->second;
-										cout << tab << "Increment Program Counter: " << vj->second->name << " " << pi->second << endl;
-									}
-								}
-							}
-							else if (di->size() > 0 && !states[vi->first].states.rbegin()->prs)
-							{
-
-								// Use channel send and recv functions to determine whether or not we need to X out the state
-								cout << tab << "Maybe X Out: " << vi->first << " " << pi->second << endl;
-								/*if (t != types.end() && t->second->kind() == "channel" && pi != prgm_ctr.end())
-								{
-									p = pi->second;
-									for (pj = waits.begin(), xi = ((channel*)t->second)->send.def.changes.begin(); pj != waits.end() && p > *pj && xi != ((channel*)t->second)->send.def.changes.end(); p -= *pj, pj++);
-									cout << "BLARG! " << vi->first << endl;
-									for (m = xi->begin(); m != xi->end(); m++)
-										cout << m->first << " " << m->second << endl;
-									m = xi->find(vi->first.substr(vi->first.find_first_of(".")+1));
-									if (m != xi->end())
-									{
-										states[vi->first].states.push_back(*(states[vi->first].states.rbegin()) || m->second);
-										cout << m->second << endl;
-									}
-									else
-									{
+									{*/
 										states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
-										cout << "Fail" << endl;
-									}
+									//	cout << "Fail" << endl;
+									//}
 								}
+								// there is no delta in the output variables or this is an output variable
 								else
-								{*/
 									states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
-									//cout << "Fail" << endl;
-								//}
+
+								current_state[vi->first] = *states[vi->first].states.rbegin();
 							}
-							// there is no delta in the output variables or this is an output variable
-							else
-								states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
-							current_state[vi->first] = *states[vi->first].states.rbegin();
 						}
 					}
 				}
