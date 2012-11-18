@@ -895,7 +895,7 @@ space up(space s)
 		result.states.push_back(state(str, j->prs));
 	}
 
-	result.states.push_back(state("0", false));
+	result.states.push_back(state("X", false));
 
 	return result;
 }
@@ -962,7 +962,7 @@ space up(space s, int idx)
 		result.states.push_back(state(str, j->prs));
 	}
 
-	result.states.push_back(state("0", false));
+	result.states.push_back(state("X", false));
 
 	return result;
 }
@@ -1003,7 +1003,7 @@ space down(space s)
 		result.states.push_back(state(str, j->prs));
 	}
 
-	result.states.push_back(state("0", false));
+	result.states.push_back(state("X", false));
 
 	return result;
 }
@@ -1069,7 +1069,7 @@ space down(space s, int idx)
 		result.states.push_back(state(str, j->prs));
 	}
 
-	result.states.push_back(state("0", false));
+	result.states.push_back(state("X", false));
 
 	return result;
 }

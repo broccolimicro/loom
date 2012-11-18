@@ -15,12 +15,10 @@ channel chan4p0b
 {
 	int<1> r := 0;
 	int<1> a := 0;
-	int<1> b := 0;
-	int<1> c := 0;
 	
 	proc send()
 	{
-		r+;b-;c+;[a];r-;b+;c-;[~a]
+		r+;[a];r-;[~a]
 	}
 	
 	proc recv()
@@ -36,8 +34,8 @@ channel chan2p0b
 	
 	proc send()
 	{
-		[   r -> r-;[~a]
-		[] ~r -> r+;[ a]
+		[   r -> int x;r-;[~a]
+		[] ~r -> int x;r+;[ a]
 		]
 	}
 	
@@ -52,6 +50,7 @@ channel chan2p0b
 proc fifo0b4p(chan4p0b l, chan4p0b r)
 {
 	*[l?;r!]
+	//*[l?;r!;l?;r!]
 }
 
 proc fifo0b2p(chan2p0b l, chan2p0b r)

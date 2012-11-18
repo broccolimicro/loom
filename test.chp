@@ -9,7 +9,7 @@ proc main()
 	
 	// Hook two FIFOs to each other
 	fifo0b f1(a, b);
-	fifo0b f2(b, c);
+	//fifo0b f2(b, c);
 	
 	/* This is a more complex example.
 	 * It is a split unit. 
@@ -20,11 +20,11 @@ proc main()
 	chan0b y;
 	chan0b z;
 	chan1b s;
-	mux0b2(x, y, z, s);
+	//mux0b2(x, y, z, s);
 	
 	//Test the parallel functionality
 	chan0b d;
 	chan0b e;
-	simple_par(d,e);
+	//simple_par(d,e);
 	
 }

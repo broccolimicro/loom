@@ -414,6 +414,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	list<int> state_locations; 	//See where_state_var's return for details of how this is being used.
 	list<int>::iterator li;
 	list<int> temp;
+
 	for (ri = rules.begin(); ri != rules.end(); ri++){
 		cout << tab << *ri << endl;
 		cout << tab << "Production rules vs. desired functionality: ";
@@ -421,12 +422,110 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		state_locations.merge(temp);
 	}
 
-	//instruction *state_inst_up, *state_instr_down;
-	for (li = state_locations.begin(); li != state_locations.end(); li ++){
-		cout << tab << *li << endl;
+	list<instruction*>::iterator inst_setter;
+//	instruction *state_inst_up, *state_inst_down;
+	int highest_state_name = 0;
+	int search_done = -1;
+	int how_many_added = 0;
+	int how_many_inserted = 0;
+	list<pair<string,int> > to_insertl;
+	//Loop through our list of desired state variable insertions.
+	for (li = state_locations.begin(); li != state_locations.end(); li++){
+			//Find the lowest variable name not in globals (so no conflicts)
+			search_done = -1;
+			highest_state_name = 0;
+			while (global.find("sv"+to_string(highest_state_name)) != global.end()){
+				cout << "sv"<<to_string(highest_state_name)<< " used, try sv" << highest_state_name+1 << endl;
+				highest_state_name += 1;
+			}
+			cout << "adding variable sv" << to_string(highest_state_name) << endl;
+			v = new variable("int<1>sv" + to_string(highest_state_name), tab);
+			//Add to globals
+			cout <<v->name<<endl;
+			global.insert(pair<string, variable*>(v->name, v));
+			//Add to locals
+			local.insert(pair<string, variable*>(v->name, v));
 
-		cout << tab << *(++li) << endl;
+
+			//Make an instruction for state up
+			cout << tab << "Up instruction added at" << *li << endl;
+			to_insertl.push_back(pair<string,int>(v->name+":=1",*li));
+			raw = "int<1>" + v->name + ":=0;" + v->name + ":=0;" + raw;
+			how_many_added++;
+			cout << endl<< "up instr added "<< v->name << ":=1" << endl;
+			how_many_added++;
+
+			//cout << "Down instruction added at " << *(++li) << endl;
+			//Make an instruction for state down
+			//to_insertl.push_back(pair<string,int>(v->name+":=0",*li));
+
+			//cout << "down instr added " << v->name + ":=0" <<endl<<endl;
+
 	}
+
+	//Print out our to_insert
+	list<pair<string,int> >::iterator instr_adderl;
+	raw = ";" +raw+";";
+	for(instr_adderl = to_insertl.begin(); instr_adderl != to_insertl.end();instr_adderl++)
+	{
+		cout << instr_adderl->first << "-->" << instr_adderl->second << endl;
+		int insertion_location = 0;
+		for(int counter = 0; counter < (instr_adderl->second+how_many_inserted+how_many_added-1); counter++){
+			insertion_location = raw.find(";",insertion_location+1);
+		}
+		if(insertion_location < 0)
+			cout << "Everything is wrong and unholy" << endl;
+		else{
+			cout << "insertion location " << insertion_location << endl;
+			cout << "That is the " << instr_adderl->second+how_many_inserted-1 << "th ';' = " << instr_adderl->second << "+" << how_many_inserted << "-1" << endl;
+			raw = raw.substr(0, insertion_location+1) + instr_adderl->first + ";" + raw.substr(insertion_location+1);
+			how_many_inserted++;
+		}
+	}
+	if(how_many_inserted > 0)
+	{
+		cout << endl << "The chp with inserted state vars:"<<endl;
+		cout<<raw<<endl;
+	}
+
+
+	if(how_many_added > 0){		//If we added a state variable...
+		//Now that we have the corrected instruction stream, rerun parse!
+
+		raw = raw.substr(1,raw.end()-raw.begin() - 2);
+		cout << "Reparsing on " << raw << endl;
+		/*
+		//But no memory leaks for me!
+		chp = "";
+		_kind = "block";
+
+		map<string, variable*>::iterator i;
+		for (i = local.begin(); i != local.end(); i++)
+		{
+			if (i->second != NULL)
+				delete i->second;
+			i->second = NULL;
+		}
+
+		local.clear();
+
+		list<instruction*>::iterator j;
+		for (j = instrs.begin(); j != instrs.end(); j++)
+		{
+			if (*j != NULL)
+				delete *j;
+			*j = NULL;
+		}
+		*/
+		instrs.clear();
+
+		cout << "=REDO==REDO==REDO==REDO==REDO=" << endl;		//Let the user know we are trashing the above block.
+		//parse(raw, types, vars, init, tab);
+	}else{
+		cout << tab << "=GOOD==GOOD==GOOD==GOOD==GOOD=" << endl;		//This block is done correctly.
+	}
+
+
 }
 
 list<rule> production_rule(map<string, space> states, map<string, variable*> global, string tab)
@@ -653,23 +752,94 @@ list<int> where_state_var(space left, space right, string tab)
 			conflicts += "E";	//Error fire! Not quite sure how you got here...
 		}
 	}
+	//Format for conflicts string:
+	//. is 'allowable',
+	//E is error,
+	//C is conflict if no state variable
+	//! is necessary fire
+	//S is resolved necessary fire given conflicts (surrounded by state variable)
 	cout << conflicts << endl;
 	if(conflicts.find_first_of("C") == conflicts.npos)
 	{
 		return state_locations;		//No conflicts! We are golden.
 	}
 	// For now, I am simply going to surround the conflicting state with a state variable. This is probably not optimal.
-	size_t st = conflicts.find_first_of("C");
+	size_t st = conflicts.find_first_of("!");
 	while (st != conflicts.npos)
 	{
-		state_locations.push_back(st);
-		state_locations.push_back(st+1);
-		conflicts = conflicts.substr(0,st) + "." + conflicts.substr(st+1);
+		if ((conflicts.find_first_of("C") != conflicts.npos)&&(conflicts.find_first_of("C") < st)) //Insert state before required instr
+			state_locations.push_back(st+1);
+		else
+			state_locations.push_back(st+2);
+
+
+		//state_locations.push_back(st);
+
+		conflicts = conflicts.substr(0,st) + "S" + conflicts.substr(st+1);
 		//Get the next conflict
-		cout << tab << conflicts << endl;
-		st = conflicts.find_first_of("C");
+		//cout << tab << conflicts << endl;
+		st = conflicts.find_first_of("!");
 	}
 	return state_locations;
 
 }
+
+//Legacy code (don't delete till I am done with it)
+/*
+	for (li = state_locations.begin(); li != state_locations.end(); li++){
+		cout << tab << *li << endl;
+
+		//Find the lowest variable name not in globals (so no conflicts)
+		search_done = -1;
+		while (global.find("sv"+to_string(highest_state_name)) != global.end()){
+			cout << "FGASGFSDFG " << highest_state_name++ << endl;
+		}
+		cout << "=========" << to_string(highest_state_name) << "=====" << highest_state_name<<endl;
+		cout << "adding variable sv" << to_string(highest_state_name) << endl;
+		v = new variable("int<1>sv" + to_string(highest_state_name), tab);
+
+		//Add to globals
+		cout <<v->name<<endl;
+		global.insert(pair<string, variable*>(v->name, v));
+		if( global.find("sv"+to_string(highest_state_name)) == global.end() )
+			cout << "WE HAVE SERIOUS PROBLEMS"<<endl;
+		//Add to locals
+		local.insert(pair<string, variable*>(v->name, v));
+
+		//Make an instruction for state up
+		state_inst_up = new instruction("int<1>"+v->name + ":=1", types, global, current_state, tab+"\t");
+		inst_setter = instrs.begin();
+		for (int tcounter = 0;tcounter<(*li+how_many_added); tcounter++){
+			inst_setter++;
+			cout << "ddebug"<<tcounter<<endl;
+		}
+		instrs.insert(inst_setter, state_inst_up);
+		cout << "up instr added "<<state_inst_up->chp <<endl;
+		how_many_added++;
+		cout << "How many total added = "<< how_many_added<< endl;
+		cout << tab << *(++li) << endl;
+
+		//Make an instruction for state down
+		state_inst_down = new instruction(v->name + ":=0", types, global, current_state, tab+"\t");
+		inst_setter = instrs.begin();
+		for (int tcounter = 0;tcounter<(*li+how_many_added); tcounter++){
+			inst_setter++;
+			cout << "debug"<<tcounter<<endl;
+		}
+		instrs.insert(inst_setter, state_inst_down);
+		cout << "down instr added" <<endl;
+		how_many_added++;
+		cout << "How many added = "<< how_many_added<< endl;
+	} */
+
+/*
+//Loop through all the instructions to create a new unified CHP string
+for (inst_setter = instrs.begin(); inst_setter != instrs.end(); inst_setter++){
+	corrected = corrected + (*inst_setter)->chp+ ";";
+}
+corrected = corrected.substr(0, corrected.end()-corrected.begin()+1); //Remove the tail semicolon.
+cout <<"CHP updated with added instruction:" << endl;
+cout << corrected << endl;
+*/
+
 
