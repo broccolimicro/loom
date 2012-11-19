@@ -41,6 +41,6 @@ struct block : instruction
 };
 
 list<rule> production_rule(map<string, space>	states, map<string, variable*> global, string tab, bool verbose);
-list<int> where_state_var(space left, space right, string tab);
+list<int> state_variable(space left, space right, string tab);
 
 #endif

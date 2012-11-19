@@ -129,5 +129,6 @@ space up(space s, int idx);
 space down(space s);
 space down(space s, int idx);
 bool drive(space s);
+string conflicts(space left, space right);
 
 #endif

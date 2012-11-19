@@ -456,16 +456,19 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	rules = production_rule(states, global, tab, false);
 
 	list<rule>::iterator ri;
-	list<int> state_locations; 	//See where_state_var's return for details of how this is being used.
+	list<int> state_locations; 	//See state_variable's return for details of how this is being used.
 	list<int>::iterator li;
 	list<int> temp;
 
 	for (ri = rules.begin(); ri != rules.end(); ri++){
 		cout << tab << *ri << endl;
 		cout << tab << "Production rules vs. desired functionality: ";
-		temp = where_state_var(ri->left, ri->right, tab);
+		temp = state_variable(ri->left, ri->right, tab);
 		state_locations.merge(temp);
 	}
+
+	state_locations.sort();
+	state_locations.unique();
 
 	list<instruction*>::iterator inst_setter;
 //	instruction *state_inst_up, *state_inst_down;
@@ -513,14 +516,14 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	{
 		cout << instr_adderl->first << "-->" << instr_adderl->second << endl;
 		int insertion_location = 0;
-		for(int counter = 0; counter < (instr_adderl->second+how_many_inserted+how_many_added-1); counter++){
+		for(int counter = 0; counter < (instr_adderl->second+how_many_inserted+how_many_added); counter++){
 			insertion_location = raw.find(";",insertion_location+1);
 		}
 		if(insertion_location < 0)
 			cout << "Everything is wrong and unholy" << endl;
 		else{
 			cout << "insertion location " << insertion_location << endl;
-			cout << "That is the " << instr_adderl->second+how_many_inserted-1 << "th ';' = " << instr_adderl->second << "+" << how_many_inserted << "-1" << endl;
+			cout << "That is the " << instr_adderl->second+how_many_inserted-1 << "th ';' = " << instr_adderl->second << "+" << how_many_inserted << endl;
 			raw = raw.substr(0, insertion_location+1) + instr_adderl->first + ";" + raw.substr(insertion_location+1);
 			how_many_inserted++;
 		}
@@ -785,79 +788,109 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 	return rules;
 }
 
+size_t search_back(string s, size_t offset)
+{
+	size_t st = s.find_first_of("!", offset+1);
+	int mindots = 1, numdots = 0;
+
+	if (st == s.npos)
+		return s.npos;
+
+	for (size_t ct = st-1; ct > offset && ct < s.length() && ct >= 0; ct--)
+	{
+		if (s[ct] == 'C')
+		{
+			if (numdots < mindots)
+			{
+				numdots = 0;
+				mindots = 2;
+				st = ct;
+			}
+			else
+			{
+				ct = (st+ct)/2 + 1;
+				for (; s[ct+1] != 'C' && s[ct] != '!'; ct++);
+
+				return ct;
+			}
+		}
+		else if (s[ct] == '.')
+			numdots++;
+	}
+
+	return s.npos;
+}
+
+size_t search_front(string s, size_t offset)
+{
+	size_t st = s.find_last_of("!", offset-1);
+	int mindots = 1, numdots = 0;
+
+	if (st == s.npos)
+		return s.npos;
+
+	for (size_t ct = st; ct < offset && ct < s.length() && ct >= 0; ct++)
+	{
+		if (s[ct] == 'C')
+		{
+			if (numdots < mindots)
+			{
+				numdots = 0;
+				mindots = 2;
+				st = ct;
+			}
+			else
+			{
+				ct = (st+ct)/2 + 1;
+				for (; s[ct-2] != 'C' && s[ct-1] != '!'; ct--);
+
+				return ct;
+			}
+		}
+		else if (s[ct] == '.')
+			numdots++;
+	}
+
+	return s.npos;
+}
+
 //There can be four states: 1, 0, X, _ where underscore is empty set and X is full set.
 //The return list will be even by design. Each pair is a different state variable. The first
 //element of the pair is the index of state up, the second is state down.
 //Ex: 0, 1, 5, 7 means sv0 goes high at 0, low at 1, and s2 goes high at 5, and low at 7.
-list<int> where_state_var(space left, space right, string tab)
+/*
+!.C
+C.!
+C..C!
+!C..C
+*/
+list<int> state_variable(space left, space right, string tab)
 {
-	list<state> left_list, right_list;
-	list<state>::iterator i,j;
 	list<int> state_locations;
-	state result;
-	string a, b, conflicts = "";
-	left_list = left.states;
-	right_list = right.states;
 
-	//Loop through all of the production rule states (left) and the corresponding desired functionality (right)
-	for (i = left_list.begin(),j = right_list.begin() ; i != left_list.end() && j != right_list.end(); i++, j++)
-	{
-		if(i->data == "0" && j->data == "0" )
-			conflicts += ".";		//Doesn't fire, shouldn't fire. Good.
-		else if(i->data == "0" && j->data == "1" ){
-			cout << "ERROR: Production rule doesn't fire during a place where it should." << endl;
-			conflicts += "E";	//Error fire! Our PRS aren't good enough.
-		}
-		else if(i->data == "1" && j->data == "0" )
-			conflicts += "C";  // Illegal fire (fires when it shouldn't)
-		else if(i->data == "1" && j->data == "1" )
-			conflicts += "!";  // This fires, and it must keep firing after we after we add a state var
-		else if(j->data == "X" )
-			conflicts += "."; 	//Don't really care if it fires or not. Ambivalence.
-		else if(i->data == "X" && j->data == "0")
-			conflicts += "C";
-		else{
-			cout << "ERROR! State var generate is very confused right now. " << endl;
-			conflicts += "E";	//Error fire! Not quite sure how you got here...
-		}
-	}
-	//Format for conflicts string:
-	//. is 'allowable',
-	//E is error,
-	//C is conflict if no state variable
-	//! is necessary fire
-	//S is resolved necessary fire given conflicts (surrounded by state variable)
-	cout << conflicts << endl;
-	if(conflicts.find_first_of("C") == conflicts.npos)
-	{
+	string conflict = conflicts(left, right);
+
+	cout << conflict << endl;
+	if (conflict.find_first_of("C") == conflict.npos)
 		return state_locations;		//No conflicts! We are golden.
-	}
-	// For now, I am simply going to surround the conflicting state with a state variable. This is probably not optimal.
-	size_t st = conflicts.find_first_of("!");
-	size_t ct = conflicts.find_first_of("C");
-	while (st != conflicts.npos)
+
+	size_t foundb = conflict.npos, foundf = conflict.npos;
+	size_t offset = 0;
+	while (offset != conflict.npos)
 	{
-		if(conflicts.substr(st-1,1) == "C" || conflicts.substr(st+1,1) == "C")	//This is if we have ....C!... or ...!C... (cases where state var is useless)
-		{
-			//Don't request that we add a state variable.
+		foundb = search_back(conflict, offset);
 
-		}
-		else
-		{
-			if (ct < st) //Insert state before required instr
-				state_locations.push_back(st+1);
-			else
-				state_locations.push_back(st+2);
-		}
+		if (foundb != conflict.npos && foundf != foundb)
+			state_locations.push_back(foundb);
 
+		offset = conflict.find_first_of("!", offset+1);
 
-		//state_locations.push_back(st);
+		foundf = search_front(conflict, offset);
 
-		conflicts = conflicts.substr(0,st) + "S" + conflicts.substr(st+1);
-		//Get the next conflict
-		//cout << tab << conflicts << endl;
-		st = conflicts.find_first_of("!");
+		if (foundf != conflict.npos && foundf != foundb)
+			state_locations.push_back(foundf);
 	}
+
 	return state_locations;
 
 }

@@ -44,15 +44,21 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 
 	map<string, state> next_init;
 
-	next_init = result;
+	next_init.insert(init.begin(), init.end());
 
-	for (si = init.begin(); si != init.end(); si++)
+	for (si = result.begin(); si != result.end(); si++)
 	{
 		sj = next_init.find(si->first);
 		if (sj == next_init.end())
+		{
 			next_init.insert(pair<string, state>(si->first, si->second));
+			cout << "Loop Vars: " << si->first << " " << si->second << endl;
+		}
 		else
+		{
+			cout << "Loop Vars: " << sj->first << " " << sj->second << " " << si->second << endl;
 			sj->second = sj->second || si->second;
+		}
 	}
 
 	map<string, variable*>::iterator i;
@@ -104,6 +110,11 @@ void loop::pass(string raw, map<string, keyword*> types, map<string, variable*> 
 	map<string, instruction*>::iterator ii;
 	map<string, state>::iterator si, sj;
 	string::iterator i, j, k;
+
+	map<string, state> guardresult, temp;
+	string::reverse_iterator ri, rj, rk;
+
+	guardresult = init;
 
 	//Check for the shorthand *[S] and replace it with *[1 -> S]
 	int depth[3] = {0};
@@ -170,7 +181,29 @@ void loop::pass(string raw, map<string, keyword*> types, map<string, variable*> 
 			expr = eval.substr(0, k-eval.begin());
 			eval = eval.substr(k-eval.begin()+2);
 
-			instrs.insert(pair<string, instruction*>(expr, new block(eval, types, global, guard(expr, vars, tab+"\t"), tab+"\t")));
+			cout << "Before\n";
+			for (si = guardresult.begin(); si != guardresult.end(); si++)
+				cout << si->first << " -> " << si->second << endl;
+
+			cout << "Guard\n";
+			temp = guard(expr, vars, tab+"\t");
+			for (si = temp.begin(); si != temp.end(); si++)
+			{
+				if ((sj = guardresult.find(si->first)) == guardresult.end())
+					guardresult.insert(pair<string, state>(si->first, si->second));
+				else
+					for (ri = si->second.data.rbegin(), rj = sj->second.data.rbegin(); ri != si->second.data.rend() && rj != sj->second.data.rend(); ri++, rj++)
+						if (*ri != 'X')
+							*rj = *ri;
+
+				cout << si->first << " -> " << si->second << endl;
+			}
+
+			cout << "After\n";
+			for (si = guardresult.begin(); si != guardresult.end(); si++)
+				cout << si->first << " -> " << si->second << endl;
+
+			instrs.insert(pair<string, instruction*>(expr, new block(eval, types, global, guardresult, tab+"\t")));
 			j = i+1;
 			guarded = true;
 		}
@@ -187,7 +220,27 @@ void loop::pass(string raw, map<string, keyword*> types, map<string, variable*> 
 			expr = eval.substr(0, k-eval.begin());
 			eval = eval.substr(k-eval.begin()+2);
 
-			instrs.insert(pair<string, instruction*>(expr, new block(eval, types, global, guard(expr, vars, tab+"\t"), tab+"\t")));
+			cout << tab << "Before\n";
+			for (si = guardresult.begin(); si != guardresult.end(); si++)
+				cout << tab << si->first << " -> " << si->second << endl;
+
+			cout << tab << "Guard\n";
+			temp = guard(expr, vars, tab+"\t");
+			for (si = temp.begin(); si != temp.end(); si++)
+			{
+				if ((sj = guardresult.find(si->first)) == guardresult.end())
+					guardresult.insert(pair<string, state>(si->first, si->second));
+				else
+					for (ri = si->second.data.rbegin(), rj = sj->second.data.rbegin(); ri != si->second.data.rend() && rj != sj->second.data.rend(); ri++, rj++)
+						if (*ri != 'X')
+							*rj = *ri;
+			}
+
+			cout << tab << "After\n";
+			for (si = guardresult.begin(); si != guardresult.end(); si++)
+				cout << tab << si->first << " -> " << si->second << endl;
+
+			instrs.insert(pair<string, instruction*>(expr, new block(eval, types, global, guardresult, tab+"\t")));
 			j = i+2;
 			guarded = true;
 		}

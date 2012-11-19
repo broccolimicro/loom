@@ -1083,3 +1083,43 @@ bool drive(space s)
 
 	return result;
 }
+
+/* Format for conflicts string:
+ * . is 'allowable',
+ * E is error,
+ * C is conflict if no state variable
+ * ! is necessary fire
+ * S is resolved necessary fire given conflicts (surrounded by state variable)
+ */
+string conflicts(space left, space right)
+{
+	list<state>::iterator i,j;
+	string conflict = "";
+
+	//Loop through all of the production rule states (left) and the corresponding desired functionality (right)
+	for (i = left.states.begin(),j = right.states.begin() ; i != left.states.end() && j != right.states.end(); i++, j++)
+	{
+		if(i->data == "0" && j->data == "0" )
+			conflict += ".";		//Doesn't fire, shouldn't fire. Good.
+		else if(i->data == "0" && j->data == "1" )
+		{
+			cout << "ERROR: Production rule doesn't fire during a place where it should." << endl;
+			conflict += "E";	//Error fire! Our PRS aren't good enough.
+		}
+		else if(i->data == "1" && j->data == "0" )
+			conflict += "C";  // Illegal fire (fires when it shouldn't)
+		else if(i->data == "1" && j->data == "1" )
+			conflict += "!";  // This fires, and it must keep firing after we after we add a state var
+		else if(j->data == "X" )
+			conflict += "."; 	//Don't really care if it fires or not. Ambivalence.
+		else if(i->data == "X" && j->data == "0")
+			conflict += "C";
+		else
+		{
+			cout << "ERROR! State var generate is very confused right now. " << endl;
+			conflict += "E";	//Error fire! Not quite sure how you got here...
+		}
+	}
+
+	return conflict;
+}
