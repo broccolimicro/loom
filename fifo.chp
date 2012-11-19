@@ -15,16 +15,15 @@ channel chan4p0b
 {
 	int<1> r := 0;
 	int<1> a := 0;
-	int<1> b := 0;
 	
 	proc send()
 	{
-		b+;r+;[a];r-;[~a]
+		r+;[a];r-;[~a]
 	}
 	
 	proc recv()
 	{
-		b+;[r];a+;[~r];a-
+		[r];a+;[~r];a-
 	}
 }
 

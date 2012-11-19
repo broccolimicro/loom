@@ -36,19 +36,68 @@ loop::~loop()
 
 void loop::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
 {
+	chp = raw.substr(2, raw.length()-3);
+	cout << tab << "Loop Preparse:\t" << chp << endl;
+	pass(raw, types, vars, init, tab);
+
+	map<string, state>::iterator si, sj;
+
+	map<string, state> next_init;
+
+	next_init = result;
+
+	for (si = init.begin(); si != init.end(); si++)
+	{
+		sj = next_init.find(si->first);
+		if (sj == next_init.end())
+			next_init.insert(pair<string, state>(si->first, si->second));
+		else
+			sj->second = sj->second || si->second;
+	}
+
+	map<string, variable*>::iterator i;
+	for (i = local.begin(); i != local.end(); i++)
+	{
+		if (i->second != NULL)
+			delete i->second;
+		i->second = NULL;
+	}
+
+	local.clear();
+
+	map<string, instruction*>::iterator j;
+	for (j = instrs.begin(); j != instrs.end(); j++)
+	{
+		if (j->second != NULL)
+			delete j->second;
+		j->second = NULL;
+	}
+
+	instrs.clear();
+
+	cout << tab << "Loop Parse:\t" << chp << endl;
+	pass(raw, types, vars, next_init, tab);
+
+	cout << tab << "Result:\t";
+
+	for (si = result.begin(); si != result.end(); si++)
+		cout << "{" << si->first << " = " << si->second << "} ";
+	cout << endl;
+}
+
+void loop::pass(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
+{
 	result.clear();
 	local.clear();
 	global.clear();
 	instrs.clear();
 	states.clear();
+	rules.clear();
 
-	chp = raw.substr(2, raw.length()-3);
 	global = vars;						//The variables this block uses.
 	type = unknown;
 	string expr, eval;
 	bool guarded;
-
-	cout << tab << "Loop:\t" << chp << endl;
 
 	map<string, instruction*>::iterator ii;
 	map<string, state>::iterator si, sj;
@@ -154,10 +203,4 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 				result.insert(pair<string, state>(si->first, si->second));
 		}
 	}
-
-	cout << tab << "Result:\t";
-
-	for (si = result.begin(); si != result.end(); si++)
-		cout << "{" << si->first << " = " << si->second << "} ";
-	cout << endl;
 }

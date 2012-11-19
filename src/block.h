@@ -40,7 +40,7 @@ struct block : instruction
 	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab);
 };
 
-list<rule> production_rule(map<string, space>	states, map<string, variable*> global, string tab);
+list<rule> production_rule(map<string, space>	states, map<string, variable*> global, string tab, bool verbose);
 list<int> where_state_var(space left, space right, string tab);
 
 #endif

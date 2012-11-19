@@ -18,6 +18,7 @@ struct loop : conditional
 	~loop();
 
 	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab);
+	void pass(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab);
 };
 
 #endif
