@@ -60,18 +60,20 @@ void instruction::parse(string raw, map<string, keyword*> types, map<string, var
 
 	//Convert ;var+; to ;var:=1;
 	if(chp.find(":=") == chp.npos && chp.find("+") != chp.npos){
-		//Note: Leave these debug statements here until we know this doesn't suffer false positives.
+		//Note: Leave these debug statements here until we know this doesn't suffer false positives in bizarre cases.
 		cout << tab << "Expanding " << chp;
 		chp = chp.substr(0,chp.find("+")) + ":=1";
 		cout << " to " << chp << endl;
 	}
 	//Convert ;var-; to ;var:=0;
 	if(chp.find(":=") == chp.npos && chp.find("-") != chp.npos){
-		//Note: Leave these debug statements here until we know this doesn't suffer false positives.
+		//Note: Leave these debug statements here until we know this doesn't suffer false positives in bizarre cases.
 		cout << tab << "Expanding " << chp;
 		chp = chp.substr(0,chp.find("-")) + ":=0";
 		cout << " to " << chp << endl;
 	}
+
+	//Identify that this instruction is an assign.
 	// Currently only handles single variable assignments
 	if (chp.find(":=") != chp.npos)
 	{
@@ -102,15 +104,14 @@ void instruction::parse(string raw, map<string, keyword*> types, map<string, var
 
 	}
 	// Parse Communication instructions (send, receive, and probe)
-	// Currently unsupported
 	else if (chp.find_first_of("!?@") != chp.npos)
 	{
-
+		//Handled elsewhere. Don't return an error.
 	}
 	// Parse skip
 	else if (chp.find("skip") != chp.npos)
 		return;
-	// The I don't know block
+	// If all else fails, complain to the user.
 	else
 		cout << "\t\tError: Instruction not handled: "+chp << endl;
 
@@ -139,8 +140,8 @@ state expr_eval(string raw, map<string, state> init, string tab){
 	//Weirdly never bothered to add lt gt
 	//Test functionality
 
+	// Weakest binding set, descending into strongest binding.
 
-	// Weakest bind set below:
 	// |
 	size_t first_or = raw.find("|");
 
@@ -189,7 +190,7 @@ state expr_eval(string raw, map<string, state> init, string tab){
 	//()
 	size_t first_paren = raw.npos;
 	size_t last_paren = raw.npos;
-
+	//Find the first matching set of parentheses.
 	string::iterator i;
 	int depth = 0;
 	for (i = raw.begin(); i != raw.end(); i++){
@@ -205,11 +206,12 @@ state expr_eval(string raw, map<string, state> init, string tab){
 
 	//~
 	size_t first_not = raw.find_first_of("~");
-	//Strongest bind set above
+
+	//Strongest bind set above, weakening in acsending order.
 
 	state result; 	//The value we are to return.
 
-	//Deal with parens
+	//If there are any parentheses, we rip them out and return their value before even considering the rest.
 	if(first_paren != raw.npos && last_paren != raw.npos){
 		//cout << tab << "Paren parses to " + raw.substr(0,first_paren) + " '(' " + raw.substr(first_paren + 1,last_paren - first_paren -1) + " ')' " +raw.substr(last_paren + 1 ) << endl;
 		raw = raw.substr(0,first_paren) + "0b" + expr_eval(raw.substr(first_paren + 1,last_paren - first_paren -1), init,tab + "\t").data + raw.substr(last_paren + 1);
@@ -217,6 +219,9 @@ state expr_eval(string raw, map<string, state> init, string tab){
 		result = expr_eval(raw,init,tab + "\t");
 		return result;
 	}
+
+	//Proceed to split instructions based on weakest binding power first.
+	//This way, stronger binding operators 'hold on to' their corresponding variables.
 
 	//Any ors?
 	if(first_or != raw.npos){
@@ -275,7 +280,6 @@ state expr_eval(string raw, map<string, state> init, string tab){
 			return result;
 		}
 	}
-
 	//Any +/-?
 	if(first_addsub != raw.npos){			//There is a plus or a minus!
 		if (raw[first_addsub] == '+'){		//It is a plus!
@@ -314,7 +318,6 @@ state expr_eval(string raw, map<string, state> init, string tab){
 			return result;
 		}
 	}
-
 	//Any nots?
 	if(first_not != raw.npos){
 		cout << tab << "Doing a not on " << raw.substr(first_not+1) << endl;

@@ -470,30 +470,36 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 	rules = production_rule(states, global, tab, false);
 
+
+	/* At this point, block has a set of candidate rules. Check to see if those rules fire at the
+	 * appropriate times. If not, add state variables and reparse. */
+
 	list<rule>::iterator ri;
 	list<int> state_locations; 	//See state_variable's return for details of how this is being used.
 	list<int>::iterator li;
 	list<int> temp;
 
+	//Loop through all produced rules run state_locations to get a list of indexes to insert state vars.
 	for (ri = rules.begin(); ri != rules.end(); ri++){
-		cout << tab << *ri << endl;
-		cout << tab << "Production rules vs. desired functionality: ";
+		cout << tab << *ri << endl << tab << "Production rules vs. desired functionality: ";
 		temp = state_variable(ri->left, ri->right, tab);
 		state_locations.merge(temp);
 	}
 
+	//If there are multiple production rules asking for a state variable to be inserted at a particular
+	//index, we only need to insert a single state variable. Sort and unique provides a clean list.
 	state_locations.sort();
 	state_locations.unique();
 
-	list<instruction*>::iterator inst_setter;
-	int highest_state_name = 0;
-	int how_many_added = 0;
-	int how_many_inserted = 0;
+	int highest_state_name = 0;				// Used for finding a unique name for the state variable
+	int how_many_added = 0;					// How many instructions have we added?
+	int how_many_inserted = 0;				// How many instructions have been inserted?
 	list<pair<string,int> > to_insertl;
-	//Loop through our list of desired state variable insertions.
+
+	//Loop through our list of desired state variable insertion indices.
 	for (li = state_locations.begin(); li != state_locations.end(); li++)
 	{
-		//Find the lowest variable name not in globals (so no conflicts)
+		//Find the lowest variable name not in globals (no name conflicts)
 		highest_state_name = 0;
 		while (global.find("sv"+to_string(highest_state_name)) != global.end())
 		{
@@ -501,6 +507,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			highest_state_name += 1;
 		}
 		cout << "adding variable sv" << to_string(highest_state_name) << endl;
+
+		//Create a new variable with the unique name.
 		v = new variable("int<1>sv" + to_string(highest_state_name), tab);
 		//Add to globals
 		cout <<v->name<<endl;
@@ -508,52 +516,50 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		//Add to locals
 		local.insert(pair<string, variable*>(v->name, v));
 
-
-		//Make an instruction for state up
-		cout << tab << "Up instruction added at" << *li << endl;
+		//Insert the state variable declaration and state variable transition
 		to_insertl.push_back(pair<string,int>(v->name+":=1",*li));
 		raw = "int<1>" + v->name + ":=0;" + v->name + ":=0;" + raw;
-		how_many_added++;
-		cout << endl<< "up instr added "<< v->name << ":=1" << endl;
-		how_many_added++;
+		how_many_added+=2;
+		cout << endl<< tab << "State variable initialized: "<< v->name << ":=0" << endl;
 	}
 
-	//Print out our to_insert
 	list<pair<string,int> >::iterator instr_adderl;
+	//Add leading and tailing semicolon to assist instruction counting
 	raw = ";" +raw+";";
+	//For every instruction we are to insert into the instruction stream...
 	for(instr_adderl = to_insertl.begin(); instr_adderl != to_insertl.end();instr_adderl++)
 	{
-		cout << instr_adderl->first << "-->" << instr_adderl->second << endl;
+		cout << tab << instr_adderl->first << "-->" << instr_adderl->second << endl;
 		int insertion_location = 0;
+		//Loop through to find the semicolon at which we want to insert the current state variable
+		//Note that the offset of how_many_added/inserted is required as the instruction size of
+		//the instruction stream grows as instructions are added.
 		for(int counter = 0; counter < (instr_adderl->second+how_many_inserted+how_many_added); counter++)
 			insertion_location = raw.find(";",insertion_location+1);
 		if (insertion_location < 0)
-			cout << "Everything is wrong and unholy" << endl;
+			cout << "Error: SV inserion failed. " << endl;
 		else
 		{
-			cout << "insertion location " << insertion_location << endl;
-			cout << "That is the " << instr_adderl->second+how_many_inserted-1 << "th ';' = " << instr_adderl->second << "+" << how_many_inserted << endl;
+			cout << tab << "State variable insertion location: " << insertion_location << endl;
+			cout << tab << "That is the " << instr_adderl->second+how_many_inserted-1 << "th ';' = " << instr_adderl->second << "+" << how_many_inserted << endl;
 			raw = raw.substr(0, insertion_location+1) + instr_adderl->first + ";" + raw.substr(insertion_location+1);
 			how_many_inserted++;
 		}
-	}
-	if(how_many_inserted > 0)
-	{
-		cout << endl << "The chp with inserted state vars:"<<endl;
-		cout<<raw<<endl;
 	}
 
 	//If we added a state variable...
 	if (how_many_added > 0)
 	{
+		cout << endl << tab << "The chp with inserted state vars: "<<endl;
+		cout<< tab << raw<<endl;
 		//Now that we have the corrected instruction stream, rerun parse!
 		raw = raw.substr(1,raw.end()-raw.begin() - 2);
 		cout << "Reparsing on " << raw << endl;
-		cout << "=REDO==REDO==REDO==REDO==REDO=" << endl;		//Let the user know we are trashing the above block.
+		cout << "========REPARSE BLOCK=======" << endl;		//Let the user know we are trashing the above block.
 		parse(raw, types, vars, init, tab);
 	}
 	else
-		cout << tab << "=GOOD==GOOD==GOOD==GOOD==GOOD=" << endl;		//This block is done correctly.
+		cout << tab << "=======Block Valid=======" << endl;		//Let the user know that the block parsed correctly.
 }
 
 /* This function cleans up all of the memory allocated
