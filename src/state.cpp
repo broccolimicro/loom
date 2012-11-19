@@ -597,7 +597,7 @@ state operator||(state s1, state s2)
 			result.data = "X" + result.data;
 	}
 
-	result.prs = s1.prs || s2.prs;
+	result.prs = true;
 
 	return result;
 }
@@ -630,7 +630,7 @@ state operator&&(state s1, state s2)
 			result.data = "_" + result.data;
 	}
 
-	result.prs = s1.prs && s2.prs;
+	result.prs = true;
 
 	return result;
 }

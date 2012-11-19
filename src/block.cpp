@@ -281,8 +281,10 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 									if (pi != prgm_ctr.end() && t != types.end() && t->second->kind() == "channel" && (proti == prgm_protocol.end() || proti->second == "?"))
 									{
 										// TODO Set to instruction at counter index
+										cout << "Blarg!" << endl;
 										search1 = (*((channel*)t->second)->send.def.instrs.begin())->chp;
 										search2 = (*((channel*)t->second)->recv.def.instrs.begin())->chp;
+										cout << "Blarg!" << endl;
 										if (search1.find(search0) != search1.npos && search2.find(search0) != search2.npos)
 										{
 											cout << tab << "Send: " << search0 << " in " << search1 << " " << search1.find(search0) << endl;
@@ -327,8 +329,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 											if (proti->second == "send")
 											{
 												tracer_changes = ((channel*)t->second)->recv.def.changes;
-												for (pj = waits.begin(); pj != waits.end() && prgm_start.find(vj->first)->second > *pj; pj++);
-												for (xi = tracer_changes.begin(); pj != waits.end() && xi != tracer_changes.end() && p > *pj; pj++, xi++)
+												for (pj = waits.begin(); pj != waits.end() && prgm_start.find(vj->first)->second >= *pj; pj++);
+												for (xi = tracer_changes.begin(); pj != waits.end() && xi != tracer_changes.end() && p >= *pj; pj++, xi++)
 												{
 													cout << "Finding Change Set: " << p << " " << *pj << endl;
 													for (m = xi->begin(); m != xi->end(); m++)
@@ -338,8 +340,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 											else if (proti->second == "recv")
 											{
 												tracer_changes = ((channel*)t->second)->send.def.changes;
-												for (pj = waits.begin(); pj != waits.end() && prgm_start.find(vj->first)->second > *pj; pj++);
-												for (xi = tracer_changes.begin(); pj != waits.end() && xi != tracer_changes.end() && p > *pj; pj++, xi++)
+												for (pj = waits.begin(); pj != waits.end() && prgm_start.find(vj->first)->second >= *pj; pj++);
+												for (xi = tracer_changes.begin(); pj != waits.end() && xi != tracer_changes.end() && p >= *pj; pj++, xi++)
 												{
 													cout << "Finding Change Set: " << p << " " << *pj << endl;
 													for (m = xi->begin(); m != xi->end(); m++)
@@ -358,7 +360,9 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 												m = xi->find(vi->first.substr(vi->first.find_first_of(".")+1));
 												if (m != xi->end())
 												{
-													states[vi->first].states.push_back(*(states[vi->first].states.rbegin()) || m->second);
+													tstate = *(states[vi->first].states.rbegin()) || m->second;
+													tstate.prs = states[vi->first].states.rbegin()->prs;
+													states[vi->first].states.push_back(tstate);
 													cout << "Setting: " << m->first << " " << m->second << " " << endl;
 												}
 												else
