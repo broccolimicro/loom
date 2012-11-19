@@ -198,7 +198,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 					// for this instruction.
 					vi = global.find(l->first);
 					if (vi == global.end() && l->first != "Unhandled")
-						cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + l->first << endl;
+						cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + l->first << " " << instr->chp << endl;
 					else if (vi != global.end())
 					{
 						if ((l->second.prs) && (l->second.data != vi->second->last.data))
@@ -520,7 +520,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 		raw = raw.substr(1,raw.end()-raw.begin() - 2);
 		cout << "Reparsing on " << raw << endl;
-		/*
+
 		//But no memory leaks for me!
 		chp = "";
 		_kind = "block";
@@ -544,11 +544,22 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		}
 
 		instrs.clear();
-		*/
+
 
 		cout << "=REDO==REDO==REDO==REDO==REDO=" << endl;		//Let the user know we are trashing the above block.
-		//parse(raw, types, vars, init, tab);
+		parse(raw, types, vars, init, tab);
 	}else{
+		//(nonfunctional) code to remove state variables from results because they are local.
+		/*
+		highest_state_name = 0;
+		size_t to_erase = global.find("sv"+to_string(highest_state_name));
+		while (to_erase != global.end()){
+			cout << "deleting from results " << "sv" << to_string(highest_state_name) << endl;
+			result.erase("sv" + to_string(highest_state_name));
+			highest_state_name += 1;
+			to_erase = global.find("sv"+to_string(highest_state_name));
+		}*/
+
 		cout << tab << "=GOOD==GOOD==GOOD==GOOD==GOOD=" << endl;		//This block is done correctly.
 	}
 
@@ -794,12 +805,21 @@ list<int> where_state_var(space left, space right, string tab)
 	}
 	// For now, I am simply going to surround the conflicting state with a state variable. This is probably not optimal.
 	size_t st = conflicts.find_first_of("!");
+	size_t ct = conflicts.find_first_of("C");
 	while (st != conflicts.npos)
 	{
-		if ((conflicts.find_first_of("C") != conflicts.npos)&&(conflicts.find_first_of("C") < st)) //Insert state before required instr
-			state_locations.push_back(st+1);
+		if(conflicts.substr(st-1,1) == "C" || conflicts.substr(st+1,1) == "C")	//This is if we have ....C!... or ...!C... (cases where state var is useless)
+		{
+			//Don't request that we add a state variable.
+
+		}
 		else
-			state_locations.push_back(st+2);
+		{
+			if (ct < st) //Insert state before required instr
+				state_locations.push_back(st+1);
+			else
+				state_locations.push_back(st+2);
+		}
 
 
 		//state_locations.push_back(st);
