@@ -77,7 +77,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 	map<string, state> current_state, change_state;
 
-	list<instruction*>		::iterator	ii;
+	list<instruction*>		::iterator	ii, ix;
 	map<string, variable*>	::iterator	vi, vj;
 	map<string, space>		::iterator	si, sj, sk;
 	map<string, state>		::iterator	l, m;
@@ -88,11 +88,13 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	string					::iterator	i, j;
 	size_t								ij, ik;
 
+	list<map<string, state> >			tracer_changes;
 	list<map<string, state> > :: iterator xi;
 	map<string, variable*>				affected;
 	list<list<variable*> >				delta_out;
 	list<variable*> delta;
 
+	map<string, size_t>					prgm_start;
 	map<string, size_t>					prgm_ctr;
 	map<string, string>					prgm_protocol;
 	map<string, string>		::iterator	proti;
@@ -203,7 +205,12 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 						{
 							vj = global.find(l->first.substr(0, l->first.find_first_of(".")));
 							if (vj != global.end())
+							{
+								cout << "DELTA " << vj->first << endl;
 								delta.push_back(vj->second);
+							}
+							else
+								cout << "NO DELTA" << endl;
 						}
 
 						vi->second->last = l->second;
@@ -248,51 +255,66 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 								pi = prgm_ctr.find(vj->first);
 								proti = prgm_protocol.find(vj->second->name);
 
-								if (vj != global.end())
+								if (l != (*ii)->result.end())
 								{
-									if(pi == prgm_ctr.end())
+									search0 = (*ii)->chp;
+									while ((p = search0.find(vj->first + ".")) != search0.npos)
+										search0 = search0.substr(0, p) + search0.substr(p + vj->first.length() + 1);
+
+									if (pi == prgm_ctr.end())
 									{
 										if (t != types.end() && t->second->kind() == "channel")
 										{
-											prgm_ctr.insert(pair<string, size_t>(vj->second->name, 0));
+											prgm_ctr.insert(pair<string, size_t>(vj->first, 0));
+											prgm_start.insert(pair<string, size_t>(vj->first, k));
+											pi = prgm_ctr.find(vj->first);
 											cout << tab << "New Program Counter: " << vj->second->name << " 0" << endl;
-
 										}
 									}
-									else if (k > pi->second)
+									else
 									{
-										pi->second = k;
+
+										pi->second = k - prgm_start.find(vj->first)->second;
 										cout << tab << "Increment Program Counter: " << vj->second->name << " " << pi->second << endl;
 									}
 
-									if (t != types.end() && t->second->kind() == "channel" && (proti == prgm_protocol.end() || proti->second == "?"))
+									if (pi != prgm_ctr.end() && t != types.end() && t->second->kind() == "channel" && (proti == prgm_protocol.end() || proti->second == "?"))
 									{
-										search0 = (*ii)->chp;
-										while ((p = search0.find(vj->first + ".")) != search0.npos)
-											search0 = search0.substr(0, p) + search0.substr(p + vj->first.length() + 1);
-
+										// TODO Set to instruction at counter index
 										search1 = (*((channel*)t->second)->send.def.instrs.begin())->chp;
 										search2 = (*((channel*)t->second)->recv.def.instrs.begin())->chp;
-										cout << tab << "Send: " << search0 << " in " << search1 << " " << search1.find(search0) << endl;
-										cout << tab << "Recv: " << search0 << " in " << search2 << " " << search2.find(search0) << endl;
 										if (search1.find(search0) != search1.npos && search2.find(search0) != search2.npos)
-											prgm_protocol.insert(pair<string, string>(vj->second->name, "?"));
+										{
+											cout << tab << "Send: " << search0 << " in " << search1 << " " << search1.find(search0) << endl;
+											cout << tab << "Recv: " << search0 << " in " << search2 << " " << search2.find(search0) << endl;
+											prgm_protocol.insert(pair<string, string>(vj->first, "?"));
+										}
 										else if (search1.find(search0) != search1.npos)
-											prgm_protocol.insert(pair<string, string>(vj->second->name, "send"));
+										{
+											cout << tab << "Send: " << search0 << " in " << search1 << " " << search1.find(search0) << endl;
+											prgm_protocol.insert(pair<string, string>(vj->first, "send"));
+										}
 										else if (search2.find(search0) != search2.npos)
-											prgm_protocol.insert(pair<string, string>(vj->second->name, "recv"));
-										else
-											cout << "Ah Hell... How in the name of his noodly goodness did I end up here?" << endl;
+										{
+											cout << tab << "Recv: " << search0 << " in " << search2 << " " << search2.find(search0) << endl;
+											prgm_protocol.insert(pair<string, string>(vj->first, "recv"));
+										}
 									}
 								}
 
+								proti = prgm_protocol.find(vj->second->name);
+								cout << "Examining variable: " << vi->first << endl;
+
 								if (l != (*ii)->result.end() && l->second.data != "NA")
+								{
+									cout << "TAKING PATH A" << endl;
 									states[vi->first].states.push_back(l->second);
+								}
 								else if (di->size() > 0 && !states[vi->first].states.rbegin()->prs)
 								{
-
+									cout << "TAKING PATH B" << endl;
 									// Use channel send and recv functions to determine whether or not we need to X out the state
-									/*cout << tab << "Maybe X Out: " << vi->first << " " << pi->second << endl;
+									cout << tab << "Maybe X Out: " << vi->first << " " << pi->second << endl;
 									if (t != types.end() && t->second->kind() == "channel" && pi != prgm_ctr.end())
 									{
 										p = pi->second;
@@ -301,39 +323,74 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 											cout << "Ok... Another place that has issues" << endl;
 										else
 										{
+											cout << "Finding Change Set: " << prgm_start.find(vj->first)->second << endl;
 											if (proti->second == "send")
-												for (pj = waits.begin(), xi = ((channel*)t->second)->recv.def.changes.begin(); pj != waits.end() && p > *pj && xi != ((channel*)t->second)->recv.def.changes.end(); p -= *pj, pj++);
+											{
+												tracer_changes = ((channel*)t->second)->recv.def.changes;
+												for (pj = waits.begin(); pj != waits.end() && prgm_start.find(vj->first)->second > *pj; pj++);
+												for (xi = tracer_changes.begin(); pj != waits.end() && xi != tracer_changes.end() && p > *pj; pj++, xi++)
+												{
+													cout << "Finding Change Set: " << p << " " << *pj << endl;
+													for (m = xi->begin(); m != xi->end(); m++)
+														cout << m->first << " " << m->second << endl;
+												}
+											}
 											else if (proti->second == "recv")
-												for (pj = waits.begin(), xi = ((channel*)t->second)->send.def.changes.begin(); pj != waits.end() && p > *pj && xi != ((channel*)t->second)->send.def.changes.end(); p -= *pj, pj++);
+											{
+												tracer_changes = ((channel*)t->second)->send.def.changes;
+												for (pj = waits.begin(); pj != waits.end() && prgm_start.find(vj->first)->second > *pj; pj++);
+												for (xi = tracer_changes.begin(); pj != waits.end() && xi != tracer_changes.end() && p > *pj; pj++, xi++)
+												{
+													cout << "Finding Change Set: " << p << " " << *pj << endl;
+													for (m = xi->begin(); m != xi->end(); m++)
+														cout << m->first << " " << m->second << endl;
+												}
+											}
+
+											cout << "Finding Change Set: " << p << " " << *pj << endl;
 
 											cout << "BLARG! " << proti->second << " " << vi->first << endl;
-											for (m = xi->begin(); m != xi->end(); m++)
-												cout << m->first << " " << m->second << endl;
-											m = xi->find(vi->first.substr(vi->first.find_first_of(".")+1));
-											if (m != xi->end())
+											if (xi != tracer_changes.end())
 											{
-												states[vi->first].states.push_back(*(states[vi->first].states.rbegin()) || m->second);
-												cout << m->second << endl;
+												for (m = xi->begin(); m != xi->end(); m++)
+													cout << m->first << " " << m->second << endl;
+
+												m = xi->find(vi->first.substr(vi->first.find_first_of(".")+1));
+												if (m != xi->end())
+												{
+													states[vi->first].states.push_back(*(states[vi->first].states.rbegin()) || m->second);
+													cout << "Setting: " << m->first << " " << m->second << " " << endl;
+												}
+												else
+												{
+													states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+													cout << "Fail 1: " << vi->first.substr(vi->first.find_first_of(".")+1) << " " << ((channel*)t->second)->send.def.chp << endl;
+												}
 											}
 											else
 											{
+												cout << "FUCK!" << endl;
 												states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
-												cout << "Fail" << endl;
 											}
 										}
 									}
 									else
-									{*/
+									{
 										states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
-									//	cout << "Fail" << endl;
-									//}
+										cout << "Fail 2 " << (t != types.end()) << " " << (t->second->kind() == "channel") << " " << (pi != prgm_ctr.end()) << endl;
+									}
 								}
 								// there is no delta in the output variables or this is an output variable
 								else
+								{
+									cout << "TAKING PATH C " << di->size() << " " << states[vi->first].states.rbegin()->prs << endl;
 									states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+								}
 
 								current_state[vi->first] = *states[vi->first].states.rbegin();
 							}
+							else
+								cout << "Something is royally fucked up." << endl;
 						}
 					}
 				}
@@ -343,6 +400,9 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				if (instr->kind() == "conditional" || i == chp.end())
 				{
 					change_state.clear();
+					if (instr->kind() != "conditional" && i == chp.end())
+						ij++;
+
 					for (vi = affected.begin(); vi != affected.end(); vi++)
 					{
 						if ((si = states.find(vi->first)) != states.end())
@@ -360,11 +420,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 						}
 					}
 
-					if (instr->kind() != "conditional" && i == chp.end())
-						ij++;
-
-					changes.push_back(change_state);
 					waits.push_back(ij);
+					changes.push_back(change_state);
 				}
 
 				ij++;
@@ -379,6 +436,26 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) == '|') || i == chp.end()))
 			para = true;
 	}
+
+	change_state.clear();
+	for (vi = affected.begin(); vi != affected.end(); vi++)
+	{
+		l = changes.begin()->find(vi->first);
+		si = states.find(vi->first);
+		if (l != changes.begin()->end() && si != states.end())
+		{
+			l->second = l->second || (*si->second.states.rbegin());
+			change_state.insert(pair<string, state>(vi->first, l->second));
+		}
+		else if (l != changes.begin()->end())
+			change_state.insert(pair<string, state>(vi->first, l->second));
+		else if (si != states.end())
+		{
+			changes.begin()->insert(pair<string, state>(vi->first, (*si->second.states.rbegin())));
+			change_state.insert(pair<string, state>(vi->first, (*si->second.states.rbegin())));
+		}
+	}
+	changes.push_back(change_state);
 
 	cout << endl;
 

@@ -144,7 +144,10 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 			for (si = temp.begin(); si != temp.end(); si++)
 			{
 				if ((sj = guardresult.find(si->first)) == guardresult.end())
+				{
+					si->second.prs = false;
 					guardresult.insert(pair<string, state>(si->first, si->second));
+				}
 				else
 					for (ri = si->second.data.rbegin(), rj = sj->second.data.rbegin(); ri != si->second.data.rend() && rj != sj->second.data.rend(); ri++, rj++)
 						if (*ri != 'X')
@@ -169,9 +172,15 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 		for (si = ii->second->result.begin(); si != ii->second->result.end(); si++)
 		{
 			if ((sj = result.find(si->first)) != result.end())
+			{
 				sj->second = sj->second || si->second;
+				sj->second.prs = false;
+			}
 			else
+			{
+				si->second.prs = false;
 				result.insert(pair<string, state>(si->first, si->second));
+			}
 		}
 	}
 
@@ -188,6 +197,7 @@ map<string, state> guard(string raw,  map<string, variable*> vars, string tab)
 	map<string, state> a, b;
 	map<string, state>::iterator ai, bi;
 	string::iterator i, j;
+	state temp;
 	int depth;
 
 	cout << tab << "Guard: " << raw << endl;
@@ -209,19 +219,31 @@ map<string, state> guard(string raw,  map<string, variable*> vars, string tab)
 			for (ai = a.begin(); ai != a.end(); ai++)
 			{
 				if (b.find(ai->first) == b.end())
-					outcomes.insert(pair<string, state>(ai->first, ai->second || (~ai->second)));
+				{
+					temp = ai->second || (~ai->second);
+					temp.prs = false;
+					outcomes.insert(pair<string, state>(ai->first, temp));
+				}
 				else
+				{
+					ai->second.prs = false;
 					outcomes.insert(pair<string, state>(ai->first, ai->second));
+				}
 			}
 
 			for (bi = b.begin(); bi != b.end(); bi++)
 			{
 				if (a.find(bi->first) == a.end())
-					outcomes.insert(pair<string, state>(bi->first, bi->second || (~bi->second)));
+				{
+					temp = bi->second || (~bi->second);
+					temp.prs = false;
+					outcomes.insert(pair<string, state>(bi->first, temp));
+				}
 				else
 				{
 					ai = outcomes.find(bi->first);
 					ai->second = ai->second || bi->second;
+					ai->second.prs = false;
 				}
 			}
 
@@ -251,9 +273,15 @@ map<string, state> guard(string raw,  map<string, variable*> vars, string tab)
 			{
 				ai = outcomes.find(bi->first);
 				if (ai == outcomes.end())
+				{
+					bi->second.prs = false;
 					outcomes.insert(pair<string, state>(bi->first, bi->second));
+				}
 				else
+				{
 					ai->second = ai->second && bi->second;
+					ai->second.prs = false;
+				}
 			}
 
 			for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
@@ -353,7 +381,11 @@ map<string, state> guard(string raw,  map<string, variable*> vars, string tab)
 			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t");
 
 			for (bi = b.begin(); bi != b.end(); bi++)
-				outcomes.insert(pair<string, state>(bi->first, ~(bi->second)));
+			{
+				bi->second = ~bi->second;
+				bi->second.prs = false;
+				outcomes.insert(pair<string, state>(bi->first, bi->second));
+			}
 
 			for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
 				cout << tab << ai->first << ": " << ai->second << endl;

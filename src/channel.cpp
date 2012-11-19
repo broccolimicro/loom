@@ -89,9 +89,9 @@ void channel::parse(string chp, map<string, keyword*> types, string tab)
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == '}')
 		{
 			raw = io_block.substr(j-io_block.begin(), i - j + 1);
-			if (raw.find("proc send"))
+			if (raw.find("proc send") != raw.npos)
 				send.parse(raw, types, vars);
-			else if (raw.find("Proc recv"))
+			else if (raw.find("proc recv") != raw.npos)
 				recv.parse(raw, types, vars);
 
 			j = i+1;
