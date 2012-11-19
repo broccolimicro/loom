@@ -49,7 +49,10 @@
  * 	proc ...(...){...}
  *
  * 	Record Definition
- * 	struct ...{...}
+ * 	record ...{...}
+ *
+ * 	channel Definition
+ * 	channel ...{...}
  *
  *	Data Types
  * 	int<...> ...
