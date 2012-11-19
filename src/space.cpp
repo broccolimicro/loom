@@ -868,16 +868,6 @@ space up(space s)
 
 	j = s.states.begin();
 
-	/*str = "";
-	for (sj = j->data.begin(); sj != j->data.end(); sj++)
-	{
-		if (*sj == '1' && j->prs)
-			str = str + "1";
-		else
-			str = str + "0";
-	}
-	result.states.push_back(state(str, j->prs));*/
-
 	j++;
 
 	for (i = s.states.begin(); j != s.states.end(); i++, j++)
@@ -912,27 +902,6 @@ space up(space s, int idx)
 	result.var = s.var + "+";
 
 	j = s.states.begin();
-
-	/*str = "";
-	for (sj = j->data.begin(); sj != j->data.end(); sj++)
-	{
-		if (*sj == '1' && j->prs && cnt == idx)
-			str = str + "1";
-		else if (*sj == '1' && j->prs && cnt != idx)
-			str = str + "X";
-		else
-			str = str + "0";
-
-		if (*sj == '1')
-			one = true;
-
-		if (*sj == '0' && one)
-		{
-			cnt++;
-			one = false;
-		}
-	}
-	result.states.push_back(state(str, j->prs));*/
 
 	j++;
 
@@ -976,15 +945,6 @@ space down(space s)
 	result.var = s.var + "-";
 
 	j = s.states.begin();
-	/*str = "";
-	for (sj = j->data.begin(); sj != j->data.end(); sj++)
-	{
-		if (*sj == '0' && j->prs)
-			str = str + "1";
-		else
-			str = str + "0";
-	}
-	result.states.push_back(state(str, j->prs));*/
 
 	j++;
 
@@ -1020,27 +980,6 @@ space down(space s, int idx)
 
 	j = s.states.begin();
 
-	/*str = "";
-	for (sj = j->data.begin(); sj != j->data.end(); sj++)
-	{
-		if (*sj == '0' && j->prs && cnt == idx)
-			str = str + "1";
-		else if (*sj == '0' && j->prs && cnt != idx)
-			str = str + "X";
-		else
-			str = str + "0";
-
-		if (*sj == '0')
-			zero = true;
-
-		if (*sj == '1' && zero)
-		{
-			cnt++;
-			zero = false;
-		}
-	}
-	result.states.push_back(state(str, j->prs));*/
-
 	j++;
 
 	for (i = s.states.begin(); j != s.states.end(); i++, j++)
@@ -1074,6 +1013,9 @@ space down(space s, int idx)
 	return result;
 }
 
+/*
+ *
+ */
 bool drive(space s)
 {
 	bool result = false;
@@ -1084,12 +1026,15 @@ bool drive(space s)
 	return result;
 }
 
-/* Format for conflicts string:
+/* This function compares the left space to the right space. The right
+ * space is what we desire for this production rule, and the left space
+ * is what we have managed to generate.
+ *
+ * Format for conflicts string:
  * . is 'allowable',
  * E is error,
  * C is conflict if no state variable
  * ! is necessary fire
- * S is resolved necessary fire given conflicts (surrounded by state variable)
  */
 string conflicts(space left, space right)
 {
@@ -1100,24 +1045,24 @@ string conflicts(space left, space right)
 	for (i = left.states.begin(),j = right.states.begin() ; i != left.states.end() && j != right.states.end(); i++, j++)
 	{
 		if(i->data == "0" && j->data == "0" )
-			conflict += ".";		//Doesn't fire, shouldn't fire. Good.
+			conflict += ".";		// Doesn't fire, shouldn't fire. Good.
 		else if(i->data == "0" && j->data == "1" )
 		{
-			cout << "ERROR: Production rule doesn't fire during a place where it should." << endl;
-			conflict += "E";	//Error fire! Our PRS aren't good enough.
+			cout << "Error: Production rule missing necessary firing." << endl;
+			conflict += "E";		// Error fire! Our PRS aren't good enough.
 		}
 		else if(i->data == "1" && j->data == "0" )
-			conflict += "C";  // Illegal fire (fires when it shouldn't)
+			conflict += "C";		// Illegal fire (fires when it shouldn't)
 		else if(i->data == "1" && j->data == "1" )
-			conflict += "!";  // This fires, and it must keep firing after we after we add a state var
+			conflict += "!";		// This fires, and it must keep firing after we after we add a state var
 		else if(j->data == "X" )
-			conflict += "."; 	//Don't really care if it fires or not. Ambivalence.
+			conflict += ".";		// Don't really care if it fires or not. Ambivalence.
 		else if(i->data == "X" && j->data == "0")
 			conflict += "C";
 		else
 		{
-			cout << "ERROR! State var generate is very confused right now. " << endl;
-			conflict += "E";	//Error fire! Not quite sure how you got here...
+			cout << "Error: The state variable generation algorithm is very confused right now." << endl;
+			conflict += "E";		// Error fire! Not quite sure how you got here...
 		}
 	}
 

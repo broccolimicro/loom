@@ -586,11 +586,21 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 }
 
+/* This function generates a set of production rules for the given state space and variable space.
+ * It uses two primary measurements to help with this: the count, and the strict count. The count
+ * is the number of states in a state space that are in the set {1, X}. The strict count is the number
+ * of states in a state space that are in the set {1}.
+ *
+ * This doesn't always do a perfect job. However, it does the best it can given the state space it has.
+ * It is the job of the state variable generation algorithm and the handshaking reshuffling algorithms
+ * to remove all of the conflicts that this algorithm leaves behind (The handshaking reshuffling algorithm
+ * has not yet been completed).
+ */
 list<rule> production_rule(map<string, space> states, map<string, variable*> global, string tab, bool verbose)
 {
 	// Generate the production rules
-	map<string, space> invars;
-	map<string, space>		::iterator	si, sj;
+	map<string, space>				invars;
+	map<string, space>::iterator	si, sj;
 	int bi0, bi1, o;
 	int scount, ccount;
 	int mscount, mcount;
@@ -600,10 +610,15 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 	list<rule> rules;
 	bool first, found;
 
+	// Iterate through the given spaces variable by variable.
 	for (si = states.begin(); si != states.end(); si++)
 	{
+		// Expand multibit variables into their single bit constituents
 		for (bi0 = 0; bi0 < global.find(si->first)->second->width; bi0++)
 		{
+			// First we will generate the pull up network for this variable.
+			// This function call generates the desired state space for this
+			// network.
 			f.right = up(si->second[bi0]);
 			if (verbose)
 			{
@@ -611,14 +626,24 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 				cout << tab << "+++++++++++++++++++++++++++++++++++++++++++++++" << endl;
 				cout << tab << f.right << "\t" << count(f.right) << "\t" << strict_count(f.right) << endl;
 			}
+			// Loop through all transitions from {0,X} to {1} in this desired
+			// pull up network state space. We will generate a set of ANDed signal
+			// to represent each transition, then OR these sets together to get the
+			// full desired state space.
 			for (o = 0; o < delta_count(f.right); o++)
 			{
+				// Get the o'th transition from the desired state space.
+				// This sets up the temporary rule to only cover one transition.
 				r.clear(si->second.states.size());
 				r.right = up(si->second[bi0], o);
 
+				// Get the strict count and the inverse count
+				// of this temporary rule. These two numbers
+				// represent the best we can do
 				mscount = strict_count(r.right);
 				mcount = r.right.states.size() - count(r.right);
 
+				// Fill our list of usable variables, and expand multibit variables.
 				invars.clear();
 				for (sj = states.begin(); sj != states.end(); sj++)
 					for (bi1 = 0; bi1 < global.find(sj->first)->second->width; bi1++)
@@ -788,24 +813,40 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 	return rules;
 }
 
+/* Search a backward in a conflict string starting at a necessary
+ * firing for a clean state variable position.
+ *
+ * TODO I think it is valid to place a state variable transition
+ * right before an indistinguishable state, but not after. Right
+ * now we make sure we have a distinguishable state both before and
+ * after the state variable transition, but I don't think this is necessary.
+ */
 size_t search_back(string s, size_t offset)
 {
+	// Find the next necessary firing
 	size_t st = s.find_first_of("!", offset+1);
 	int mindots = 1, numdots = 0;
 
 	if (st == s.npos)
 		return s.npos;
 
+	// Starting at the next necessary firing, loop backward until we hit a
+	// conflict or the current necessary firing. We must see at least
+	// mindots '.' to have a clean state variable position
 	for (size_t ct = st-1; ct > offset && ct < s.length() && ct >= 0; ct--)
 	{
 		if (s[ct] == 'C')
 		{
+			// We didn't find enough clean states. We must
+			// pass this and keep going
 			if (numdots < mindots)
 			{
 				numdots = 0;
 				mindots = 2;
 				st = ct;
 			}
+			// We found a valid position. Loop back until
+			// we get as close to the necessary firing as possible
 			else
 			{
 				ct = (st+ct)/2 + 1;
@@ -821,24 +862,52 @@ size_t search_back(string s, size_t offset)
 	return s.npos;
 }
 
+/* Search a forward in a conflict string starting at a necessary
+ * firing for a clean state variable position.
+ *
+ * !.C
+ * !..C
+ * !...C
+ * !....C
+ * ect
+ *
+ *
+ * The following cannot happen. If a production rule fires, it must
+ * remain firing until another production rule has fired.
+ * x+;x- is invalid CHP that will produce !C
+ * x+;y+;x- is valid CHP that can only produce !.C
+ *
+ * !C
+ * !CC
+ * !CCC
+ *
+ */
 size_t search_front(string s, size_t offset)
 {
+	// Find the previous necessary firing
 	size_t st = s.find_last_of("!", offset-1);
 	int mindots = 1, numdots = 0;
 
 	if (st == s.npos)
 		return s.npos;
 
+	// Starting at the previous necessary firing, loop until we hit a
+	// conflict or the current necessary firing. We must see at least
+	// mindots '.' to have a clean state variable position
 	for (size_t ct = st; ct < offset && ct < s.length() && ct >= 0; ct++)
 	{
 		if (s[ct] == 'C')
 		{
+			// We didn't find enough clean states. We must
+			// pass this and keep going
 			if (numdots < mindots)
 			{
 				numdots = 0;
 				mindots = 2;
 				st = ct;
 			}
+			// We found a valid position. Loop back until
+			// we get as close to the necessary firing as possible
 			else
 			{
 				ct = (st+ct)/2 + 1;
@@ -854,35 +923,42 @@ size_t search_front(string s, size_t offset)
 	return s.npos;
 }
 
-//There can be four states: 1, 0, X, _ where underscore is empty set and X is full set.
-//The return list will be even by design. Each pair is a different state variable. The first
-//element of the pair is the index of state up, the second is state down.
-//Ex: 0, 1, 5, 7 means sv0 goes high at 0, low at 1, and s2 goes high at 5, and low at 7.
-/*
-!.C
-C.!
-C..C!
-!C..C
+/* There can be four states: 1, 0, X, _ where underscore is empty set and X is full set.
+ * Each index in the returned list represents the instruction before which there should be
+ * a state variable transition.
+ *
+ * Ex: 3, 5 means sv0 goes high at 3 and sv2 goes high at 5.
+ * !.C
+ * C.!
+ * C..C!
+ * !C..C
 */
 list<int> state_variable(space left, space right, string tab)
 {
 	list<int> state_locations;
 
+	// Generate the conflict string
 	string conflict = conflicts(left, right);
 
+	// If no conflicts, we are done.
 	cout << conflict << endl;
 	if (conflict.find_first_of("C") == conflict.npos)
-		return state_locations;		//No conflicts! We are golden.
+		return state_locations;
 
+	// Loop through all necessary firings
 	size_t foundb = conflict.npos, foundf = conflict.npos;
 	size_t offset = 0;
 	while (offset != conflict.npos)
 	{
+		// Search backward from the necessary firing
+		// for a clean state variable position
 		foundb = search_back(conflict, offset);
 
 		if (foundb != conflict.npos && foundf != foundb)
 			state_locations.push_back(foundb);
 
+		// Search forward from the necessary firing
+		// for a clean state variable position
 		offset = conflict.find_first_of("!", offset+1);
 
 		foundf = search_front(conflict, offset);
@@ -894,63 +970,5 @@ list<int> state_variable(space left, space right, string tab)
 	return state_locations;
 
 }
-
-//Legacy code (don't delete till I am done with it)
-/*
-	for (li = state_locations.begin(); li != state_locations.end(); li++){
-		cout << tab << *li << endl;
-
-		//Find the lowest variable name not in globals (so no conflicts)
-		search_done = -1;
-		while (global.find("sv"+to_string(highest_state_name)) != global.end()){
-			cout << "FGASGFSDFG " << highest_state_name++ << endl;
-		}
-		cout << "=========" << to_string(highest_state_name) << "=====" << highest_state_name<<endl;
-		cout << "adding variable sv" << to_string(highest_state_name) << endl;
-		v = new variable("int<1>sv" + to_string(highest_state_name), tab);
-
-		//Add to globals
-		cout <<v->name<<endl;
-		global.insert(pair<string, variable*>(v->name, v));
-		if( global.find("sv"+to_string(highest_state_name)) == global.end() )
-			cout << "WE HAVE SERIOUS PROBLEMS"<<endl;
-		//Add to locals
-		local.insert(pair<string, variable*>(v->name, v));
-
-		//Make an instruction for state up
-		state_inst_up = new instruction("int<1>"+v->name + ":=1", types, global, current_state, tab+"\t");
-		inst_setter = instrs.begin();
-		for (int tcounter = 0;tcounter<(*li+how_many_added); tcounter++){
-			inst_setter++;
-			cout << "ddebug"<<tcounter<<endl;
-		}
-		instrs.insert(inst_setter, state_inst_up);
-		cout << "up instr added "<<state_inst_up->chp <<endl;
-		how_many_added++;
-		cout << "How many total added = "<< how_many_added<< endl;
-		cout << tab << *(++li) << endl;
-
-		//Make an instruction for state down
-		state_inst_down = new instruction(v->name + ":=0", types, global, current_state, tab+"\t");
-		inst_setter = instrs.begin();
-		for (int tcounter = 0;tcounter<(*li+how_many_added); tcounter++){
-			inst_setter++;
-			cout << "debug"<<tcounter<<endl;
-		}
-		instrs.insert(inst_setter, state_inst_down);
-		cout << "down instr added" <<endl;
-		how_many_added++;
-		cout << "How many added = "<< how_many_added<< endl;
-	} */
-
-/*
-//Loop through all the instructions to create a new unified CHP string
-for (inst_setter = instrs.begin(); inst_setter != instrs.end(); inst_setter++){
-	corrected = corrected + (*inst_setter)->chp+ ";";
-}
-corrected = corrected.substr(0, corrected.end()-corrected.begin()+1); //Remove the tail semicolon.
-cout <<"CHP updated with added instruction:" << endl;
-cout << corrected << endl;
-*/
 
 
