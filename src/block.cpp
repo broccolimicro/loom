@@ -593,8 +593,9 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				delete *j;
 			*j = NULL;
 		}
-		*/
+
 		instrs.clear();
+		*/
 
 		cout << "=REDO==REDO==REDO==REDO==REDO=" << endl;		//Let the user know we are trashing the above block.
 		//parse(raw, types, vars, init, tab);
