@@ -229,7 +229,7 @@ struct program
 int main(int argc, char **argv)
 {
 	//Open the top level file
-	ifstream t("test.chp");
+	ifstream t("main.chp");
 	string prgm((istreambuf_iterator<char>(t)),
 	             istreambuf_iterator<char>());
 

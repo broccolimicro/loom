@@ -92,6 +92,8 @@ void loop::pass(string raw, map<string, keyword*> types, map<string, variable*> 
 	global.clear();
 	instrs.clear();
 	states.clear();
+	waits.clear();
+	changes.clear();
 	rules.clear();
 
 	global = vars;						//The variables this block uses.
