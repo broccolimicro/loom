@@ -230,17 +230,17 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 						states.insert(pair<string, space>(vi->first, space(vi->first, list<state>())));
 						// If this variable is in the init list, then we have it's initial value.
 						if ((l = init.find(vi->first)) != init.end())
-							((space)states[vi->first]).states.push_back(l->second);
+							states[vi->first].states.push_back(l->second);
 						// Otherwise, use this variable's reset value.
 						else
-							((space)states[vi->first]).states.push_back(vi->second->reset);
+							states[vi->first].states.push_back(vi->second->reset);
 					}
 
 					// Now we need to fill in the rest of the state space. Loop through the instructions.
 					for (ii = instrs.begin(), di = delta_out.begin(), k = 0; ii != instrs.end() && di != delta_out.end(); ii++, di++, k++)
 					{
 						// We only need to generate states if we haven't already
-						if (k >= ((space)states[vi->first]).states.size()-1)
+						if (k >= states[vi->first].states.size()-1)
 						{
 							// Get the variable and its new value as affected by this instruction
 							l = (*ii)->result.find(vi->first);
@@ -306,8 +306,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 								proti = prgm_protocol.find(vj->second->name);
 
 								if (l != (*ii)->result.end() && l->second.data != "NA")
-									((space)states[vi->first]).states.push_back(l->second);
-								else if (di->size() > 0 && !((space)states[vi->first]).states.rbegin()->prs)
+									states[vi->first].states.push_back(l->second);
+								else if (di->size() > 0 && !states[vi->first].states.rbegin()->prs)
 								{
 									cout << "Maybe X Out " << vi->first << " " << (*ii)->chp << endl;
 									// Use channel send and recv functions to determine whether or not we need to X out the state
@@ -337,39 +337,39 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 												m = xi->find(vi->first.substr(vi->first.find_first_of(".")+1));
 												if (m != xi->end())
 												{
-													tstate = *(((space)states[vi->first]).states.rbegin()) || m->second;
-													tstate.prs = ((space)states[vi->first]).states.rbegin()->prs;
-													((space)states[vi->first]).states.push_back(tstate);
+													tstate = *(states[vi->first].states.rbegin()) || m->second;
+													tstate.prs = states[vi->first].states.rbegin()->prs;
+													states[vi->first].states.push_back(tstate);
 												}
 												else
 												{
-													((space)states[vi->first]).states.push_back(*(((space)states[vi->first]).states.rbegin()));
+													states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
 													cout << "Error 1" << endl;
 												}
 											}
 											else
 											{
-												((space)states[vi->first]).states.push_back(*(((space)states[vi->first]).states.rbegin()));
+												states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
 												cout << "Error 2" << endl;
 											}
 										}
 										else
 										{
-											((space)states[vi->first]).states.push_back(*(((space)states[vi->first]).states.rbegin()));
+											states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
 											cout << "Error 3" << endl;
 										}
 									}
 									else
 									{
-										((space)states[vi->first]).states.push_back(*(((space)states[vi->first]).states.rbegin()));
+										states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
 										cout << "Error 4" << endl;
 									}
 								}
 								// there is no delta in the output variables or this is an output variable
 								else
-									((space)states[vi->first]).states.push_back(*(((space)states[vi->first]).states.rbegin()));
+									states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
 
-								current_state[vi->first] = *((space)states[vi->first]).states.rbegin();
+								current_state[vi->first] = *states[vi->first].states.rbegin();
 							}
 							else
 								cout << "Something is royally fucked up." << endl;
@@ -390,8 +390,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 						if ((si = states.find(vi->first)) != states.end())
 						{
 							first = true;
-							for (ik = 0, a = ((space)si->second).states.begin(); waits.size() > 0 && ik <= (*waits.rbegin()) && a != ((space)si->second).states.end(); ik++, a++);
-							for (; ((instr->kind() != "conditional" && i == chp.end()) || ik <= ij) && a != ((space)si->second).states.end(); ik++, a++)
+							for (ik = 0, a = (si->second).states.begin(); waits.size() > 0 && ik <= (*waits.rbegin()) && a != (si->second).states.end(); ik++, a++);
+							for (; ((instr->kind() != "conditional" && i == chp.end()) || ik <= ij) && a != (si->second).states.end(); ik++, a++)
 							{
 								tstate = first ? *a : tstate || *a;
 
@@ -426,15 +426,15 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		si = states.find(vi->first);
 		if (l != changes.begin()->end() && si != states.end())
 		{
-			l->second = l->second || (*((space)si->second).states.rbegin());
+			l->second = l->second || (*si->second.states.rbegin());
 			change_state.insert(pair<string, state>(vi->first, l->second));
 		}
 		else if (l != changes.begin()->end())
 			change_state.insert(pair<string, state>(vi->first, l->second));
 		else if (si != states.end())
 		{
-			changes.begin()->insert(pair<string, state>(vi->first, (*((space)si->second).states.rbegin())));
-			change_state.insert(pair<string, state>(vi->first, (*((space)si->second).states.rbegin())));
+			changes.begin()->insert(pair<string, state>(vi->first, *si->second.states.rbegin()));
+			change_state.insert(pair<string, state>(vi->first, *si->second.states.rbegin()));
 		}
 	}
 	changes.push_back(change_state);
@@ -446,7 +446,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	{
 		cout << tab << si->second << endl;
 		if (local.find(si->first) == local.end())
-			result.insert(pair<string, state>(si->first, *(((space)si->second).states.rbegin())));
+			result.insert(pair<string, state>(si->first, *(si->second.states.rbegin())));
 	}
 	cout << tab << "Waits: ";
 	for (pj = waits.begin(); pj != waits.end(); pj++)
@@ -626,7 +626,7 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 			// First we will generate the pull up network for this variable.
 			// This function call generates the desired state space for this
 			// network.
-			f.right = up((space)si->second[bi0]);
+			f.right = up(si->second[bi0]);
 			if (verbose)
 			{
 				cout << tab << "================Production Rule================" << endl;
@@ -641,8 +641,8 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 			{
 				// Get the o'th transition from the desired state space.
 				// This sets up the temporary rule to only cover one transition.
-				r.clear(((space)si->second).states.size());
-				r.right = up((space)si->second[bi0], o);
+				r.clear((si->second).states.size());
+				r.right = up(si->second[bi0], o);
 
 				// Get the strict count and the inverse count
 				// of this temporary rule. These two numbers
@@ -757,7 +757,7 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 			// Now we will generate the pull down network for this variable.
 			// This function call generates the desired state space for this
 			// network. See above for a description of each component.
-			f.right = down((space)si->second[bi0]);
+			f.right = down(si->second[bi0]);
 
 			if (verbose)
 			{
@@ -766,8 +766,8 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 			}
 			for (o = 0; o < delta_count(f.right); o++)
 			{
-				r.clear(((space)si->second).states.size());
-				r.right = down((space)si->second[bi0], o);
+				r.clear((si->second).states.size());
+				r.right = down(si->second[bi0], o);
 
 				mscount = strict_count(r.right);
 				mcount = r.right.states.size() - count(r.right);

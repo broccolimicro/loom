@@ -193,13 +193,13 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 						// The first state for every variable is always all X
 						if ((l = init.find(vi->first)) != init.end())
 						{
-							((space)states[vi->first]).states.push_back(l->second);
-							((space)states[vi->first]).var = vi->first;
+							states[vi->first].states.push_back(l->second);
+							states[vi->first].var = vi->first;
 						}
 						else
 						{
-							((space)states[vi->first]).states.push_back(xstate);
-							((space)states[vi->first]).var = vi->first;
+							states[vi->first].states.push_back(xstate);
+							states[vi->first].var = vi->first;
 						}
 					}
 				}
