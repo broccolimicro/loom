@@ -137,10 +137,10 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 		// We are in the current scope, and the current character
 		// is a semicolon or the end of the chp string. This is
-		// the end of a block.
+		// the end of an instruction.
 		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && (*i == ';' || i == chp.end()))
 		{
-			// Get the block string.
+			// Get the instruction string.
 			raw_instr = chp.substr(j-chp.begin(), i-j);
 
 			instr = NULL;
@@ -179,10 +179,10 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 					instr = new instruction(raw_instr, types, global, current_state, tab+"\t");
 			}
 
+			// Make sure that this wasn't a variable declaration (they don't affect the state space).
 			if (instr != NULL)
 			{
 				instrs.push_back(instr);
-
 
 				// Now that we have parsed the sub block, we need to
 				// check the resulting state space deltas of that sub block.
@@ -190,15 +190,15 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				delta.clear();
 				for (l = instr->result.begin(); l != instr->result.end(); l++)
 				{
-					// If this variable exists, then we check the resultant value against
-					// its current bitwidth and adjust the bitwidth to fit the resultant value.
-					// We also need to mark whether or not we need to generate a production rule
-					// for this instruction.
+					// If this variable exists, we mark whether or not we need to
+					// generate a production rule for this instruction.
 					vi = global.find(l->first);
 					if (vi == global.end() && l->first != "Unhandled")
 						cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + l->first << " " << instr->chp << endl;
 					else if (vi != global.end())
 					{
+						// The delta list is a list of parents of signals that are
+						// currently firing. Add these signals to the list.
 						if ((l->second.prs) && (l->second.data != vi->second->last.data))
 						{
 							vj = global.find(l->first.substr(0, l->first.find_first_of(".")));
@@ -206,7 +206,11 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 								delta.push_back(vj->second);
 						}
 
+						// Set the last value of the variable
 						vi->second->last = l->second;
+
+						// And make sure that we keep track of this variable if it has been
+						// newly created.
 						if (affected.find(vi->first) == affected.end())
 							affected.insert(pair<string, variable*>(vi->first, vi->second));
 					}
@@ -219,20 +223,23 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				// communication protocol.
 				for(vi = affected.begin(); vi != affected.end(); vi++)
 				{
+					// If this is the first time we have seen this variable
+					// in the state space, then we need to bring it up to speed.
 					if (states.find(vi->first) == states.end())
 					{
 						states.insert(pair<string, space>(vi->first, space(vi->first, list<state>())));
-						// The first state for every variable is always all X
+						// If this variable is in the init list, then we have it's initial value.
 						if ((l = init.find(vi->first)) != init.end())
-							states[vi->first].states.push_back(l->second);
+							((space)states[vi->first]).states.push_back(l->second);
+						// Otherwise, use this variable's reset value.
 						else
-							states[vi->first].states.push_back(vi->second->reset);
+							((space)states[vi->first]).states.push_back(vi->second->reset);
 					}
 
 
 					for (ii = instrs.begin(), di = delta_out.begin(), k = 0; ii != instrs.end() && di != delta_out.end(); ii++, di++, k++)
 					{
-						if (k >= states[vi->first].states.size()-1)
+						if (k >= ((space)states[vi->first]).states.size()-1)
 						{
 							l = (*ii)->result.find(vi->first);
 							vj = global.find(vi->first.substr(0, vi->first.find_first_of(".")));
@@ -288,8 +295,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 								proti = prgm_protocol.find(vj->second->name);
 
 								if (l != (*ii)->result.end() && l->second.data != "NA")
-									states[vi->first].states.push_back(l->second);
-								else if (di->size() > 0 && !states[vi->first].states.rbegin()->prs)
+									((space)states[vi->first]).states.push_back(l->second);
+								else if (di->size() > 0 && !((space)states[vi->first]).states.rbegin()->prs)
 								{
 									cout << "Maybe X Out " << vi->first << " " << (*ii)->chp << endl;
 									// Use channel send and recv functions to determine whether or not we need to X out the state
@@ -299,6 +306,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 										if (proti != prgm_protocol.end())
 										{
+											// TODO Protocol tracing only works for flat protocols. This means that the two
+											// phase protocol is currently not supported, but the four phase is.
 											if (proti->second == "send")
 											{
 												tracer_changes = ((channel*)t->second)->recv.def.changes;
@@ -317,39 +326,39 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 												m = xi->find(vi->first.substr(vi->first.find_first_of(".")+1));
 												if (m != xi->end())
 												{
-													tstate = *(states[vi->first].states.rbegin()) || m->second;
-													tstate.prs = states[vi->first].states.rbegin()->prs;
-													states[vi->first].states.push_back(tstate);
+													tstate = *(((space)states[vi->first]).states.rbegin()) || m->second;
+													tstate.prs = ((space)states[vi->first]).states.rbegin()->prs;
+													((space)states[vi->first]).states.push_back(tstate);
 												}
 												else
 												{
-													states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+													((space)states[vi->first]).states.push_back(*(((space)states[vi->first]).states.rbegin()));
 													cout << "Error 1" << endl;
 												}
 											}
 											else
 											{
-												states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+												((space)states[vi->first]).states.push_back(*(((space)states[vi->first]).states.rbegin()));
 												cout << "Error 2" << endl;
 											}
 										}
 										else
 										{
-											states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+											((space)states[vi->first]).states.push_back(*(((space)states[vi->first]).states.rbegin()));
 											cout << "Error 3" << endl;
 										}
 									}
 									else
 									{
-										states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+										((space)states[vi->first]).states.push_back(*(((space)states[vi->first]).states.rbegin()));
 										cout << "Error 4" << endl;
 									}
 								}
 								// there is no delta in the output variables or this is an output variable
 								else
-									states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+									((space)states[vi->first]).states.push_back(*(((space)states[vi->first]).states.rbegin()));
 
-								current_state[vi->first] = *states[vi->first].states.rbegin();
+								current_state[vi->first] = *((space)states[vi->first]).states.rbegin();
 							}
 							else
 								cout << "Something is royally fucked up." << endl;
@@ -370,8 +379,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 						if ((si = states.find(vi->first)) != states.end())
 						{
 							first = true;
-							for (ik = 0, a = si->second.states.begin(); waits.size() > 0 && ik <= (*waits.rbegin()) && a != si->second.states.end(); ik++, a++);
-							for (; ((instr->kind() != "conditional" && i == chp.end()) || ik <= ij) && a != si->second.states.end(); ik++, a++)
+							for (ik = 0, a = ((space)si->second).states.begin(); waits.size() > 0 && ik <= (*waits.rbegin()) && a != ((space)si->second).states.end(); ik++, a++);
+							for (; ((instr->kind() != "conditional" && i == chp.end()) || ik <= ij) && a != ((space)si->second).states.end(); ik++, a++)
 							{
 								tstate = first ? *a : tstate || *a;
 
@@ -406,15 +415,15 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		si = states.find(vi->first);
 		if (l != changes.begin()->end() && si != states.end())
 		{
-			l->second = l->second || (*si->second.states.rbegin());
+			l->second = l->second || (*((space)si->second).states.rbegin());
 			change_state.insert(pair<string, state>(vi->first, l->second));
 		}
 		else if (l != changes.begin()->end())
 			change_state.insert(pair<string, state>(vi->first, l->second));
 		else if (si != states.end())
 		{
-			changes.begin()->insert(pair<string, state>(vi->first, (*si->second.states.rbegin())));
-			change_state.insert(pair<string, state>(vi->first, (*si->second.states.rbegin())));
+			changes.begin()->insert(pair<string, state>(vi->first, (*((space)si->second).states.rbegin())));
+			change_state.insert(pair<string, state>(vi->first, (*((space)si->second).states.rbegin())));
 		}
 	}
 	changes.push_back(change_state);
@@ -426,7 +435,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	{
 		cout << tab << si->second << endl;
 		if (local.find(si->first) == local.end())
-			result.insert(pair<string, state>(si->first, *(si->second.states.rbegin())));
+			result.insert(pair<string, state>(si->first, *(((space)si->second).states.rbegin())));
 	}
 	cout << tab << "Waits: ";
 	for (pj = waits.begin(); pj != waits.end(); pj++)
@@ -605,7 +614,7 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 			// First we will generate the pull up network for this variable.
 			// This function call generates the desired state space for this
 			// network.
-			f.right = up(si->second[bi0]);
+			f.right = up((space)si->second[bi0]);
 			if (verbose)
 			{
 				cout << tab << "================Production Rule================" << endl;
@@ -620,8 +629,8 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 			{
 				// Get the o'th transition from the desired state space.
 				// This sets up the temporary rule to only cover one transition.
-				r.clear(si->second.states.size());
-				r.right = up(si->second[bi0], o);
+				r.clear(((space)si->second).states.size());
+				r.right = up((space)si->second[bi0], o);
 
 				// Get the strict count and the inverse count
 				// of this temporary rule. These two numbers
@@ -736,7 +745,7 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 			// Now we will generate the pull down network for this variable.
 			// This function call generates the desired state space for this
 			// network. See above for a description of each component.
-			f.right = down(si->second[bi0]);
+			f.right = down((space)si->second[bi0]);
 
 			if (verbose)
 			{
@@ -745,8 +754,8 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 			}
 			for (o = 0; o < delta_count(f.right); o++)
 			{
-				r.clear(si->second.states.size());
-				r.right = down(si->second[bi0], o);
+				r.clear(((space)si->second).states.size());
+				r.right = down((space)si->second[bi0], o);
 
 				mscount = strict_count(r.right);
 				mcount = r.right.states.size() - count(r.right);
