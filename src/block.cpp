@@ -236,15 +236,19 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 							((space)states[vi->first]).states.push_back(vi->second->reset);
 					}
 
-
+					// Now we need to fill in the rest of the state space. Loop through the instructions.
 					for (ii = instrs.begin(), di = delta_out.begin(), k = 0; ii != instrs.end() && di != delta_out.end(); ii++, di++, k++)
 					{
+						// We only need to generate states if we haven't already
 						if (k >= ((space)states[vi->first]).states.size()-1)
 						{
+							// Get the variable and its new value as affected by this instruction
 							l = (*ii)->result.find(vi->first);
 							vj = global.find(vi->first.substr(0, vi->first.find_first_of(".")));
 							if (vj != global.end())
 							{
+								// Get the variable's type and check to see if
+								// it has an associated program counter.
 								t = types.find(vj->second->type);
 								pi = prgm_ctr.find(vj->first);
 								proti = prgm_protocol.find(vj->second->name);
@@ -269,6 +273,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 									if (pi != prgm_ctr.end() && t != types.end() && t->second->kind() == "channel" && (proti == prgm_protocol.end() || proti->second == "?"))
 									{
+										// TODO This is supposed to support the case where both the send and receive functions have the same
+										// first couple instructions, but that feature does not work.
 										for (ix = ((channel*)t->second)->send.def.instrs.begin(), n = 0; ix != ((channel*)t->second)->send.def.instrs.end() && n < pi->second; ix++, n++);
 
 										if (ix != ((channel*)t->second)->send.def.instrs.end())
@@ -588,8 +594,9 @@ void block::clear()
  *
  * This doesn't always do a perfect job. However, it does the best it can given the state space it has.
  * It is the job of the state variable generation algorithm and the handshaking reshuffling algorithms
- * to remove all of the conflicts that this algorithm leaves behind (The handshaking reshuffling algorithm
- * has not yet been completed).
+ * to remove all of the conflicts that this algorithm leaves behind.
+ *
+ * TODO The handshaking reshuffling algorithm has not yet been completed.
  */
 list<rule> production_rule(map<string, space> states, map<string, variable*> global, string tab, bool verbose)
 {
