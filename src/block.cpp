@@ -825,6 +825,8 @@ list<int> where_state_var(space left, space right, string tab)
 			conflicts += "!";  // This fires, and it must keep firing after we after we add a state var
 		else if(j->data == "X" )
 			conflicts += "."; 	//Don't really care if it fires or not. Ambivalence.
+		else if(i->data == "X" && j->data == "0")
+			conflicts += "C";
 		else{
 			cout << "ERROR! State var generate is very confused right now. " << endl;
 			conflicts += "E";	//Error fire! Not quite sure how you got here...
