@@ -1,4 +1,11 @@
 /*
+ * chp.cpp
+ *
+ *  Created on: Oct 23, 2012
+ *      Author: Ned Bingham and Nicholas Kramer
+ *
+ *  DO NOT DISTRIBUTE
+ *
  * 	Variable Definition
  * 	x1,x2,...,xn:=E1,E2,...,En
  *

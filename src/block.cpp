@@ -2,7 +2,9 @@
  * block.cpp
  *
  *  Created on: Oct 29, 2012
- *      Author: Ned Bingham
+ *      Author: Ned Bingham and Nicholas Kramer
+ *
+ *  DO NOT DISTRIBUTE
  */
 
 #include "block.h"
@@ -59,14 +61,7 @@ block &block::operator=(block b)
 
 void block::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
 {
-	result.clear();
-	local.clear();
-	global.clear();
-	instrs.clear();
-	states.clear();
-	waits.clear();
-	changes.clear();
-	rules.clear();
+	clear();
 
 	cout << tab << "Block: " << raw << endl;
 
@@ -471,42 +466,36 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	state_locations.unique();
 
 	list<instruction*>::iterator inst_setter;
-//	instruction *state_inst_up, *state_inst_down;
 	int highest_state_name = 0;
 	int how_many_added = 0;
 	int how_many_inserted = 0;
 	list<pair<string,int> > to_insertl;
 	//Loop through our list of desired state variable insertions.
-	for (li = state_locations.begin(); li != state_locations.end(); li++){
-			//Find the lowest variable name not in globals (so no conflicts)
-			highest_state_name = 0;
-			while (global.find("sv"+to_string(highest_state_name)) != global.end()){
-				cout << "sv"<<to_string(highest_state_name)<< " used, try sv" << highest_state_name+1 << endl;
-				highest_state_name += 1;
-			}
-			cout << "adding variable sv" << to_string(highest_state_name) << endl;
-			v = new variable("int<1>sv" + to_string(highest_state_name), tab);
-			//Add to globals
-			cout <<v->name<<endl;
-			global.insert(pair<string, variable*>(v->name, v));
-			//Add to locals
-			local.insert(pair<string, variable*>(v->name, v));
+	for (li = state_locations.begin(); li != state_locations.end(); li++)
+	{
+		//Find the lowest variable name not in globals (so no conflicts)
+		highest_state_name = 0;
+		while (global.find("sv"+to_string(highest_state_name)) != global.end())
+		{
+			cout << "sv"<<to_string(highest_state_name)<< " used, try sv" << highest_state_name+1 << endl;
+			highest_state_name += 1;
+		}
+		cout << "adding variable sv" << to_string(highest_state_name) << endl;
+		v = new variable("int<1>sv" + to_string(highest_state_name), tab);
+		//Add to globals
+		cout <<v->name<<endl;
+		global.insert(pair<string, variable*>(v->name, v));
+		//Add to locals
+		local.insert(pair<string, variable*>(v->name, v));
 
 
-			//Make an instruction for state up
-			cout << tab << "Up instruction added at" << *li << endl;
-			to_insertl.push_back(pair<string,int>(v->name+":=1",*li));
-			raw = "int<1>" + v->name + ":=0;" + v->name + ":=0;" + raw;
-			how_many_added++;
-			cout << endl<< "up instr added "<< v->name << ":=1" << endl;
-			how_many_added++;
-
-			//cout << "Down instruction added at " << *(++li) << endl;
-			//Make an instruction for state down
-			//to_insertl.push_back(pair<string,int>(v->name+":=0",*li));
-
-			//cout << "down instr added " << v->name + ":=0" <<endl<<endl;
-
+		//Make an instruction for state up
+		cout << tab << "Up instruction added at" << *li << endl;
+		to_insertl.push_back(pair<string,int>(v->name+":=1",*li));
+		raw = "int<1>" + v->name + ":=0;" + v->name + ":=0;" + raw;
+		how_many_added++;
+		cout << endl<< "up instr added "<< v->name << ":=1" << endl;
+		how_many_added++;
 	}
 
 	//Print out our to_insert
@@ -516,12 +505,12 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	{
 		cout << instr_adderl->first << "-->" << instr_adderl->second << endl;
 		int insertion_location = 0;
-		for(int counter = 0; counter < (instr_adderl->second+how_many_inserted+how_many_added); counter++){
+		for(int counter = 0; counter < (instr_adderl->second+how_many_inserted+how_many_added); counter++)
 			insertion_location = raw.find(";",insertion_location+1);
-		}
-		if(insertion_location < 0)
+		if (insertion_location < 0)
 			cout << "Everything is wrong and unholy" << endl;
-		else{
+		else
+		{
 			cout << "insertion location " << insertion_location << endl;
 			cout << "That is the " << instr_adderl->second+how_many_inserted-1 << "th ';' = " << instr_adderl->second << "+" << how_many_inserted << endl;
 			raw = raw.substr(0, insertion_location+1) + instr_adderl->first + ";" + raw.substr(insertion_location+1);
@@ -534,56 +523,53 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		cout<<raw<<endl;
 	}
 
-
-	if(how_many_added > 0){		//If we added a state variable...
+	//If we added a state variable...
+	if (how_many_added > 0)
+	{
 		//Now that we have the corrected instruction stream, rerun parse!
-
 		raw = raw.substr(1,raw.end()-raw.begin() - 2);
 		cout << "Reparsing on " << raw << endl;
-
-		//But no memory leaks for me!
-		chp = "";
-		_kind = "block";
-
-		map<string, variable*>::iterator i;
-		for (i = local.begin(); i != local.end(); i++)
-		{
-			if (i->second != NULL)
-				delete i->second;
-			i->second = NULL;
-		}
-
-		local.clear();
-
-		list<instruction*>::iterator j;
-		for (j = instrs.begin(); j != instrs.end(); j++)
-		{
-			if (*j != NULL)
-				delete *j;
-			*j = NULL;
-		}
-
-		instrs.clear();
-
-
 		cout << "=REDO==REDO==REDO==REDO==REDO=" << endl;		//Let the user know we are trashing the above block.
 		parse(raw, types, vars, init, tab);
-	}else{
-		//(nonfunctional) code to remove state variables from results because they are local.
-		/*
-		highest_state_name = 0;
-		size_t to_erase = global.find("sv"+to_string(highest_state_name));
-		while (to_erase != global.end()){
-			cout << "deleting from results " << "sv" << to_string(highest_state_name) << endl;
-			result.erase("sv" + to_string(highest_state_name));
-			highest_state_name += 1;
-			to_erase = global.find("sv"+to_string(highest_state_name));
-		}*/
-
+	}
+	else
 		cout << tab << "=GOOD==GOOD==GOOD==GOOD==GOOD=" << endl;		//This block is done correctly.
+}
+
+/* This function cleans up all of the memory allocated
+ * during parsing, and prepares for the next parsing.
+ */
+void block::clear()
+{
+	chp = "";
+	_kind = "block";
+
+	// Instructions and local variables are dynamically
+	// allocated, but everything is static.
+	map<string, variable*>::iterator i;
+	for (i = local.begin(); i != local.end(); i++)
+	{
+		if (i->second != NULL)
+			delete i->second;
+		i->second = NULL;
 	}
 
+	list<instruction*>::iterator j;
+	for (j = instrs.begin(); j != instrs.end(); j++)
+	{
+		if (*j != NULL)
+			delete *j;
+		*j = NULL;
+	}
 
+	result.clear();
+	local.clear();
+	global.clear();
+	instrs.clear();
+	states.clear();
+	waits.clear();
+	changes.clear();
+	rules.clear();
 }
 
 /* This function generates a set of production rules for the given state space and variable space.

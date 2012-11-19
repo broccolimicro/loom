@@ -2,7 +2,9 @@
  * block.h
  *
  *  Created on: Oct 28, 2012
- *      Author: Ned Bingham
+ *      Author: Ned Bingham and Nicholas Kramer
+ *
+ *  DO NOT DISTRIBUTE
  */
 
 #include "common.h"
@@ -38,6 +40,7 @@ struct block : instruction
 	block &operator=(block b);
 
 	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab);
+	void clear();
 };
 
 list<rule> production_rule(map<string, space>	states, map<string, variable*> global, string tab, bool verbose);

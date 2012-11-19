@@ -2,7 +2,9 @@
  * variable.cpp
  *
  *  Created on: Oct 23, 2012
- *      Author: Ned Bingham
+ *      Author: Ned Bingham and Nicholas Kramer
+ *
+ *  DO NOT DISTRIBUTE
  */
 
 #include "variable.h"

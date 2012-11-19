@@ -2,7 +2,9 @@
  * parallel.h
  *
  *  Created on: Nov 1, 2012
- *      Author: Ned Bingham
+ *      Author: Ned Bingham and Nicholas Kramer
+ *
+ *  DO NOT DISTRIBUTE
  */
 
 #include "block.h"

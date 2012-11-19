@@ -2,7 +2,9 @@
  * loop.h
  *
  *  Created on: Oct 28, 2012
- *      Author: Ned Bingham
+ *      Author: Ned Bingham and Nicholas Kramer
+ *
+ *  DO NOT DISTRIBUTE
  */
 
 #include "conditional.h"

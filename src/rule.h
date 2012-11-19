@@ -2,7 +2,9 @@
  * rule.h
  *
  *  Created on: Nov 11, 2012
- *      Author: Ned Bingham
+ *      Author: Ned Bingham and Nicholas Kramer
+ *
+ *  DO NOT DISTRIBUTE
  */
 
 #include "common.h"
