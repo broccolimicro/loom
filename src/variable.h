@@ -21,9 +21,10 @@ struct variable
 {
 	variable();
 	variable(string n, string t, state r, uint16_t w);
-	variable(string chp, string tab);
+	variable(string raw, string tab, int verbosity);
 	~variable();
 
+	string		chp;
 	string		name;		// the name of the instantiated variable
 	string		type;		// the name of the type of the instantiated variable
 	uint16_t	width;		// the bit width of the instantiated variable
@@ -32,7 +33,7 @@ struct variable
 	state		reset;
 
 	variable &operator=(variable v);
-	void parse(string chp, string tab);
+	void parse(string raw, string tab, int verbosity);
 };
 
 ostream &operator<<(ostream &os, variable s);

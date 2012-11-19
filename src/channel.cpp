@@ -18,9 +18,9 @@ channel::channel()
 	_kind = "channel";
 }
 
-channel::channel(string chp, map<string, keyword*> types, string tab)
+channel::channel(string chp, map<string, keyword*> types, string tab, int verbosity)
 {
-	parse(chp, types, tab);
+	parse(chp, types, tab, verbosity);
 	_kind = "channel";
 }
 
@@ -46,9 +46,11 @@ channel &channel::operator=(channel r)
 	return *this;
 }
 
-void channel::parse(string chp, map<string, keyword*> types, string tab)
+void channel::parse(string chp, map<string, keyword*> types, string tab, int verbosity)
 {
-	cout << tab << "Channel: " << chp << endl;
+	if (verbosity >= VERB_PARSE)
+		cout << tab << "Channel: " << chp << endl;
+
 	int name_start = chp.find_first_of(" ")+1;
 	int name_end = chp.find_first_of("{");
 	int block_start = chp.find_first_of("{")+1;
@@ -62,8 +64,11 @@ void channel::parse(string chp, map<string, keyword*> types, string tab)
 	name = chp.substr(name_start, name_end - name_start);
 	io_block = chp.substr(block_start, block_end - block_start);
 
-	cout << tab << "\tName:  " << name << endl;
-	cout << tab << "\tBlock: " << io_block << endl;
+	if (verbosity >= VERB_PARSE)
+	{
+		cout << tab << "\tName:  " << name << endl;
+		cout << tab << "\tBlock: " << io_block << endl;
+	}
 
 	int depth[3] = {0};
 	for (i = io_block.begin(), j = io_block.begin(); i != io_block.end(); i++)
@@ -83,7 +88,7 @@ void channel::parse(string chp, map<string, keyword*> types, string tab)
 
 		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == ';')
 		{
-			expansion = expand(io_block.substr(j-io_block.begin(), i - j), name, types, tab+"\t");
+			expansion = expand(io_block.substr(j-io_block.begin(), i - j), name, types, tab+"\t", verbosity);
 			vars.insert(expansion.begin(), expansion.end());
 
 			j = i+1;
@@ -92,9 +97,9 @@ void channel::parse(string chp, map<string, keyword*> types, string tab)
 		{
 			raw = io_block.substr(j-io_block.begin(), i - j + 1);
 			if (raw.find("proc send") != raw.npos)
-				send.parse(raw, types, vars);
+				send.parse(raw, types, vars, verbosity);
 			else if (raw.find("proc recv") != raw.npos)
-				recv.parse(raw, types, vars);
+				recv.parse(raw, types, vars, verbosity);
 
 			j = i+1;
 		}

@@ -16,10 +16,10 @@
 struct parallel : block
 {
 	parallel();
-	parallel(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab);
+	parallel(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity);
 	~parallel();
 
-	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab);
+	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity);
 };
 
 #endif

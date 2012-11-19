@@ -16,10 +16,10 @@ conditional::conditional()
 	type = unknown;
 }
 
-conditional::conditional(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
+conditional::conditional(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
 {
 	_kind = "conditional";
-	parse(raw, types, vars, init, tab);
+	parse(raw, types, vars, init, tab, verbosity);
 }
 
 conditional::~conditional()
@@ -38,7 +38,7 @@ conditional::~conditional()
 	instrs.clear();
 }
 // [G -> S]
-void conditional::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
+void conditional::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
 {
 	result.clear();
 	local.clear();
@@ -52,7 +52,8 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 	string expr, eval;
 	bool guarded = true;
 
-	cout << tab << "Conditional:\t" << chp << endl;
+	if (verbosity >= VERB_PARSE)
+		cout << tab << "Conditional:\t" << chp << endl;
 
 	map<string, state> guardresult, temp;
 
@@ -86,7 +87,8 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 
 		if (!guarded && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) != '|' && *(i-1) != '|') || (i == chp.end() && type == choice)))
 		{
-			cout << tab << "Choice\n";
+			if (verbosity >= VERB_PARSE)
+				cout << tab << "Choice\n";
 			if (type == unknown)
 				type = choice;
 			else if (type == mutex)
@@ -97,12 +99,15 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 			expr = eval.substr(0, k-eval.begin());
 			eval = eval.substr(k-eval.begin()+2);
 
-			cout << "Before\n";
-			for (si = guardresult.begin(); si != guardresult.end(); si++)
-				cout << si->first << " -> " << si->second << endl;
+			if (verbosity >= VERB_PARSE)
+			{
+				cout << tab << "Before\n";
+				for (si = guardresult.begin(); si != guardresult.end(); si++)
+					cout << tab << si->first << " -> " << si->second << endl;
 
-			cout << "Guard\n";
-			temp = guard(expr, vars, tab+"\t");
+				cout << tab << "Guard\n";
+			}
+			temp = guard(expr, vars, tab+"\t", verbosity);
 			for (si = temp.begin(); si != temp.end(); si++)
 			{
 				if ((sj = guardresult.find(si->first)) == guardresult.end())
@@ -112,21 +117,26 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 						if (*ri != 'X')
 							*rj = *ri;
 
-				cout << si->first << " -> " << si->second << endl;
+				if (verbosity >= VERB_PARSE)
+					cout << tab << si->first << " -> " << si->second << endl;
 			}
 
-			cout << "After\n";
-			for (si = guardresult.begin(); si != guardresult.end(); si++)
-				cout << si->first << " -> " << si->second << endl;
+			if (verbosity >= VERB_PARSE)
+			{
+				cout << tab << "After\n";
+				for (si = guardresult.begin(); si != guardresult.end(); si++)
+					cout << tab << si->first << " -> " << si->second << endl;
+			}
 
-			instrs.insert(pair<string, instruction*>(expr, new block(eval, types, global, guardresult, tab+"\t")));
+			instrs.insert(pair<string, instruction*>(expr, new block(eval, types, global, guardresult, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 			guardresult = init;
 		}
 		else if (!guarded && depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '[' && *(i+1) == ']') || i == chp.end()))
 		{
-			cout << tab << "Mutex\n";
+			if (verbosity >= VERB_PARSE)
+				cout << tab << "Mutex\n";
 			if (type == unknown)
 				type = mutex;
 			else if (type == choice)
@@ -137,12 +147,15 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 			expr = eval.substr(0, k-eval.begin());
 			eval = eval.substr(k-eval.begin()+2);
 
-			cout << tab << "Before\n";
-			for (si = guardresult.begin(); si != guardresult.end(); si++)
-				cout << tab << si->first << " -> " << si->second << endl;
+			if (verbosity >= VERB_PARSE)
+			{
+				cout << tab << "Before\n";
+				for (si = guardresult.begin(); si != guardresult.end(); si++)
+					cout << tab << si->first << " -> " << si->second << endl;
 
-			cout << tab << "Guard\n";
-			temp = guard(expr, vars, tab+"\t");
+				cout << tab << "Guard\n";
+			}
+			temp = guard(expr, vars, tab+"\t", verbosity);
 			for (si = temp.begin(); si != temp.end(); si++)
 			{
 				if ((sj = guardresult.find(si->first)) == guardresult.end())
@@ -151,13 +164,19 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 					for (ri = si->second.data.rbegin(), rj = sj->second.data.rbegin(); ri != si->second.data.rend() && rj != sj->second.data.rend(); ri++, rj++)
 						if (*ri != 'X')
 							*rj = *ri;
+
+				if (verbosity >= VERB_PARSE)
+					cout << tab << si->first << " -> " << si->second << endl;
 			}
 
-			cout << tab << "After\n";
-			for (si = guardresult.begin(); si != guardresult.end(); si++)
-				cout << tab << si->first << " -> " << si->second << endl;
+			if (verbosity >= VERB_PARSE)
+			{
+				cout << tab << "After\n";
+				for (si = guardresult.begin(); si != guardresult.end(); si++)
+					cout << tab << si->first << " -> " << si->second << endl;
+			}
 
-			instrs.insert(pair<string, instruction*>(expr, new block(eval, types, global, guardresult, tab+"\t")));
+			instrs.insert(pair<string, instruction*>(expr, new block(eval, types, global, guardresult, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 			guardresult = init;
@@ -180,14 +199,17 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 		}
 	}
 
-	cout << tab << "Result:\t";
+	if (verbosity >= VERB_PARSE)
+	{
+		cout << tab << "Result:\t";
 
-	for (si = result.begin(); si != result.end(); si++)
-		cout << "{" << si->first << " = " << si->second << "} ";
-	cout << endl;
+		for (si = result.begin(); si != result.end(); si++)
+			cout << "{" << si->first << " = " << si->second << "} ";
+		cout << endl;
+	}
 }
 
-map<string, state> guard(string raw,  map<string, variable*> vars, string tab)
+map<string, state> guard(string raw,  map<string, variable*> vars, string tab, int verbosity)
 {
 	map<string, state> outcomes;
 	map<string, state> a, b;
@@ -196,7 +218,8 @@ map<string, state> guard(string raw,  map<string, variable*> vars, string tab)
 	state temp;
 	int depth;
 
-	cout << tab << "Guard: " << raw << endl;
+	if (verbosity >= VERB_PARSE)
+		cout << tab << "Guard: " << raw << endl;
 
 	//Parse instructions!
 	depth = 0;
@@ -209,8 +232,8 @@ map<string, state> guard(string raw,  map<string, variable*> vars, string tab)
 
 		if (depth == 0 && *i == '|')
 		{
-			a = guard(raw.substr(j-raw.begin(), i-j), vars, tab+"\t");
-			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t");
+			a = guard(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity);
+			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
 
 			for (ai = a.begin(); ai != a.end(); ai++)
 			{
@@ -240,7 +263,8 @@ map<string, state> guard(string raw,  map<string, variable*> vars, string tab)
 			for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
 			{
 				ai->second.prs = false;
-				cout << tab << ai->first << ": " << ai->second << endl;
+				if (verbosity >= VERB_PARSE)
+					cout << tab << ai->first << ": " << ai->second << endl;
 			}
 
 			return outcomes;
@@ -257,8 +281,8 @@ map<string, state> guard(string raw,  map<string, variable*> vars, string tab)
 
 		if (depth == 0 && *i == '&')
 		{
-			a = guard(raw.substr(j-raw.begin(), i-j), vars, tab+"\t");
-			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t");
+			a = guard(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity);
+			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
 
 			outcomes.insert(a.begin(), a.end());
 
@@ -274,7 +298,8 @@ map<string, state> guard(string raw,  map<string, variable*> vars, string tab)
 			for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
 			{
 				ai->second.prs = false;
-				cout << tab << ai->first << ": " << ai->second << endl;
+				if (verbosity >= VERB_PARSE)
+					cout << tab << ai->first << ": " << ai->second << endl;
 			}
 
 			return outcomes;
@@ -368,7 +393,7 @@ map<string, state> guard(string raw,  map<string, variable*> vars, string tab)
 
 		if (depth == 0 && *i == '~')
 		{
-			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t");
+			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
 
 			for (bi = b.begin(); bi != b.end(); bi++)
 				outcomes.insert(pair<string, state>(bi->first, ~bi->second));
@@ -376,7 +401,8 @@ map<string, state> guard(string raw,  map<string, variable*> vars, string tab)
 			for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
 			{
 				ai->second.prs = false;
-				cout << tab << ai->first << ": " << ai->second << endl;
+				if (verbosity >= VERB_PARSE)
+					cout << tab << ai->first << ": " << ai->second << endl;
 			}
 
 			return outcomes;
@@ -387,14 +413,15 @@ map<string, state> guard(string raw,  map<string, variable*> vars, string tab)
 	unsigned long e = raw.find_last_of(")");
 	if (s != raw.npos && e != raw.npos)
 	{
-		a = guard(raw.substr(s+1, e-s-1), vars, tab+"\t");
+		a = guard(raw.substr(s+1, e-s-1), vars, tab+"\t", verbosity);
 
 		outcomes.insert(a.begin(), a.end());
 
 		for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
 		{
 			ai->second.prs = false;
-			cout << tab << ai->first << ": " << ai->second << endl;
+			if (verbosity >= VERB_PARSE)
+				cout << tab << ai->first << ": " << ai->second << endl;
 		}
 
 		return outcomes;
@@ -406,7 +433,8 @@ map<string, state> guard(string raw,  map<string, variable*> vars, string tab)
 	for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
 	{
 		ai->second.prs = false;
-		cout << tab << ai->first << ": " << ai->second << endl;
+		if (verbosity >= VERB_PARSE)
+			cout << tab << ai->first << ": " << ai->second << endl;
 	}
 
 	return outcomes;

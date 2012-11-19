@@ -40,4 +40,12 @@ string to_string(T n)
 string hex_to_bin(string str);
 string dec_to_bin(string str);
 
+#define VERB_SUPPRESS	-1
+#define VERB_PRS		0
+#define VERB_STATES		1
+#define VERB_PRSALG		2
+#define VERB_STATEVAR	3
+#define VERB_PARSE		4
+#define VERB_TRACE		5
+
 #endif

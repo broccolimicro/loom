@@ -85,9 +85,9 @@ struct program
 	{
 		type_space.insert(pair<string, keyword*>("int", new keyword("int")));
 	}
-	program(string chp)
+	program(string chp, int verbosity)
 	{
-		parse(chp);
+		parse(chp, verbosity);
 	}
 	~program()
 	{
@@ -112,7 +112,7 @@ struct program
 		return *this;
 	}
 
-	void parse(string chp)
+	void parse(string chp, int verbosity)
 	{
 		string::iterator i, j;
 		string cleaned_chp = "";
@@ -145,8 +145,6 @@ struct program
 			comment_end = chp.find("*/");
 		}
 
-
-
 		// remove extraneous whitespace
 		for (i = chp.begin(); i != chp.end(); i++)
 		{
@@ -155,8 +153,6 @@ struct program
 			else if (nc(*(i-1)) && (i == chp.end()-1 || nc(*(i+1))))
 				cleaned_chp += ' ';
 		}
-
-
 
 		// split the program into records and processes
 		int depth[3] = {0};
@@ -184,19 +180,19 @@ struct program
 					// Is this a process?
 					if (cleaned_chp.compare(j-cleaned_chp.begin(), 5, "proc ") == 0)
 					{
-						p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, map<string, variable*>());
+						p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, map<string, variable*>(), verbosity);
 						type_space.insert(pair<string, process*>(p->name, p));
 					}
 					// This isn't a process, is it a record?
 					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "record ") == 0)
 					{
-						r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "");
+						r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "", verbosity);
 						type_space.insert(pair<string, record*>(r->name, r));
 					}
 					// Is it a channel definition?
 					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "channel ") == 0)
 					{
-						c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "");
+						c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "", verbosity);
 						type_space.insert(pair<string, channel*>(c->name, c));
 					}
 					// This isn't either a process or a record, this is an error.
@@ -212,17 +208,17 @@ struct program
 						// Make sure we don't miss the next record or process though.
 						if (cleaned_chp.compare(j-cleaned_chp.begin(), 5, "proc ") == 0)
 						{
-							p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, map<string, variable*>());
+							p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, map<string, variable*>(), verbosity);
 							type_space.insert(pair<string, process*>(p->name, p));
 						}
 						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "record ") == 0)
 						{
-							r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "");
+							r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "", verbosity);
 							type_space.insert(pair<string, record*>(r->name, r));
 						}
 						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "channel ") == 0)
 						{
-							c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "");
+							c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "", verbosity);
 							type_space.insert(pair<string, channel*>(c->name, c));
 						}
 					}
@@ -231,7 +227,7 @@ struct program
 			}
 		}
 
-		main.parse("main m()", "");
+		main.parse("main m()", "", verbosity);
 	}
 };
 
@@ -262,5 +258,5 @@ int main(int argc, char **argv)
 
 	}
 
-	program p(prgm);
+	program p(prgm, VERB_TRACE);
 }

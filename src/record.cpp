@@ -18,9 +18,9 @@ record::record()
 	_kind = "record";
 }
 
-record::record(string chp, map<string, keyword*> types, string tab)
+record::record(string raw, map<string, keyword*> types, string tab, int verbosity)
 {
-	parse(chp, types, tab);
+	parse(raw, types, tab, verbosity);
 	_kind = "record";
 }
 
@@ -46,9 +46,10 @@ record &record::operator=(record r)
 	return *this;
 }
 
-void record::parse(string chp, map<string, keyword*> types, string tab)
+void record::parse(string raw, map<string, keyword*> types, string tab, int verbosity)
 {
-	cout << tab << "Record: " << chp << endl;
+	chp = raw;
+
 	int name_start = chp.find_first_of(" ")+1;
 	int name_end = chp.find_first_of("{");
 	int block_start = chp.find_first_of("{")+1;
@@ -58,17 +59,23 @@ void record::parse(string chp, map<string, keyword*> types, string tab)
 
 	map<string, variable*> expansion;
 
+	if (verbosity >= VERB_PARSE)
+		cout << tab << "Record: " << chp << endl;
+
 	name = chp.substr(name_start, name_end - name_start);
 	io_block = chp.substr(block_start, block_end - block_start);
 
-	cout << tab << "\tName:  " << name << endl;
-	cout << tab << "\tBlock: " << io_block << endl;
+	if (verbosity >= VERB_PARSE)
+	{
+		cout << tab << "\tName:  " << name << endl;
+		cout << tab << "\tBlock: " << io_block << endl;
+	}
 
 	for (i = io_block.begin(), j = io_block.begin(); i != io_block.end(); i++)
 	{
 		if (*(i+1) == ';')
 		{
-			expansion = expand(io_block.substr(j-io_block.begin(), i+1 - j), name, types, tab+"\t");
+			expansion = expand(io_block.substr(j-io_block.begin(), i+1 - j), name, types, tab+"\t", verbosity);
 			vars.insert(expansion.begin(), expansion.end());
 
 			j = i+2;
@@ -76,12 +83,12 @@ void record::parse(string chp, map<string, keyword*> types, string tab)
 	}
 }
 
-map<string, variable*> expand(string chp, string super, map<string, keyword*> types, string tab)
+map<string, variable*> expand(string chp, string super, map<string, keyword*> types, string tab, int verbosity)
 {
 	map<string, variable*> result;
 	map<string, keyword*>::iterator var_type;
 	map<string, variable*>::iterator mem_var;
-	variable *v = new variable(chp, tab+"\t");
+	variable *v = new variable(chp, tab+"\t", verbosity);
 	string name;
 
 	if ((var_type = types.find(v->type)) != types.end())

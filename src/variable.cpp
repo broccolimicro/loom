@@ -30,11 +30,9 @@ variable::variable(string n, string t, state r, uint16_t w)
 	fixed = true;
 }
 
-variable::variable(string chp, string tab)
+variable::variable(string raw, string tab, int verbosity)
 {
-	last = "iX";
-	reset = "iX";
-	parse(chp, tab);
+	parse(raw, tab, verbosity);
 }
 
 variable::~variable()
@@ -58,25 +56,28 @@ variable &variable::operator=(variable v)
 	return *this;
 }
 
-void variable::parse(string chp, string tab)
+void variable::parse(string raw, string tab, int verbosity)
 {
-	cout << tab << "Variable: " << chp << endl;
+	last = "iX";
+	reset = "iX";
+
+	chp = raw;
 
 	size_t width_start = chp.find_first_of("< ");
 	size_t name_start = chp.find_first_of("> ");
 	size_t reset_start = chp.find(":=");
 
+	if (verbosity >= VERB_PARSE)
+		cout << tab << "Variable: " << chp << endl;
+
 	if (reset_start != chp.npos)
 	{
 		name = chp.substr(name_start+1, reset_start - (name_start+1));
-		reset.prs = false;
-		reset.data = chp.substr(reset_start+2);
+		reset = state(chp.substr(reset_start+2), false);
 		if (reset.data[1] == 'x')				// hexadecimal e.g. 0xFEEDFACE
 			reset.data = hex_to_bin(reset.data.substr(2));
-
 		else if (reset.data[1] == 'b')			// binary      e.g. 0b01100110
 			reset.data = reset.data.substr(2);
-
 		else									// decimal     e.g. 20114
 			reset.data = dec_to_bin(reset.data);
 	}
@@ -95,10 +96,13 @@ void variable::parse(string chp, string tab)
 		width = reset.data.length();
 	}
 
-	cout << tab << "\tName:  " << name << endl;
-	cout << tab << "\tType:  " << type << endl;
-	cout << tab << "\tWidth: " << width << endl;
-	cout << tab << "\tReset:  " << reset << endl;
+	if (verbosity >= VERB_PARSE)
+	{
+		cout << tab << "\tName:  " << name << endl;
+		cout << tab << "\tType:  " << type << endl;
+		cout << tab << "\tWidth: " << width << endl;
+		cout << tab << "\tReset:  " << reset << endl;
+	}
 }
 
 ostream &operator<<(ostream &os, variable s)

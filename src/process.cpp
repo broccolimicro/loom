@@ -18,9 +18,9 @@ process::process()
 	_kind = "process";
 }
 
-process::process(string chp, map<string, keyword*> types, map<string, variable*> vars)
+process::process(string raw, map<string, keyword*> types, map<string, variable*> vars, int verbosity)
 {
-	parse(chp, types, vars);
+	parse(raw, types, vars, verbosity);
 	_kind = "process";
 }
 
@@ -50,10 +50,10 @@ process &process::operator=(process p)
 	return *this;
 }
 
-void process::parse(string chp, map<string, keyword*> types, map<string, variable*> vars)
+void process::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, int verbosity)
 {
-	global = vars;
-	cout << "Process:\t" << chp << endl;
+	chp = raw;
+
 	size_t name_start = chp.find_first_of(" ")+1;
 	size_t name_end = chp.find_first_of("(");
 	size_t input_start = chp.find_first_of("(")+1;
@@ -68,17 +68,24 @@ void process::parse(string chp, map<string, keyword*> types, map<string, variabl
 	map<string, variable*> temp;
 	map<string, keyword*>::iterator ti;
 
+	cout << "Process:\t" << chp << endl;
+
+	global = vars;
+
 	name = chp.substr(name_start, name_end - name_start);
 	io_block = chp.substr(input_start, input_end - input_start);
 
-	cout << "\tName:\t" << name << endl;
-	cout << "\tInputs:\t" << io_block << endl;
+	if (verbosity >= VERB_PARSE)
+	{
+		cout << "\tName:\t" << name << endl;
+		cout << "\tInputs:\t" << io_block << endl;
+	}
 
 	for (i = io_block.begin(), j = io_block.begin(); i != io_block.end(); i++)
 	{
 		if (*(i+1) == ',' || i+1 == io_block.end())
 		{
-			temp = expand(io_block.substr(j-io_block.begin(), i+1 - j), "", types, "\t");
+			temp = expand(io_block.substr(j-io_block.begin(), i+1 - j), "", types, "\t", verbosity);
 			local.insert(temp.begin(), temp.end());
 			global.insert(temp.begin(), temp.end());
 			j = i+2;
@@ -86,8 +93,6 @@ void process::parse(string chp, map<string, keyword*> types, map<string, variabl
 	}
 
 	map<string, variable*>::iterator vi, vj;
-	//for (vi = local.begin(); vi != local.end(); vi++)
-	//	cout << *(vi->second) << endl;
 
 	string right, left, replace;
 	int skip;
@@ -163,5 +168,5 @@ void process::parse(string chp, map<string, keyword*> types, map<string, variabl
 		}
 	}
 
-	def.parse(def_block, types, global,  map<string, state>(), "\t");
+	def.parse(def_block, types, global,  map<string, state>(), "\t", verbosity);
 }

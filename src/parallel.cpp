@@ -17,10 +17,10 @@ parallel::parallel()
 	chp = "";
 	_kind = "parallel";
 }
-parallel::parallel(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
+parallel::parallel(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
 {
 	_kind = "parallel";
-	parse(raw, types, vars, init, tab);
+	parse(raw, types, vars, init, tab, verbosity);
 }
 parallel::~parallel()
 {
@@ -48,7 +48,7 @@ parallel::~parallel()
 	instrs.clear();
 }
 
-void parallel::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab)
+void parallel::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
 {
 	result.clear();
 	local.clear();
@@ -56,7 +56,8 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 	instrs.clear();
 	states.clear();
 
-	cout << tab << "Parallel: " << raw << endl;
+	if (verbosity >= VERB_PARSE)
+		cout << tab << "Parallel: " << raw << endl;
 
 	global = vars;
 	chp = raw;
@@ -120,16 +121,16 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (sequential)
-				instr = new parallel(raw_instr, types, global, init, tab+"\t");
+				instr = new parallel(raw_instr, types, global, init, tab+"\t", verbosity);
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
-				instr = new block(raw_instr.substr(1, raw_instr.length()-2), types, global, init, tab+"\t");
+				instr = new block(raw_instr.substr(1, raw_instr.length()-2), types, global, init, tab+"\t", verbosity);
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new loop(raw_instr, types, global, init, tab+"\t");
+				instr = new loop(raw_instr, types, global, init, tab+"\t", verbosity);
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new conditional(raw_instr, types, global, init, tab+"\t");
+				instr = new conditional(raw_instr, types, global, init, tab+"\t", verbosity);
 			// This sub block is either a variable definition or an assignment instruction.
 			else
 			{
@@ -144,13 +145,13 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 				// This sub block is a variable definition. keyword<bitwidth> name
 				if (vdef)
 				{
-					v = new variable(raw_instr, tab);
+					v = new variable(raw_instr, tab, verbosity);
 					local.insert(pair<string, variable*>(v->name, v));
 					global.insert(pair<string, variable*>(v->name, v));
 				}
 				// This sub block is an assignment instruction.
 				else if (raw_instr.length() != 0)
-					instr = new instruction(raw_instr, types, global, init, tab+"\t");
+					instr = new instruction(raw_instr, types, global, init, tab+"\t", verbosity);
 			}
 
 			if (instr != NULL)
@@ -214,7 +215,8 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 			sequential = true;
 	}
 
-	cout << endl;
+	if (verbosity >= VERB_PARSE)
+		cout << endl;
 
 	for (ii = instrs.begin(); ii != instrs.end(); ii++)
 	{
@@ -240,9 +242,11 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 		}
 	}
 
-	cout << tab << "Result:\t";
-
-	for (l = result.begin(); l != result.end(); l++)
-		cout << "{" << l->first << " = " << l->second << "} ";
-	cout << endl;
+	if (verbosity >= VERB_PARSE)
+	{
+		cout << tab << "Result:\t";
+		for (l = result.begin(); l != result.end(); l++)
+			cout << "{" << l->first << " = " << l->second << "} ";
+		cout << endl;
+	}
 }

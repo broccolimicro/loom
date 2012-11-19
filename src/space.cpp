@@ -158,7 +158,7 @@ space space::operator[](int i)
 
 ostream &operator<<(ostream &os, space s)
 {
-    os << s.var << "\t: ";
+    os << s.var << string(max(20 - (int)s.var.length(), 1), ' ') << ": ";
 
     list<state>::iterator i;
     for (i = s.states.begin(); i != s.states.end(); i++)
@@ -976,7 +976,7 @@ space down(space s, int idx)
 	space result;
 	string str;
 	string::iterator si, sj;
-	int cnt = 0;
+	int cnt = -1;
 	bool zero = false;
 	result.var = s.var + "-";
 
