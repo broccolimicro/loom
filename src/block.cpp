@@ -255,6 +255,11 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 								if (l != (*ii)->result.end())
 								{
+									// Figure out what this instruction would look like as
+									// this variable. For example, an instruction like l.r:=1
+									// would turn into r:=1 and [l.a] to [a]
+									// We will need this to figure out if this instruction
+									// belongs to the send or the receive.
 									search0 = (*ii)->chp;
 									while ((p = search0.find(vj->first + ".")) != search0.npos)
 										search0 = search0.substr(0, p) + search0.substr(p + vj->first.length() + 1);
