@@ -639,7 +639,7 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 
 				// Get the strict count and the inverse count
 				// of this temporary rule. These two numbers
-				// represent the best we can do
+				// represent the best we can do.
 				mscount = strict_count(r.right);
 				mcount = r.right.states.size() - count(r.right);
 
@@ -652,23 +652,40 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 
 				first = true;
 				found = true;
+				// Keep iterating while there is still a way to narrow our actual state space
+				// toward the desired state space.
 				while (invars.size() > 0 && found && count(r.left) > count(r.right))
 				{
 					if (verbose)
 						cout << tab << "...................Iteration..................." << endl;
 					setspace = r.left;
 
+					// Loop through our list of, now, one bit variables
+					// to see which one will narrow our actual state space
+					// the most.
 					found = false;
 					for (sj = invars.begin(); sj != invars.end(); sj++)
 					{
+						// We will need to test this variable twice at two
+						// different orientations. x and ~x
+
+						// This first case examines x
+
+						// If this is our first variable constraint, then
+						// we shouldn't AND it in since there is nothing
+						// to AND it with.
 						if (first)
 							tempspace = sj->second;
 						else
 							tempspace = r.left & sj->second;
 
+						// Get the new strict count and inverse count.
+						// These metrics allow us to directly compare constraints
+						// and find the narrowest constraint.
 						scount = strict_count(r.right & tempspace);
 						ccount = count(tempspace) - count(r.right & tempspace);
 
+						// Compare these new counts to the min count
 						if (ccount < mcount && scount >= mscount && r.left.var.find(tempspace.var) == r.left.var.npos)
 						{
 							setspace = tempspace;
@@ -679,6 +696,9 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 
 						if (verbose)
 							cout << tab << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
+
+						// This second case examines ~x
+						// See above for a description of each piece.
 
 						if (first)
 							tempspace = ~sj->second;
@@ -700,6 +720,9 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 							cout << tab << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
 					}
 
+					// If we found a variable that narrows the actual state
+					// space down, then remove that variable from our variable
+					// list and continue iterating.
 					if (r.left.var.find(setspace.var) == r.left.var.npos)
 					{
 						r.left = setspace;
@@ -709,16 +732,24 @@ list<rule> production_rule(map<string, space> states, map<string, variable*> glo
 					}
 				}
 
+				// Now that we have generated a new set of
+				// ANDed variables, we need to OR it into
+				// the final production rule.
 				if (o == 0)
 					f = r;
 				else
 					f.left = f.left | r.left;
 			}
 
+			// If there were invacuous firings, then we
+			// need to push the newly generated rule to the list.
 			if (delta_count(f.right) > 0)
 				rules.push_back(f);
 
 
+			// Now we will generate the pull down network for this variable.
+			// This function call generates the desired state space for this
+			// network. See above for a description of each component.
 			f.right = down(si->second[bi0]);
 
 			if (verbose)
