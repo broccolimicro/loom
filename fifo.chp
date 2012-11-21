@@ -34,8 +34,8 @@ channel chan2p0b
 	
 	proc send()
 	{
-		[   r -> int x;r-;[~a]
-		[] ~r -> int x;r+;[ a]
+		[   r -> r-;[~a]
+		[] ~r -> r+;[ a]
 		]
 	}
 	

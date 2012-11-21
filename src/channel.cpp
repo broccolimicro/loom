@@ -59,6 +59,9 @@ void channel::parse(string chp, map<string, keyword*> types, string tab, int ver
 	string io_block;
 	string raw;
 
+	map<string, state> res;
+	map<string, state>::iterator ri;
+
 	map<string, variable*> expansion;
 
 	name = chp.substr(name_start, name_end - name_start);
@@ -95,11 +98,24 @@ void channel::parse(string chp, map<string, keyword*> types, string tab, int ver
 		}
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == '}')
 		{
+			// TODO do we need to reparse afterword and use the results of the first parsing as the init?
 			raw = io_block.substr(j-io_block.begin(), i - j + 1);
 			if (raw.find("proc send") != raw.npos)
+			{
 				send.parse(raw, types, vars, verbosity);
+				//res = send.def.result;
+				//for (ri = res.begin(); ri != res.end(); ri++)
+				//	ri->second.prs = false;
+				//send.def.parse(send.def.chp, types, vars, res, "\t", verbosity);
+			}
 			else if (raw.find("proc recv") != raw.npos)
+			{
 				recv.parse(raw, types, vars, verbosity);
+				//res = recv.def.result;
+				//for (ri = res.begin(); ri != res.end(); ri++)
+				//	ri->second.prs = false;
+				//recv.def.parse(recv.def.chp, types, vars, res, "\t", verbosity);
+			}
 
 			j = i+1;
 		}

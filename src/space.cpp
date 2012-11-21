@@ -921,7 +921,7 @@ space up(space s, int idx)
 			else
 				str = str + "0";
 
-			if (*sj == '1')
+			if (*sj == '1' && j->prs)
 				one = true;
 
 			if (*sj == '0' && one)
@@ -976,7 +976,7 @@ space down(space s, int idx)
 	space result;
 	string str;
 	string::iterator si, sj;
-	int cnt = -1;
+	int cnt = 0;
 	bool zero = false;
 	result.var = s.var + "-";
 
@@ -998,7 +998,7 @@ space down(space s, int idx)
 			else
 				str = str + "0";
 
-			if (*sj == '0')
+			if (*sj == '0' && j->prs)
 				zero = true;
 
 			if (*sj == '1' && zero)

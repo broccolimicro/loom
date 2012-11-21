@@ -258,5 +258,5 @@ int main(int argc, char **argv)
 
 	}
 
-	program p(prgm, VERB_TRACE);
+	program p(prgm, VERB_STATES);
 }
