@@ -55,13 +55,14 @@ void loop::parse(string raw, map<string, keyword*> types, map<string, variable*>
 		sj = next_init.find(si->first);
 		if (sj == next_init.end())
 		{
-			next_init.insert(pair<string, state>(si->first, si->second));
+			next_init.insert(pair<string, state>(si->first, state(si->second.data, false)));
 			if (verbosity >= VERB_PARSE)
 				cout << tab << "Loop Vars: " << si->first << " " << si->second << endl;
 		}
 		else
 		{
 			sj->second = sj->second || si->second;
+			sj->second.prs = false;
 			if (verbosity >= VERB_PARSE)
 				cout << tab << "Loop Vars: " << sj->first << " " << sj->second << " " << si->second << endl;
 		}
