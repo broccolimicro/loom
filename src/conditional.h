@@ -24,14 +24,14 @@ enum conditional_type
 struct conditional : block
 {
 	conditional();
-	conditional(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity);
+	conditional(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity);
 	~conditional();
 
 	conditional_type type;
 	map<string, instruction*> instrs;		//Guards index instructions
 
 
-	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity);
+	void parse(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity);
 };
 
 map<string, state> guard(string raw, map<string, variable*> vars, string tab, int verbosity);

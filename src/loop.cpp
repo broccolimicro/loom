@@ -15,10 +15,10 @@ loop::loop()
 	_kind = "loop";
 }
 
-loop::loop(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
+loop::loop(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
 {
 	_kind = "loop";
-	parse(raw, types, vars, init, tab, verbosity);
+	parse(id, raw, types, vars, init, tab, verbosity);
 }
 
 loop::~loop()
@@ -36,12 +36,13 @@ loop::~loop()
 	instrs.clear();
 }
 
-void loop::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
+void loop::parse(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
 {
 	map<string, state> next_init;
 	map<string, state>::iterator si, sj;
 
 	chp = raw.substr(2, raw.length()-3);
+	uid = id;
 
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Loop Preparse:\t" << chp << endl;
@@ -117,6 +118,7 @@ void loop::pass(string raw, map<string, keyword*> types, map<string, variable*> 
 	type = unknown;
 	string expr, eval;
 	bool guarded;
+	char nid = 'a';
 
 	map<string, instruction*>::iterator ii;
 	map<string, state>::iterator si, sj;
@@ -218,7 +220,7 @@ void loop::pass(string raw, map<string, keyword*> types, map<string, variable*> 
 					cout << tab << si->first << " -> " << si->second << endl;
 			}
 
-			instrs.insert(pair<string, instruction*>(expr, new block(eval, types, global, guardresult, tab+"\t", verbosity)));
+			instrs.insert(pair<string, instruction*>(expr, new block(uid + nid++, eval, types, global, guardresult, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 		}
@@ -265,7 +267,7 @@ void loop::pass(string raw, map<string, keyword*> types, map<string, variable*> 
 					cout << tab << si->first << " -> " << si->second << endl;
 			}
 
-			instrs.insert(pair<string, instruction*>(expr, new block(eval, types, global, guardresult, tab+"\t", verbosity)));
+			instrs.insert(pair<string, instruction*>(expr, new block(uid + nid++, eval, types, global, guardresult, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}

@@ -168,5 +168,5 @@ void process::parse(string raw, map<string, keyword*> types, map<string, variabl
 		}
 	}
 
-	def.parse(def_block, types, global,  map<string, state>(), "\t", verbosity);
+	def.parse("", def_block, types, global,  map<string, state>(), "\t", verbosity);
 }

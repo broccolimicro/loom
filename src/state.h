@@ -19,6 +19,7 @@
 struct state
 {
 	state();
+	state(string d);
 	state(string d, bool p);
 	~state();
 

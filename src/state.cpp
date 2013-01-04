@@ -15,6 +15,12 @@ state::state()
 	prs = false;
 }
 
+state::state(string d)
+{
+	data = d;
+	prs = true;
+}
+
 state::state(string d, bool p)
 {
 	data = d;
@@ -36,11 +42,11 @@ state &state::operator=(state s)
 
 state &state::operator=(string s)
 {
-	if (s[0] == 'o')
-		prs = true;
-	else
+	if (s[0] == 'i')
 		prs = false;
-	data = s.substr(1);
+	else
+		prs = true;
+	data = s.substr(s[0] == 'o' || s[0] == 'i' ? 1 : 0);
 
 	return *this;
 }

@@ -27,7 +27,7 @@
 struct block : instruction
 {
 	block();
-	block(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity);
+	block(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity);
 	~block();
 
 	map<string, variable*>	local;
@@ -39,11 +39,16 @@ struct block : instruction
 
 	block &operator=(block b);
 
-	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity);
+	void parse(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity);
 	void clear();
 };
 
-list<rule> production_rule(map<string, space>	states, map<string, variable*> global, string tab, int verbosity);
-list<int> state_variable(space left, space right, string tab, int verbosity);
+bool cycle(space start, space end, list<rule> prs);
+list<rule> production_rule(list<instruction*> instrs, map<string, space> states, string tab, int verbosity);
+
+size_t search_back(string s, size_t offset);
+size_t search_front(string s, size_t offset);
+list<size_t> state_variable_positions(space left, space right, string tab, int verbosity);
+bool production_rule_check(string *raw, block *b, string tab, int verbosity);
 
 #endif

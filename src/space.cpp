@@ -22,6 +22,18 @@ space::space(string v, list<state> s)
 	states = s;
 }
 
+space::space(string v, string s)
+{
+	var = v;
+	states.push_back(state(s, true));
+}
+
+space::space(string s)
+{
+	var = s;
+	states.push_back(state(s, true));
+}
+
 space::~space()
 {
 	var = "";
@@ -173,12 +185,12 @@ space operator+(space s1, space s2)
 	state a, b;
 	space result;
 
-	result.var = s1.var + " + " + s2.var;
+	result.var = s1.var + "+" + s2.var;
 
 	for (j = s1.states.begin(), k = s2.states.begin(); j != s1.states.end() || k != s2.states.end();)
 	{
-		a = j != s1.states.end() ? *j++ : state("0", false);
-		b = k != s2.states.end() ? *k++ : state("0", false);
+		a = j != s1.states.end() ? *j++ : s1.states.back();
+		b = k != s2.states.end() ? *k++ : s2.states.back();
 
 		result.states.push_back(a + b);
 	}
@@ -192,12 +204,12 @@ space operator-(space s1, space s2)
 	state a, b;
 	space result;
 
-	result.var = s1.var + " - " + s2.var;
+	result.var = s1.var + "-" + s2.var;
 
 	for (j = s1.states.begin(), k = s2.states.begin(); j != s1.states.end() || k != s2.states.end();)
 	{
-		a = j != s1.states.end() ? *j++ : state("0", false);
-		b = k != s2.states.end() ? *k++ : state("0", false);
+		a = j != s1.states.end() ? *j++ : s1.states.back();
+		b = k != s2.states.end() ? *k++ : s2.states.back();
 
 		result.states.push_back(a - b);
 	}
@@ -211,12 +223,12 @@ space operator*(space s1, space s2)
 	state a, b;
 	space result;
 
-	result.var = s1.var + " * " + s2.var;
+	result.var = s1.var + "*" + s2.var;
 
 	for (j = s1.states.begin(), k = s2.states.begin(); j != s1.states.end() || k != s2.states.end();)
 	{
-		a = j != s1.states.end() ? *j++ : state("0", false);
-		b = k != s2.states.end() ? *k++ : state("0", false);
+		a = j != s1.states.end() ? *j++ : s1.states.back();
+		b = k != s2.states.end() ? *k++ : s2.states.back();
 
 		result.states.push_back(a * b);
 	}
@@ -230,12 +242,12 @@ space operator/(space s1, space s2)
 	state a, b;
 	space result;
 
-	result.var = s1.var + " / " + s2.var;
+	result.var = s1.var + "/" + s2.var;
 
 	for (j = s1.states.begin(), k = s2.states.begin(); j != s1.states.end() || k != s2.states.end();)
 	{
-		a = j != s1.states.end() ? *j++ : state("0", false);
-		b = k != s2.states.end() ? *k++ : state("0", false);
+		a = j != s1.states.end() ? *j++ : s1.states.back();
+		b = k != s2.states.end() ? *k++ : s2.states.back();
 
 		result.states.push_back(a / b);
 	}
@@ -249,7 +261,7 @@ space operator+(space s1, state s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.var + " + " + s2.data;
+	result.var =  s1.var + "+" + s2.data;
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 		result.states.push_back(*i + s2);
 
@@ -261,7 +273,7 @@ space operator-(space s1, state s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.var + " - " + s2.data;
+	result.var =  s1.var + "-" + s2.data;
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 		result.states.push_back(*i - s2);
 
@@ -273,7 +285,7 @@ space operator*(space s1, state s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.var + " * " + s2.data;
+	result.var =  s1.var + "*" + s2.data;
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 		result.states.push_back(*i * s2);
 
@@ -285,7 +297,7 @@ space operator/(space s1, state s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.var + " / " + s2.data;
+	result.var =  s1.var + "/" + s2.data;
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 		result.states.push_back(*i / s2);
 
@@ -297,7 +309,7 @@ space operator+(state s1, space s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.data + " + " + s2.var;
+	result.var =  s1.data + "+" + s2.var;
 	for (i = s2.states.begin(); i != s2.states.end(); i++)
 		result.states.push_back(s1 + *i);
 
@@ -309,7 +321,7 @@ space operator-(state s1, space s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.data + " - " + s2.var;
+	result.var =  s1.data + "-" + s2.var;
 	for (i = s2.states.begin(); i != s2.states.end(); i++)
 		result.states.push_back(s1 - *i);
 
@@ -321,7 +333,7 @@ space operator*(state s1, space s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.data + " * " + s2.var;
+	result.var =  s1.data + "*" + s2.var;
 	for (i = s2.states.begin(); i != s2.states.end(); i++)
 		result.states.push_back(s1 * *i);
 
@@ -333,7 +345,7 @@ space operator/(state s1, space s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.data + " / " + s2.var;
+	result.var =  s1.data + "/" + s2.var;
 	for (i = s2.states.begin(); i != s2.states.end(); i++)
 		result.states.push_back(s1 / *i);
 
@@ -358,12 +370,12 @@ space operator&(space s1, space s2)
 	state a, b;
 	space result;
 
-	result.var = s1.var + " & " + s2.var;
+	result.var = s1.var + "&" + s2.var;
 
 	for (j = s1.states.begin(), k = s2.states.begin(); j != s1.states.end() || k != s2.states.end();)
 	{
-		a = j != s1.states.end() ? *j++ : state("0", false);
-		b = k != s2.states.end() ? *k++ : state("0", false);
+		a = j != s1.states.end() ? *j++ : s1.states.back();
+		b = k != s2.states.end() ? *k++ : s2.states.back();
 
 		result.states.push_back(a & b);
 	}
@@ -377,12 +389,12 @@ space operator|(space s1, space s2)
 	state a, b;
 	space result;
 
-	result.var = s1.var + " | " + s2.var;
+	result.var = s1.var + "|" + s2.var;
 
 	for (j = s1.states.begin(), k = s2.states.begin(); j != s1.states.end() || k != s2.states.end();)
 	{
-		a = j != s1.states.end() ? *j++ : state("0", false);
-		b = k != s2.states.end() ? *k++ : state("0", false);
+		a = j != s1.states.end() ? *j++ : s1.states.back();
+		b = k != s2.states.end() ? *k++ : s2.states.back();
 
 		result.states.push_back(a | b);
 	}
@@ -395,7 +407,7 @@ space operator&(space s1, state s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.var + " & " + s2.data;
+	result.var =  s1.var + "&" + s2.data;
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 		result.states.push_back(*i & s2);
 
@@ -407,7 +419,7 @@ space operator|(space s1, state s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.var + " | " + s2.data;
+	result.var =  s1.var + "|" + s2.data;
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 		result.states.push_back(*i | s2);
 
@@ -419,7 +431,7 @@ space operator&(state s1, space s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.data + " & " + s2.var;
+	result.var =  s1.data + "&" + s2.var;
 	for (i = s2.states.begin(); i != s2.states.end(); i++)
 		result.states.push_back(s1 & *i);
 
@@ -431,7 +443,7 @@ space operator|(state s1, space s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.data + " | " + s2.var;
+	result.var =  s1.data + "|" + s2.var;
 	for (i = s2.states.begin(); i != s2.states.end(); i++)
 		result.states.push_back(s1 | *i);
 
@@ -452,24 +464,38 @@ space operator~(space s)
 
 space operator<<(space s1, space s2)
 {
+	list<state>::iterator j, k;
+	state a, b;
 	space result;
-	list<state>::iterator i, j;
 
-	result.var = s1.var + " << " + s2.var;
-	for (i = s1.states.begin(), j = s2.states.begin(); i != s1.states.end() && j != s2.states.end(); i++, j++)
-		result.states.push_back(*i << *j);
+	result.var = s1.var + "<<" + s2.var;
+
+	for (j = s1.states.begin(), k = s2.states.begin(); j != s1.states.end() || k != s2.states.end();)
+	{
+		a = j != s1.states.end() ? *j++ : s1.states.back();
+		b = k != s2.states.end() ? *k++ : s2.states.back();
+
+		result.states.push_back(a << b);
+	}
 
 	return result;
 }
 
 space operator>>(space s1, space s2)
 {
+	list<state>::iterator j, k;
+	state a, b;
 	space result;
-	list<state>::iterator i, j;
 
-	result.var = s1.var + " >> " + s2.var;
-	for (i = s1.states.begin(), j = s2.states.begin(); i != s1.states.end() && j != s2.states.end(); i++, j++)
-		result.states.push_back(*i >> *j);
+	result.var = s1.var + ">>" + s2.var;
+
+	for (j = s1.states.begin(), k = s2.states.begin(); j != s1.states.end() || k != s2.states.end();)
+	{
+		a = j != s1.states.end() ? *j++ : s1.states.back();
+		b = k != s2.states.end() ? *k++ : s2.states.back();
+
+		result.states.push_back(a >> b);
+	}
 
 	return result;
 }
@@ -479,7 +505,7 @@ space operator<<(space s1, state s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var = s1.var + " << " + s2.data;
+	result.var = s1.var + "<<" + s2.data;
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 		result.states.push_back(*i << s2);
 
@@ -491,7 +517,7 @@ space operator>>(space s1, state s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var = s1.var + " >> " + s2.data;
+	result.var = s1.var + ">>" + s2.data;
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 		result.states.push_back(*i >> s2);
 
@@ -503,7 +529,7 @@ space operator<<(state s1, space s2)
 	space result;
 	list<state>::iterator i, j;
 
-	result.var = s1.data + " << " + s2.var;
+	result.var = s1.data + "<<" + s2.var;
 	for (i = s2.states.begin(); i != s2.states.end(); i++)
 		result.states.push_back(s1 << *i);
 
@@ -515,7 +541,7 @@ space operator>>(state s1, space s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var = s1.data + " >> " + s2.var;
+	result.var = s1.data + ">>" + s2.var;
 	for (i = s2.states.begin(); i != s2.states.end(); i++)
 		result.states.push_back(s1 >> *i);
 
@@ -527,7 +553,7 @@ space operator<<(space s, int n)
 	space result;
 	list<state>::iterator i;
 
-	result.var = s.var + " << " + to_string(n);
+	result.var = s.var + "<<" + to_string(n);
 	for (i = s.states.begin(); i != s.states.end(); i++)
 		result.states.push_back(*i << n);
 
@@ -539,7 +565,7 @@ space operator>>(space s, int n)
 	space result;
 	list<state>::iterator i;
 
-	result.var = s.var + " >> " + to_string(n);
+	result.var = s.var + ">>" + to_string(n);
 	for (i = s.states.begin(); i != s.states.end(); i++)
 		result.states.push_back(*i >> n);
 
@@ -566,12 +592,12 @@ space operator==(space s1, space s2)
 	state a, b;
 	space result;
 
-	result.var = s1.var + " == " + s2.var;
+	result.var = s1.var + "==" + s2.var;
 
 	for (j = s1.states.begin(), k = s2.states.begin(); j != s1.states.end() || k != s2.states.end();)
 	{
-		a = j != s1.states.end() ? *j++ : state("0", false);
-		b = k != s2.states.end() ? *k++ : state("0", false);
+		a = j != s1.states.end() ? *j++ : s1.states.back();
+		b = k != s2.states.end() ? *k++ : s2.states.back();
 
 		result.states.push_back(a == b);
 	}
@@ -585,12 +611,12 @@ space operator!=(space s1, space s2)
 	state a, b;
 	space result;
 
-	result.var = s1.var + " ~= " + s2.var;
+	result.var = s1.var + "~=" + s2.var;
 
 	for (j = s1.states.begin(), k = s2.states.begin(); j != s1.states.end() || k != s2.states.end();)
 	{
-		a = j != s1.states.end() ? *j++ : state("0", false);
-		b = k != s2.states.end() ? *k++ : state("0", false);
+		a = j != s1.states.end() ? *j++ : s1.states.back();
+		b = k != s2.states.end() ? *k++ : s2.states.back();
 
 		result.states.push_back(a != b);
 	}
@@ -604,12 +630,12 @@ space operator<=(space s1, space s2)
 	state a, b;
 	space result;
 
-	result.var = s1.var + " <= " + s2.var;
+	result.var = s1.var + "<=" + s2.var;
 
 	for (j = s1.states.begin(), k = s2.states.begin(); j != s1.states.end() || k != s2.states.end();)
 	{
-		a = j != s1.states.end() ? *j++ : state("0", false);
-		b = k != s2.states.end() ? *k++ : state("0", false);
+		a = j != s1.states.end() ? *j++ : s1.states.back();
+		b = k != s2.states.end() ? *k++ : s2.states.back();
 
 		result.states.push_back(a <= b);
 	}
@@ -623,12 +649,12 @@ space operator>=(space s1, space s2)
 	state a, b;
 	space result;
 
-	result.var = s1.var + " >= " + s2.var;
+	result.var = s1.var + ">=" + s2.var;
 
 	for (j = s1.states.begin(), k = s2.states.begin(); j != s1.states.end() || k != s2.states.end();)
 	{
-		a = j != s1.states.end() ? *j++ : state("0", false);
-		b = k != s2.states.end() ? *k++ : state("0", false);
+		a = j != s1.states.end() ? *j++ : s1.states.back();
+		b = k != s2.states.end() ? *k++ : s2.states.back();
 
 		result.states.push_back(a >= b);
 	}
@@ -642,12 +668,12 @@ space operator<(space s1, space s2)
 	state a, b;
 	space result;
 
-	result.var = s1.var + " < " + s2.var;
+	result.var = s1.var + "<" + s2.var;
 
 	for (j = s1.states.begin(), k = s2.states.begin(); j != s1.states.end() || k != s2.states.end();)
 	{
-		a = j != s1.states.end() ? *j++ : state("0", false);
-		b = k != s2.states.end() ? *k++ : state("0", false);
+		a = j != s1.states.end() ? *j++ : s1.states.back();
+		b = k != s2.states.end() ? *k++ : s2.states.back();
 
 		result.states.push_back(a < b);
 	}
@@ -661,12 +687,12 @@ space operator>(space s1, space s2)
 	state a, b;
 	space result;
 
-	result.var = s1.var + " > " + s2.var;
+	result.var = s1.var + ">" + s2.var;
 
 	for (j = s1.states.begin(), k = s2.states.begin(); j != s1.states.end() || k != s2.states.end();)
 	{
-		a = j != s1.states.end() ? *j++ : state("0", false);
-		b = k != s2.states.end() ? *k++ : state("0", false);
+		a = j != s1.states.end() ? *j++ : s1.states.back();
+		b = k != s2.states.end() ? *k++ : s2.states.back();
 
 		result.states.push_back(a > b);
 	}
@@ -679,7 +705,7 @@ space operator==(space s1, state s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.var + " == " + s2.data;
+	result.var =  s1.var + "==" + s2.data;
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 		result.states.push_back(*i == s2);
 
@@ -691,7 +717,7 @@ space operator!=(space s1, state s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.var + " ~= " + s2.data;
+	result.var =  s1.var + "~=" + s2.data;
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 		result.states.push_back(*i != s2);
 
@@ -703,7 +729,7 @@ space operator<=(space s1, state s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.var + " <= " + s2.data;
+	result.var =  s1.var + "<=" + s2.data;
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 		result.states.push_back(*i <= s2);
 
@@ -715,7 +741,7 @@ space operator>=(space s1, state s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.var + " >= " + s2.data;
+	result.var =  s1.var + ">=" + s2.data;
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 		result.states.push_back(*i >= s2);
 
@@ -727,7 +753,7 @@ space operator<(space s1, state s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.var + " < " + s2.data;
+	result.var =  s1.var + "<" + s2.data;
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 		result.states.push_back(*i < s2);
 
@@ -739,7 +765,7 @@ space operator>(space s1, state s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.var + " > " + s2.data;
+	result.var =  s1.var + ">" + s2.data;
 	for (i = s1.states.begin(); i != s1.states.end(); i++)
 		result.states.push_back(*i > s2);
 
@@ -751,7 +777,7 @@ space operator==(state s1, space s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.data + " == " + s2.var;
+	result.var =  s1.data + "==" + s2.var;
 	for (i = s2.states.begin(); i != s2.states.end(); i++)
 		result.states.push_back(s1 == *i);
 
@@ -763,7 +789,7 @@ space operator!=(state s1, space s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.data + " ~= " + s2.var;
+	result.var =  s1.data + "~=" + s2.var;
 	for (i = s2.states.begin(); i != s2.states.end(); i++)
 		result.states.push_back(s1 != *i);
 
@@ -775,7 +801,7 @@ space operator<=(state s1, space s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.data + " <= " + s2.var;
+	result.var =  s1.data + "<=" + s2.var;
 	for (i = s2.states.begin(); i != s2.states.end(); i++)
 		result.states.push_back(s1 <= *i);
 
@@ -787,7 +813,7 @@ space operator>=(state s1, space s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.data + " >= " + s2.var;
+	result.var =  s1.data + ">=" + s2.var;
 	for (i = s2.states.begin(); i != s2.states.end(); i++)
 		result.states.push_back(s1 >= *i);
 
@@ -799,7 +825,7 @@ space operator<(state s1, space s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.data + " < " + s2.var;
+	result.var =  s1.data + "<" + s2.var;
 	for (i = s2.states.begin(); i != s2.states.end(); i++)
 		result.states.push_back(s1 < *i);
 
@@ -811,7 +837,7 @@ space operator>(state s1, space s2)
 	space result;
 	list<state>::iterator i;
 
-	result.var =  s1.data + " > " + s2.var;
+	result.var =  s1.data + ">" + s2.var;
 	for (i = s2.states.begin(); i != s2.states.end(); i++)
 		result.states.push_back(s1 > *i);
 

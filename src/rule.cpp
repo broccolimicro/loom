@@ -44,6 +44,20 @@ void rule::clear(int n)
 	right.var = "";
 }
 
+/* This function returns the nth necessary firing of a production rule.
+ *
+ */
+int rule::index(int n)
+{
+	list<state>::iterator i;
+	int j;
+	for (i = right.states.begin(), j = 0; i != right.states.end() && n > 0; i++, j++)
+		if (i->data == "1" && i->prs)
+			n--;
+
+	return j;
+}
+
 ostream &operator<<(ostream &os, rule r)
 {
 	list<state>::iterator i;
@@ -51,4 +65,9 @@ ostream &operator<<(ostream &os, rule r)
     os << r.left << " -> " << r.right;
 
     return os;
+}
+
+rule simplify(rule r, map<string, space> states)
+{
+	return r;
 }

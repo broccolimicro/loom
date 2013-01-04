@@ -22,6 +22,8 @@ struct space
 {
 	space();
 	space(string v, list<state> s);
+	space(string v, string s);
+	space(string s);
 	~space();
 
 	string			var;

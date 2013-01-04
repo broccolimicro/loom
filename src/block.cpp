@@ -20,10 +20,10 @@ block::block()
 	chp = "";
 	_kind = "block";
 }
-block::block(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
+block::block(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
 {
 	_kind = "block";
-	parse(raw, types, vars, init, tab, verbosity);
+	parse(id, raw, types, vars, init, tab, verbosity);
 }
 block::~block()
 {
@@ -59,7 +59,7 @@ block &block::operator=(block b)
 	return *this;
 }
 
-void block::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
+void block::parse(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
 {
 	clear();
 
@@ -68,6 +68,9 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 
 	global = vars;
 	chp = raw;
+	uid = id;
+
+	char nid = 'a';
 
 	string		raw_instr;	// chp of a sub block
 
@@ -98,6 +101,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 	map<string, string>					prgm_protocol;
 	map<string, string>		::iterator	proti;
 	map<string, size_t>		::iterator	pi;
+	list<rule>				::iterator	ri;
 	list<size_t>			::iterator  pj;
 
 	size_t								k, p, n;
@@ -147,16 +151,16 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 			instr = NULL;
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (para)
-				instr = new parallel(raw_instr, types, global, current_state, tab+"\t", verbosity);
+				instr = new parallel(uid + nid++, raw_instr, types, global, current_state, tab+"\t", verbosity);
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
-				instr = new block(raw_instr.substr(1, raw_instr.length()-2), types, global, current_state, tab+"\t", verbosity);
+				instr = new block(uid + nid++, raw_instr.substr(1, raw_instr.length()-2), types, global, current_state, tab+"\t", verbosity);
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new loop(raw_instr, types, global, current_state, tab+"\t", verbosity);
+				instr = new loop(uid + nid++, raw_instr, types, global, current_state, tab+"\t", verbosity);
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new conditional(raw_instr, types, global, current_state, tab+"\t", verbosity);
+				instr = new conditional(uid + nid++, raw_instr, types, global, current_state, tab+"\t", verbosity);
 			// This sub block is either a variable definition or an assignment instruction.
 			else
 			{
@@ -177,7 +181,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				}
 				// This sub block is an assignment instruction.
 				else if (raw_instr.length() != 0)
-					instr = new instruction(raw_instr, types, global, current_state, tab+"\t", verbosity);
+					instr = new instruction(uid + nid++, raw_instr, types, global, current_state, tab+"\t", verbosity);
 			}
 
 			// Make sure that this wasn't a variable declaration (they don't affect the state space).
@@ -224,24 +228,27 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				// communication protocol.
 				for(vi = affected.begin(); vi != affected.end(); vi++)
 				{
+					si = states.find(vi->first);
+
 					// If this is the first time we have seen this variable
 					// in the state space, then we need to bring it up to speed.
 					if (states.find(vi->first) == states.end())
 					{
 						states.insert(pair<string, space>(vi->first, space(vi->first, list<state>())));
+						si = states.find(vi->first);
 						// If this variable is in the init list, then we have it's initial value.
 						if ((l = init.find(vi->first)) != init.end())
-							states[vi->first].states.push_back(l->second);
+							((space&)si->second).states.push_back(l->second);
 						// Otherwise, use this variable's reset value.
 						else
-							states[vi->first].states.push_back(vi->second->reset);
+							((space&)si->second).states.push_back(vi->second->reset);
 					}
 
 					// Now we need to fill in the rest of the state space. Loop through the instructions.
 					for (ii = instrs.begin(), di = delta_out.begin(), k = 0; ii != instrs.end() && di != delta_out.end(); ii++, di++, k++)
 					{
 						// We only need to generate states if we haven't already
-						if (k >= states[vi->first].states.size()-1)
+						if (k >= ((space&)si->second).states.size()-1)
 						{
 							// Get the variable and its new value as affected by this instruction
 							l = (*ii)->result.find(vi->first);
@@ -314,8 +321,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 								proti = prgm_protocol.find(vj->second->name);
 
 								if (l != (*ii)->result.end() && l->second.data != "NA")
-									states[vi->first].states.push_back(l->second);
-								else if (di->size() > 0 && !states[vi->first].states.rbegin()->prs)
+									((space&)si->second).states.push_back(l->second);
+								else if (di->size() > 0 && !((space&)si->second).states.rbegin()->prs)
 								{
 									if (verbosity >= VERB_TRACE)
 										cout << tab << "Maybe X Out " << vi->first << " " << (*ii)->chp << endl;
@@ -346,27 +353,27 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 												m = xi->find(vi->first.substr(vi->first.find_first_of(".")+1));
 												if (m != xi->end())
 												{
-													tstate = *(states[vi->first].states.rbegin()) || m->second;
-													tstate.prs = states[vi->first].states.rbegin()->prs;
-													states[vi->first].states.push_back(tstate);
+													tstate = *(((space&)si->second).states.rbegin()) || m->second;
+													tstate.prs = ((space&)si->second).states.rbegin()->prs;
+													((space&)si->second).states.push_back(tstate);
 												}
 												else
-													states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+													((space&)si->second).states.push_back(((space&)si->second).states.back());
 											}
 											else
-												states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+												((space&)si->second).states.push_back(*(((space&)si->second).states.rbegin()));
 										}
 										else
-											states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+											((space&)si->second).states.push_back(*(((space&)si->second).states.rbegin()));
 									}
 									else
-										states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+										((space&)si->second).states.push_back(*(((space&)si->second).states.rbegin()));
 								}
 								// there is no delta in the output variables or this is an output variable
 								else
-									states[vi->first].states.push_back(*(states[vi->first].states.rbegin()));
+									((space&)si->second).states.push_back(((space&)si->second).states.back());
 
-								current_state[vi->first] = *states[vi->first].states.rbegin();
+								current_state[vi->first] = ((space&)si->second).states.back();
 							}
 							else
 								cout << "Error: Something is royally fucked up." << endl;
@@ -387,8 +394,8 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 						if ((si = states.find(vi->first)) != states.end())
 						{
 							first = true;
-							for (ik = 0, a = (si->second).states.begin(); waits.size() > 0 && ik <= (*waits.rbegin()) && a != (si->second).states.end(); ik++, a++);
-							for (; ((instr->kind() != "conditional" && i == chp.end()) || ik <= ij) && a != (si->second).states.end(); ik++, a++)
+							for (ik = 0, a = ((space&)si->second).states.begin(); waits.size() > 0 && ik <= (*waits.rbegin()) && a != ((space&)si->second).states.end(); ik++, a++);
+							for (; ((instr->kind() != "conditional" && i == chp.end()) || ik <= ij) && a != ((space&)si->second).states.end(); ik++, a++)
 							{
 								tstate = first ? *a : tstate || *a;
 
@@ -423,15 +430,15 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		si = states.find(vi->first);
 		if (l != changes.begin()->end() && si != states.end())
 		{
-			l->second = l->second || (*si->second.states.rbegin());
+			l->second = l->second || (*((space&)si->second).states.rbegin());
 			change_state.insert(pair<string, state>(vi->first, l->second));
 		}
 		else if (l != changes.begin()->end())
 			change_state.insert(pair<string, state>(vi->first, l->second));
 		else if (si != states.end())
 		{
-			changes.begin()->insert(pair<string, state>(vi->first, *si->second.states.rbegin()));
-			change_state.insert(pair<string, state>(vi->first, *si->second.states.rbegin()));
+			changes.begin()->insert(pair<string, state>(vi->first, *((space&)si->second).states.rbegin()));
+			change_state.insert(pair<string, state>(vi->first, *((space&)si->second).states.rbegin()));
 		}
 	}
 	changes.push_back(change_state);
@@ -446,7 +453,7 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		if (verbosity >= VERB_STATES)
 			cout << tab << si->second << endl;
 		if (local.find(si->first) == local.end())
-			result.insert(pair<string, state>(si->first, *(si->second.states.rbegin())));
+			result.insert(pair<string, state>(si->first, *(((space&)si->second).states.rbegin())));
 	}
 
 	if (verbosity >= VERB_STATES)
@@ -475,77 +482,9 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 		cout << endl;
 	}
 
-	rules = production_rule(states, global, tab, verbosity);
+	rules = production_rule(instrs, states, tab, verbosity);
 
-	/* At this point, block has a set of candidate rules. Check to see if those rules fire at the
-	 * appropriate times. If not, add state variables and reparse. */
-
-	list<rule>::iterator ri;
-	list<int> state_locations; 	//See state_variable's return for details of how this is being used.
-	list<int>::iterator li;
-	list<int> temp;
-
-	//Loop through all produced rules run state_locations to get a list of indexes to insert state vars.
-	for (ri = rules.begin(); ri != rules.end(); ri++)
-	{
-		temp = state_variable(ri->left, ri->right, tab, verbosity);
-		state_locations.merge(temp);
-	}
-
-	//If there are multiple production rules asking for a state variable to be inserted at a particular
-	//index, we only need to insert a single state variable. Sort and unique provides a clean list.
-	state_locations.sort();
-	state_locations.unique();
-
-	int highest_state_name = 0;				// Used for finding a unique name for the state variable
-	int how_many_added = 0;					// How many instructions have we added?
-	int how_many_inserted = 0;				// How many instructions have been inserted?
-	list<pair<string,int> > to_insertl;
-
-	//Loop through our list of desired state variable insertion indices.
-	for (li = state_locations.begin(); li != state_locations.end(); li++)
-	{
-		//Find the lowest variable name not in globals (no name conflicts)
-		highest_state_name = 0;
-		while (global.find("sv" + to_string(highest_state_name)) != global.end())
-			highest_state_name++;
-
-		//Create a new variable with the unique name.
-		v = new variable("int<1>sv" + to_string(highest_state_name), tab, verbosity);
-		//Add to globals
-		global.insert(pair<string, variable*>(v->name, v));
-		//Add to locals
-		local.insert(pair<string, variable*>(v->name, v));
-
-		//Insert the state variable declaration and state variable transition
-		to_insertl.push_back(pair<string,int>(v->name+":=1",*li));
-		raw = "int<1>" + v->name + ":=0;" + v->name + ":=0;" + raw;
-		how_many_added+=2;
-	}
-
-	list<pair<string,int> >::iterator instr_adderl;
-	//Add leading and tailing semicolon to assist instruction counting
-	raw = ";" +raw+";";
-	//For every instruction we are to insert into the instruction stream...
-	for(instr_adderl = to_insertl.begin(); instr_adderl != to_insertl.end();instr_adderl++)
-	{
-		int insertion_location = 0;
-		//Loop through to find the semicolon at which we want to insert the current state variable
-		//Note that the offset of how_many_added/inserted is required as the instruction size of
-		//the instruction stream grows as instructions are added.
-		for(int counter = 0; counter < (instr_adderl->second+how_many_inserted+how_many_added); counter++)
-			insertion_location = raw.find(";",insertion_location+1);
-		if (insertion_location < 0)
-			cout << "Error: State variable insertion failed. " << endl;
-		else
-		{
-			raw = raw.substr(0, insertion_location+1) + instr_adderl->first + ";" + raw.substr(insertion_location+1);
-			how_many_inserted++;
-		}
-	}
-
-	//If we added a state variable...
-	if (how_many_added > 0)
+	if (!production_rule_check(&raw, this, tab, verbosity))
 	{
 		//Now that we have the corrected instruction stream, rerun parse!
 		if (verbosity >= VERB_STATEVAR)
@@ -556,10 +495,9 @@ void block::parse(string raw, map<string, keyword*> types, map<string, variable*
 				cout << endl;
 		}
 
-		raw = raw.substr(1,raw.end()-raw.begin() - 2);
 		if (verbosity >= VERB_STATEVAR)
 			cout << tab << "=============Reparse=============" << endl;		//Let the user know we are trashing the above block.
-		parse(raw, types, vars, init, tab, verbosity);
+		parse(id, raw, types, vars, init, tab, verbosity);
 	}
 	else
 	{
@@ -612,6 +550,21 @@ void block::clear()
 	rules.clear();
 }
 
+bool cycle(rule start, rule end, list<rule> *prs)
+{
+	list<rule>::iterator ri;
+
+	bool result = false;
+	if (end.left.var.find(start.right.var.substr(0, start.right.var.length()-1)) != end.left.var.npos)
+		result = true;
+	else
+		for (ri = prs->begin(); ri != prs->end(); ri++)
+			if (end.left.var.find(ri->right.var.substr(0, ri->right.var.length() - 1)) != end.left.var.npos)
+				result = result || cycle(start, *ri, prs);
+
+	return result;
+}
+
 /* This function generates a set of production rules for the given state space and variable space.
  * It uses two primary measurements to help with this: the count, and the strict count. The count
  * is the number of states in a state space that are in the set {1, X}. The strict count is the number
@@ -623,252 +576,47 @@ void block::clear()
  *
  * TODO The handshaking reshuffling algorithm has not yet been completed.
  */
-list<rule> production_rule(map<string, space> states, map<string, variable*> global, string tab, int verbosity)
+list<rule> production_rule(list<instruction*> instrs, map<string, space> states, string tab, int verbosity)
 {
-	// Generate the production rules
-	map<string, space>				invars;
-	map<string, space>::iterator	si, sj;
-	int bi0, bi1, o;
-	int scount, ccount;
-	int mscount, mcount;
-	space tempspace, setspace;
-	string invar;
-	rule r, f;
-	list<rule> rules;
-	bool first, found;
+	list<rule> prs;
+	list<instruction*>::iterator ii;
+	list<rule>::iterator ri, rj;
+	map<string, space>::iterator si;
+	string v;
+	rule r;
 
-	// Iterate through the given spaces variable by variable.
-	for (si = states.begin(); si != states.end(); si++)
+	for (ii = instrs.begin(); ii != instrs.end(); ii++)
 	{
-		// Expand multibit variables into their single bit constituents
-		for (bi0 = 0; bi0 < global.find(si->first)->second->width; bi0++)
+		for (ri = (*ii)->rules.begin(); ri != (*ii)->rules.end(); ri++)
 		{
-			// First we will generate the pull up network for this variable.
-			// This function call generates the desired state space for this
-			// network.
-			f.right = up(si->second[bi0]);
-			if (verbosity >= VERB_PRSALG)
+			for (rj = prs.begin(); rj != prs.end() && rj->right.var != ri->right.var; rj++);
+
+			v = ri->right.var.substr(0, ri->right.var.length()-1);
+			si = states.find(v);
+			if (rj == prs.end() && si != states.end())
 			{
-				cout << tab << "================Production Rule================" << endl;
-				cout << tab << "+++++++++++++++++++++++++++++++++++++++++++++++" << endl;
-				cout << tab << f.right << "\t" << count(f.right) << "\t" << strict_count(f.right) << endl;
-			}
-			// Loop through all transitions from {0,X} to {1} in this desired
-			// pull up network state space. We will generate a set of ANDed signal
-			// to represent each transition, then OR these sets together to get the
-			// full desired state space.
-			for (o = 0; o < delta_count(f.right); o++)
-			{
-				// Get the o'th transition from the desired state space.
-				// This sets up the temporary rule to only cover one transition.
-				r.clear((si->second).states.size());
-				r.right = up(si->second[bi0], o);
-
-				// Get the strict count and the inverse count
-				// of this temporary rule. These two numbers
-				// represent the best we can do.
-				mscount = strict_count(r.right);
-				mcount = r.right.states.size() - count(r.right);
-
-				// Fill our list of usable variables, and expand multibit variables.
-				invars.clear();
-				for (sj = states.begin(); sj != states.end(); sj++)
-					for (bi1 = 0; bi1 < global.find(sj->first)->second->width; bi1++)
-						if (sj != si || bi0 != bi1)
-							invars.insert(pair<string, space>(sj->first + to_string(bi1), sj->second[bi1]));
-
-				first = true;
-				found = true;
-				// Keep iterating while there is still a way to narrow our actual state space
-				// toward the desired state space.
-				while (invars.size() > 0 && found && count(r.left) > count(r.right))
-				{
-					if (verbosity >= VERB_PRSALG)
-						cout << tab << "...................Iteration..................." << endl;
-					setspace = r.left;
-
-					// Loop through our list of, now, one bit variables
-					// to see which one will narrow our actual state space
-					// the most.
-					found = false;
-					for (sj = invars.begin(); sj != invars.end(); sj++)
-					{
-						// We will need to test this variable twice at two
-						// different orientations. x and ~x
-
-						// This first case examines x
-
-						// If this is our first variable constraint, then
-						// we shouldn't AND it in since there is nothing
-						// to AND it with.
-						if (first)
-							tempspace = sj->second;
-						else
-							tempspace = r.left & sj->second;
-
-						// Get the new strict count and inverse count.
-						// These metrics allow us to directly compare constraints
-						// and find the narrowest constraint.
-						scount = strict_count(r.right & tempspace);
-						ccount = count(tempspace) - count(r.right & tempspace);
-
-						// Compare these new counts to the min count
-						if (ccount < mcount && scount >= mscount && r.left.var.find(tempspace.var) == r.left.var.npos)
-						{
-							setspace = tempspace;
-							invar = sj->first;
-							mcount = ccount;
-							mscount = scount;
-						}
-
-						if (verbosity >= VERB_PRSALG)
-							cout << tab << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
-
-						// This second case examines ~x
-						// See above for a description of each piece.
-
-						if (first)
-							tempspace = ~sj->second;
-						else
-							tempspace = r.left & (~sj->second);
-
-						scount = strict_count(r.right & tempspace);
-						ccount = count(tempspace) - count(r.right & tempspace);
-
-						if (ccount < mcount && scount >= mscount && r.left.var.find(tempspace.var) == r.left.var.npos)
-						{
-							setspace = tempspace;
-							invar = sj->first;
-							mcount = ccount;
-							mscount = scount;
-						}
-
-						if (verbosity >= VERB_PRSALG)
-							cout << tab << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
-					}
-
-					// If we found a variable that narrows the actual state
-					// space down, then remove that variable from our variable
-					// list and continue iterating.
-					if (r.left.var.find(setspace.var) == r.left.var.npos)
-					{
-						r.left = setspace;
-						invars.erase(invar);
-						first = false;
-						found = true;
-					}
-				}
-
-				// Now that we have generated a new set of
-				// ANDed variables, we need to OR it into
-				// the final production rule.
-				if (o == 0)
-					f = r;
+				cout << ri->left << " -> " << ri->right << endl;
+				r.clear(0);
+				r.left = expression(ri->left.var, states, tab+"\t", verbosity);
+				if (ri->right.var.substr(ri->right.var.length()-1) == "+")
+					r.right = up((space&)si->second);
 				else
-					f.left = f.left | r.left;
+					r.right = down((space&)si->second);
+
+				cout << "\t" << r << endl;
+
+				// TODO Im not sure if checking against the strict count right now is correct.
+				if (strict_count(r.right) > 0)
+					prs.push_back(r);
 			}
-
-			// If there were invacuous firings, then we
-			// need to push the newly generated rule to the list.
-			if (delta_count(f.right) > 0)
-				rules.push_back(f);
-
-
-			// Now we will generate the pull down network for this variable.
-			// This function call generates the desired state space for this
-			// network. See above for a description of each component.
-			f.right = down(si->second[bi0]);
-
-			if (verbosity >= VERB_PRSALG)
-			{
-				cout << tab << "-----------------------------------------------" << endl;
-				cout << tab << f.right << "\t" << count(f.right) << "\t" << strict_count(f.right) << endl;
-			}
-			for (o = 0; o < delta_count(f.right); o++)
-			{
-				r.clear((si->second).states.size());
-				r.right = down(si->second[bi0], o);
-
-				mscount = strict_count(r.right);
-				mcount = r.right.states.size() - count(r.right);
-
-				invars.clear();
-				for (sj = states.begin(); sj != states.end(); sj++)
-					for (bi1 = 0; bi1 < global.find(sj->first)->second->width; bi1++)
-						if (sj != si || bi0 != bi1)
-							invars.insert(pair<string, space>(sj->first + to_string(bi1), sj->second[bi1]));
-
-				first = true;
-				found = true;
-				while (invars.size() > 0 && found && count(r.left) > count(r.right))
-				{
-					if (verbosity >= VERB_PRSALG)
-						cout << tab << "...................Iteration..................." << endl;
-					setspace = r.left;
-
-					found = false;
-					for (sj = invars.begin(); sj != invars.end(); sj++)
-					{
-						if (first)
-							tempspace = sj->second;
-						else
-							tempspace = r.left & sj->second;
-
-						scount = strict_count(r.right & tempspace);
-						ccount = count(tempspace) - count(r.right & tempspace);
-
-						if (ccount < mcount && scount >= mscount && r.left.var.find(tempspace.var) == r.left.var.npos)
-						{
-							setspace = tempspace;
-							invar = sj->first;
-							mcount = ccount;
-							mscount = scount;
-						}
-
-						if (verbosity >= VERB_PRSALG)
-							cout << tab << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
-
-						if (first)
-							tempspace = ~sj->second;
-						else
-							tempspace = r.left & (~sj->second);
-
-						scount = strict_count(r.right & tempspace);
-						ccount = count(tempspace) - count(r.right & tempspace);
-
-						if (ccount < mcount && scount >= mscount && r.left.var.find(tempspace.var) == r.left.var.npos)
-						{
-							setspace = tempspace;
-							invar = sj->first;
-							mcount = ccount;
-							mscount = scount;
-						}
-
-						if (verbosity >= VERB_PRSALG)
-							cout << tab << "\t" << tempspace << "\t" << ccount << "/" << mcount << "\t" << scount << "/" << mscount << endl;
-					}
-
-					if (r.left.var.find(setspace.var) == r.left.var.npos)
-					{
-						r.left = setspace;
-						invars.erase(invar);
-						first = false;
-						found = true;
-					}
-				}
-
-				if (o == 0)
-					f = r;
-				else
-					f.left = f.left | r.left;
-			}
-
-			if (delta_count(f.right) > 0)
-				rules.push_back(f);
+			else if (rj != prs.end())
+				rj->left = rj->left | si->second;
+			else
+				cout << "Ah Hell..." << endl;
 		}
 	}
 
-	return rules;
+	return prs;
 }
 
 /* Search a backward in a conflict string starting at a necessary
@@ -991,11 +739,11 @@ size_t search_front(string s, size_t offset)
  * C..C!
  * !C..C
 */
-list<int> state_variable(space left, space right, string tab, int verbosity)
+list<size_t> state_variable_positions(space left, space right, string tab, int verbosity)
 {
-	list<int> state_locations;
-	list<int>::iterator si;
-	int i;
+	list<size_t> state_locations;
+	list<size_t>::iterator si;
+	size_t i;
 
 	// Generate the conflict string
 	string conflict = conflicts(left, right);
@@ -1050,4 +798,82 @@ list<int> state_variable(space left, space right, string tab, int verbosity)
 	return state_locations;
 }
 
+bool production_rule_check(string *raw, block *b, string tab, int verbosity)
+{
+	// At this point, block has a set of candidate rules. Check to see if those rules fire at the
+	// appropriate times. If not, add state variables and reparse.
 
+	list<rule>::iterator ri;
+	list<size_t> state_locations; 	//See state_variable's return for details of how this is being used.
+	list<size_t>::iterator li;
+	list<size_t> temp;
+	variable *v;
+
+	//Loop through all produced rules run state_locations to get a list of indexes to insert state vars.
+	for (ri = b->rules.begin(); ri != b->rules.end(); ri++)
+	{
+		temp = state_variable_positions(ri->left, ri->right, tab, verbosity);
+		state_locations.merge(temp);
+	}
+
+	//If there are multiple production rules asking for a state variable to be inserted at a particular
+	//index, we only need to insert a single state variable. Sort and unique provides a clean list.
+	state_locations.sort();
+	state_locations.unique();
+
+	int highest_state_name = 0;				// Used for finding a unique name for the state variable
+	int how_many_added = 0;					// How many instructions have we added?
+	int how_many_inserted = 0;				// How many instructions have been inserted?
+	list<pair<string,int> > to_insertl;
+
+	//Loop through our list of desired state variable insertion indices.
+	for (li = state_locations.begin(); li != state_locations.end(); li++)
+	{
+		//Find the lowest variable name not in globals (no name conflicts)
+		highest_state_name = 0;
+		while (b->global.find(b->uid + "_" + to_string(highest_state_name)) != b->global.end())
+			highest_state_name++;
+
+		//Create a new variable with the unique name.
+		v = new variable("int<1>" + b->uid + "_" + to_string(highest_state_name), tab, verbosity);
+		//Add to globals
+		b->global.insert(pair<string, variable*>(v->name, v));
+		//Add to locals
+		b->local.insert(pair<string, variable*>(v->name, v));
+
+		//Insert the state variable declaration and state variable transition
+		to_insertl.push_back(pair<string,int>(v->name+":=1",*li));
+		*raw = "int<1>" + v->name + ":=0;" + v->name + ":=0;" + *raw;
+		how_many_added+=2;
+	}
+
+	list<pair<string,int> >::iterator instr_adderl;
+	//Add leading and tailing semicolon to assist instruction counting
+	*raw = ";"  + *raw + ";";
+	//For every instruction we are to insert into the instruction stream...
+	for(instr_adderl = to_insertl.begin(); instr_adderl != to_insertl.end();instr_adderl++)
+	{
+		int insertion_location = 0;
+		//Loop through to find the semicolon at which we want to insert the current state variable
+		//Note that the offset of how_many_added/inserted is required as the instruction size of
+		//the instruction stream grows as instructions are added.
+		for(int counter = 0; counter < (instr_adderl->second+how_many_inserted+how_many_added); counter++)
+			insertion_location = raw->find(";",insertion_location+1);
+		if (insertion_location < 0)
+			cout << "Error: State variable insertion failed. " << endl;
+		else
+		{
+			*raw = raw->substr(0, insertion_location+1) + instr_adderl->first + ";" + raw->substr(insertion_location+1);
+			how_many_inserted++;
+		}
+	}
+
+	//If we added a state variable...
+	if (how_many_added > 0)
+	{
+		*raw = raw->substr(1, raw->length() - 2);
+		return false;
+	}
+	else
+		return true;
+}

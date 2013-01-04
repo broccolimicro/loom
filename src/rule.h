@@ -23,8 +23,11 @@ struct rule
 	rule &operator=(rule s);
 
 	void clear(int n);
+	int index(int n);
 };
 
 ostream &operator<<(ostream &os, rule r);
+
+rule simplify(rule r, map<string, space> states);
 
 #endif

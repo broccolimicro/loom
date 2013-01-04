@@ -16,10 +16,10 @@ conditional::conditional()
 	type = unknown;
 }
 
-conditional::conditional(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
+conditional::conditional(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
 {
 	_kind = "conditional";
-	parse(raw, types, vars, init, tab, verbosity);
+	parse(id, raw, types, vars, init, tab, verbosity);
 }
 
 conditional::~conditional()
@@ -38,7 +38,7 @@ conditional::~conditional()
 	instrs.clear();
 }
 // [G -> S]
-void conditional::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
+void conditional::parse(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
 {
 	result.clear();
 	local.clear();
@@ -47,6 +47,9 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 	states.clear();
 
 	chp = raw.substr(1, raw.length()-2);
+	uid = id;
+	char nid = 'a';
+
 	global = vars;						//The variables this block uses.
 	type = unknown;
 	string expr, eval;
@@ -128,7 +131,7 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 					cout << tab << si->first << " -> " << si->second << endl;
 			}
 
-			instrs.insert(pair<string, instruction*>(expr, new block(eval, types, global, guardresult, tab+"\t", verbosity)));
+			instrs.insert(pair<string, instruction*>(expr, new block(uid + nid++, eval, types, global, guardresult, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 			guardresult = init;
@@ -176,7 +179,7 @@ void conditional::parse(string raw, map<string, keyword*> types, map<string, var
 					cout << tab << si->first << " -> " << si->second << endl;
 			}
 
-			instrs.insert(pair<string, instruction*>(expr, new block(eval, types, global, guardresult, tab+"\t", verbosity)));
+			instrs.insert(pair<string, instruction*>(expr, new block(uid + nid++, eval, types, global, guardresult, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 			guardresult = init;
@@ -380,7 +383,7 @@ map<string, state> guard(string raw,  map<string, variable*> vars, string tab, i
 		}
 	}*/
 
-	// TODO: << >> + - * /
+	// TODO: Add support for the following operators {<<,>>,+,-,*,/}
 	// For shifting, reverse the shift. For add, you subtract and visa versa. For multiple, you divide and visa versa
 
 	depth = 0;

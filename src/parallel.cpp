@@ -17,10 +17,10 @@ parallel::parallel()
 	chp = "";
 	_kind = "parallel";
 }
-parallel::parallel(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
+parallel::parallel(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
 {
 	_kind = "parallel";
-	parse(raw, types, vars, init, tab, verbosity);
+	parse(id, raw, types, vars, init, tab, verbosity);
 }
 parallel::~parallel()
 {
@@ -48,7 +48,7 @@ parallel::~parallel()
 	instrs.clear();
 }
 
-void parallel::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
+void parallel::parse(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
 {
 	result.clear();
 	local.clear();
@@ -61,6 +61,9 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 
 	global = vars;
 	chp = raw;
+	uid = id;
+
+	char nid = 'a';
 
 	string		raw_instr;	// chp of a sub block
 
@@ -121,16 +124,16 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (sequential)
-				instr = new parallel(raw_instr, types, global, init, tab+"\t", verbosity);
+				instr = new parallel(uid + nid++, raw_instr, types, global, init, tab+"\t", verbosity);
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
-				instr = new block(raw_instr.substr(1, raw_instr.length()-2), types, global, init, tab+"\t", verbosity);
+				instr = new block(uid + nid++, raw_instr.substr(1, raw_instr.length()-2), types, global, init, tab+"\t", verbosity);
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new loop(raw_instr, types, global, init, tab+"\t", verbosity);
+				instr = new loop(uid + nid++, raw_instr, types, global, init, tab+"\t", verbosity);
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new conditional(raw_instr, types, global, init, tab+"\t", verbosity);
+				instr = new conditional(uid + nid++, raw_instr, types, global, init, tab+"\t", verbosity);
 			// This sub block is either a variable definition or an assignment instruction.
 			else
 			{
@@ -151,7 +154,7 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 				}
 				// This sub block is an assignment instruction.
 				else if (raw_instr.length() != 0)
-					instr = new instruction(raw_instr, types, global, init, tab+"\t", verbosity);
+					instr = new instruction(uid + nid++, raw_instr, types, global, init, tab+"\t", verbosity);
 			}
 
 			if (instr != NULL)
@@ -187,21 +190,16 @@ void parallel::parse(string raw, map<string, keyword*> types, map<string, variab
 				// communication protocol.
 				for(vi = affected.begin(); vi != affected.end(); vi++)
 				{
-					if (states.find(vi->first) == states.end())
+					si = states.find(vi->first);
+					if (si == states.end())
 					{
 						states.insert(pair<string, space>(vi->first, space(vi->first, list<state>())));
-						xstate = state(string(vi->second->width, 'X'), false);
+						si = states.find(vi->first);
 						// The first state for every variable is always all X
 						if ((l = init.find(vi->first)) != init.end())
-						{
-							states[vi->first].states.push_back(l->second);
-							states[vi->first].var = vi->first;
-						}
+							((space&)si->second).states.push_back(l->second);
 						else
-						{
-							states[vi->first].states.push_back(xstate);
-							states[vi->first].var = vi->first;
-						}
+							((space&)si->second).states.push_back(state(string(vi->second->width, 'X'), false));
 					}
 				}
 			}
