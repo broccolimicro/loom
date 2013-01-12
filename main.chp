@@ -1,6 +1,6 @@
 #include "fifo.chp"
 
-proc main()
+process main()
 {
 	
 	chan0b a;

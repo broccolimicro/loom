@@ -47,6 +47,7 @@ void loop::parse(string id, string raw, map<string, keyword*> types, map<string,
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Loop Preparse:\t" << chp << endl;
 
+	// TODO we should repeat this step until no deltas in the initial conditions are detected
 	pass(chp, types, vars, init, tab, VERB_SUPPRESS);
 
 	next_init.insert(init.begin(), init.end());

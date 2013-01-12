@@ -70,6 +70,7 @@
 #include "record.h"
 #include "block.h"
 #include "process.h"
+#include "operator.h"
 #include "channel.h"
 
 
@@ -121,6 +122,7 @@ struct program
 		int error_start, error_len;
 
 		process *p;
+		operate *o;
 		record *r;
 		channel *c;
 
@@ -178,10 +180,16 @@ struct program
 				if (i-j+1 > 0)
 				{
 					// Is this a process?
-					if (cleaned_chp.compare(j-cleaned_chp.begin(), 5, "proc ") == 0)
+					if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "process ") == 0)
 					{
 						p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, map<string, variable*>(), verbosity);
 						type_space.insert(pair<string, process*>(p->name, p));
+					}
+					// Is this an operator?
+					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "operator") == 0)
+					{
+						o = new operate(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, map<string, variable*>(), verbosity);
+						type_space.insert(pair<string, operate*>(o->name, o));
 					}
 					// This isn't a process, is it a record?
 					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "record ") == 0)
@@ -200,16 +208,21 @@ struct program
 					{
 						error = "Error: CHP block outside of process.\nIgnoring block:\t";
 						error_start = j-cleaned_chp.begin();
-						error_len = min(min(cleaned_chp.find("proc ", error_start), cleaned_chp.find("record ", error_start)), cleaned_chp.find("channel ", error_start)) - error_start;
+						error_len = min(min(cleaned_chp.find("process ", error_start), cleaned_chp.find("record ", error_start)), cleaned_chp.find("channel ", error_start)) - error_start;
 						error += cleaned_chp.substr(error_start, error_len);
 						cout << error << endl;
 						j += error_len;
 
 						// Make sure we don't miss the next record or process though.
-						if (cleaned_chp.compare(j-cleaned_chp.begin(), 5, "proc ") == 0)
+						if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "process ") == 0)
 						{
 							p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, map<string, variable*>(), verbosity);
 							type_space.insert(pair<string, process*>(p->name, p));
+						}
+						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "operator") == 0)
+						{
+							o = new operate(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, map<string, variable*>(), verbosity);
+							type_space.insert(pair<string, operate*>(o->name, o));
 						}
 						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "record ") == 0)
 						{

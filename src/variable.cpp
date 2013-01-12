@@ -56,6 +56,7 @@ variable &variable::operator=(variable v)
 	return *this;
 }
 
+// TODO we need to handle the case where we instantiate a process
 void variable::parse(string raw, string tab, int verbosity)
 {
 	last = "iX";

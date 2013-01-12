@@ -16,12 +16,12 @@ channel chan4p0b
 	int<1> r := 0;
 	int<1> a := 0;
 	
-	proc send()
+	process send()
 	{
 		r+;[a];r-;[~a]
 	}
 	
-	proc recv()
+	process recv()
 	{
 		[r];a+;[~r];a-
 	}
@@ -32,14 +32,14 @@ channel chan2p0b
 	int<1> r := 0;
 	int<1> a := 0;
 	
-	proc send()
+	process send()
 	{
 		[   r -> r-;[~a]
 		[] ~r -> r+;[ a]
 		]
 	}
 	
-	proc recv()
+	process recv()
 	{
 		[   a -> [~r];a-
 		[] ~a -> [ r];a+
@@ -47,13 +47,18 @@ channel chan2p0b
 	}
 }
 
-proc fifo0b4p(chan4p0b l, chan4p0b r)
+operator +(chan4p4b l, chan4p4b r)
+{
+	
+}
+
+process fifo0b4p(chan4p0b l, chan4p0b r)
 {
 	*[l?;r!]
 	//*[l?;r!;l?;r!]
 }
 
-proc fifo0b2p(chan2p0b l, chan2p0b r)
+process fifo0b2p(chan2p0b l, chan2p0b r)
 {
 	*[l?;r!]
 }
@@ -61,7 +66,7 @@ proc fifo0b2p(chan2p0b l, chan2p0b r)
 
 /* This process represents an asynchronous 1 to 2 multiplexer
 */
-/*proc mux0b2(chan0b i, chan0b o1, chan0b o2, chan1b s)
+/*process mux0b2(chan0b i, chan0b o1, chan0b o2, chan1b s)
 {
 	// initialize variables at reset
 	i.a-;

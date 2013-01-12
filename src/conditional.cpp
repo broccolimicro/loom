@@ -115,6 +115,9 @@ void conditional::parse(string id, string raw, map<string, keyword*> types, map<
 			{
 				if ((sj = guardresult.find(si->first)) == guardresult.end())
 					guardresult.insert(pair<string, state>(si->first, si->second));
+				// TODO I don't think that we can correctly make this assumption.
+				// This assumes that if a variable has an X value as a result of the guard,
+				// then we take the variable's previous value.
 				else
 					for (ri = si->second.data.rbegin(), rj = sj->second.data.rbegin(); ri != si->second.data.rend() && rj != sj->second.data.rend(); ri++, rj++)
 						if (*ri != 'X')
@@ -163,6 +166,9 @@ void conditional::parse(string id, string raw, map<string, keyword*> types, map<
 			{
 				if ((sj = guardresult.find(si->first)) == guardresult.end())
 					guardresult.insert(pair<string, state>(si->first, si->second));
+				// TODO I don't think that we can correctly make this assumption.
+				// This assumes that if a variable has an X value as a result of the guard,
+				// then we take the variable's previous value.
 				else
 					for (ri = si->second.data.rbegin(), rj = sj->second.data.rbegin(); ri != si->second.data.rend() && rj != sj->second.data.rend(); ri++, rj++)
 						if (*ri != 'X')
@@ -188,6 +194,8 @@ void conditional::parse(string id, string raw, map<string, keyword*> types, map<
 			guarded = false;
 	}
 
+	// Determine the resulting state of the conditional by
+	// merging the states of the guarded blocks.
 	for (ii = instrs.begin(); ii != instrs.end(); ii++)
 	{
 		for (si = ii->second->result.begin(); si != ii->second->result.end(); si++)
@@ -201,6 +209,10 @@ void conditional::parse(string id, string raw, map<string, keyword*> types, map<
 				result.insert(pair<string, state>(si->first, si->second));
 		}
 	}
+
+	// TODO create a state variable per guarded block whose production rule is the guard.
+	// TODO a possible optimization would be to check to make sure that we need one first. If we don't, then we must already have one that works, add the guard to it's condition.
+	// TODO condition all production rules of the guarded blocks on their designated state variable.
 
 	if (verbosity >= VERB_PARSE)
 	{

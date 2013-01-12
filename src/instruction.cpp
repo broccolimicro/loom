@@ -70,6 +70,7 @@ void instruction::parse(string id, string raw, map<string, keyword*> types, map<
 
 	// Identify that this instruction is an assign.
 	// Currently only handles single variable assignments
+	// TODO we need to involve the defined operators here as well, not just solve for the state space.
 	if (chp.find(":=") != chp.npos)
 	{
 		// Separate the two operands (the variable to be assigned and the value to assign)
