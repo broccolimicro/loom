@@ -808,6 +808,7 @@ bool production_rule_check(string *raw, block *b, string tab, int verbosity)
 	list<size_t>::iterator li;
 	list<size_t> temp;
 	variable *v;
+	int depth[3] = {0, 0, 0};
 
 	//Loop through all produced rules run state_locations to get a list of indexes to insert state vars.
 	for (ri = b->rules.begin(); ri != b->rules.end(); ri++)
@@ -857,8 +858,29 @@ bool production_rule_check(string *raw, block *b, string tab, int verbosity)
 		//Loop through to find the semicolon at which we want to insert the current state variable
 		//Note that the offset of how_many_added/inserted is required as the instruction size of
 		//the instruction stream grows as instructions are added.
-		for(int counter = 0; counter < (instr_adderl->second+how_many_inserted+how_many_added); counter++)
-			insertion_location = raw->find(";",insertion_location+1);
+		// TODO Clean this up, there was an error where we were simply looking for semicolons in the string instead of paying attention to depth
+		depth[0] = 0;
+		depth[1] = 0;
+		depth[2] = 0;
+		for(int counter = 0; counter < (instr_adderl->second+how_many_inserted+how_many_added) && insertion_location < raw->length(); insertion_location++)
+		{
+			if (raw->at(insertion_location) == '(')
+				depth[0]++;
+			else if (raw->at(insertion_location) == '[')
+				depth[1]++;
+			else if (raw->at(insertion_location) == '{')
+				depth[2]++;
+			else if (raw->at(insertion_location) == ')')
+				depth[0]--;
+			else if (raw->at(insertion_location) == ']')
+				depth[1]--;
+			else if (raw->at(insertion_location) == '}')
+				depth[2]--;
+
+			if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && raw->at(insertion_location) == ';')
+				counter++;
+		}
+
 		if (insertion_location < 0)
 			cout << "Error: State variable insertion failed. " << endl;
 		else

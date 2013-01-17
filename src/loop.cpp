@@ -25,7 +25,7 @@ loop::~loop()
 {
 	_kind = "loop";
 
-	map<string, instruction*>::iterator i;
+	map<string, block*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		if (i->second != NULL)
@@ -80,7 +80,7 @@ void loop::parse(string id, string raw, map<string, keyword*> types, map<string,
 
 	local.clear();
 
-	map<string, instruction*>::iterator j;
+	map<string, block*>::iterator j;
 	for (j = instrs.begin(); j != instrs.end(); j++)
 	{
 		if (j->second != NULL)
@@ -121,7 +121,7 @@ void loop::pass(string raw, map<string, keyword*> types, map<string, variable*> 
 	bool guarded;
 	char nid = 'a';
 
-	map<string, instruction*>::iterator ii;
+	map<string, block*>::iterator ii;
 	map<string, state>::iterator si, sj;
 	string::iterator i, j, k;
 
@@ -221,7 +221,7 @@ void loop::pass(string raw, map<string, keyword*> types, map<string, variable*> 
 					cout << tab << si->first << " -> " << si->second << endl;
 			}
 
-			instrs.insert(pair<string, instruction*>(expr, new block(uid + nid++, eval, types, global, guardresult, tab+"\t", verbosity)));
+			instrs.insert(pair<string, block*>(expr, new block(uid + nid++, eval, types, global, guardresult, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 		}
@@ -268,7 +268,7 @@ void loop::pass(string raw, map<string, keyword*> types, map<string, variable*> 
 					cout << tab << si->first << " -> " << si->second << endl;
 			}
 
-			instrs.insert(pair<string, instruction*>(expr, new block(uid + nid++, eval, types, global, guardresult, tab+"\t", verbosity)));
+			instrs.insert(pair<string, block*>(expr, new block(uid + nid++, eval, types, global, guardresult, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}

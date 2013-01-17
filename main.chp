@@ -1,30 +1,43 @@
-#include "fifo.chp"
+record chan4p0b
+{
+	int<1> r := 0;
+	int<1> a := 0;
+}
+
+record chan4p1b
+{
+	int<1> ra := 0;
+	int<1> t := 0;
+	int<1> f := 0;
+}
+
+process mux0b2(chan4p0b i, chan4p0b o1, chan4p0b o2, chan4p1b s)
+{
+	// initialize variables at reset
+	i.a-;
+	o1.r-;
+	o2.r-;
+	s.ra-;
+	//*[
+		// wait for a request
+		[s.t | s.f];
+		// service the request
+		[  s.f -> [i.r];o1.r+;[o1.a];i.a+;[~i.r];o1.r-;[~o1.a];i.a-
+		[] s.t -> [i.r];o2.r+;[o2.a];i.a+;[~i.r];o2.r-;[~o2.a];i.a-
+		];
+		// clean up
+		s.ra+;
+		[~s.t & ~s.f];
+		s.ra-;
+	//]
+}
 
 process main()
 {
+	chan4p0b x;
+	chan4p0b y;
+	chan4p0b z;
+	chan4p1b w;
 	
-	chan0b a;
-	chan0b b;
-	chan0b c;
-	
-	// Hook two FIFOs to each other
-	fifo0b f1(a, b);
-	//fifo0b f2(b, c);
-	
-	/* This is a more complex example.
-	 * It is a split unit. 
-	 * This is a long comment. 
-	 * It requires multiple lines. */
-	
-	chan0b x;
-	chan0b y;
-	chan0b z;
-	chan1b s;
-	//mux0b2(x, y, z, s);
-	
-	//Test the parallel functionality
-	chan0b d;
-	chan0b e;
-	//simple_par(d,e);
-	
+	mux0b2 m(x, y, z, w);
 }

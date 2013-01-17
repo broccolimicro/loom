@@ -27,7 +27,7 @@ conditional::~conditional()
 	_kind = "conditional";
 	type = unknown;
 
-	map<string, instruction*>::iterator i;
+	map<string, block*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		if (i->second != NULL)
@@ -45,6 +45,9 @@ void conditional::parse(string id, string raw, map<string, keyword*> types, map<
 	global.clear();
 	instrs.clear();
 	states.clear();
+	waits.clear();
+	changes.clear();
+	rules.clear();
 
 	chp = raw.substr(1, raw.length()-2);
 	uid = id;
@@ -60,7 +63,7 @@ void conditional::parse(string id, string raw, map<string, keyword*> types, map<
 
 	map<string, state> guardresult, temp;
 
-	map<string, instruction*>::iterator ii;
+	map<string, block*>::iterator ii, ij;
 	map<string, state>::iterator si, sj;
 	string::iterator i, j, k;
 	string::reverse_iterator ri, rj, rk;
@@ -134,7 +137,7 @@ void conditional::parse(string id, string raw, map<string, keyword*> types, map<
 					cout << tab << si->first << " -> " << si->second << endl;
 			}
 
-			instrs.insert(pair<string, instruction*>(expr, new block(uid + nid++, eval, types, global, guardresult, tab+"\t", verbosity)));
+			instrs.insert(pair<string, block*>(expr, new block(uid + nid++, eval, types, global, guardresult, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 			guardresult = init;
@@ -185,7 +188,7 @@ void conditional::parse(string id, string raw, map<string, keyword*> types, map<
 					cout << tab << si->first << " -> " << si->second << endl;
 			}
 
-			instrs.insert(pair<string, instruction*>(expr, new block(uid + nid++, eval, types, global, guardresult, tab+"\t", verbosity)));
+			instrs.insert(pair<string, block*>(expr, new block(uid + nid++, eval, types, global, guardresult, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 			guardresult = init;
@@ -210,6 +213,99 @@ void conditional::parse(string id, string raw, map<string, keyword*> types, map<
 		}
 	}
 
+	variable *v;
+	list<rule>::iterator rui;
+	list<state>::iterator sli;
+	map<string, state>::iterator vi;
+	map<string, space>::iterator vj;
+	rule ru;
+
+	for (vi = init.begin(); vi != init.end(); vi++)
+	{
+		space s;
+		s.var = vi->first;
+		s.states.push_back(vi->second);
+		states.insert(pair<string, space>(s.var, s));
+	}
+
+	for (vi = result.begin(); vi != result.end(); vi++)
+	{
+		if ((vj = states.find(vi->first)) != states.end())
+			vj->second.states.push_back(vi->second);
+		else
+		{
+			space s;
+			s.var = vi->first;
+			s.states.push_back(state("X", false));
+			s.states.push_back(vi->second);
+			states.insert(pair<string, space>(s.var, s));
+		}
+	}
+
+	int highest_state_name = 0;
+	int bi1;
+	bool first;
+	for (ii = instrs.begin(); ii != instrs.end(); ii++)
+	{
+		// add a state variable per guarded block
+		v = new variable("int<1>" + this->uid + "_" + to_string(highest_state_name++), tab, verbosity);
+		this->local.insert(pair<string, variable*>(v->name, v));
+
+		if (ii->second->rules.size() > 0)
+		{
+			space s = ii->second->rules.begin()->left;
+			s.var = v->name;
+			for (sli = s.states.begin(); sli != s.states.end(); sli++)
+			{
+				sli->data = "1";
+				sli->prs = false;
+			}
+
+			for (rui = ii->second->rules.begin(); rui != ii->second->rules.end(); rui++)
+			{
+				ru = *rui;
+				ru.left &= s;
+				rules.push_back(ru);
+			}
+
+			ru.clear(0);
+			ru.right = s;
+			ru.right.var += "+";
+			ru.left = expression(ii->first, ii->second->states, tab + "\t", -1);
+			rules.push_back(ru);
+
+			ru.clear(0);
+			ru.right = s;
+			ru.right.var += "-";
+
+			first = true;
+			for (vj = ii->second->states.begin(); vj != ii->second->states.end(); vj++)
+			{
+				// Expand multibit variables into their single bit constituents
+				for (bi1 = 0; bi1 < global.find(vj->first)->second->width; bi1++)
+				{
+					s = vj->second[bi1];
+
+					if (s.states.back().data != "X")
+					{
+						if (s.states.back().data == "0")
+							s = ~s;
+
+						if (first)
+							ru.left = s;
+						else
+							ru.left = s & ru.left;
+
+						first = false;
+					}
+				}
+			}
+
+			rules.push_back(ru);
+		}
+		v = NULL;
+	}
+
 	// TODO create a state variable per guarded block whose production rule is the guard.
 	// TODO a possible optimization would be to check to make sure that we need one first. If we don't, then we must already have one that works, add the guard to it's condition.
 	// TODO condition all production rules of the guarded blocks on their designated state variable.
@@ -221,6 +317,14 @@ void conditional::parse(string id, string raw, map<string, keyword*> types, map<
 		for (si = result.begin(); si != result.end(); si++)
 			cout << "{" << si->first << " = " << si->second << "} ";
 		cout << endl;
+	}
+
+	if (verbosity >= VERB_STATEVAR)
+	{
+		for (rui = rules.begin(); rui != rules.end(); rui++)
+			cout << tab << *rui << endl;
+		if (rules.size() > 0)
+			cout << endl;
 	}
 }
 
