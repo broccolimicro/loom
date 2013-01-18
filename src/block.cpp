@@ -595,15 +595,12 @@ list<rule> production_rule(list<instruction*> instrs, map<string, space> states,
 			si = states.find(v);
 			if (rj == prs.end() && si != states.end())
 			{
-				cout << ri->left << " -> " << ri->right << endl;
 				r.clear(0);
 				r.left = expression(ri->left.var, states, tab+"\t", verbosity);
 				if (ri->right.var.substr(ri->right.var.length()-1) == "+")
 					r.right = up((space&)si->second);
 				else
 					r.right = down((space&)si->second);
-
-				cout << "\t" << r << endl;
 
 				// TODO Im not sure if checking against the strict count right now is correct.
 				if (strict_count(r.right) > 0)
@@ -612,7 +609,7 @@ list<rule> production_rule(list<instruction*> instrs, map<string, space> states,
 			else if (rj != prs.end())
 				rj->left = rj->left | si->second;
 			else
-				cout << "Ah Hell..." << endl;
+				cout << "Ah Hell... " << v << endl;
 		}
 	}
 
@@ -854,7 +851,7 @@ bool production_rule_check(string *raw, block *b, string tab, int verbosity)
 	//For every instruction we are to insert into the instruction stream...
 	for(instr_adderl = to_insertl.begin(); instr_adderl != to_insertl.end();instr_adderl++)
 	{
-		int insertion_location = 0;
+		unsigned int insertion_location = 0;
 		//Loop through to find the semicolon at which we want to insert the current state variable
 		//Note that the offset of how_many_added/inserted is required as the instruction size of
 		//the instruction stream grows as instructions are added.
@@ -862,7 +859,7 @@ bool production_rule_check(string *raw, block *b, string tab, int verbosity)
 		depth[0] = 0;
 		depth[1] = 0;
 		depth[2] = 0;
-		for(int counter = 0; counter < (instr_adderl->second+how_many_inserted+how_many_added) && insertion_location < raw->length(); insertion_location++)
+		for (int counter = 0; counter <= (instr_adderl->second+how_many_inserted+how_many_added) && insertion_location < raw->length(); insertion_location++)
 		{
 			if (raw->at(insertion_location) == '(')
 				depth[0]++;
@@ -885,7 +882,7 @@ bool production_rule_check(string *raw, block *b, string tab, int verbosity)
 			cout << "Error: State variable insertion failed. " << endl;
 		else
 		{
-			*raw = raw->substr(0, insertion_location+1) + instr_adderl->first + ";" + raw->substr(insertion_location+1);
+			*raw = raw->substr(0, insertion_location) + instr_adderl->first + ";" + raw->substr(insertion_location);
 			how_many_inserted++;
 		}
 	}

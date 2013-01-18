@@ -250,6 +250,7 @@ void conditional::parse(string id, string raw, map<string, keyword*> types, map<
 		// add a state variable per guarded block
 		v = new variable("int<1>" + this->uid + "_" + to_string(highest_state_name++), tab, verbosity);
 		this->local.insert(pair<string, variable*>(v->name, v));
+		this->global.insert(pair<string, variable*>(v->name, v));
 
 		if (ii->second->rules.size() > 0)
 		{
