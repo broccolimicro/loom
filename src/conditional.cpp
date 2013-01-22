@@ -71,6 +71,7 @@ void conditional::parse(string id, string raw, map<string, keyword*> types, map<
 	guardresult = init;
 
 	//Check for the shorthand [var] and replace it with [var -> skip]
+	// TODO CHECK DEPTH!!!
 	if(chp.find("->") == chp.npos)
 		chp = chp + "->skip";
 
@@ -272,7 +273,29 @@ void conditional::parse(string id, string raw, map<string, keyword*> types, map<
 			ru.clear(0);
 			ru.right = s;
 			ru.right.var += "+";
-			ru.left = expression(ii->first, ii->second->states, tab + "\t", -1);
+			first = true;
+			for (vj = ii->second->states.begin(); vj != ii->second->states.end(); vj++)
+			{
+				// Expand multibit variables into their single bit constituents
+				for (bi1 = 0; bi1 < global.find(vj->first)->second->width; bi1++)
+				{
+					space t = vj->second[bi1];
+
+					if (t.states.front().data != "X")
+					{
+						if (t.states.front().data == "0")
+							t = ~t;
+
+						if (first)
+							ru.left = t;
+						else
+							ru.left = t & ru.left;
+
+						first = false;
+					}
+				}
+			}
+
 			rules.push_back(ru);
 
 			ru.clear(0);
@@ -285,17 +308,17 @@ void conditional::parse(string id, string raw, map<string, keyword*> types, map<
 				// Expand multibit variables into their single bit constituents
 				for (bi1 = 0; bi1 < global.find(vj->first)->second->width; bi1++)
 				{
-					s = vj->second[bi1];
+					space t = vj->second[bi1];
 
-					if (s.states.back().data != "X")
+					if (t.states.back().data != "X")
 					{
-						if (s.states.back().data == "0")
-							s = ~s;
+						if (t.states.back().data == "0")
+							t = ~t;
 
 						if (first)
-							ru.left = s;
+							ru.left = t;
 						else
-							ru.left = s & ru.left;
+							ru.left = t & ru.left;
 
 						first = false;
 					}

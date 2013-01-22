@@ -602,14 +602,24 @@ list<rule> production_rule(list<instruction*> instrs, map<string, space> states,
 				else
 					r.right = down((space&)si->second);
 
-				// TODO Im not sure if checking against the strict count right now is correct.
+				// TODO I'm not sure if checking against the strict count right now is correct.
 				if (strict_count(r.right) > 0)
 					prs.push_back(r);
 			}
 			else if (rj != prs.end())
-				rj->left = rj->left | si->second;
+				rj->left = rj->left | expression(ri->left.var, states, tab+"\t", verbosity);
 			else
+			{
+				r.clear(0);
+				r.left = expression(ri->left.var, states, tab+"\t", verbosity);
+				for (size_t i = 0; i < states.begin()->second.states.size(); i++)
+					r.right.states.push_back(state("0", false));
+				r.right.var = ri->right.var;
+
+				prs.push_back(r);
+
 				cout << "Ah Hell... " << v << endl;
+			}
 		}
 	}
 
