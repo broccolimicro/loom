@@ -19,7 +19,7 @@ operate::operate()
 	_kind = "operate";
 }
 
-operate::operate(string raw, map<string, keyword*> types, map<string, variable*> vars, int verbosity)
+operate::operate(string raw, map<string, keyword*> *types, map<string, variable*> vars, int verbosity)
 {
 	parse(raw, types, vars, verbosity);
 	_kind = "operate";
@@ -107,7 +107,7 @@ void operate::parse(string raw, map<string, keyword*> *types, map<string, variab
 
 		if ((vi = global.find(left)) != global.end())
 		{
-			if ((ti = types.find(vi->second->type)) != types.end())
+			if ((ti = types->find(vi->second->type)) != types->end())
 			{
 				if (ti->second != NULL)
 				{
