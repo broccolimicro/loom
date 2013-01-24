@@ -16,10 +16,16 @@
 struct parallel : block
 {
 	parallel();
-	parallel(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity);
+	parallel(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity);
 	~parallel();
 
-	void parse(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity);
+	void expand_shortcuts();
+	void parse(map<string, keyword*> *types);
+	void generate_states(map<string, state> init);
+	void generate_prs(map<string, variable*> globals);
+	void generate_statevars();
+	// void handshaking_reshuffle();
+	void bubble_reshuffle();
 };
 
 #endif

@@ -202,14 +202,14 @@ string dec_to_bin(string str)
 	return int_to_bin(dec_to_int(str));
 }
 
-size_t find_first_of_l0(string subject, string search)
+size_t find_first_of_l0(string subject, string search, size_t pos)
 {
 	bool found;
 	string::iterator i, j;
 	int depth[3] = {0, 0, 0};
 	size_t ret;
 
-	for (i = subject.begin(), ret = 0, found = false; i != subject.end() && !found; i++, ret++)
+	for (i = subject.begin() + pos, ret = pos, found = false; i != subject.end() && !found; i++, ret++)
 	{
 		if (*i == '(')
 			depth[0]++;
@@ -224,7 +224,7 @@ size_t find_first_of_l0(string subject, string search)
 		else if (*i == '}')
 			depth[2]--;
 
-		for (j = search.begin(); j != search.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && !found; j++)
+		for (j = search.begin() + pos; j != search.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && !found; j++)
 			if (*i == *j)
 				found = true;
 	}
@@ -235,7 +235,7 @@ size_t find_first_of_l0(string subject, string search)
 	return ret;
 }
 
-size_t find_first_of_l0(string subject, list<string> search)
+size_t find_first_of_l0(string subject, list<string> search, size_t pos)
 {
 	bool found;
 	string::iterator i;
@@ -243,7 +243,7 @@ size_t find_first_of_l0(string subject, list<string> search)
 	int depth[3] = {0, 0, 0};
 	size_t ret;
 
-	for (i = subject.begin(), ret = 0, found = false; i != subject.end() && !found; i++, ret++)
+	for (i = subject.begin() + pos, ret = pos, found = false; i != subject.end() && !found; i++, ret++)
 	{
 		if (*i == '(')
 			depth[0]++;
@@ -258,7 +258,7 @@ size_t find_first_of_l0(string subject, list<string> search)
 		else if (*i == '}')
 			depth[2]--;
 
-		for (j = search.begin(); j != search.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && !found; j++)
+		for (j = search.begin() + pos; j != search.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && !found; j++)
 			if (subject.substr(ret, j->length()) == *j)
 				found = true;
 	}

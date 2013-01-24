@@ -16,10 +16,18 @@ conditional::conditional()
 	type = unknown;
 }
 
-conditional::conditional(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
+conditional::conditional(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
 	_kind = "conditional";
-	parse(id, raw, types, vars, init, tab, verbosity);
+	this->uid = uid;
+	this->chp = chp.substr(1, raw.length()-2);
+	this->tab = tab;
+	this->verbosity = verbosity;
+	this->global = globals;
+
+	clear();
+	expand_shortcuts();
+	parse(types);
 }
 
 conditional::~conditional()
@@ -38,22 +46,10 @@ conditional::~conditional()
 	instrs.clear();
 }
 // [G -> S]
-void conditional::parse(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
+void conditional::parse(map<string, keyword*> *types)
 {
-	result.clear();
-	local.clear();
-	global.clear();
-	instrs.clear();
-	states.clear();
-	waits.clear();
-	changes.clear();
-	rules.clear();
-
-	chp = raw.substr(1, raw.length()-2);
-	uid = id;
 	char nid = 'a';
 
-	global = vars;						//The variables this block uses.
 	type = unknown;
 	string expr, eval;
 	bool guarded = true;
@@ -67,8 +63,6 @@ void conditional::parse(string id, string raw, map<string, keyword*> types, map<
 	map<string, state>::iterator si, sj;
 	string::iterator i, j, k;
 	string::reverse_iterator ri, rj, rk;
-
-	guardresult = init;
 
 	//Check for the shorthand [var] and replace it with [var -> skip]
 	// TODO CHECK DEPTH!!!

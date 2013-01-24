@@ -221,7 +221,7 @@ void loop::pass(string raw, map<string, keyword*> types, map<string, variable*> 
 					cout << tab << si->first << " -> " << si->second << endl;
 			}
 
-			instrs.insert(pair<string, block*>(expr, new block(uid + nid++, eval, types, global, guardresult, tab+"\t", verbosity)));
+			instrs.insert(pair<string, block*>(expr, new block(uid + nid++, eval, types, global, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 		}
@@ -268,7 +268,7 @@ void loop::pass(string raw, map<string, keyword*> types, map<string, variable*> 
 					cout << tab << si->first << " -> " << si->second << endl;
 			}
 
-			instrs.insert(pair<string, block*>(expr, new block(uid + nid++, eval, types, global, guardresult, tab+"\t", verbosity)));
+			instrs.insert(pair<string, block*>(expr, new block(uid + nid++, eval, types, global, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}

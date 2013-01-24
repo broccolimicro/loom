@@ -17,10 +17,18 @@ parallel::parallel()
 	chp = "";
 	_kind = "parallel";
 }
-parallel::parallel(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
+parallel::parallel(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
 	_kind = "parallel";
-	parse(id, raw, types, vars, init, tab, verbosity);
+	this->uid = uid;
+	this->chp = chp;
+	this->tab = tab;
+	this->verbosity = verbosity;
+	this->global = globals;
+
+	clear();
+	expand_shortcuts();
+	parse(types);
 }
 parallel::~parallel()
 {
@@ -48,20 +56,10 @@ parallel::~parallel()
 	instrs.clear();
 }
 
-void parallel::parse(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
+void parallel::parse(map<string, keyword*> types)
 {
-	result.clear();
-	local.clear();
-	global.clear();
-	instrs.clear();
-	states.clear();
-
 	if (verbosity >= VERB_PARSE)
-		cout << tab << "Parallel: " << raw << endl;
-
-	global = vars;
-	chp = raw;
-	uid = id;
+		cout << tab << "Parallel: " << chp << endl;
 
 	char nid = 'a';
 

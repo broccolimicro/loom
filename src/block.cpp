@@ -17,14 +17,24 @@
 
 block::block()
 {
+	_kind = "block";
 	chp = "";
-	_kind = "block";
 }
-block::block(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
+
+block::block(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
-	_kind = "block";
-	parse(id, raw, types, vars, init, tab, verbosity);
+	this->_kind = "block";
+	this->uid = uid;
+	this->chp = chp;
+	this->tab = tab;
+	this->verbosity = verbosity;
+	this->global = globals;
+
+	clear();
+	expand_shortcuts();
+	parse(types);
 }
+
 block::~block()
 {
 	chp = "";
@@ -59,68 +69,28 @@ block &block::operator=(block b)
 	return *this;
 }
 
-void block::parse(string id, string raw, map<string, keyword*> types, map<string, variable*> vars, map<string, state> init, string tab, int verbosity)
+void block::expand_shortcuts()
 {
-	clear();
 
+}
+
+void block::parse(map<string, keyword*> *types)
+{
 	if (verbosity >= VERB_PARSE)
-		cout << tab << "Block: " << raw << endl;
-
-	global = vars;
-	chp = raw;
-	uid = id;
-
-	char nid = 'a';
+		cout << tab << "Block: " << chp << endl;
 
 	string		raw_instr;	// chp of a sub block
 
 	instruction *instr; 	// instruction parser
 	variable	*v;			// variable instantiation parser
 
-	map<string, state> current_state, change_state;
-
-	list<instruction*>		::iterator	ii, ix;
-	map<string, variable*>	::iterator	vi, vj;
-	map<string, space>		::iterator	si, sj, sk;
-	map<string, state>		::iterator	l, m;
-	list<state>				::iterator	a, b;
-	map<string, keyword*>	::iterator	t;
-	list<list<variable*> >	::iterator	di;
-	list<variable*>			::iterator	dvi;
 	string					::iterator	i, j;
 	size_t								ij, ik;
 
-	list<map<string, state> >			tracer_changes;
-	list<map<string, state> > :: iterator xi;
-	map<string, variable*>				affected;
-	list<list<variable*> >				delta_out;
-	list<variable*> delta;
-
-	map<string, size_t>					prgm_start;
-	map<string, size_t>					prgm_ctr;
-	map<string, string>					prgm_protocol;
-	map<string, string>		::iterator	proti;
-	map<string, size_t>		::iterator	pi;
-	list<rule>				::iterator	ri;
-	list<size_t>			::iterator  pj;
-
-	size_t								k, p, n;
-	state								tstate;
-
-	string search0, search1, search2;
-
 	bool para		= false;
 	bool vdef		= false;
-	bool first		= false;
+	char nid = 'a';
 
-	// Add the initial states into the affected variable list
-	// This makes sure that evaluated guards pass through skip blocks
-	for (l = init.begin(); l != init.end(); l++)
-		if ((vi = vars.find(l->first)) != vars.end())
-		{
-			affected.insert(pair<string, variable*>(vi->first, vi->second));
-			current_state.insert(pair<string, state>(l->first, l->second));
-		}
 
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
 	int depth[3] = {0};
@@ -151,16 +121,16 @@ void block::parse(string id, string raw, map<string, keyword*> types, map<string
 			instr = NULL;
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (para)
-				instr = new parallel(uid + nid++, raw_instr, types, global, current_state, tab+"\t", verbosity);
+				instr = new parallel(uid + nid++, raw_instr, types, global, tab+"\t", verbosity);
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
-				instr = new block(uid + nid++, raw_instr.substr(1, raw_instr.length()-2), types, global, current_state, tab+"\t", verbosity);
+				instr = new block(uid + nid++, raw_instr.substr(1, raw_instr.length()-2), types, global, tab+"\t", verbosity);
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new loop(uid + nid++, raw_instr, types, global, current_state, tab+"\t", verbosity);
+				instr = new loop(uid + nid++, raw_instr, types, global, tab+"\t", verbosity);
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new conditional(uid + nid++, raw_instr, types, global, current_state, tab+"\t", verbosity);
+				instr = new conditional(uid + nid++, raw_instr, types, global, tab+"\t", verbosity);
 			// This sub block is either a variable definition or an assignment instruction.
 			else
 			{
@@ -188,230 +158,7 @@ void block::parse(string id, string raw, map<string, keyword*> types, map<string
 			if (instr != NULL)
 			{
 				instrs.push_back(instr);
-
-				// Now that we have parsed the sub block, we need to
-				// check the resulting state space deltas of that sub block.
-				// Loop through all of the affected variables.
-				delta.clear();
-				for (l = instr->result.begin(); l != instr->result.end(); l++)
-				{
-					// If this variable exists, we mark whether or not we need to
-					// generate a production rule for this instruction.
-					vi = global.find(l->first);
-					if (vi == global.end() && l->first != "Unhandled")
-						cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + l->first << " " << instr->chp << endl;
-					else if (vi != global.end())
-					{
-						// The delta list is a list of parents of signals that are
-						// currently firing. Add these signals to the list.
-						if ((l->second.prs) && (l->second.data != vi->second->last.data))
-						{
-							vj = global.find(l->first.substr(0, l->first.find_first_of(".")));
-							if (vj != global.end())
-								delta.push_back(vj->second);
-						}
-
-						// Set the last value of the variable
-						vi->second->last = l->second;
-
-						// And make sure that we keep track of this variable if it has been
-						// newly created.
-						if (affected.find(vi->first) == affected.end())
-							affected.insert(pair<string, variable*>(vi->first, vi->second));
-					}
-				}
-				delta_out.push_back(delta);
-
-				// Fill in the state space based upon the recorded delta values from instruction parsing above.
-				// Right now, we X out the input variables when an instruction changes an output value. This will
-				// have to be modified in the future so that we only X out the input variables depending upon the
-				// communication protocol.
-				for(vi = affected.begin(); vi != affected.end(); vi++)
-				{
-					si = states.find(vi->first);
-
-					// If this is the first time we have seen this variable
-					// in the state space, then we need to bring it up to speed.
-					if (states.find(vi->first) == states.end())
-					{
-						states.insert(pair<string, space>(vi->first, space(vi->first, list<state>())));
-						si = states.find(vi->first);
-						// If this variable is in the init list, then we have it's initial value.
-						if ((l = init.find(vi->first)) != init.end())
-							((space&)si->second).states.push_back(l->second);
-						// Otherwise, use this variable's reset value.
-						else
-							((space&)si->second).states.push_back(vi->second->reset);
-					}
-
-					// Now we need to fill in the rest of the state space. Loop through the instructions.
-					for (ii = instrs.begin(), di = delta_out.begin(), k = 0; ii != instrs.end() && di != delta_out.end(); ii++, di++, k++)
-					{
-						// We only need to generate states if we haven't already
-						if (k >= ((space&)si->second).states.size()-1)
-						{
-							// Get the variable and its new value as affected by this instruction
-							l = (*ii)->result.find(vi->first);
-							vj = global.find(vi->first.substr(0, vi->first.find_first_of(".")));
-							if (vj != global.end())
-							{
-								// Get the variable's type and check to see if
-								// it has an associated program counter.
-								t = types.find(vj->second->type);
-								pi = prgm_ctr.find(vj->first);
-								proti = prgm_protocol.find(vj->second->name);
-
-								if (l != (*ii)->result.end())
-								{
-									// Figure out what this instruction would look like as
-									// this variable. For example, an instruction like l.r:=1
-									// would turn into r:=1 and [l.a] to [a]
-									// We will need this to figure out if this instruction
-									// belongs to the send or the receive.
-									search0 = (*ii)->chp;
-									while ((p = search0.find(vj->first + ".")) != search0.npos)
-										search0 = search0.substr(0, p) + search0.substr(p + vj->first.length() + 1);
-
-									// Check to see if this variable has a defined program counter.
-									// If it doesn't and this variable is a channel, then we need to
-									// initialize a new program counter and add it to the list. If it
-									// does, then we need to update its program counter.
-									if (pi == prgm_ctr.end())
-									{
-										if (t != types.end() && t->second->kind() == "channel")
-										{
-											prgm_ctr.insert(pair<string, size_t>(vj->first, 0));
-											prgm_start.insert(pair<string, size_t>(vj->first, k));
-											pi = prgm_ctr.find(vj->first);
-										}
-									}
-									else
-										pi->second = k - prgm_start.find(vj->first)->second;
-
-									// Check to see if we know which protocol we are tracing, send or receive.
-									// If we don't know the protocol, then we need to figure it out by comparing
-									// instruction strings at the proper program counter (instruction index)
-									if (pi != prgm_ctr.end() && t != types.end() && t->second->kind() == "channel" && (proti == prgm_protocol.end() || proti->second == "?"))
-									{
-										// TODO This is supposed to support the case where both the send and receive functions have the same
-										// first couple instructions, but that feature does not work.
-										for (ix = ((channel*)t->second)->send.def.instrs.begin(), n = 0; ix != ((channel*)t->second)->send.def.instrs.end() && n < pi->second; ix++, n++);
-
-										if (ix != ((channel*)t->second)->send.def.instrs.end())
-											search1 = (*ix)->chp;
-										else
-											search1 = (*((channel*)t->second)->send.def.instrs.begin())->chp;
-
-										for (ix = ((channel*)t->second)->recv.def.instrs.begin(), n = 0; ix != ((channel*)t->second)->recv.def.instrs.end() && n < pi->second; ix++, n++);
-
-										if (ix != ((channel*)t->second)->recv.def.instrs.end())
-											search2 = (*ix)->chp;
-										else
-											search2 = (*((channel*)t->second)->recv.def.instrs.begin())->chp;
-
-										if (search1.find(search0) != search1.npos && search2.find(search0) != search2.npos)
-											prgm_protocol.insert(pair<string, string>(vj->first, "?"));
-										else if (search1.find(search0) != search1.npos)
-											prgm_protocol.insert(pair<string, string>(vj->first, "send"));
-										else if (search2.find(search0) != search2.npos)
-											prgm_protocol.insert(pair<string, string>(vj->first, "recv"));
-									}
-								}
-
-								proti = prgm_protocol.find(vj->second->name);
-
-								if (l != (*ii)->result.end() && l->second.data != "NA")
-									((space&)si->second).states.push_back(l->second);
-								else if (di->size() > 0 && !((space&)si->second).states.rbegin()->prs)
-								{
-									if (verbosity >= VERB_TRACE)
-										cout << tab << "Maybe X Out " << vi->first << " " << (*ii)->chp << endl;
-									// Use channel send and recv functions to determine whether or not we need to X out the state
-									if (t != types.end() && t->second->kind() == "channel" && pi != prgm_ctr.end())
-									{
-										p = pi->second;
-
-										if (proti != prgm_protocol.end())
-										{
-											// TODO Protocol tracing only works for flat protocols. This means that the two
-											// phase protocol is currently not supported, but the four phase is.
-											if (proti->second == "send")
-											{
-												tracer_changes = ((channel*)t->second)->recv.def.changes;
-												for (pj = waits.begin(); pj != waits.end() && prgm_start.find(vj->first)->second >= *pj; pj++);
-												for (xi = tracer_changes.begin(); pj != waits.end() && xi != tracer_changes.end() && p >= *pj; pj++, xi++);
-											}
-											else if (proti->second == "recv")
-											{
-												tracer_changes = ((channel*)t->second)->send.def.changes;
-												for (pj = waits.begin(); pj != waits.end() && prgm_start.find(vj->first)->second >= *pj; pj++);
-												for (xi = tracer_changes.begin(); pj != waits.end() && xi != tracer_changes.end() && p >= *pj; pj++, xi++);
-											}
-
-											if (xi != tracer_changes.end() && proti->second != "?")
-											{
-												m = xi->find(vi->first.substr(vi->first.find_first_of(".")+1));
-												if (m != xi->end())
-												{
-													tstate = *(((space&)si->second).states.rbegin()) || m->second;
-													tstate.prs = ((space&)si->second).states.rbegin()->prs;
-													((space&)si->second).states.push_back(tstate);
-												}
-												else
-													((space&)si->second).states.push_back(((space&)si->second).states.back());
-											}
-											else
-												((space&)si->second).states.push_back(*(((space&)si->second).states.rbegin()));
-										}
-										else
-											((space&)si->second).states.push_back(*(((space&)si->second).states.rbegin()));
-									}
-									else
-										((space&)si->second).states.push_back(*(((space&)si->second).states.rbegin()));
-								}
-								// there is no delta in the output variables or this is an output variable
-								else
-									((space&)si->second).states.push_back(((space&)si->second).states.back());
-
-								current_state[vi->first] = ((space&)si->second).states.back();
-							}
-							else
-								cout << "Error: Something is royally fucked up." << endl;
-						}
-					}
-				}
-
-				// This counts wait instructions and figures out
-				// what states changes in between wait instructions
-				if (instr->kind() == "conditional" || i == chp.end())
-				{
-					change_state.clear();
-					if (instr->kind() != "conditional" && i == chp.end())
-						ij++;
-
-					for (vi = affected.begin(); vi != affected.end(); vi++)
-					{
-						if ((si = states.find(vi->first)) != states.end())
-						{
-							first = true;
-							for (ik = 0, a = ((space&)si->second).states.begin(); waits.size() > 0 && ik <= (*waits.rbegin()) && a != ((space&)si->second).states.end(); ik++, a++);
-							for (; ((instr->kind() != "conditional" && i == chp.end()) || ik <= ij) && a != ((space&)si->second).states.end(); ik++, a++)
-							{
-								tstate = first ? *a : tstate || *a;
-
-								first = false;
-							}
-
-							change_state.insert(pair<string, state>(vi->first, tstate));
-						}
-					}
-
-					waits.push_back(ij);
-					changes.push_back(change_state);
-				}
-
 				ij++;
-
 			}
 			j = i+1;
 			para = false;
@@ -423,38 +170,14 @@ void block::parse(string id, string raw, map<string, keyword*> types, map<string
 			para = true;
 	}
 
-	change_state.clear();
-	for (vi = affected.begin(); vi != affected.end(); vi++)
-	{
-		l = changes.begin()->find(vi->first);
-		si = states.find(vi->first);
-		if (l != changes.begin()->end() && si != states.end())
-		{
-			l->second = l->second || (*((space&)si->second).states.rbegin());
-			change_state.insert(pair<string, state>(vi->first, l->second));
-		}
-		else if (l != changes.begin()->end())
-			change_state.insert(pair<string, state>(vi->first, l->second));
-		else if (si != states.end())
-		{
-			changes.begin()->insert(pair<string, state>(vi->first, *((space&)si->second).states.rbegin()));
-			change_state.insert(pair<string, state>(vi->first, *((space&)si->second).states.rbegin()));
-		}
-	}
-	changes.push_back(change_state);
+
 
 	if (verbosity >= VERB_PARSE)
 	cout << endl;
 
 	if (verbosity >= VERB_STATES)
 		cout << tab << chp << endl;
-	for(si = states.begin(); si != states.end(); si++)
-	{
-		if (verbosity >= VERB_STATES)
-			cout << tab << si->second << endl;
-		if (local.find(si->first) == local.end())
-			result.insert(pair<string, state>(si->first, *(((space&)si->second).states.rbegin())));
-	}
+
 
 	if (verbosity >= VERB_STATES)
 	{
@@ -481,7 +204,312 @@ void block::parse(string id, string raw, map<string, keyword*> types, map<string
 			cout << "{" << l->first << " = " << l->second << "} ";
 		cout << endl;
 	}
+}
 
+void block::generate_states(map<string, state> init)
+{
+
+	map<string, state> current_state, change_state;
+
+	list<instruction*>		::iterator	ii, ix;
+	map<string, variable*>	::iterator	vi, vj;
+	map<string, space>		::iterator	si, sj, sk;
+	map<string, state>		::iterator	l, m;
+	list<state>				::iterator	a, b;
+	map<string, keyword*>	::iterator	t;
+	list<list<variable*> >	::iterator	di;
+	list<variable*>			::iterator	dvi;
+
+	list<map<string, state> >			tracer_changes;
+	list<map<string, state> > :: iterator xi;
+	map<string, variable*>				affected;
+	list<list<variable*> >				delta_out;
+	list<variable*> delta;
+
+	map<string, size_t>					prgm_start;
+	map<string, size_t>					prgm_ctr;
+	map<string, string>					prgm_protocol;
+	map<string, string>		::iterator	proti;
+	map<string, size_t>		::iterator	pi;
+	list<rule>				::iterator	ri;
+	list<size_t>			::iterator  pj;
+
+	size_t								k, p, n;
+	state								tstate;
+
+	string search0, search1, search2;
+
+	bool first		= false;
+
+	list<instruction*>::iterator instr_iter;
+	// Add the initial states into the affected variable list
+	// This makes sure that evaluated guards pass through skip blocks
+	for (l = init.begin(); l != init.end(); l++)
+		if ((vi = vars.find(l->first)) != vars.end())
+		{
+			affected.insert(pair<string, variable*>(vi->first, vi->second));
+			current_state.insert(pair<string, state>(l->first, l->second));
+		}
+
+
+	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+	{
+		// Now that we have parsed the sub block, we need to
+		// check the resulting state space deltas of that sub block.
+		// Loop through all of the affected variables.
+		delta.clear();
+		for (l = instr->result.begin(); l != instr->result.end(); l++)
+		{
+			// If this variable exists, we mark whether or not we need to
+			// generate a production rule for this instruction.
+			vi = global.find(l->first);
+			if (vi == global.end() && l->first != "Unhandled")
+				cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + l->first << " " << instr->chp << endl;
+			else if (vi != global.end())
+			{
+				// The delta list is a list of parents of signals that are
+				// currently firing. Add these signals to the list.
+				if ((l->second.prs) && (l->second.data != vi->second->last.data))
+				{
+					vj = global.find(l->first.substr(0, l->first.find_first_of(".")));
+					if (vj != global.end())
+						delta.push_back(vj->second);
+				}
+
+				// Set the last value of the variable
+				vi->second->last = l->second;
+
+				// And make sure that we keep track of this variable if it has been
+				// newly created.
+				if (affected.find(vi->first) == affected.end())
+					affected.insert(pair<string, variable*>(vi->first, vi->second));
+			}
+		}
+		delta_out.push_back(delta);
+
+		// Fill in the state space based upon the recorded delta values from instruction parsing above.
+		// Right now, we X out the input variables when an instruction changes an output value. This will
+		// have to be modified in the future so that we only X out the input variables depending upon the
+		// communication protocol.
+		for (vi = affected.begin(); vi != affected.end(); vi++)
+		{
+			si = states.find(vi->first);
+
+			// If this is the first time we have seen this variable
+			// in the state space, then we need to bring it up to speed.
+			if (states.find(vi->first) == states.end())
+			{
+				states.insert(pair<string, space>(vi->first, space(vi->first, list<state>())));
+				si = states.find(vi->first);
+				// If this variable is in the init list, then we have it's initial value.
+				if ((l = init.find(vi->first)) != init.end())
+					((space&)si->second).states.push_back(l->second);
+				// Otherwise, use this variable's reset value.
+				else
+					((space&)si->second).states.push_back(vi->second->reset);
+			}
+
+			// Now we need to fill in the rest of the state space. Loop through the instructions.
+			for (ii = instrs.begin(), di = delta_out.begin(), k = 0; ii != instrs.end() && di != delta_out.end(); ii++, di++, k++)
+			{
+				// We only need to generate states if we haven't already
+				if (k >= ((space&)si->second).states.size()-1)
+				{
+					// Get the variable and its new value as affected by this instruction
+					l = (*ii)->result.find(vi->first);
+					vj = global.find(vi->first.substr(0, vi->first.find_first_of(".")));
+					if (vj != global.end())
+					{
+						// Get the variable's type and check to see if
+						// it has an associated program counter.
+						t = types.find(vj->second->type);
+						pi = prgm_ctr.find(vj->first);
+						proti = prgm_protocol.find(vj->second->name);
+
+						if (l != (*ii)->result.end())
+						{
+							// Figure out what this instruction would look like as
+							// this variable. For example, an instruction like l.r:=1
+							// would turn into r:=1 and [l.a] to [a]
+							// We will need this to figure out if this instruction
+							// belongs to the send or the receive.
+							search0 = (*ii)->chp;
+							while ((p = search0.find(vj->first + ".")) != search0.npos)
+								search0 = search0.substr(0, p) + search0.substr(p + vj->first.length() + 1);
+
+							// Check to see if this variable has a defined program counter.
+							// If it doesn't and this variable is a channel, then we need to
+							// initialize a new program counter and add it to the list. If it
+							// does, then we need to update its program counter.
+							if (pi == prgm_ctr.end())
+							{
+								if (t != types.end() && t->second->kind() == "channel")
+								{
+									prgm_ctr.insert(pair<string, size_t>(vj->first, 0));
+									prgm_start.insert(pair<string, size_t>(vj->first, k));
+									pi = prgm_ctr.find(vj->first);
+								}
+							}
+							else
+								pi->second = k - prgm_start.find(vj->first)->second;
+
+							// Check to see if we know which protocol we are tracing, send or receive.
+							// If we don't know the protocol, then we need to figure it out by comparing
+							// instruction strings at the proper program counter (instruction index)
+							if (pi != prgm_ctr.end() && t != types.end() && t->second->kind() == "channel" && (proti == prgm_protocol.end() || proti->second == "?"))
+							{
+								// TODO This is supposed to support the case where both the send and receive functions have the same
+								// first couple instructions, but that feature does not work.
+								for (ix = ((channel*)t->second)->send.def.instrs.begin(), n = 0; ix != ((channel*)t->second)->send.def.instrs.end() && n < pi->second; ix++, n++);
+
+								if (ix != ((channel*)t->second)->send.def.instrs.end())
+									search1 = (*ix)->chp;
+								else
+									search1 = (*((channel*)t->second)->send.def.instrs.begin())->chp;
+
+								for (ix = ((channel*)t->second)->recv.def.instrs.begin(), n = 0; ix != ((channel*)t->second)->recv.def.instrs.end() && n < pi->second; ix++, n++);
+
+								if (ix != ((channel*)t->second)->recv.def.instrs.end())
+									search2 = (*ix)->chp;
+								else
+									search2 = (*((channel*)t->second)->recv.def.instrs.begin())->chp;
+
+								if (search1.find(search0) != search1.npos && search2.find(search0) != search2.npos)
+									prgm_protocol.insert(pair<string, string>(vj->first, "?"));
+								else if (search1.find(search0) != search1.npos)
+									prgm_protocol.insert(pair<string, string>(vj->first, "send"));
+								else if (search2.find(search0) != search2.npos)
+									prgm_protocol.insert(pair<string, string>(vj->first, "recv"));
+							}
+						}
+
+						proti = prgm_protocol.find(vj->second->name);
+
+						if (l != (*ii)->result.end() && l->second.data != "NA")
+							((space&)si->second).states.push_back(l->second);
+						else if (di->size() > 0 && !((space&)si->second).states.rbegin()->prs)
+						{
+							if (verbosity >= VERB_TRACE)
+								cout << tab << "Maybe X Out " << vi->first << " " << (*ii)->chp << endl;
+							// Use channel send and recv functions to determine whether or not we need to X out the state
+							if (t != types.end() && t->second->kind() == "channel" && pi != prgm_ctr.end())
+							{
+								p = pi->second;
+
+								if (proti != prgm_protocol.end())
+								{
+									// TODO Protocol tracing only works for flat protocols. This means that the two
+									// phase protocol is currently not supported, but the four phase is.
+									if (proti->second == "send")
+									{
+										tracer_changes = ((channel*)t->second)->recv.def.changes;
+										for (pj = waits.begin(); pj != waits.end() && prgm_start.find(vj->first)->second >= *pj; pj++);
+										for (xi = tracer_changes.begin(); pj != waits.end() && xi != tracer_changes.end() && p >= *pj; pj++, xi++);
+									}
+									else if (proti->second == "recv")
+									{
+										tracer_changes = ((channel*)t->second)->send.def.changes;
+										for (pj = waits.begin(); pj != waits.end() && prgm_start.find(vj->first)->second >= *pj; pj++);
+										for (xi = tracer_changes.begin(); pj != waits.end() && xi != tracer_changes.end() && p >= *pj; pj++, xi++);
+									}
+
+									if (xi != tracer_changes.end() && proti->second != "?")
+									{
+										m = xi->find(vi->first.substr(vi->first.find_first_of(".")+1));
+										if (m != xi->end())
+										{
+											tstate = *(((space&)si->second).states.rbegin()) || m->second;
+											tstate.prs = ((space&)si->second).states.rbegin()->prs;
+											((space&)si->second).states.push_back(tstate);
+										}
+										else
+											((space&)si->second).states.push_back(((space&)si->second).states.back());
+									}
+									else
+										((space&)si->second).states.push_back(*(((space&)si->second).states.rbegin()));
+								}
+								else
+									((space&)si->second).states.push_back(*(((space&)si->second).states.rbegin()));
+							}
+							else
+								((space&)si->second).states.push_back(*(((space&)si->second).states.rbegin()));
+						}
+						// there is no delta in the output variables or this is an output variable
+						else
+							((space&)si->second).states.push_back(((space&)si->second).states.back());
+
+						current_state[vi->first] = ((space&)si->second).states.back();
+					}
+					else
+						cout << "Error: Something is royally fucked up." << endl;
+				}
+			}
+		}
+
+		// This counts wait instructions and figures out
+		// what states changes in between wait instructions
+		if (instr->kind() == "conditional" || i == chp.end())
+		{
+			change_state.clear();
+			if (instr->kind() != "conditional" && i == chp.end())
+				ij++;
+
+			for (vi = affected.begin(); vi != affected.end(); vi++)
+			{
+				if ((si = states.find(vi->first)) != states.end())
+				{
+					first = true;
+					for (ik = 0, a = ((space&)si->second).states.begin(); waits.size() > 0 && ik <= (*waits.rbegin()) && a != ((space&)si->second).states.end(); ik++, a++);
+					for (; ((instr->kind() != "conditional" && i == chp.end()) || ik <= ij) && a != ((space&)si->second).states.end(); ik++, a++)
+					{
+						tstate = first ? *a : tstate || *a;
+
+						first = false;
+					}
+
+					change_state.insert(pair<string, state>(vi->first, tstate));
+				}
+			}
+
+			waits.push_back(ij);
+			changes.push_back(change_state);
+		}
+
+		ij++;
+	}
+
+	change_state.clear();
+	for (vi = affected.begin(); vi != affected.end(); vi++)
+	{
+		l = changes.begin()->find(vi->first);
+		si = states.find(vi->first);
+		if (l != changes.begin()->end() && si != states.end())
+		{
+			l->second = l->second || (*((space&)si->second).states.rbegin());
+			change_state.insert(pair<string, state>(vi->first, l->second));
+		}
+		else if (l != changes.begin()->end())
+			change_state.insert(pair<string, state>(vi->first, l->second));
+		else if (si != states.end())
+		{
+			changes.begin()->insert(pair<string, state>(vi->first, *((space&)si->second).states.rbegin()));
+			change_state.insert(pair<string, state>(vi->first, *((space&)si->second).states.rbegin()));
+		}
+	}
+	changes.push_back(change_state);
+
+
+	for(si = states.begin(); si != states.end(); si++)
+	{
+		if (verbosity >= VERB_STATES)
+			cout << tab << si->second << endl;
+		if (local.find(si->first) == local.end())
+			result.insert(pair<string, state>(si->first, *(((space&)si->second).states.rbegin())));
+	}
+}
+
+void block::generate_statevars()
+{
 	rules = production_rule(instrs, states, tab, verbosity);
 
 	if (!production_rule_check(&raw, this, tab, verbosity))
