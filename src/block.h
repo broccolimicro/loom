@@ -39,6 +39,7 @@ struct block : instruction
 
 	block &operator=(block b);
 
+	void init(string id, string raw, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity);
 
 	void expand_shortcuts();
 	void parse(map<string, keyword*> *types);

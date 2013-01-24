@@ -69,6 +69,20 @@ block &block::operator=(block b)
 	return *this;
 }
 
+void block::init(string id, string raw, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+{
+	this->_kind = "block";
+	this->uid = uid;
+	this->chp = chp;
+	this->tab = tab;
+	this->verbosity = verbosity;
+	this->global = globals;
+
+	clear();
+	expand_shortcuts();
+	parse(types);
+}
+
 void block::expand_shortcuts()
 {
 

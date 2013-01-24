@@ -29,14 +29,14 @@
 struct channel : record
 {
 	channel();
-	channel(string chp, map<string, keyword*> types, string tab, int verbosity);
+	channel(string chp, map<string, keyword*> *types, string tab, int verbosity);
 	~channel();
 
 	process send;
 	process recv;
 
 	channel &operator=(channel r);
-	void parse(string chp, map<string, keyword*> types, string tab, int verbosity);
+	void parse(string chp, map<string, keyword*> *types, string tab, int verbosity);
 };
 
 ostream &operator<<(ostream &os, channel s);

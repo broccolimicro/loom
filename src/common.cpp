@@ -224,7 +224,7 @@ size_t find_first_of_l0(string subject, string search, size_t pos)
 		else if (*i == '}')
 			depth[2]--;
 
-		for (j = search.begin() + pos; j != search.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && !found; j++)
+		for (j = search.begin(); j != search.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && !found; j++)
 			if (*i == *j)
 				found = true;
 	}
@@ -258,7 +258,7 @@ size_t find_first_of_l0(string subject, list<string> search, size_t pos)
 		else if (*i == '}')
 			depth[2]--;
 
-		for (j = search.begin() + pos; j != search.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && !found; j++)
+		for (j = search.begin(); j != search.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && !found; j++)
 			if (subject.substr(ret, j->length()) == *j)
 				found = true;
 	}

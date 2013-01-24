@@ -51,7 +51,7 @@ operate &operate::operator=(operate p)
 	return *this;
 }
 
-void operate::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, int verbosity)
+void operate::parse(string raw, map<string, keyword*> *types, map<string, variable*> vars, int verbosity)
 {
 	chp = raw;
 
@@ -169,5 +169,5 @@ void operate::parse(string raw, map<string, keyword*> types, map<string, variabl
 		}
 	}
 
-	def.parse("", def_block, types, global,  map<string, state>(), "\t", verbosity);
+	def.init("", def_block, types, global, "\t", verbosity);
 }

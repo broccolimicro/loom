@@ -126,7 +126,7 @@ void conditional::parse(map<string, keyword*> *types)
 
 
 
-			instrs.insert(pair<string, block*>(guardstr, new block(uid + nid++, blockstr, types, global, guardresult, tab+"\t", verbosity)));
+			instrs.insert(pair<string, block*>(guardstr, new block(uid + nid++, blockstr, types, global, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}

@@ -18,7 +18,7 @@ process::process()
 	_kind = "process";
 }
 
-process::process(string raw, map<string, keyword*> types, map<string, variable*> vars, int verbosity)
+process::process(string raw, map<string, keyword*> *types, map<string, variable*> vars, int verbosity)
 {
 	parse(raw, types, vars, verbosity);
 	_kind = "process";
@@ -50,7 +50,7 @@ process &process::operator=(process p)
 	return *this;
 }
 
-void process::parse(string raw, map<string, keyword*> types, map<string, variable*> vars, int verbosity)
+void process::parse(string raw, map<string, keyword*> *types, map<string, variable*> vars, int verbosity)
 {
 	chp = raw;
 
@@ -106,7 +106,7 @@ void process::parse(string raw, map<string, keyword*> types, map<string, variabl
 
 		if ((vi = global.find(left)) != global.end())
 		{
-			if ((ti = types.find(vi->second->type)) != types.end())
+			if ((ti = types->find(vi->second->type)) != types->end())
 			{
 				if (ti->second != NULL)
 				{
@@ -168,5 +168,5 @@ void process::parse(string raw, map<string, keyword*> types, map<string, variabl
 		}
 	}
 
-	def.parse("a", def_block, types, global,  map<string, state>(), "\t", verbosity);
+	def.init("a", def_block, types, global, "\t", verbosity);
 }

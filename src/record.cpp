@@ -18,7 +18,7 @@ record::record()
 	_kind = "record";
 }
 
-record::record(string raw, map<string, keyword*> types, string tab, int verbosity)
+record::record(string raw, map<string, keyword*> *types, string tab, int verbosity)
 {
 	parse(raw, types, tab, verbosity);
 	_kind = "record";
@@ -46,7 +46,7 @@ record &record::operator=(record r)
 	return *this;
 }
 
-void record::parse(string raw, map<string, keyword*> types, string tab, int verbosity)
+void record::parse(string raw, map<string, keyword*> *types, string tab, int verbosity)
 {
 	chp = raw;
 
@@ -83,7 +83,7 @@ void record::parse(string raw, map<string, keyword*> types, string tab, int verb
 	}
 }
 
-map<string, variable*> expand(string chp, string super, map<string, keyword*> types, string tab, int verbosity)
+map<string, variable*> expand(string chp, string super, map<string, keyword*> *types, string tab, int verbosity)
 {
 	map<string, variable*> result;
 	map<string, keyword*>::iterator var_type;
@@ -91,7 +91,7 @@ map<string, variable*> expand(string chp, string super, map<string, keyword*> ty
 	variable *v = new variable(chp, tab+"\t", verbosity);
 	string name;
 
-	if ((var_type = types.find(v->type)) != types.end())
+	if ((var_type = types->find(v->type)) != types->end())
 	{
 		result.insert(pair<string, variable*>(v->name, v));
 
