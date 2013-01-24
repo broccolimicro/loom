@@ -84,17 +84,15 @@ void block::parse(map<string, keyword*> *types)
 	instruction *instr; 	// instruction parser
 	variable	*v;			// variable instantiation parser
 
+	map<string, keyword*>	::iterator	type_iter;
 	string					::iterator	i, j;
-	size_t								ij, ik;
 
 	bool para		= false;
 	bool vdef		= false;
 	char nid = 'a';
 
-
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
 	int depth[3] = {0};
-	ij = 0;
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()+1; i++)
 	{
 		if (*i == '(')
@@ -135,8 +133,8 @@ void block::parse(map<string, keyword*> *types)
 			else
 			{
 				vdef = false;
-				for (t = types.begin(); t != types.end(); t++)
-					if (raw_instr.find(t->first) != raw_instr.npos)
+				for (type_iter = types->begin(); type_iter != types->end(); type_iter++)
+					if (raw_instr.find(type_iter->first) != raw_instr.npos)
 					{
 						vdef = true;
 						break;
@@ -151,15 +149,12 @@ void block::parse(map<string, keyword*> *types)
 				}
 				// This sub block is an assignment instruction.
 				else if (raw_instr.length() != 0)
-					instr = new instruction(uid + nid++, raw_instr, types, global, current_state, tab+"\t", verbosity);
+					instr = new assignment(uid + nid++, raw_instr, types, global, tab+"\t", verbosity);
 			}
 
 			// Make sure that this wasn't a variable declaration (they don't affect the state space).
 			if (instr != NULL)
-			{
 				instrs.push_back(instr);
-				ij++;
-			}
 			j = i+1;
 			para = false;
 		}
@@ -169,54 +164,17 @@ void block::parse(map<string, keyword*> *types)
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) == '|') || i == chp.end()))
 			para = true;
 	}
-
-
-
-	if (verbosity >= VERB_PARSE)
-	cout << endl;
-
-	if (verbosity >= VERB_STATES)
-		cout << tab << chp << endl;
-
-
-	if (verbosity >= VERB_STATES)
-	{
-		cout << tab << "Waits: ";
-		for (pj = waits.begin(); pj != waits.end(); pj++)
-			cout << *pj << " ";
-		cout << endl;
-
-		cout << tab << "Changes: ";
-		for (xi = changes.begin(); xi != changes.end(); xi++)
-		{
-			for (m = xi->begin(); m != xi->end(); m++)
-				cout << m->first << ":" << m->second << " ";
-			cout << ", ";
-		}
-		cout << endl;
-	}
-
-	if (verbosity >= VERB_PARSE)
-	{
-		cout << tab << "Result:\t";
-
-		for (l = result.begin(); l != result.end(); l++)
-			cout << "{" << l->first << " = " << l->second << "} ";
-		cout << endl;
-	}
 }
 
 void block::generate_states(map<string, state> init)
 {
-
-	map<string, state> current_state, change_state;
+	/*map<string, state> current_state, change_state;
 
 	list<instruction*>		::iterator	ii, ix;
 	map<string, variable*>	::iterator	vi, vj;
 	map<string, space>		::iterator	si, sj, sk;
 	map<string, state>		::iterator	l, m;
 	list<state>				::iterator	a, b;
-	map<string, keyword*>	::iterator	t;
 	list<list<variable*> >	::iterator	di;
 	list<variable*>			::iterator	dvi;
 
@@ -235,6 +193,7 @@ void block::generate_states(map<string, state> init)
 	list<size_t>			::iterator  pj;
 
 	size_t								k, p, n;
+	size_t ij, ik;
 	state								tstate;
 
 	string search0, search1, search2;
@@ -506,11 +465,28 @@ void block::generate_states(map<string, state> init)
 		if (local.find(si->first) == local.end())
 			result.insert(pair<string, state>(si->first, *(((space&)si->second).states.rbegin())));
 	}
+
+	if (verbosity >= VERB_STATES)
+		{
+			cout << tab << "Waits: ";
+			for (pj = waits.begin(); pj != waits.end(); pj++)
+				cout << *pj << " ";
+			cout << endl;
+
+			cout << tab << "Changes: ";
+			for (xi = changes.begin(); xi != changes.end(); xi++)
+			{
+				for (m = xi->begin(); m != xi->end(); m++)
+					cout << m->first << ":" << m->second << " ";
+				cout << ", ";
+			}
+			cout << endl;
+		}*/
 }
 
 void block::generate_statevars()
 {
-	rules = production_rule(instrs, states, tab, verbosity);
+/*	rules = production_rule(instrs, states, tab, verbosity);
 
 	if (!production_rule_check(&raw, this, tab, verbosity))
 	{
@@ -539,7 +515,7 @@ void block::generate_statevars()
 
 		if (verbosity >= VERB_STATEVAR)
 			cout << tab << "==============Valid==============" << endl;		//Let the user know that the block parsed correctly.
-	}
+	}*/
 }
 
 /* This function cleans up all of the memory allocated
@@ -568,7 +544,6 @@ void block::clear()
 		*j = NULL;
 	}
 
-	result.clear();
 	local.clear();
 	global.clear();
 	instrs.clear();

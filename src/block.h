@@ -9,6 +9,7 @@
 
 #include "common.h"
 #include "instruction.h"
+#include "assignment.h"
 #include "variable.h"
 #include "space.h"
 #include "keyword.h"

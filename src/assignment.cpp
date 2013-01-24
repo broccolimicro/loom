@@ -78,14 +78,14 @@ void assignment::generate_states(map<string, state> init)
 	for (state_iter = init.begin(); state_iter != init.end(); state_iter++)
 	{
 		states.insert(pair<string, space>(state_iter->first, space()));
-		states.rbegin()->second->states.push_back(*(state_iter->second));
-		states.rbegin()->second->states.push_back(*(state_iter->second));
+		states.rbegin()->second.states.push_back(state_iter->second);
+		states.rbegin()->second.states.push_back(state_iter->second);
 	}
 
 	for (expr_iter = expr.begin(); expr_iter != expr.end(); expr_iter++)
 	{
 		space_iter = states.find(expr_iter->first);
-		*(space_iter.second->states.rbegin()) = expression(expr_iter->second, init, tab, verbosity);
+		*(space_iter->second.states.rbegin()) = expression(expr_iter->second, init, tab, verbosity);
 	}
 
 	print_state_space();
@@ -102,9 +102,9 @@ void assignment::generate_prs(map<string, variable*> globals)
 	for (si = states.begin(); si != states.end(); si++)
 	{
 		// Expand multibit variables into their single bit constituents
-		for (bi0 = 0; bi0 < globals.find(si->first)->second->width && si->second->states.front().prs; bi0++)
+		for (bi0 = 0; bi0 < globals.find(si->first)->second->width && si->second.states.front().prs; bi0++)
 		{
-			s0 = si->second->states.front()[bi0];
+			s0 = si->second.states.front()[bi0];
 
 			r.clear(0);
 			r.right.var = si->first + (globals.find(si->first)->second->width > 1 ? "[" + to_string(bi0) + "]" : "") + (s0.data == "1" ? "+" : "-");
@@ -114,7 +114,7 @@ void assignment::generate_prs(map<string, variable*> globals)
 				// Expand multibit variables into their single bit constituents
 				for (bi1 = 0; bi1 < globals.find(sj->first)->second->width && si->first != sj->first; bi1++)
 				{
-					s1 = sj->second->states.back()[bi1];
+					s1 = sj->second.states.back()[bi1];
 
 					if (s1.data != "X")
 					{
