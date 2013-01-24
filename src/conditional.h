@@ -37,6 +37,7 @@ struct conditional : block
 	void generate_statevars();
 	// void handshaking_reshuffle();
 	void bubble_reshuffle();
+
 };
 
 map<string, state> guard(string raw, map<string, variable*> vars, string tab, int verbosity);

@@ -20,7 +20,7 @@ conditional::conditional(string uid, string chp, map<string, keyword*> *types, m
 {
 	_kind = "conditional";
 	this->uid = uid;
-	this->chp = chp.substr(1, raw.length()-2);
+	this->chp = chp.substr(1, chp.length()-2);
 	this->tab = tab;
 	this->verbosity = verbosity;
 	this->global = globals;
@@ -29,7 +29,6 @@ conditional::conditional(string uid, string chp, map<string, keyword*> *types, m
 	expand_shortcuts();
 	parse(types);
 }
-
 conditional::~conditional()
 {
 	_kind = "conditional";
@@ -45,13 +44,23 @@ conditional::~conditional()
 
 	instrs.clear();
 }
+
+void conditional::expand_shortcuts()
+{
+
+	//Check for the shorthand [var] and replace it with [var -> skip]
+	// TODO CHECK DEPTH!!!
+	if(chp.find("->") == chp.npos)
+		chp = chp + "->skip";
+
+}
 // [G -> S]
 void conditional::parse(map<string, keyword*> *types)
 {
 	char nid = 'a';
 
 	type = unknown;
-	string expr, eval;
+	string guardstr, blockstr;
 	bool guarded = true;
 
 	if (verbosity >= VERB_PARSE)
@@ -61,13 +70,10 @@ void conditional::parse(map<string, keyword*> *types)
 
 	map<string, block*>::iterator ii, ij;
 	map<string, state>::iterator si, sj;
+	list<rule>::iterator rui;
 	string::iterator i, j, k;
 	string::reverse_iterator ri, rj, rk;
 
-	//Check for the shorthand [var] and replace it with [var -> skip]
-	// TODO CHECK DEPTH!!!
-	if(chp.find("->") == chp.npos)
-		chp = chp + "->skip";
 
 	//Parse instructions!
 	int depth[3] = {0};
@@ -95,47 +101,14 @@ void conditional::parse(map<string, keyword*> *types)
 			else if (type == mutex)
 				cout << "Error: A conditional can either be mutually exclusive or choice, but not both." << endl;
 
-			eval = chp.substr(j-chp.begin(), i-j);
-			k = eval.find("->") + eval.begin();
-			expr = eval.substr(0, k-eval.begin());
-			eval = eval.substr(k-eval.begin()+2);
+			blockstr = chp.substr(j-chp.begin(), i-j);
+			k = blockstr.find("->") + blockstr.begin();
+			guardstr = blockstr.substr(0, k-blockstr.begin());
+			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			if (verbosity >= VERB_PARSE)
-			{
-				cout << tab << "Before\n";
-				for (si = guardresult.begin(); si != guardresult.end(); si++)
-					cout << tab << si->first << " -> " << si->second << endl;
-
-				cout << tab << "Guard\n";
-			}
-			temp = guard(expr, vars, tab+"\t", verbosity);
-			for (si = temp.begin(); si != temp.end(); si++)
-			{
-				if ((sj = guardresult.find(si->first)) == guardresult.end())
-					guardresult.insert(pair<string, state>(si->first, si->second));
-				// TODO I don't think that we can correctly make this assumption.
-				// This assumes that if a variable has an X value as a result of the guard,
-				// then we take the variable's previous value.
-				else
-					for (ri = si->second.data.rbegin(), rj = sj->second.data.rbegin(); ri != si->second.data.rend() && rj != sj->second.data.rend(); ri++, rj++)
-						if (*ri != 'X')
-							*rj = *ri;
-
-				if (verbosity >= VERB_PARSE)
-					cout << tab << si->first << " -> " << si->second << endl;
-			}
-
-			if (verbosity >= VERB_PARSE)
-			{
-				cout << tab << "After\n";
-				for (si = guardresult.begin(); si != guardresult.end(); si++)
-					cout << tab << si->first << " -> " << si->second << endl;
-			}
-
-			instrs.insert(pair<string, block*>(expr, new block(uid + nid++, eval, types, global, guardresult, tab+"\t", verbosity)));
+			instrs.insert(pair<string, block*>(guardstr, new block(uid + nid++, blockstr, types, global, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
-			guardresult = init;
 		}
 		else if (!guarded && depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '[' && *(i+1) == ']') || i == chp.end()))
 		{
@@ -146,12 +119,46 @@ void conditional::parse(map<string, keyword*> *types)
 			else if (type == choice)
 				cout << "Error: A conditional can either be mutually exclusive or choice, but not both." << endl;
 
-			eval = chp.substr(j-chp.begin(), i-j);
-			k = eval.find("->") + eval.begin();
-			expr = eval.substr(0, k-eval.begin());
-			eval = eval.substr(k-eval.begin()+2);
+			blockstr = chp.substr(j-chp.begin(), i-j);
+			k = blockstr.find("->") + blockstr.begin();
+			guardstr = blockstr.substr(0, k-blockstr.begin());
+			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			if (verbosity >= VERB_PARSE)
+
+
+			instrs.insert(pair<string, block*>(guardstr, new block(uid + nid++, blockstr, types, global, guardresult, tab+"\t", verbosity)));
+			j = i+2;
+			guarded = true;
+		}
+		else if (depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '-' && *(i+1) == '>') || i == chp.end()))
+			guarded = false;
+	}
+
+	// TODO create a state variable per guarded block whose production rule is the guard.
+	// TODO a possible optimization would be to check to make sure that we need one first. If we don't, then we must already have one that works, add the guard to it's condition.
+	// TODO condition all production rules of the guarded blocks on their designated state variable.
+
+/*	if (verbosity >= VERB_PARSE)
+	{
+		cout << tab << "Result:\t";
+
+		for (si = result.begin(); si != result.end(); si++)
+			cout << "{" << si->first << " = " << si->second << "} ";
+		cout << endl;
+	}
+
+	if (verbosity >= VERB_STATEVAR)
+	{
+		for (rui = rules.begin(); rui != rules.end(); rui++)
+			cout << tab << *rui << endl;
+		if (rules.size() > 0)
+			cout << endl;
+	}*/
+
+}
+//i->second.states.back()
+
+/*if (verbosity >= VERB_PARSE)
 			{
 				cout << tab << "Before\n";
 				for (si = guardresult.begin(); si != guardresult.end(); si++)
@@ -159,7 +166,8 @@ void conditional::parse(map<string, keyword*> *types)
 
 				cout << tab << "Guard\n";
 			}
-			temp = guard(expr, vars, tab+"\t", verbosity);
+
+			temp = guard(guardstr, vars]);
 			for (si = temp.begin(); si != temp.end(); si++)
 			{
 				if ((sj = guardresult.find(si->first)) == guardresult.end())
@@ -182,38 +190,85 @@ void conditional::parse(map<string, keyword*> *types)
 				for (si = guardresult.begin(); si != guardresult.end(); si++)
 					cout << tab << si->first << " -> " << si->second << endl;
 			}
+			*/
 
-			instrs.insert(pair<string, block*>(expr, new block(uid + nid++, eval, types, global, guardresult, tab+"\t", verbosity)));
-			j = i+2;
-			guarded = true;
-			guardresult = init;
-		}
-		else if (depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '-' && *(i+1) == '>') || i == chp.end()))
-			guarded = false;
-	}
+// Determine the resulting state of the conditional by
+// merging the states of the guarded blocks.
 
-	// Determine the resulting state of the conditional by
-	// merging the states of the guarded blocks.
-	for (ii = instrs.begin(); ii != instrs.end(); ii++)
+
+/*for (ii = instrs.begin(); ii != instrs.end(); ii++)
+{
+	for (si = ii->second->result.begin(); si != ii->second->result.end(); si++)
 	{
-		for (si = ii->second->result.begin(); si != ii->second->result.end(); si++)
+		if ((sj = result.find(si->first)) != result.end())
 		{
-			if ((sj = result.find(si->first)) != result.end())
+			sj->second = sj->second || si->second;
+			sj->second.prs = false;
+		}
+		else
+			result.insert(pair<string, state>(si->first, si->second));
+	}
+}*/
+
+/*
+for (ii = instrs.begin(); ii != instrs.end(); ii++)
+	{
+		for (si = ii->second->states.begin(); si != ii->second->states.end(); si++)
+		{
+			if ((sj = states.find(si->first)) != states.end())
 			{
 				sj->second = sj->second || si->second;
 				sj->second.prs = false;
 			}
 			else
-				result.insert(pair<string, state>(si->first, si->second));
+				states.push_back(pair<string, state>(si->first, si->second.back()));
 		}
 	}
+*/
 
-	variable *v;
-	list<rule>::iterator rui;
-	list<state>::iterator sli;
+/*
+ if (verbosity >= VERB_PARSE)
+			{
+				cout << tab << "Before\n";
+				for (si = guardresult.begin(); si != guardresult.end(); si++)
+					cout << tab << si->first << " -> " << si->second << endl;
+
+				cout << tab << "Guard\n";
+			}
+			temp = guard(guardstr, global);
+			for (si = temp.begin(); si != temp.end(); si++)
+			{
+				if ((sj = guardresult.find(si->first)) == guardresult.end())
+					guardresult.insert(pair<string, state>(si->first, si->second));
+				// TODO I don't think that we can correctly make this assumption.
+				// This assumes that if a variable has an X value as a result of the guard,
+				// then we take the variable's previous value.
+				else
+					for (ri = si->second.data.rbegin(), rj = sj->second.data.rbegin(); ri != si->second.data.rend() && rj != sj->second.data.rend(); ri++, rj++)
+						if (*ri != 'X')
+							*rj = *ri;
+
+				if (verbosity >= VERB_PARSE)
+					cout << tab << si->first << " -> " << si->second << endl;
+			}
+
+			if (verbosity >= VERB_PARSE)
+			{
+				cout << tab << "After\n";
+				for (si = guardresult.begin(); si != guardresult.end(); si++)
+					cout << tab << si->first << " -> " << si->second << endl;
+			}
+ */
+
+void conditional::generate_states(map<string, state> init)
+{
+
+
+
 	map<string, state>::iterator vi;
 	map<string, space>::iterator vj;
-	rule ru;
+	map<string, space>::iterator iter;
+
 
 	for (vi = init.begin(); vi != init.end(); vi++)
 	{
@@ -223,19 +278,40 @@ void conditional::parse(map<string, keyword*> *types)
 		states.insert(pair<string, space>(s.var, s));
 	}
 
-	for (vi = result.begin(); vi != result.end(); vi++)
+
+
+//	for (iter = states.begin(); iter != states.end(); iter++)
+//	{
+		iter->second.states.back();
+//	}
+
+	for (iter = states.begin(); iter != states.end(); iter++)
 	{
-		if ((vj = states.find(vi->first)) != states.end())
-			vj->second.states.push_back(vi->second);
+		//if ((vj = states.find(vi->first)) != states.end())
+		//	vj->second.states.push_back(vi->second);
+		if((vj = states.find(iter->first)) != states.end())
+			vj->second.states.push_back(iter->second.states.back());
 		else
 		{
 			space s;
-			s.var = vi->first;
+			//s.var = vi->first;
+			s.var = iter->first;
 			s.states.push_back(state("X", false));
-			s.states.push_back(vi->second);
+			//s.states.push_back(vi->second);
+			s.states.push_back(iter->second.states.back());
 			states.insert(pair<string, space>(s.var, s));
 		}
 	}
+}
+
+void conditional::generate_prs(map<string, variable*> globals){
+
+	map<string, block*>::iterator ii;
+	variable *v;
+	list<state>::iterator sli;
+	list<rule>::iterator rui;
+	map<string, space>::iterator vj;
+	rule ru;
 
 	int highest_state_name = 0;
 	int bi1;
@@ -324,26 +400,8 @@ void conditional::parse(map<string, keyword*> *types)
 		v = NULL;
 	}
 
-	// TODO create a state variable per guarded block whose production rule is the guard.
-	// TODO a possible optimization would be to check to make sure that we need one first. If we don't, then we must already have one that works, add the guard to it's condition.
-	// TODO condition all production rules of the guarded blocks on their designated state variable.
 
-	if (verbosity >= VERB_PARSE)
-	{
-		cout << tab << "Result:\t";
 
-		for (si = result.begin(); si != result.end(); si++)
-			cout << "{" << si->first << " = " << si->second << "} ";
-		cout << endl;
-	}
-
-	if (verbosity >= VERB_STATEVAR)
-	{
-		for (rui = rules.begin(); rui != rules.end(); rui++)
-			cout << tab << *rui << endl;
-		if (rules.size() > 0)
-			cout << endl;
-	}
 }
 
 map<string, state> guard(string raw,  map<string, variable*> vars, string tab, int verbosity)
@@ -576,3 +634,4 @@ map<string, state> guard(string raw,  map<string, variable*> vars, string tab, i
 
 	return outcomes;
 }
+
