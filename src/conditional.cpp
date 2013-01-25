@@ -24,6 +24,7 @@ conditional::conditional(string uid, string chp, map<string, keyword*> *types, m
 	this->tab = tab;
 	this->verbosity = verbosity;
 	this->global = globals;
+	type = unknown;
 
 	clear();
 	expand_shortcuts();
@@ -47,33 +48,41 @@ conditional::~conditional()
 
 void conditional::expand_shortcuts()
 {
-
 	//Check for the shorthand [var] and replace it with [var -> skip]
-	// TODO CHECK DEPTH!!!
-	if(chp.find("->") == chp.npos)
-		chp = chp + "->skip";
+	string::iterator i, j;
+	int depth[3] = {0};
+	for (i = chp.begin(), j = chp.begin(); i != chp.end()-1; i++)
+	{
+		if (*i == '(')
+			depth[0]++;
+		else if (*i == '[')
+			depth[1]++;
+		else if (*i == '{')
+			depth[2]++;
+		else if (*i == ')')
+			depth[0]--;
+		else if (*i == ']')
+			depth[1]--;
+		else if (*i == '}')
+			depth[2]--;
 
+		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && (*i == '-' && *(i+1) == '>'))
+			return;
+	}
+
+	chp += "->skip";
 }
 // [G -> S]
 void conditional::parse(map<string, keyword*> *types)
 {
 	char nid = 'a';
 
-	type = unknown;
+	string::iterator i, j, k;
 	string guardstr, blockstr;
 	bool guarded = true;
 
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Conditional:\t" << chp << endl;
-
-	map<string, state> guardresult, temp;
-
-	map<string, block*>::iterator ii, ij;
-	map<string, state>::iterator si, sj;
-	list<rule>::iterator rui;
-	string::iterator i, j, k;
-	string::reverse_iterator ri, rj, rk;
-
 
 	//Parse instructions!
 	int depth[3] = {0};
@@ -157,6 +166,12 @@ void conditional::parse(map<string, keyword*> *types)
 
 }
 //i->second.states.back()
+
+/*	map<string, block*>::iterator ii, ij;
+	map<string, state>::iterator si, sj;
+	list<rule>::iterator rui;
+	string::reverse_iterator ri, rj, rk;
+*/
 
 /*if (verbosity >= VERB_PARSE)
 			{

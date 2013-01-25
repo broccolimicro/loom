@@ -24,17 +24,6 @@ instruction::~instruction()
 	_kind = "instruction";
 }
 
-instruction &instruction::operator=(instruction i)
-{
-	chp = i.chp;
-	uid = i.uid;
-	states = i.states;
-	rules = i.rules;
-	tab = i.tab;
-	verbosity = i.verbosity;
-	return *this;
-}
-
 string instruction::kind()
 {
 	return _kind;

@@ -87,8 +87,6 @@ void parallel::parse(map<string, keyword*> *types)
 	map<string, variable*>				affected;
 	list<bool>							delta_out;
 
-
-	bool delta		= false;
 	bool sequential	= false;
 	bool vdef		= false;
 
@@ -240,7 +238,7 @@ void parallel::generate_prs(map<string, variable*> globals)
 	{
 		// TODO We need to check to see that every instruction's variable space is mutually exclusive here
 		// If it isn't mutually exclusive, then it violates the no shared variables and non-interference rules
-		/*ij = ii;
+		/ *ij = ii;
 		ij++;
 
 		for (; ij != instrs.end(); ij++)
