@@ -23,6 +23,8 @@ block::block()
 
 block::block(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
+	clear();
+
 	this->_kind = "block";
 	this->uid = uid;
 	this->chp = chp;
@@ -30,7 +32,6 @@ block::block(string uid, string chp, map<string, keyword*> *types, map<string, v
 	this->verbosity = verbosity;
 	this->global = globals;
 
-	clear();
 	expand_shortcuts();
 	parse(types);
 }
@@ -69,8 +70,10 @@ block &block::operator=(block b)
 	return *this;
 }
 
-void block::init(string id, string raw, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+void block::init(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
+	clear();
+
 	this->_kind = "block";
 	this->uid = uid;
 	this->chp = chp;
@@ -78,7 +81,6 @@ void block::init(string id, string raw, map<string, keyword*> *types, map<string
 	this->verbosity = verbosity;
 	this->global = globals;
 
-	clear();
 	expand_shortcuts();
 	parse(types);
 }
@@ -498,6 +500,11 @@ void block::generate_states(map<string, state> init)
 		}*/
 }
 
+void block::generate_prs(map<string, variable*> globals)
+{
+
+}
+
 void block::generate_statevars()
 {
 /*	rules = production_rule(instrs, states, tab, verbosity);
@@ -593,14 +600,6 @@ bool cycle(rule start, rule end, list<rule> *prs)
  *
  * TODO The handshaking reshuffling algorithm has not yet been completed.
  */
-
-void block::generate_states(map<string, state> init);
-
-void block::generate_prs(map<string, variable*> globals)
-{
-
-}
-
 list<rule> production_rule(list<instruction*> instrs, map<string, space> states, string tab, int verbosity)
 {
 	list<rule> prs;

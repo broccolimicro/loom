@@ -18,6 +18,8 @@ conditional::conditional()
 
 conditional::conditional(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
+	clear();
+
 	_kind = "conditional";
 	this->uid = uid;
 	this->chp = chp.substr(1, chp.length()-2);
@@ -26,7 +28,6 @@ conditional::conditional(string uid, string chp, map<string, keyword*> *types, m
 	this->global = globals;
 	type = unknown;
 
-	clear();
 	expand_shortcuts();
 	parse(types);
 }

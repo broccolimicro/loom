@@ -17,6 +17,8 @@ loop::loop()
 
 loop::loop(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
+	clear();
+
 	_kind = "loop";
 	this->uid = uid;
 	this->chp = chp.substr(2, chp.length()-3);
@@ -25,7 +27,6 @@ loop::loop(string uid, string chp, map<string, keyword*> *types, map<string, var
 	this->global = globals;
 	this->type = unknown;
 
-	clear();
 	expand_shortcuts();
 	parse(types);
 }

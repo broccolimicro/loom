@@ -19,6 +19,8 @@ parallel::parallel()
 }
 parallel::parallel(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
+	clear();
+
 	_kind = "parallel";
 	this->uid = uid;
 	this->chp = chp;
@@ -26,7 +28,6 @@ parallel::parallel(string uid, string chp, map<string, keyword*> *types, map<str
 	this->verbosity = verbosity;
 	this->global = globals;
 
-	clear();
 	expand_shortcuts();
 	parse(types);
 }
