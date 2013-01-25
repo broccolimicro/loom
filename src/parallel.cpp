@@ -56,7 +56,12 @@ parallel::~parallel()
 	instrs.clear();
 }
 
-void parallel::parse(map<string, keyword*> types)
+void parallel::expand_shortcuts()
+{
+
+}
+
+void parallel::parse(map<string, keyword*> *types)
 {
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Parallel: " << chp << endl;
@@ -90,9 +95,6 @@ void parallel::parse(map<string, keyword*> types)
 	state xstate;
 	state tstate;
 
-	for (l = init.begin(); l != init.end(); l++)
-		affected.insert(pair<string, variable*>(l->first, vars[l->first]));
-
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
 	int depth[3] = {0};
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()+1; i++)
@@ -122,21 +124,21 @@ void parallel::parse(map<string, keyword*> types)
 
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (sequential)
-				instr = new parallel(uid + nid++, raw_instr, types, global, init, tab+"\t", verbosity);
+				instr = new parallel(uid + nid++, raw_instr, types, global, tab+"\t", verbosity);
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
-				instr = new block(uid + nid++, raw_instr.substr(1, raw_instr.length()-2), types, global, init, tab+"\t", verbosity);
+				instr = new block(uid + nid++, raw_instr.substr(1, raw_instr.length()-2), types, global, tab+"\t", verbosity);
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new loop(uid + nid++, raw_instr, types, global, init, tab+"\t", verbosity);
+				instr = new loop(uid + nid++, raw_instr, types, global, tab+"\t", verbosity);
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new conditional(uid + nid++, raw_instr, types, global, init, tab+"\t", verbosity);
+				instr = new conditional(uid + nid++, raw_instr, types, global, tab+"\t", verbosity);
 			// This sub block is either a variable definition or an assignment instruction.
 			else
 			{
 				vdef = false;
-				for (t = types.begin(); t != types.end(); t++)
+				for (t = types->begin(); t != types->end(); t++)
 					if (raw_instr.find(t->first) != raw_instr.npos)
 					{
 						vdef = true;
@@ -152,13 +154,29 @@ void parallel::parse(map<string, keyword*> types)
 				}
 				// This sub block is an assignment instruction.
 				else if (raw_instr.length() != 0)
-					instr = new instruction(uid + nid++, raw_instr, types, global, init, tab+"\t", verbosity);
+					instr = new assignment(uid + nid++, raw_instr, types, global, tab+"\t", verbosity);
 			}
 
 			if (instr != NULL)
-			{
 				instrs.push_back(instr);
+			j = i+2;
+			sequential = false;
+		}
+		// We are in the current scope, and the current character
+		// is a parallel bar or the end of the chp string. This is
+		// the middle of a parallel sub block.
+		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && (*i == ';' || i == chp.end()))
+			sequential = true;
+	}
+}
 
+/*
+	for (l = init.begin(); l != init.end(); l++)
+		affected.insert(pair<string, variable*>(l->first, vars[l->first]));
+ */
+
+
+	/*
 				// Now that we have parsed the sub block, we need to
 				// check the resulting state space deltas of that sub block.
 				// Loop through all of the affected variables.
@@ -200,18 +218,10 @@ void parallel::parse(map<string, keyword*> types)
 							((space&)si->second).states.push_back(state(string(vi->second->width, 'X'), false));
 					}
 				}
-			}
-			j = i+2;
-			sequential = false;
-		}
-		// We are in the current scope, and the current character
-		// is a parallel bar or the end of the chp string. This is
-		// the middle of a parallel sub block.
-		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && (*i == ';' || i == chp.end()))
-			sequential = true;
-	}
+			}*/
 
-	if (verbosity >= VERB_PARSE)
+
+/*if (verbosity >= VERB_PARSE)
 		cout << endl;
 
 	for (ii = instrs.begin(); ii != instrs.end(); ii++)
@@ -224,7 +234,7 @@ void parallel::parse(map<string, keyword*> types)
 		for (; ij != instrs.end(); ij++)
 			for (l = (*ij)->result.begin(); l != (*ij)->result.end(); l++)
 				if ((*ii)->result.find(l->first) != (*ii)->result.end())
-					cout << "Error: Shared variable " << l->first << " violates non-interference: " << chp << endl;*/
+					cout << "Error: Shared variable " << l->first << " violates non-interference: " << chp << endl;* /
 
 		//Loop through all variables affected by these instructions
 		for (l = (*ii)->result.begin(); l != (*ii)->result.end(); l++)
@@ -244,5 +254,4 @@ void parallel::parse(map<string, keyword*> types)
 		for (l = result.begin(); l != result.end(); l++)
 			cout << "{" << l->first << " = " << l->second << "} ";
 		cout << endl;
-	}
-}
+	}*/
