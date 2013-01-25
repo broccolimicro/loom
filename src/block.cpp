@@ -593,6 +593,14 @@ bool cycle(rule start, rule end, list<rule> *prs)
  *
  * TODO The handshaking reshuffling algorithm has not yet been completed.
  */
+
+void block::generate_states(map<string, state> init);
+
+void block::generate_prs(map<string, variable*> globals)
+{
+
+}
+
 list<rule> production_rule(list<instruction*> instrs, map<string, space> states, string tab, int verbosity)
 {
 	list<rule> prs;

@@ -170,6 +170,18 @@ void parallel::parse(map<string, keyword*> *types)
 	}
 }
 
+void parallel::generate_states(map<string, state> init)
+{
+
+
+}
+
+void parallel::generate_prs(map<string, variable*> globals)
+{
+
+
+}
+
 /*
 	for (l = init.begin(); l != init.end(); l++)
 		affected.insert(pair<string, variable*>(l->first, vars[l->first]));

@@ -138,6 +138,18 @@ void loop::parse(map<string, keyword*> *types)
 	}
 }
 
+
+void loop::generate_states(map<string, state> init)
+{
+
+
+}
+
+void loop::generate_prs(map<string, variable*> globals)
+{
+
+
+}
 /*map<string, block*>::iterator ii;
 map<string, state>::iterator si, sj;
 
