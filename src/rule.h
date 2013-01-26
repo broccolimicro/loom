@@ -29,6 +29,4 @@ struct rule
 
 ostream &operator<<(ostream &os, rule r);
 
-rule simplify(rule r, map<string, space> states);
-
 #endif

@@ -8,7 +8,7 @@
  */
 
 #include "common.h"
-#include "state.h"
+#include "value.h"
 
 #ifndef variable_h
 #define variable_h
@@ -20,7 +20,7 @@
 struct variable
 {
 	variable();
-	variable(string n, string t, state r, uint16_t w);
+	variable(string n, string t, value r, uint16_t w);
 	variable(string raw, string tab, int verbosity);
 	~variable();
 
@@ -29,8 +29,8 @@ struct variable
 	string		type;		// the name of the type of the instantiated variable
 	uint16_t	width;		// the bit width of the instantiated variable
 	bool		fixed;		// is the bit width of this variable fixed or variable?
-	state		last;		// TODO remove?
-	state		reset;
+	value		last;		// TODO remove?
+	value		reset;
 	// TODO add field to keep track of whether or not to generate production rules for this variable
 
 	// TODO add index field

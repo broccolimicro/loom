@@ -6,6 +6,7 @@
  */
 
 #include "state.h"
+#include "trace.h"
 
 #ifndef space_h
 #define space_h

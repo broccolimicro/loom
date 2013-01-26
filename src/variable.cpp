@@ -20,7 +20,7 @@ variable::variable()
 	fixed = false;
 }
 
-variable::variable(string n, string t, state r, uint16_t w)
+variable::variable(string n, string t, value r, uint16_t w)
 {
 	name = n;
 	type = t;
@@ -74,7 +74,7 @@ void variable::parse(string raw, string tab, int verbosity)
 	if (reset_start != chp.npos)
 	{
 		name = chp.substr(name_start+1, reset_start - (name_start+1));
-		reset = state(chp.substr(reset_start+2), false);
+		reset = value(chp.substr(reset_start+2), false);
 		if (reset.data[1] == 'x')				// hexadecimal e.g. 0xFEEDFACE
 			reset.data = hex_to_bin(reset.data.substr(2));
 		else if (reset.data[1] == 'b')			// binary      e.g. 0b01100110

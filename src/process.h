@@ -10,6 +10,7 @@
 #include "keyword.h"
 #include "block.h"
 #include "common.h"
+#include "space.h"
 
 #ifndef process_h
 #define process_h
@@ -31,6 +32,8 @@ struct process : keyword
 	list<string>			prs;	// the final set of generated production rules
 	map<string, variable*>	global;	// globally defined variables: only used for channel definitions
 	map<string, variable*>	local;	// the input and output signals of this process
+	state_space				space;
+	graph					transitions;
 
 	process &operator=(process p);
 

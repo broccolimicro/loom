@@ -39,7 +39,6 @@ public:
 	 * 		the format of this value consists of 'i' or 'o' followed by n digits
 	 * 		with possible values '0', '1', and 'X'.
 	 */
-	map<string, space> states;
 	map<string, variable*>		local;
 	map<string, variable*>		global;
 

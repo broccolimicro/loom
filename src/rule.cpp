@@ -39,9 +39,9 @@ void rule::clear(int n)
 	actual.clear();
 	for (int i = 0; i < n; i++)
 		actual.push_back(state("1", false));
-	left.var = "";
+	left = "";
 	desired.clear();
-	right.var = "";
+	right = "";
 }
 
 /* This function returns the nth necessary firing of a production rule.
@@ -65,9 +65,4 @@ ostream &operator<<(ostream &os, rule r)
     os << r.left << " -> " << r.right;
 
     return os;
-}
-
-rule simplify(rule r, map<string, space> states)
-{
-	return r;
 }

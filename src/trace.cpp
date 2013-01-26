@@ -174,8 +174,6 @@ trace trace::operator[](int i)
 
 ostream &operator<<(ostream &os, trace s)
 {
-    os << s.var << string(max(20 - (int)s.var.length(), 1), ' ') << ": ";
-
     vector<value>::iterator i;
     for (i = s.values.begin(); i != s.values.end(); i++)
     	os << *i << " ";
@@ -189,7 +187,7 @@ trace operator+(trace s1, trace s2)
 	value a, b;
 	trace result;
 
-	result.var = s1.var + "+" + s2.var;
+	//result.var = s1.var + "+" + s2.var;
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
@@ -208,7 +206,7 @@ trace operator-(trace s1, trace s2)
 	value a, b;
 	trace result;
 
-	result.var = s1.var + "-" + s2.var;
+	//result.var = s1.var + "-" + s2.var;
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
@@ -227,7 +225,7 @@ trace operator*(trace s1, trace s2)
 	value a, b;
 	trace result;
 
-	result.var = s1.var + "*" + s2.var;
+	//result.var = s1.var + "*" + s2.var;
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
@@ -246,7 +244,7 @@ trace operator/(trace s1, trace s2)
 	value a, b;
 	trace result;
 
-	result.var = s1.var + "/" + s2.var;
+	//result.var = s1.var + "/" + s2.var;
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
@@ -265,7 +263,7 @@ trace operator+(trace s1, value s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.var + "+" + s2.data;
+	//result.var =  s1.var + "+" + s2.data;
 	for (i = s1.values.begin(); i != s1.values.end(); i++)
 		result.values.push_back(*i + s2);
 
@@ -277,7 +275,7 @@ trace operator-(trace s1, value s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.var + "-" + s2.data;
+	//result.var =  s1.var + "-" + s2.data;
 	for (i = s1.values.begin(); i != s1.values.end(); i++)
 		result.values.push_back(*i - s2);
 
@@ -289,7 +287,7 @@ trace operator*(trace s1, value s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.var + "*" + s2.data;
+	//result.var =  s1.var + "*" + s2.data;
 	for (i = s1.values.begin(); i != s1.values.end(); i++)
 		result.values.push_back(*i * s2);
 
@@ -301,7 +299,7 @@ trace operator/(trace s1, value s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.var + "/" + s2.data;
+	//result.var =  s1.var + "/" + s2.data;
 	for (i = s1.values.begin(); i != s1.values.end(); i++)
 		result.values.push_back(*i / s2);
 
@@ -313,7 +311,7 @@ trace operator+(value s1, trace s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.data + "+" + s2.var;
+	//result.var =  s1.data + "+" + s2.var;
 	for (i = s2.values.begin(); i != s2.values.end(); i++)
 		result.values.push_back(s1 + *i);
 
@@ -325,7 +323,7 @@ trace operator-(value s1, trace s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.data + "-" + s2.var;
+	//result.var =  s1.data + "-" + s2.var;
 	for (i = s2.values.begin(); i != s2.values.end(); i++)
 		result.values.push_back(s1 - *i);
 
@@ -337,7 +335,7 @@ trace operator*(value s1, trace s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.data + "*" + s2.var;
+	//result.var =  s1.data + "*" + s2.var;
 	for (i = s2.values.begin(); i != s2.values.end(); i++)
 		result.values.push_back(s1 * *i);
 
@@ -349,7 +347,7 @@ trace operator/(value s1, trace s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.data + "/" + s2.var;
+	//result.var =  s1.data + "/" + s2.var;
 	for (i = s2.values.begin(); i != s2.values.end(); i++)
 		result.values.push_back(s1 / *i);
 
@@ -361,7 +359,7 @@ trace operator-(trace s)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  "-" + s.var;
+	//result.var =  "-" + s.var;
 	for (i = s.values.begin(); i != s.values.end(); i++)
 		result.values.push_back(-*i);
 
@@ -374,7 +372,7 @@ trace operator&(trace s1, trace s2)
 	value a, b;
 	trace result;
 
-	result.var = s1.var + "&" + s2.var;
+	//result.var = s1.var + "&" + s2.var;
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
@@ -393,7 +391,7 @@ trace operator|(trace s1, trace s2)
 	value a, b;
 	trace result;
 
-	result.var = s1.var + "|" + s2.var;
+	//result.var = s1.var + "|" + s2.var;
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
@@ -411,7 +409,7 @@ trace operator&(trace s1, value s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.var + "&" + s2.data;
+	//result.var =  s1.var + "&" + s2.data;
 	for (i = s1.values.begin(); i != s1.values.end(); i++)
 		result.values.push_back(*i & s2);
 
@@ -423,7 +421,7 @@ trace operator|(trace s1, value s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.var + "|" + s2.data;
+	//result.var =  s1.var + "|" + s2.data;
 	for (i = s1.values.begin(); i != s1.values.end(); i++)
 		result.values.push_back(*i | s2);
 
@@ -435,7 +433,7 @@ trace operator&(value s1, trace s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.data + "&" + s2.var;
+	//result.var =  s1.data + "&" + s2.var;
 	for (i = s2.values.begin(); i != s2.values.end(); i++)
 		result.values.push_back(s1 & *i);
 
@@ -447,7 +445,7 @@ trace operator|(value s1, trace s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.data + "|" + s2.var;
+	//result.var =  s1.data + "|" + s2.var;
 	for (i = s2.values.begin(); i != s2.values.end(); i++)
 		result.values.push_back(s1 | *i);
 
@@ -459,7 +457,7 @@ trace operator~(trace s)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  "~" + s.var;
+	//result.var =  "~" + s.var;
 	for (i = s.values.begin(); i != s.values.end(); i++)
 		result.values.push_back(~*i);
 
@@ -472,7 +470,7 @@ trace operator<<(trace s1, trace s2)
 	value a, b;
 	trace result;
 
-	result.var = s1.var + "<<" + s2.var;
+	//result.var = s1.var + "<<" + s2.var;
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
@@ -491,7 +489,7 @@ trace operator>>(trace s1, trace s2)
 	value a, b;
 	trace result;
 
-	result.var = s1.var + ">>" + s2.var;
+	//result.var = s1.var + ">>" + s2.var;
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
@@ -509,7 +507,7 @@ trace operator<<(trace s1, value s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var = s1.var + "<<" + s2.data;
+	//result.var = s1.var + "<<" + s2.data;
 	for (i = s1.values.begin(); i != s1.values.end(); i++)
 		result.values.push_back(*i << s2);
 
@@ -521,7 +519,7 @@ trace operator>>(trace s1, value s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var = s1.var + ">>" + s2.data;
+	//result.var = s1.var + ">>" + s2.data;
 	for (i = s1.values.begin(); i != s1.values.end(); i++)
 		result.values.push_back(*i >> s2);
 
@@ -533,7 +531,7 @@ trace operator<<(value s1, trace s2)
 	trace result;
 	vector<value>::iterator i, j;
 
-	result.var = s1.data + "<<" + s2.var;
+	//result.var = s1.data + "<<" + s2.var;
 	for (i = s2.values.begin(); i != s2.values.end(); i++)
 		result.values.push_back(s1 << *i);
 
@@ -545,7 +543,7 @@ trace operator>>(value s1, trace s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var = s1.data + ">>" + s2.var;
+	//result.var = s1.data + ">>" + s2.var;
 	for (i = s2.values.begin(); i != s2.values.end(); i++)
 		result.values.push_back(s1 >> *i);
 
@@ -557,7 +555,7 @@ trace operator<<(trace s, int n)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var = s.var + "<<" + to_string(n);
+	//result.var = s.var + "<<" + to_string(n);
 	for (i = s.values.begin(); i != s.values.end(); i++)
 		result.values.push_back(*i << n);
 
@@ -569,7 +567,7 @@ trace operator>>(trace s, int n)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var = s.var + ">>" + to_string(n);
+	//result.var = s.var + ">>" + to_string(n);
 	for (i = s.values.begin(); i != s.values.end(); i++)
 		result.values.push_back(*i >> n);
 
@@ -596,7 +594,7 @@ trace operator==(trace s1, trace s2)
 	value a, b;
 	trace result;
 
-	result.var = s1.var + "==" + s2.var;
+	//result.var = s1.var + "==" + s2.var;
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
@@ -615,7 +613,7 @@ trace operator!=(trace s1, trace s2)
 	value a, b;
 	trace result;
 
-	result.var = s1.var + "~=" + s2.var;
+	//result.var = s1.var + "~=" + s2.var;
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
@@ -634,7 +632,7 @@ trace operator<=(trace s1, trace s2)
 	value a, b;
 	trace result;
 
-	result.var = s1.var + "<=" + s2.var;
+	//result.var = s1.var + "<=" + s2.var;
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
@@ -653,7 +651,7 @@ trace operator>=(trace s1, trace s2)
 	value a, b;
 	trace result;
 
-	result.var = s1.var + ">=" + s2.var;
+	//result.var = s1.var + ">=" + s2.var;
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
@@ -672,7 +670,7 @@ trace operator<(trace s1, trace s2)
 	value a, b;
 	trace result;
 
-	result.var = s1.var + "<" + s2.var;
+	//result.var = s1.var + "<" + s2.var;
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
@@ -691,7 +689,7 @@ trace operator>(trace s1, trace s2)
 	value a, b;
 	trace result;
 
-	result.var = s1.var + ">" + s2.var;
+	//result.var = s1.var + ">" + s2.var;
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
@@ -709,7 +707,7 @@ trace operator==(trace s1, value s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.var + "==" + s2.data;
+	//result.var =  s1.var + "==" + s2.data;
 	for (i = s1.values.begin(); i != s1.values.end(); i++)
 		result.values.push_back(*i == s2);
 
@@ -721,7 +719,7 @@ trace operator!=(trace s1, value s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.var + "~=" + s2.data;
+	//result.var =  s1.var + "~=" + s2.data;
 	for (i = s1.values.begin(); i != s1.values.end(); i++)
 		result.values.push_back(*i != s2);
 
@@ -733,7 +731,7 @@ trace operator<=(trace s1, value s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.var + "<=" + s2.data;
+	//result.var =  s1.var + "<=" + s2.data;
 	for (i = s1.values.begin(); i != s1.values.end(); i++)
 		result.values.push_back(*i <= s2);
 
@@ -745,7 +743,7 @@ trace operator>=(trace s1, value s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.var + ">=" + s2.data;
+	//result.var =  s1.var + ">=" + s2.data;
 	for (i = s1.values.begin(); i != s1.values.end(); i++)
 		result.values.push_back(*i >= s2);
 
@@ -757,7 +755,7 @@ trace operator<(trace s1, value s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.var + "<" + s2.data;
+	//result.var =  s1.var + "<" + s2.data;
 	for (i = s1.values.begin(); i != s1.values.end(); i++)
 		result.values.push_back(*i < s2);
 
@@ -769,7 +767,7 @@ trace operator>(trace s1, value s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.var + ">" + s2.data;
+	//result.var =  s1.var + ">" + s2.data;
 	for (i = s1.values.begin(); i != s1.values.end(); i++)
 		result.values.push_back(*i > s2);
 
@@ -781,7 +779,7 @@ trace operator==(value s1, trace s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.data + "==" + s2.var;
+	//result.var =  s1.data + "==" + s2.var;
 	for (i = s2.values.begin(); i != s2.values.end(); i++)
 		result.values.push_back(s1 == *i);
 
@@ -793,7 +791,7 @@ trace operator!=(value s1, trace s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.data + "~=" + s2.var;
+	//result.var =  s1.data + "~=" + s2.var;
 	for (i = s2.values.begin(); i != s2.values.end(); i++)
 		result.values.push_back(s1 != *i);
 
@@ -805,7 +803,7 @@ trace operator<=(value s1, trace s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.data + "<=" + s2.var;
+	//result.var =  s1.data + "<=" + s2.var;
 	for (i = s2.values.begin(); i != s2.values.end(); i++)
 		result.values.push_back(s1 <= *i);
 
@@ -817,7 +815,7 @@ trace operator>=(value s1, trace s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.data + ">=" + s2.var;
+	//result.var =  s1.data + ">=" + s2.var;
 	for (i = s2.values.begin(); i != s2.values.end(); i++)
 		result.values.push_back(s1 >= *i);
 
@@ -829,7 +827,7 @@ trace operator<(value s1, trace s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.data + "<" + s2.var;
+	//result.var =  s1.data + "<" + s2.var;
 	for (i = s2.values.begin(); i != s2.values.end(); i++)
 		result.values.push_back(s1 < *i);
 
@@ -841,7 +839,7 @@ trace operator>(value s1, trace s2)
 	trace result;
 	vector<value>::iterator i;
 
-	result.var =  s1.data + ">" + s2.var;
+	//result.var =  s1.data + ">" + s2.var;
 	for (i = s2.values.begin(); i != s2.values.end(); i++)
 		result.values.push_back(s1 > *i);
 
