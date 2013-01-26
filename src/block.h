@@ -31,8 +31,6 @@ struct block : instruction
 	block(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity);
 	~block();
 
-	map<string, variable*>		local;
-	map<string, variable*>		global;
 	list<instruction*>			instrs;		// an ordered list of instructions in block
 	list<size_t>				waits;
 	list<map<string, state> >	changes;

@@ -12,6 +12,7 @@ assignment::assignment(string uid, string chp, map<string, keyword*> *types, map
 	this->chp		= chp;
 	this->tab		= tab;
 	this->verbosity = verbosity;
+	this->global	= globals;
 
 	expand_shortcuts();
 	parse(types);
@@ -73,19 +74,33 @@ void assignment::generate_states(map<string, state> init)
 	map<string, space>::iterator space_iter;
 	map<string, state>::iterator state_iter;
 	map<string, string>::iterator expr_iter;
+	map<string, variable*>::iterator var_iter;
 
 
 	for (state_iter = init.begin(); state_iter != init.end(); state_iter++)
 	{
-		states.insert(pair<string, space>(state_iter->first, space()));
-		states.rbegin()->second.states.push_back(state_iter->second);
-		states.rbegin()->second.states.push_back(state_iter->second);
+		space_iter = states.insert(pair<string, space>(state_iter->first, space())).first;
+		space_iter->second.var = state_iter->first;
+		space_iter->second.states.push_back(state_iter->second);
+		space_iter->second.states.push_back(state_iter->second);
 	}
 
 	for (expr_iter = expr.begin(); expr_iter != expr.end(); expr_iter++)
 	{
+		var_iter = global.find(expr_iter->first);
 		space_iter = states.find(expr_iter->first);
-		*(space_iter->second.states.rbegin()) = expression(expr_iter->second, init, tab, verbosity);
+
+		if (var_iter != global.end() && space_iter != states.end())
+			*(space_iter->second.states.rbegin()) = expression(expr_iter->second, init, tab, verbosity);
+		else if (var_iter != global.end())
+		{
+			space_iter = states.insert(pair<string, space>(expr_iter->first, space())).first;
+			space_iter->second.var = expr_iter->first;
+			space_iter->second.states.push_back(state("X", false));
+			space_iter->second.states.push_back(expression(expr_iter->second, init, tab, verbosity));
+		}
+		else
+			cout << "Error: Undefined variable " << expr_iter->first << "." << endl;
 	}
 
 	print_state_space();

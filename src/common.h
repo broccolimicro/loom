@@ -20,6 +20,8 @@
 #include <map>
 #include <sstream>
 #include <algorithm>
+#include <array>
+#include <vector>
 
 using namespace std;
 

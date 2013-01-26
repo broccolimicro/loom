@@ -41,16 +41,6 @@ block::~block()
 	chp = "";
 	_kind = "block";
 
-	map<string, variable*>::iterator i;
-	for (i = local.begin(); i != local.end(); i++)
-	{
-		if (i->second != NULL)
-			delete i->second;
-		i->second = NULL;
-	}
-
-	local.clear();
-
 	list<instruction*>::iterator j;
 	for (j = instrs.begin(); j != instrs.end(); j++)
 	{
@@ -184,7 +174,9 @@ void block::parse(map<string, keyword*> *types)
 
 void block::generate_states(map<string, state> init)
 {
-	/*map<string, state> current_state, change_state;
+	cout << tab << "Generating State Space" << endl;
+
+	map<string, state> current_state, change_state;
 
 	list<instruction*>		::iterator	ii, ix;
 	map<string, variable*>	::iterator	vi, vj;
@@ -197,8 +189,6 @@ void block::generate_states(map<string, state> init)
 	list<map<string, state> >			tracer_changes;
 	list<map<string, state> > :: iterator xi;
 	map<string, variable*>				affected;
-	list<list<variable*> >				delta_out;
-	list<variable*> delta;
 
 	map<string, size_t>					prgm_start;
 	map<string, size_t>					prgm_ctr;
@@ -216,51 +206,72 @@ void block::generate_states(map<string, state> init)
 
 	bool first		= false;
 
+	map<string, state>::iterator state_iter;
+	map<string, space>::iterator space_iter;
+	map<string, variable*>::iterator var_iter, var_iter1;
+	list<list<variable*> >				delta_out;
+	list<variable*> delta;
+	instruction *instr;
+
 	list<instruction*>::iterator instr_iter;
 	// Add the initial states into the affected variable list
 	// This makes sure that evaluated guards pass through skip blocks
-	for (l = init.begin(); l != init.end(); l++)
-		if ((vi = vars.find(l->first)) != vars.end())
+	for (state_iter = init.begin(); state_iter != init.end(); state_iter++)
+		if ((var_iter = global.find(state_iter->first)) != global.end())
 		{
-			affected.insert(pair<string, variable*>(vi->first, vi->second));
-			current_state.insert(pair<string, state>(l->first, l->second));
+			affected.insert(pair<string, variable*>(var_iter->first, var_iter->second));
+			current_state.insert(pair<string, state>(state_iter->first, state_iter->second));
 		}
-
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
-		// Now that we have parsed the sub block, we need to
-		// check the resulting state space deltas of that sub block.
+		instr = *instr_iter;
+		instr->generate_states(current_state);
+
+		// check the resulting state space deltas
 		// Loop through all of the affected variables.
 		delta.clear();
-		for (l = instr->result.begin(); l != instr->result.end(); l++)
+		for (space_iter = instr->states.begin(); space_iter != instr->states.end(); space_iter++)
 		{
 			// If this variable exists, we mark whether or not we need to
 			// generate a production rule for this instruction.
-			vi = global.find(l->first);
-			if (vi == global.end() && l->first != "Unhandled")
-				cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + l->first << " " << instr->chp << endl;
-			else if (vi != global.end())
+			var_iter = global.find(space_iter->first);
+			if (var_iter == global.end())	// This probably shouldn't happen
+				cout<< "Error: you are trying to call an instruction that operates on a variable not in this block's scope: " + space_iter->first << " " << instr->chp << endl;
+			else if (var_iter != global.end())
 			{
 				// The delta list is a list of parents of signals that are
 				// currently firing. Add these signals to the list.
-				if ((l->second.prs) && (l->second.data != vi->second->last.data))
+				if ((space_iter->second.states.back().prs) && (space_iter->second.states.back().data != var_iter->second->last.data))
 				{
-					vj = global.find(l->first.substr(0, l->first.find_first_of(".")));
-					if (vj != global.end())
-						delta.push_back(vj->second);
+					var_iter1 = global.find(space_iter->first.substr(0, space_iter->first.find_first_of(".")));
+					if (var_iter1 != global.end())
+						delta.push_back(var_iter1->second);
 				}
 
 				// Set the last value of the variable
-				vi->second->last = l->second;
+				var_iter->second->last = space_iter->second.states.back();
 
 				// And make sure that we keep track of this variable if it has been
 				// newly created.
-				if (affected.find(vi->first) == affected.end())
-					affected.insert(pair<string, variable*>(vi->first, vi->second));
+				if (affected.find(var_iter->first) == affected.end())
+					affected.insert(pair<string, variable*>(var_iter->first, var_iter->second));
 			}
 		}
+
+		for (dvi = delta.begin(); dvi != delta.end(); dvi++)
+			cout << (*dvi)->name << endl;
+
 		delta_out.push_back(delta);
+
+
+
+	}
+
+	/*for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+	{
+		instr = *instr_iter;
+
 
 		// Fill in the state space based upon the recorded delta values from instruction parsing above.
 		// Right now, we X out the input variables when an instruction changes an output value. This will
@@ -471,33 +482,35 @@ void block::generate_states(map<string, state> init)
 			change_state.insert(pair<string, state>(vi->first, *((space&)si->second).states.rbegin()));
 		}
 	}
-	changes.push_back(change_state);
+	changes.push_back(change_state);*/
 
 
-	for(si = states.begin(); si != states.end(); si++)
+	/*for(si = states.begin(); si != states.end(); si++)
 	{
 		if (verbosity >= VERB_STATES)
 			cout << tab << si->second << endl;
-		if (local.find(si->first) == local.end())
-			result.insert(pair<string, state>(si->first, *(((space&)si->second).states.rbegin())));
-	}
+		//if (local.find(si->first) == local.end())
+		//	result.insert(pair<string, state>(si->first, *(((space&)si->second).states.rbegin())));
+	}*/
 
-	if (verbosity >= VERB_STATES)
+	/*if (verbosity >= VERB_STATES)
+	{
+		cout << tab << "Waits: ";
+		for (pj = waits.begin(); pj != waits.end(); pj++)
+			cout << *pj << " ";
+		cout << endl;
+
+		cout << tab << "Changes: ";
+		for (xi = changes.begin(); xi != changes.end(); xi++)
 		{
-			cout << tab << "Waits: ";
-			for (pj = waits.begin(); pj != waits.end(); pj++)
-				cout << *pj << " ";
-			cout << endl;
+			for (m = xi->begin(); m != xi->end(); m++)
+				cout << m->first << ":" << m->second << " ";
+			cout << ", ";
+		}
+		cout << endl;
+	}*/
 
-			cout << tab << "Changes: ";
-			for (xi = changes.begin(); xi != changes.end(); xi++)
-			{
-				for (m = xi->begin(); m != xi->end(); m++)
-					cout << m->first << ":" << m->second << " ";
-				cout << ", ";
-			}
-			cout << endl;
-		}*/
+	print_state_space();
 }
 
 void block::generate_prs(map<string, variable*> globals)

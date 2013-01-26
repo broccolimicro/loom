@@ -278,7 +278,7 @@ for (ii = instrs.begin(); ii != instrs.end(); ii++)
 
 void conditional::generate_states(map<string, state> init)
 {
-
+/*
 
 
 	map<string, state>::iterator vi;
@@ -317,6 +317,15 @@ void conditional::generate_states(map<string, state> init)
 			s.states.push_back(iter->second.states.back());
 			states.insert(pair<string, space>(s.var, s));
 		}
+	}*/
+
+	map<string, block*>::iterator instr_iter;
+	block *instr;
+
+	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+	{
+		instr = instr_iter->second;
+		instr->generate_states(map<string, state>());
 	}
 }
 

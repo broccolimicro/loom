@@ -18,7 +18,8 @@ struct rule
 	rule();
 	~rule();
 
-	space left, right;
+	string left, right;
+	trace actual, desired;
 
 	rule &operator=(rule s);
 

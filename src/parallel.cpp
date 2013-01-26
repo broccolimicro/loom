@@ -173,6 +173,14 @@ void parallel::generate_states(map<string, state> init)
 {
 
 
+	list<instruction*>::iterator instr_iter;
+	instruction *instr;
+
+	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+	{
+		instr = *instr_iter;
+		instr->generate_states(map<string, state>());
+	}
 }
 
 void parallel::generate_prs(map<string, variable*> globals)

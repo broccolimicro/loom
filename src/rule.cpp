@@ -13,18 +13,18 @@
 
 rule::rule()
 {
-	left.states.clear();
-	left.var = "";
-	right.states.clear();
-	right.var = "";
+	actual.clear();
+	left = "";
+	desired.clear();
+	right = "";
 }
 
 rule::~rule()
 {
-	left.states.clear();
-	left.var = "";
-	right.states.clear();
-	right.var = "";
+	actual.clear();
+	left = "";
+	desired.clear();
+	right = "";
 }
 
 rule &rule::operator=(rule s)
@@ -36,11 +36,11 @@ rule &rule::operator=(rule s)
 
 void rule::clear(int n)
 {
-	left.states.clear();
+	actual.clear();
 	for (int i = 0; i < n; i++)
-		left.states.push_back(state("1", false));
+		actual.push_back(state("1", false));
 	left.var = "";
-	right.states.clear();
+	desired.clear();
 	right.var = "";
 }
 
@@ -51,7 +51,7 @@ int rule::index(int n)
 {
 	list<state>::iterator i;
 	int j;
-	for (i = right.states.begin(), j = 0; i != right.states.end() && n > 0; i++, j++)
+	for (i = desired.begin(), j = 0; i != desired.end() && n > 0; i++, j++)
 		if (i->data == "1" && i->prs)
 			n--;
 

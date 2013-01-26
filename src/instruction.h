@@ -32,7 +32,7 @@ public:
 	// The raw CHP of this instruction.
 	string chp;
 	// A unique identifier to address this instruction.
-	string uid;
+	string uid;	// TODO assign this in state space generation
 
 	/* the key is the name of the variable affected
 	 * the value is the value of that variable at the end of the instruction
@@ -40,6 +40,8 @@ public:
 	 * 		with possible values '0', '1', and 'X'.
 	 */
 	map<string, space> states;
+	map<string, variable*>		local;
+	map<string, variable*>		global;
 
 	// This is the list of production rules that defines this instruction
 	list<rule> rules;
