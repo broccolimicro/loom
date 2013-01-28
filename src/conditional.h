@@ -10,6 +10,7 @@
 #include "block.h"
 #include "common.h"
 #include "keyword.h"
+#include "state.h"
 
 #ifndef conditional_h
 #define conditional_h
@@ -32,7 +33,7 @@ struct conditional : block
 
 	void expand_shortcuts();
 	void parse(map<string, keyword*> *types);
-	void generate_states(map<string, state> init);
+	void generate_states(state init);
 	void generate_prs(map<string, variable*> globals);
 	void generate_statevars();
 	// void handshaking_reshuffle();
@@ -40,6 +41,6 @@ struct conditional : block
 
 };
 
-map<string, state> guard(string raw, map<string, variable*> vars, string tab, int verbosity);
+state guard(string raw, map<string, variable*> vars, string tab, int verbosity);
 
 #endif

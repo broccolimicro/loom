@@ -51,12 +51,11 @@ public:
 
 	string kind();
 
-	void print_state_space();
 	void print_prs();
 
 	virtual void expand_shortcuts() = 0;
 	virtual void parse(map<string, keyword*> *types) = 0;
-	virtual void generate_states(map<string, state> init) = 0;
+	virtual void generate_states(state init) = 0;
 	virtual void generate_prs(map<string, variable*> globals) = 0;
 };
 

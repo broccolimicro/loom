@@ -39,19 +39,6 @@ string instruction::kind()
 	return _kind;
 }
 
-void instruction::print_state_space()
-{
-	map<string, space>::iterator i;
-	if (verbosity >= VERB_PARSE)
-	{
-		cout << tab << "State Space" << endl;
-
-		for (i = states.begin(); i != states.end(); i++)
-			cout << tab + "\t" << i->second << endl;
-		cout << endl;
-	}
-}
-
 void instruction::print_prs()
 {
 	list<rule>::iterator i;

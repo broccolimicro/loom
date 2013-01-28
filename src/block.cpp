@@ -56,7 +56,6 @@ block &block::operator=(block b)
 {
 	chp = b.chp;
 	instrs = b.instrs;
-	states = b.states;
 	return *this;
 }
 
@@ -172,11 +171,19 @@ void block::parse(map<string, keyword*> *types)
 	}
 }
 
-void block::generate_states(map<string, state> init)
+void block::generate_states(state init)
 {
 	cout << tab << "Generating State Space" << endl;
 
-	map<string, state> current_state, change_state;
+	list<instruction*>::iterator instr_iter;
+	instruction *instr;
+	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+	{
+		instr = *instr_iter;
+		instr->generate_states(state());
+	}
+
+	/*map<string, state> current_state, change_state;
 
 	list<instruction*>		::iterator	ii, ix;
 	map<string, variable*>	::iterator	vi, vj;
@@ -268,7 +275,7 @@ void block::generate_states(map<string, state> init)
 
 	}
 
-	/*for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
 
@@ -482,18 +489,18 @@ void block::generate_states(map<string, state> init)
 			change_state.insert(pair<string, state>(vi->first, *((space&)si->second).states.rbegin()));
 		}
 	}
-	changes.push_back(change_state);*/
+	changes.push_back(change_state);
 
 
-	/*for(si = states.begin(); si != states.end(); si++)
+	for(si = states.begin(); si != states.end(); si++)
 	{
 		if (verbosity >= VERB_STATES)
 			cout << tab << si->second << endl;
 		//if (local.find(si->first) == local.end())
 		//	result.insert(pair<string, state>(si->first, *(((space&)si->second).states.rbegin())));
-	}*/
+	}
 
-	/*if (verbosity >= VERB_STATES)
+	if (verbosity >= VERB_STATES)
 	{
 		cout << tab << "Waits: ";
 		for (pj = waits.begin(); pj != waits.end(); pj++)
@@ -509,8 +516,6 @@ void block::generate_states(map<string, state> init)
 		}
 		cout << endl;
 	}*/
-
-	print_state_space();
 }
 
 void block::generate_prs(map<string, variable*> globals)
@@ -581,13 +586,12 @@ void block::clear()
 	local.clear();
 	global.clear();
 	instrs.clear();
-	states.clear();
 	waits.clear();
 	changes.clear();
 	rules.clear();
 }
 
-bool cycle(rule start, rule end, list<rule> *prs)
+/*bool cycle(rule start, rule end, list<rule> *prs)
 {
 	list<rule>::iterator ri;
 
@@ -600,7 +604,7 @@ bool cycle(rule start, rule end, list<rule> *prs)
 				result = result || cycle(start, *ri, prs);
 
 	return result;
-}
+}*/
 
 /* This function generates a set of production rules for the given state space and variable space.
  * It uses two primary measurements to help with this: the count, and the strict count. The count
@@ -613,7 +617,7 @@ bool cycle(rule start, rule end, list<rule> *prs)
  *
  * TODO The handshaking reshuffling algorithm has not yet been completed.
  */
-list<rule> production_rule(list<instruction*> instrs, map<string, space> states, string tab, int verbosity)
+/*list<rule> production_rule(list<instruction*> instrs, map<string, space> states, string tab, int verbosity)
 {
 	list<rule> prs;
 	list<instruction*>::iterator ii;
@@ -661,7 +665,7 @@ list<rule> production_rule(list<instruction*> instrs, map<string, space> states,
 	}
 
 	return prs;
-}
+}*/
 
 /* Search a backward in a conflict string starting at a necessary
  * firing for a clean state variable position.
@@ -783,7 +787,7 @@ size_t search_front(string s, size_t offset)
  * C..C!
  * !C..C
 */
-list<size_t> state_variable_positions(space left, space right, string tab, int verbosity)
+/*list<size_t> state_variable_positions(space left, space right, string tab, int verbosity)
 {
 	list<size_t> state_locations;
 	list<size_t>::iterator si;
@@ -840,9 +844,9 @@ list<size_t> state_variable_positions(space left, space right, string tab, int v
 	}
 
 	return state_locations;
-}
+}*/
 
-bool production_rule_check(string *raw, block *b, string tab, int verbosity)
+/*bool production_rule_check(string *raw, block *b, string tab, int verbosity)
 {
 	// At this point, block has a set of candidate rules. Check to see if those rules fire at the
 	// appropriate times. If not, add state variables and reparse.
@@ -942,4 +946,4 @@ bool production_rule_check(string *raw, block *b, string tab, int verbosity)
 	}
 	else
 		return true;
-}
+}*/

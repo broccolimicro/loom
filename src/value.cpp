@@ -12,41 +12,27 @@
 value::value()
 {
 	data = "";
-	prs = false;
 }
 
 value::value(string d)
 {
 	data = d;
-	prs = true;
-}
-
-value::value(string d, bool p)
-{
-	data = d;
-	prs = p;
 }
 
 value::~value()
 {
 	data = "";
-	prs = false;
 }
 
 value &value::operator=(value s)
 {
 	data = s.data;
-	prs = s.prs;
 	return *this;
 }
 
 value &value::operator=(string s)
 {
-	if (s[0] == 'i')
-		prs = false;
-	else
-		prs = true;
-	data = s.substr(s[0] == 'o' || s[0] == 'i' ? 1 : 0);
+	data = s;
 
 	return *this;
 }
@@ -122,19 +108,19 @@ value value::operator[](size_t i)
 		str << '0';
 
 	str >> s;
-	return value(s, prs);
+	return value(s);
 }
 
 ostream &operator<<(ostream &os, value s)
 {
-	os << (s.prs ? "o" : "i") << s.data;
+	os << s.data;
 	return os;
 }
 
 value operator+(value s1, value s2)
 {
 	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
-		return value("_", true);
+		return value("_");
 
 	string::reverse_iterator j, k;
 	value result;
@@ -170,7 +156,6 @@ value operator+(value s1, value s2)
 	if(carry!='0'){
 		result.data = carry + result.data;
 	}
-	result.prs = true;
 
 	return result;
 }
@@ -178,15 +163,15 @@ value operator+(value s1, value s2)
 value operator-(value s1, value s2)
 {
 	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
-		return value("_", true);
+		return value("_");
 
-	return s1 + ~s2 + value("1", true);
+	return s1 + ~s2 + value("1");
 }
 
 value operator*(value s1, value s2)
 {
 	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
-		return value("_", true);
+		return value("_");
 
 	value result;
 	value mult = s1;
@@ -198,7 +183,7 @@ value operator*(value s1, value s2)
 		if (*j == '1')
 			result += mult;
 		else if (*j == 'X')
-			result += (mult & value(string(mult.data.length(), 'X'), true));
+			result += (mult & value(string(mult.data.length(), 'X')));
 
 		mult += mult;
 	}
@@ -212,17 +197,17 @@ value operator*(value s1, value s2)
 value operator/(value s1, value s2)
 {
 	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
-		return value("_", true);
+		return value("_");
 
-	return value("", true);
+	return value("");
 }
 
 value operator-(value s)
 {
 	if (s.data.find_first_of("_") != s.data.npos)
-		return value("_", true);
+		return value("_");
 
-	return ~s + value("1", true);
+	return ~s + value("1");
 }
 
 value operator&(value s1, value s2)
@@ -243,8 +228,6 @@ value operator&(value s1, value s2)
 		else
 			result.data = "1" + result.data;
 	}
-
-	result.prs = true;
 
 	return result;
 }
@@ -268,8 +251,6 @@ value operator|(value s1, value s2)
 			result.data = "0" + result.data;
 	}
 
-	result.prs = true;
-
 	return result;
 }
 
@@ -288,19 +269,17 @@ value operator~(value s)
 			result.data += "X";
 	}
 
-	result.prs = true;
-
 	return result;
 }
 
 value operator<<(value s, int n)
 {
-	return value(s.data + string(n, '0'), true);
+	return value(s.data + string(n, '0'));
 }
 
 value operator>>(value s, int n)
 {
-	return value((string(n, '0') + s.data).substr(0, s.data.length()), true);
+	return value((string(n, '0') + s.data).substr(0, s.data.length()));
 }
 
 // DOES NOT HANDLE X VALUES
@@ -322,7 +301,7 @@ value operator<<(value s1, value s2)
 		mult += mult;
 	}
 
-	return value(s1.data + zeros, true);
+	return value(s1.data + zeros);
 }
 
 // DOES NOT HANDLE X VALUES
@@ -344,13 +323,13 @@ value operator>>(value s1, value s2)
 		mult += mult;
 	}
 
-	return value((zeros + s1.data).substr(0, s1.data.length()), true);
+	return value((zeros + s1.data).substr(0, s1.data.length()));
 }
 
 value operator==(value s1, value s2)
 {
 	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
-		return value("_", true);
+		return value("_");
 
 	string::reverse_iterator j, k;
 	char a, b;
@@ -364,12 +343,10 @@ value operator==(value s1, value s2)
 		b = k != s2.data.rend() ? *k++ : '0';
 
 		if ((a == '1' && b == '0') || (a == '0' && b == '1'))
-			return value("0", true);
+			return value("0");
 		else if (a == 'X' || b == 'X')
 			result.data = "X";
 	}
-
-	result.prs = true;
 
 	return result;
 }
@@ -377,7 +354,7 @@ value operator==(value s1, value s2)
 value operator!=(value s1, value s2)
 {
 	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
-		return value("_", true);
+		return value("_");
 
 	string::reverse_iterator j, k;
 	char a, b;
@@ -391,12 +368,11 @@ value operator!=(value s1, value s2)
 		b = k != s2.data.rend() ? *k++ : '0';
 
 		if ((a == '1' && b == '0') || (a == '0' && b == '1'))
-			return value("1", true);
+			return value("1");
 		else if (a == 'X' || b == 'X')
 			result.data = "X";
 	}
 
-	result.prs = true;
 
 	return result;
 }
@@ -404,7 +380,7 @@ value operator!=(value s1, value s2)
 value operator<=(value s1, value s2)
 {
 	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
-		return value("_", true);
+		return value("_");
 
 	int j, k;
 	int l0 = s1.data.length(), l1 = s2.data.length();
@@ -418,33 +394,33 @@ value operator<=(value s1, value s2)
 		if (l0 - j < l1 - k)
 		{
 			if (*b == '1')
-				return value("1", true);
+				return value("1");
 			else if (*b == 'X')
-				return value("X", true);
+				return value("X");
 		}
 		else if (l0 - j > l1 - k)
 		{
 			if (*a == '1')
-				return value("0", true);
+				return value("0");
 			else if (*a == 'X')
-				return value("X", true);
+				return value("X");
 		}
 		else
 			if (*a == 'X' || *b == 'X')
-				return value("X", true);
+				return value("X");
 
 	}
 
 	if (j >= 0 && k < 0)
-		return value("0", true);
+		return value("0");
 
-	return value("1", true);
+	return value("1");
 }
 
 value operator>=(value s1, value s2)
 {
 	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
-		return value("_", true);
+		return value("_");
 
 	int j, k;
 	int l0 = s1.data.length(), l1 = s2.data.length();
@@ -459,33 +435,33 @@ value operator>=(value s1, value s2)
 		if (l0 - j < l1 - k)
 		{
 			if (*b == '1')
-				return value("0", true);
+				return value("0");
 			else if (*b == 'X')
-				return value("X", true);
+				return value("X");
 		}
 		else if (l0 - j > l1 - k)
 		{
 			if (*a == '1')
-				return value("1", true);
+				return value("1");
 			else if (*a == 'X')
-				return value("X", true);
+				return value("X");
 		}
 		else
 			if (*a == 'X' || *b == 'X')
-				return value("X", true);
+				return value("X");
 
 	}
 
 	if (j < 0 && k >= 0)
-		return value("0", true);
+		return value("0");
 
-	return value("1", true);
+	return value("1");
 }
 
 value operator<(value s1, value s2)
 {
 	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
-		return value("_", true);
+		return value("_");
 
 	int j, k;
 	int l0 = s1.data.length(), l1 = s2.data.length();
@@ -499,33 +475,33 @@ value operator<(value s1, value s2)
 		if (l0 - j < l1 - k)
 		{
 			if (*b == '1')
-				return value("1", true);
+				return value("1");
 			else if (*b == 'X')
-				return value("X", true);
+				return value("X");
 		}
 		else if (l0 - j > l1 - k)
 		{
 			if (*a == '1')
-				return value("0", true);
+				return value("0");
 			else if (*a == 'X')
-				return value("X", true);
+				return value("X");
 		}
 		else
 			if (*a == 'X' || *b == 'X')
-				return value("X", true);
+				return value("X");
 
 	}
 
 	if (j < 0 && k >= 0)
-		return value("1", true);
+		return value("1");
 
-	return value("0", true);
+	return value("0");
 }
 
 value operator>(value s1, value s2)
 {
 	if (s1.data.find_first_of("_") != s1.data.npos || s2.data.find_first_of("_") != s2.data.npos)
-		return value("_", true);
+		return value("_");
 
 	int j, k;
 	int l0 = s1.data.length(), l1 = s2.data.length();
@@ -539,27 +515,27 @@ value operator>(value s1, value s2)
 		if (l0 - j < l1 - k)
 		{
 			if (*b == '1')
-				return value("0", true);
+				return value("0");
 			else if (*b == 'X')
-				return value("X", true);
+				return value("X");
 		}
 		else if (l0 - j > l1 - k)
 		{
 			if (*a == '1')
-				return value("1", true);
+				return value("1");
 			else if (*a == 'X')
-				return value("X", true);
+				return value("X");
 		}
 		else
 			if (*a == 'X' || *b == 'X')
-				return value("X", true);
+				return value("X");
 
 	}
 
 	if (j >= 0 && k < 0)
-		return value("1", true);
+		return value("1");
 
-	return value("0", true);
+	return value("0");
 }
 
 value operator!(value s)
@@ -578,8 +554,6 @@ value operator!(value s)
 		else
 			result.data += "_";
 	}
-
-	result.prs = true;
 
 	return result;
 }
@@ -604,8 +578,6 @@ value operator||(value s1, value s2)
 		else
 			result.data = "X" + result.data;
 	}
-
-	result.prs = true;
 
 	return result;
 }
@@ -637,8 +609,6 @@ value operator&&(value s1, value s2)
 		else
 			result.data = "_" + result.data;
 	}
-
-	result.prs = true;
 
 	return result;
 }

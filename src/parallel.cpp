@@ -78,7 +78,7 @@ void parallel::parse(map<string, keyword*> *types)
 
 	list<instruction*>		::iterator	ii, ij;
 	map<string, variable*>	::iterator	vi;
-	map<string, space>		::iterator	si, sj, sk;
+	//map<string, space>		::iterator	si, sj, sk;
 	map<string, state>		::iterator	l, m;
 	list<state>				::iterator	a, b;
 	map<string, keyword*>	::iterator	t;
@@ -169,7 +169,7 @@ void parallel::parse(map<string, keyword*> *types)
 	}
 }
 
-void parallel::generate_states(map<string, state> init)
+void parallel::generate_states(state init)
 {
 
 
@@ -179,7 +179,7 @@ void parallel::generate_states(map<string, state> init)
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
-		instr->generate_states(map<string, state>());
+		instr->generate_states(state());
 	}
 }
 

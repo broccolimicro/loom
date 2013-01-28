@@ -276,7 +276,7 @@ for (ii = instrs.begin(); ii != instrs.end(); ii++)
 			}
  */
 
-void conditional::generate_states(map<string, state> init)
+void conditional::generate_states(state init)
 {
 /*
 
@@ -325,13 +325,13 @@ void conditional::generate_states(map<string, state> init)
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = instr_iter->second;
-		instr->generate_states(map<string, state>());
+		instr->generate_states(state());
 	}
 }
 
 void conditional::generate_prs(map<string, variable*> globals){
 
-	map<string, block*>::iterator ii;
+	/*map<string, block*>::iterator ii;
 	variable *v;
 	list<state>::iterator sli;
 	list<rule>::iterator rui;
@@ -423,19 +423,19 @@ void conditional::generate_prs(map<string, variable*> globals){
 			rules.push_back(ru);
 		}
 		v = NULL;
-	}
+	}*/
 
 
 
 }
 
-map<string, state> guard(string raw,  map<string, variable*> vars, string tab, int verbosity)
+state guard(string raw,  map<string, variable*> vars, string tab, int verbosity)
 {
 	map<string, state> outcomes;
 	map<string, state> a, b;
 	map<string, state>::iterator ai, bi;
 	string::iterator i, j;
-	state temp;
+	value temp;
 	int depth;
 
 	if (verbosity >= VERB_PARSE)

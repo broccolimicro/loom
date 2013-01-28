@@ -20,16 +20,9 @@ struct value
 {
 	value();
 	value(string d);
-	value(string d, bool p);
 	~value();
 
 	string data;
-
-	/* If this is 1, then we need to generate
-	 * production rules for this value. Otherwise,
-	 * we don't.
-	 */
-	bool prs;	// TODO Move to variable
 
 	value &operator=(value s);
 	value &operator=(string s);

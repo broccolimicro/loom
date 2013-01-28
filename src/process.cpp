@@ -170,5 +170,5 @@ void process::parse(string raw, map<string, keyword*> *types, map<string, variab
 
 	def.init("a", def_block, types, global, "\t", verbosity);
 
-	def.generate_states(map<string, state>());
+	def.generate_states(state());
 }

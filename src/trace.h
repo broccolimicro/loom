@@ -29,6 +29,12 @@ struct trace
 	// Instruction indexed using uid
 	vector<value>	values;
 
+	void clear();
+	vector<value>::iterator begin();
+	vector<value>::iterator end();
+
+	void push_back(value v);
+
 	trace &operator=(trace s);
 
 	trace &operator+=(trace s);

@@ -41,7 +41,7 @@ struct block : instruction
 
 	void expand_shortcuts();
 	void parse(map<string, keyword*> *types);
-	void generate_states(map<string, state> init);
+	void generate_states(state init);
 	void generate_prs(map<string, variable*> globals);
 	void generate_statevars();
 	// void handshaking_reshuffle();
@@ -50,11 +50,11 @@ struct block : instruction
 	void clear();
 };
 
-bool cycle(space start, space end, list<rule> prs);
+//bool cycle(space start, space end, list<rule> prs);
 
 size_t search_back(string s, size_t offset);
 size_t search_front(string s, size_t offset);
-list<size_t> state_variable_positions(space left, space right, string tab, int verbosity);
-bool production_rule_check(string *raw, block *b, string tab, int verbosity);
+//list<size_t> state_variable_positions(space left, space right, string tab, int verbosity);
+//bool production_rule_check(string *raw, block *b, string tab, int verbosity);
 
 #endif

@@ -44,6 +44,26 @@ trace::~trace()
 {
 }
 
+void trace::clear()
+{
+	values.clear();
+}
+
+vector<value>::iterator trace::begin()
+{
+	return values.begin();
+}
+
+vector<value>::iterator trace::end()
+{
+	return values.end();
+}
+
+void trace::push_back(value v)
+{
+	values.push_back(v);
+}
+
 trace &trace::operator=(trace s)
 {
 	values = s.values;

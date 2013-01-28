@@ -69,9 +69,9 @@ void assignment::parse(map<string, keyword*> *types)
 		cout << "Error: Instruction not handled: " << chp << endl;
 }
 
-void assignment::generate_states(map<string, state> init)
+void assignment::generate_states(state init)
 {
-	map<string, space>::iterator space_iter;
+	/*map<string, space>::iterator space_iter;
 	map<string, state>::iterator state_iter;
 	map<string, string>::iterator expr_iter;
 	map<string, variable*>::iterator var_iter;
@@ -101,14 +101,12 @@ void assignment::generate_states(map<string, state> init)
 		}
 		else
 			cout << "Error: Undefined variable " << expr_iter->first << "." << endl;
-	}
-
-	print_state_space();
+	}*/
 }
 
 void assignment::generate_prs(map<string, variable*> globals)
 {
-	map<string, space>::iterator si, sj;
+	/*map<string, space>::iterator si, sj;
 	int bi0, bi1;
 	rule r;
 	state s0, s1;
@@ -141,7 +139,7 @@ void assignment::generate_prs(map<string, variable*> globals)
 
 			rules.push_back(r);
 		}
-	}
+	}*/
 
 	print_prs();
 }

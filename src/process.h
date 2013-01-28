@@ -11,6 +11,7 @@
 #include "block.h"
 #include "common.h"
 #include "space.h"
+#include "graph.h"
 
 #ifndef process_h
 #define process_h
@@ -33,7 +34,7 @@ struct process : keyword
 	map<string, variable*>	global;	// globally defined variables: only used for channel definitions
 	map<string, variable*>	local;	// the input and output signals of this process
 	state_space				space;
-	graph					transitions;
+	graph					trans;
 
 	process &operator=(process p);
 

@@ -38,7 +38,7 @@ void rule::clear(int n)
 {
 	actual.clear();
 	for (int i = 0; i < n; i++)
-		actual.push_back(state("1", false));
+		actual.push_back(value("1"));
 	left = "";
 	desired.clear();
 	right = "";
@@ -49,10 +49,10 @@ void rule::clear(int n)
  */
 int rule::index(int n)
 {
-	list<state>::iterator i;
+	vector<value>::iterator i;
 	int j;
 	for (i = desired.begin(), j = 0; i != desired.end() && n > 0; i++, j++)
-		if (i->data == "1" && i->prs)
+		if (i->data == "1")
 			n--;
 
 	return j;

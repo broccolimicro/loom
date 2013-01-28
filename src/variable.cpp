@@ -15,7 +15,6 @@ variable::variable()
 	name = "";
 	type = "";
 	width = 0;
-	last = "iX";
 	reset = "iX";
 	fixed = false;
 }
@@ -25,7 +24,6 @@ variable::variable(string n, string t, value r, uint16_t w)
 	name = n;
 	type = t;
 	width = w;
-	last = "iX";
 	reset = r;
 	fixed = true;
 }
@@ -40,7 +38,6 @@ variable::~variable()
 	name = "";
 	type = "";
 	width = 0;
-	last = "iX";
 	reset = "iX";
 	fixed = false;
 }
@@ -50,7 +47,6 @@ variable &variable::operator=(variable v)
 	name = v.name;
 	type = v.type;
 	width = v.width;
-	last = v.last;
 	reset = v.reset;
 	fixed = v.fixed;
 	return *this;
@@ -59,7 +55,6 @@ variable &variable::operator=(variable v)
 // TODO we need to handle the case where we instantiate a process
 void variable::parse(string raw, string tab, int verbosity)
 {
-	last = "iX";
 	reset = "iX";
 
 	chp = raw;
