@@ -5,10 +5,9 @@ assignment::assignment()
 	_kind = "assignment";
 }
 
-assignment::assignment(int uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+assignment::assignment(string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
 	this->_kind		= "assignment";
-	this->uid		= uid;
 	this->chp		= chp;
 	this->tab		= tab;
 	this->verbosity = verbosity;
@@ -69,8 +68,10 @@ void assignment::parse(map<string, keyword*> *types)
 		cout << "Error: Instruction not handled: " << chp << endl;
 }
 
-void assignment::generate_states(state init)
+void assignment::generate_states(state_space *space, graph *trans, int init)
 {
+	uid = space->size();
+
 	/*map<string, space>::iterator space_iter;
 	map<string, state>::iterator state_iter;
 	map<string, string>::iterator expr_iter;

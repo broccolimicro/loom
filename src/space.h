@@ -15,12 +15,16 @@ struct state_space
 {
 	// Instruction indexed using uid
 	vector<state> states;
+
+	void size();
 };
 
 struct trace_space
 {
 	// Variable indexed using uid
 	vector<trace> traces;
+
+	void size();
 };
 
 #endif

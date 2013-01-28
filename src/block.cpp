@@ -21,12 +21,11 @@ block::block()
 	chp = "";
 }
 
-block::block(int uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+block::block(string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
 	clear();
 
 	this->_kind = "block";
-	this->uid = uid;
 	this->chp = chp;
 	this->tab = tab;
 	this->verbosity = verbosity;
@@ -59,12 +58,11 @@ block &block::operator=(block b)
 	return *this;
 }
 
-void block::init(int uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+void block::init(string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
 	clear();
 
 	this->_kind = "block";
-	this->uid = uid;
 	this->chp = chp;
 	this->tab = tab;
 	this->verbosity = verbosity;
@@ -94,7 +92,6 @@ void block::parse(map<string, keyword*> *types)
 
 	bool para		= false;
 	bool vdef		= false;
-	char nid = 'a';
 
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
 	int depth[3] = {0};
@@ -124,16 +121,16 @@ void block::parse(map<string, keyword*> *types)
 			instr = NULL;
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (para)
-				instr = new parallel(uid + nid++, raw_instr, types, global, tab+"\t", verbosity);
+				instr = new parallel(raw_instr, types, global, tab+"\t", verbosity);
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
-				instr = new block(uid + nid++, raw_instr.substr(1, raw_instr.length()-2), types, global, tab+"\t", verbosity);
+				instr = new block(raw_instr.substr(1, raw_instr.length()-2), types, global, tab+"\t", verbosity);
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new loop(uid + nid++, raw_instr, types, global, tab+"\t", verbosity);
+				instr = new loop(raw_instr, types, global, tab+"\t", verbosity);
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new conditional(uid + nid++, raw_instr, types, global, tab+"\t", verbosity);
+				instr = new conditional(raw_instr, types, global, tab+"\t", verbosity);
 			// This sub block is either a variable definition or an assignment instruction.
 			else
 			{
@@ -154,7 +151,7 @@ void block::parse(map<string, keyword*> *types)
 				}
 				// This sub block is an assignment instruction.
 				else if (raw_instr.length() != 0)
-					instr = new assignment(uid + nid++, raw_instr, types, global, tab+"\t", verbosity);
+					instr = new assignment(raw_instr, types, global, tab+"\t", verbosity);
 			}
 
 			// Make sure that this wasn't a variable declaration (they don't affect the state space).
@@ -171,7 +168,7 @@ void block::parse(map<string, keyword*> *types)
 	}
 }
 
-void block::generate_states(state init)
+void block::generate_states(state_space *space, graph *trans, int init)
 {
 	cout << tab << "Generating State Space" << endl;
 
@@ -180,7 +177,7 @@ void block::generate_states(state init)
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
-		instr->generate_states(state());
+		instr->generate_states(space, trans, init);
 	}
 
 	/*map<string, state> current_state, change_state;

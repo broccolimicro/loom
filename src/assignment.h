@@ -18,10 +18,10 @@
 struct assignment : instruction
 {
 	assignment();
-	assignment(int uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity);
+	assignment(string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity);
 	~assignment();
 
-	int uid;
+	int uid;					// indexes into the state in the state space
 	map<string, string> expr;
 
 	void expand_shortcuts();
