@@ -11,6 +11,7 @@ assignment::assignment(string chp, map<string, keyword*> types, map<string, vari
 	this->chp		= chp;
 	this->tab		= tab;
 	this->verbosity = verbosity;
+	this->global = globals;
 
 	expand_shortcuts();
 	parse(types);
@@ -71,7 +72,7 @@ void assignment::generate_states(state_space *space, graph *trans, int init)
 {
 	uid = space->size();
 
-	map<string, variable*>::iterator vi;
+	map<string, variable>::iterator vi;
 	map<string, string>::iterator ei;
 
 	state s;
@@ -79,17 +80,17 @@ void assignment::generate_states(state_space *space, graph *trans, int init)
 	if (init != -1)
 		s = (*space)[init];
 	else
-		for (vi = global.begin(); vi != global.end(); vi++)
-			s.insert(vi->second->uid, value("X"));
+		for (vi = global->begin(); vi != global->end(); vi++)
+			s.insert(vi->second.uid, value("X"));
 
 	for (ei = expr.begin(); ei != expr.end(); ei++)
 	{
-		vi = global.find(ei->first);
+		vi = global->find(ei->first);
 
-		if (vi != global.end() && vi->second->uid < s.size())
-			s[vi->second->uid] = expression(ei->second, global, (*space)[init].values, tab, verbosity);
-		else if (vi != global.end())
-			s.insert(vi->second->uid, expression(ei->second, global, (*space)[init].values, tab, verbosity));
+		if (vi != global->end() && vi->second.uid < s.size())
+			s[vi->second.uid] = expression(ei->second, global, (*space)[init].values, tab, verbosity);
+		else if (vi != global->end())
+			s.insert(vi->second.uid, expression(ei->second, global, (*space)[init].values, tab, verbosity));
 		else
 			cout << "Error: Undefined variable " << vi->first << "." << endl;
 	}

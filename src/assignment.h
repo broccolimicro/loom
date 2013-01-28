@@ -52,7 +52,7 @@ t expression(string raw, map<string, variable> *globals, vector<t> init, string 
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Expression: " << raw << endl;
 
-	typename map<string, variable*>::iterator v;
+	typename map<string, variable>::iterator v;
 	list<string> ops;
 	size_t p;
 
@@ -112,10 +112,10 @@ t expression(string raw, map<string, variable> *globals, vector<t> init, string 
 	if (raw[0] == '(' && raw[raw.length()-1] == ')')
 		return expression(raw.substr(1, raw.length()-2), globals, init, tab+"\t", verbosity);
 
-	v = globals.find(raw);
-	if (v != globals.end() && v->second->uid < (int)init.size())
-		return init[v->second->uid];
-	else if (v != globals.end())
+	v = globals->find(raw);
+	if (v != globals->end() && v->second.uid < (int)init.size())
+		return init[v->second.uid];
+	else if (v != globals->end())
 		return t();
 	else
 		cout << "Error: Undefined variable " << raw << "." << endl;

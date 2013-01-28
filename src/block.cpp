@@ -29,6 +29,7 @@ block::block(string chp, map<string, keyword*> types, map<string, variable> *glo
 	this->chp = chp;
 	this->tab = tab;
 	this->verbosity = verbosity;
+	this->global = globals;
 
 	expand_shortcuts();
 	parse(types);
@@ -83,7 +84,7 @@ void block::parse(map<string, keyword*> types)
 	string		raw_instr;	// chp of a sub block
 
 	instruction *instr; 	// instruction parser
-	variable	*v;			// variable instantiation parser
+	variable	v;			// variable instantiation parser
 
 	map<string, keyword*>	::iterator	type_iter;
 	string					::iterator	i, j;
@@ -133,7 +134,7 @@ void block::parse(map<string, keyword*> types)
 			else
 			{
 				vdef = false;
-				for (type_iter = types->begin(); type_iter != types->end(); type_iter++)
+				for (type_iter = types.begin(); type_iter != types.end(); type_iter++)
 					if (raw_instr.find(type_iter->first) != raw_instr.npos)
 					{
 						vdef = true;
@@ -143,9 +144,8 @@ void block::parse(map<string, keyword*> types)
 				// This sub block is a variable definition. keyword<bitwidth> name
 				if (vdef)
 				{
-					v = new variable(raw_instr, tab, verbosity);
-					local.insert(pair<string, variable*>(v->name, v));
-					global.insert(pair<string, variable*>(v->name, v));
+					v = variable(raw_instr, tab, verbosity);
+					global->insert(pair<string, variable>(v.name, v));
 				}
 				// This sub block is an assignment instruction.
 				else if (raw_instr.length() != 0)
