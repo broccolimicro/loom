@@ -19,14 +19,14 @@
 struct assignment : instruction
 {
 	assignment();
-	assignment(string chp, map<string, keyword> *types, map<string, variable> *globals, string tab, int verbosity);
+	assignment(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity);
 	~assignment();
 
 	int uid;					// indexes into the state in the state space
 	map<string, string> expr;
 
 	void expand_shortcuts();
-	void parse(map<string, keyword> *types);
+	void parse(map<string, keyword*> types);
 	void generate_states(state_space *space, graph *trans, int init);
 	void generate_prs(map<string, variable> *globals);
 };

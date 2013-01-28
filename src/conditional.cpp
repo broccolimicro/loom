@@ -16,7 +16,7 @@ conditional::conditional()
 	type = unknown;
 }
 
-conditional::conditional(string chp, map<string, keyword> *types, map<string, variable> *globals, string tab, int verbosity)
+conditional::conditional(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity)
 {
 	clear();
 
@@ -72,7 +72,7 @@ void conditional::expand_shortcuts()
 	chp += "->skip";
 }
 // [G -> S]
-void conditional::parse(map<string, keyword*> *types)
+void conditional::parse(map<string, keyword*> types)
 {
 	string::iterator i, j, k;
 	string guardstr, blockstr;
@@ -157,11 +157,11 @@ void conditional::generate_states(state_space *space, graph *trans, int init)
 	}
 }
 
-void conditional::generate_prs(map<string, variable*> globals)
+void conditional::generate_prs(map<string, variable> *globals)
 {
 }
 
-state guard(string raw,  map<string, variable*> vars, string tab, int verbosity)
+state guard(string raw,  map<string, variable> *vars, string tab, int verbosity)
 {
 	map<string, variable*>::iterator vi;
 	state outcomes;

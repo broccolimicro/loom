@@ -5,7 +5,7 @@ assignment::assignment()
 	_kind = "assignment";
 }
 
-assignment::assignment(string chp, map<string, keyword> *types, map<string, variable> *globals, string tab, int verbosity)
+assignment::assignment(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity)
 {
 	this->_kind		= "assignment";
 	this->chp		= chp;
@@ -32,7 +32,7 @@ void assignment::expand_shortcuts()
 		chp = chp.substr(0, chp.find("-")) + ":=0";
 }
 
-void assignment::parse(map<string, keyword> *types)
+void assignment::parse(map<string, keyword*> types)
 {
 	size_t middle;
 	string left_raw, right_raw;

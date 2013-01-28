@@ -21,7 +21,7 @@ block::block()
 	chp = "";
 }
 
-block::block(string chp, map<string, keyword> *types, map<string, variable> *globals, string tab, int verbosity)
+block::block(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity)
 {
 	clear();
 
@@ -57,7 +57,7 @@ block &block::operator=(block b)
 	return *this;
 }
 
-void block::init(string chp, map<string, keyword> *types, map<string, variable> *globals, string tab, int verbosity)
+void block::init(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity)
 {
 	clear();
 
@@ -75,7 +75,7 @@ void block::expand_shortcuts()
 
 }
 
-void block::parse(map<string, keyword> *types)
+void block::parse(map<string, keyword*> types)
 {
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Block: " << chp << endl;
@@ -179,7 +179,7 @@ void block::generate_states(state_space *space, graph *trans, int init)
 	}
 }
 
-void block::generate_prs(map<string, variable*> globals)
+void block::generate_prs(map<string, variable> *globals)
 {
 
 }
@@ -196,16 +196,6 @@ void block::clear()
 	chp = "";
 	_kind = "block";
 
-	// Instructions and local variables are dynamically
-	// allocated, but everything is static.
-	map<string, variable*>::iterator i;
-	for (i = local.begin(); i != local.end(); i++)
-	{
-		if (i->second != NULL)
-			delete i->second;
-		i->second = NULL;
-	}
-
 	list<instruction*>::iterator j;
 	for (j = instrs.begin(); j != instrs.end(); j++)
 	{
@@ -214,8 +204,6 @@ void block::clear()
 		*j = NULL;
 	}
 
-	local.clear();
-	global.clear();
 	instrs.clear();
 	waits.clear();
 	changes.clear();

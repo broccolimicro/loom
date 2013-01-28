@@ -36,6 +36,9 @@ public:
 	// This is the list of production rules that defines this instruction
 	list<rule> rules;
 
+	// Some pointers for good use
+	map<string, variable> *global;
+
 	// For outputting debugging messages
 	string tab;
 	int verbosity;
