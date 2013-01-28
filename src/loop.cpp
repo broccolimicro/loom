@@ -15,12 +15,11 @@ loop::loop()
 	_kind = "loop";
 }
 
-loop::loop(int uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+loop::loop(string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
 	clear();
 
 	_kind = "loop";
-	this->uid = uid;
 	this->chp = chp.substr(2, chp.length()-3);
 	this->tab = tab;
 	this->verbosity = verbosity;
@@ -112,7 +111,7 @@ void loop::parse(map<string, keyword*> *types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.insert(pair<string, block*>(guardstr, new block(uid + nid++, blockstr, types, global, tab+"\t", verbosity)));
+			instrs.insert(pair<string, block*>(guardstr, new block( blockstr, types, global, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 		}
@@ -130,7 +129,7 @@ void loop::parse(map<string, keyword*> *types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.insert(pair<string, block*>(guardstr, new block(uid + nid++, blockstr, types, global, tab+"\t", verbosity)));
+			instrs.insert(pair<string, block*>(guardstr, new block( blockstr, types, global, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}

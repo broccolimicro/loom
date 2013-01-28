@@ -30,7 +30,7 @@ struct variable
 	uint16_t	width;		// the bit width of the instantiated variable
 	bool		fixed;		// is the bit width of this variable fixed or variable?
 	value		reset;
-	int			uid;		// unique identifier
+	unique identifier
 	bool		prs;		// keep track of whether or not to generate production rules
 
 	variable &operator=(variable v);

@@ -17,12 +17,11 @@ parallel::parallel()
 	chp = "";
 	_kind = "parallel";
 }
-parallel::parallel(int uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+parallel::parallel( string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
 	clear();
 
 	_kind = "parallel";
-	this->uid = uid;
 	this->chp = chp;
 	this->tab = tab;
 	this->verbosity = verbosity;
@@ -67,7 +66,6 @@ void parallel::parse(map<string, keyword*> *types)
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Parallel: " << chp << endl;
 
-	char nid = 'a';
 
 	string		raw_instr;	// chp of a sub block
 
@@ -123,16 +121,16 @@ void parallel::parse(map<string, keyword*> *types)
 
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (sequential)
-				instr = new parallel(uid + nid++, raw_instr, types, global, tab+"\t", verbosity);
+				instr = new parallel( raw_instr, types, global, tab+"\t", verbosity);
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
-				instr = new block(uid + nid++, raw_instr.substr(1, raw_instr.length()-2), types, global, tab+"\t", verbosity);
+				instr = new block( raw_instr.substr(1, raw_instr.length()-2), types, global, tab+"\t", verbosity);
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new loop(uid + nid++, raw_instr, types, global, tab+"\t", verbosity);
+				instr = new loop( raw_instr, types, global, tab+"\t", verbosity);
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new conditional(uid + nid++, raw_instr, types, global, tab+"\t", verbosity);
+				instr = new conditional( raw_instr, types, global, tab+"\t", verbosity);
 			// This sub block is either a variable definition or an assignment instruction.
 			else
 			{
@@ -153,7 +151,7 @@ void parallel::parse(map<string, keyword*> *types)
 				}
 				// This sub block is an assignment instruction.
 				else if (raw_instr.length() != 0)
-					instr = new assignment(uid + nid++, raw_instr, types, global, tab+"\t", verbosity);
+					instr = new assignment(raw_instr, types, global, tab+"\t", verbosity);
 			}
 
 			if (instr != NULL)

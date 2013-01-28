@@ -13,7 +13,6 @@
 instruction::instruction()
 {
 	chp = "";
-	uid = "";
 	tab = "";
 	_kind = "instruction";
 	verbosity = VERB_SUPPRESS;

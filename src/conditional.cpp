@@ -16,12 +16,11 @@ conditional::conditional()
 	type = unknown;
 }
 
-conditional::conditional(int uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+conditional::conditional(string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
 	clear();
 
 	_kind = "conditional";
-	this->uid = uid;
 	this->chp = chp.substr(1, chp.length()-2);
 	this->tab = tab;
 	this->verbosity = verbosity;
@@ -116,7 +115,7 @@ void conditional::parse(map<string, keyword*> *types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.insert(pair<string, block*>(guardstr, new block(uid + nid++, blockstr, types, global, tab+"\t", verbosity)));
+			instrs.insert(pair<string, block*>(guardstr, new block( blockstr, types, global, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 		}
@@ -136,7 +135,7 @@ void conditional::parse(map<string, keyword*> *types)
 
 
 
-			instrs.insert(pair<string, block*>(guardstr, new block(uid + nid++, blockstr, types, global, tab+"\t", verbosity)));
+			instrs.insert(pair<string, block*>(guardstr, new block( blockstr, types, global, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}
