@@ -15,7 +15,7 @@ loop::loop()
 	_kind = "loop";
 }
 
-loop::loop(string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+loop::loop(string chp, map<string, keyword> *types, map<string, variable> *globals, string tab, int verbosity)
 {
 	clear();
 
@@ -23,7 +23,6 @@ loop::loop(string chp, map<string, keyword*> *types, map<string, variable*> glob
 	this->chp = chp.substr(2, chp.length()-3);
 	this->tab = tab;
 	this->verbosity = verbosity;
-	this->global = globals;
 	this->type = unknown;
 
 	expand_shortcuts();
@@ -33,14 +32,6 @@ loop::loop(string chp, map<string, keyword*> *types, map<string, variable*> glob
 loop::~loop()
 {
 	_kind = "loop";
-
-	map<string, block*>::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		if (i->second != NULL)
-			delete i->second;
-		i->second = NULL;
-	}
 
 	instrs.clear();
 }
@@ -72,7 +63,7 @@ void loop::expand_shortcuts()
 	chp = "1->" + chp;
 }
 
-void loop::parse(map<string, keyword*> *types)
+void loop::parse(map<string, keyword> *types)
 {
 	string guardstr, blockstr;
 
@@ -141,13 +132,11 @@ void loop::parse(map<string, keyword*> *types)
 void loop::generate_states(state_space *space, graph *trans, int init)
 {
 
-	map<string, block*>::iterator instr_iter;
-	block *instr;
+	map<string, block>::iterator instr_iter;
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
-		instr = instr_iter->second;
-		instr->generate_states(space, trans, init);
+		instr_iter->second->generate_states(space, trans, init);
 	}
 }
 

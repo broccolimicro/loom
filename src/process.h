@@ -25,20 +25,19 @@
 struct process : keyword
 {
 	process();
-	process(string raw, map<string, keyword*> *types, map<string, variable*> vars, int verbosity);
+	process(string raw, map<string, keyword> *types, map<string, variable> *vars, int verbosity);
 	~process();
 
 	string					chp;	// the raw process definition
 	block					def;	// the chp that defined this process
 	list<string>			prs;	// the final set of generated production rules
-	map<string, variable*>	global;	// globally defined variables: only used for channel definitions
-	map<string, variable*>	local;	// the input and output signals of this process
+	map<string, variable>	global;	// globally defined variables: only used for channel definitions
 	state_space				space;
 	graph					trans;
 
 	process &operator=(process p);
 
-	void parse(string raw, map<string, keyword*> *types, map<string, variable*> vars, int verbosity);
+	void parse(string raw, map<string, keyword> *types, map<string, variable> *vars, int verbosity);
 };
 
 #endif

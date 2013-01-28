@@ -17,7 +17,7 @@ parallel::parallel()
 	chp = "";
 	_kind = "parallel";
 }
-parallel::parallel(string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+parallel::parallel(string chp, map<string, keyword> *types, map<string, variable> *globals, string tab, int verbosity)
 {
 	clear();
 
@@ -25,7 +25,6 @@ parallel::parallel(string chp, map<string, keyword*> *types, map<string, variabl
 	this->chp = chp;
 	this->tab = tab;
 	this->verbosity = verbosity;
-	this->global = globals;
 
 	expand_shortcuts();
 	parse(types);
@@ -35,24 +34,6 @@ parallel::~parallel()
 	chp = "";
 	_kind = "parallel";
 
-	map<string, variable*>::iterator i;
-	for (i = local.begin(); i != local.end(); i++)
-	{
-		if (i->second != NULL)
-			delete i->second;
-		i->second = NULL;
-	}
-
-	local.clear();
-
-	list<instruction*>::iterator j;
-	for (j = instrs.begin(); j != instrs.end(); j++)
-	{
-		if (*j != NULL)
-			delete *j;
-		*j = NULL;
-	}
-
 	instrs.clear();
 }
 
@@ -61,7 +42,7 @@ void parallel::expand_shortcuts()
 
 }
 
-void parallel::parse(map<string, keyword*> *types)
+void parallel::parse(map<string, keyword> *types)
 {
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Parallel: " << chp << endl;
@@ -74,16 +55,16 @@ void parallel::parse(map<string, keyword*> *types)
 
 	map<string, state> current_state;
 
-	list<instruction*>		::iterator	ii, ij;
-	map<string, variable*>	::iterator	vi;
+	list<instruction>		::iterator	ii, ij;
+	map<string, variable>	::iterator	vi;
 	//map<string, space>		::iterator	si, sj, sk;
 	map<string, state>		::iterator	l, m;
 	list<state>				::iterator	a, b;
-	map<string, keyword*>	::iterator	t;
+	map<string, keyword>	::iterator	t;
 	list<bool>				::iterator	di;
 	string					::iterator	i, j;
 
-	map<string, variable*>				affected;
+	map<string, variable>				affected;
 	list<bool>							delta_out;
 
 	bool sequential	= false;
@@ -121,16 +102,16 @@ void parallel::parse(map<string, keyword*> *types)
 
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (sequential)
-				instr = new parallel( raw_instr, types, global, tab+"\t", verbosity);
+				instr = new parallel(raw_instr, types, global, tab+"\t", verbosity);
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
-				instr = new block( raw_instr.substr(1, raw_instr.length()-2), types, global, tab+"\t", verbosity);
+				instr = new block(raw_instr.substr(1, raw_instr.length()-2), types, global, tab+"\t", verbosity);
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new loop( raw_instr, types, global, tab+"\t", verbosity);
+				instr = new loop(raw_instr, types, global, tab+"\t", verbosity);
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new conditional( raw_instr, types, global, tab+"\t", verbosity);
+				instr = new conditional(raw_instr, types, global, tab+"\t", verbosity);
 			// This sub block is either a variable definition or an assignment instruction.
 			else
 			{
@@ -146,7 +127,6 @@ void parallel::parse(map<string, keyword*> *types)
 				if (vdef)
 				{
 					v = new variable(raw_instr, tab, verbosity);
-					local.insert(pair<string, variable*>(v->name, v));
 					global.insert(pair<string, variable*>(v->name, v));
 				}
 				// This sub block is an assignment instruction.
@@ -169,13 +149,11 @@ void parallel::parse(map<string, keyword*> *types)
 
 void parallel::generate_states(state_space *space, graph *trans, int init)
 {
-	list<instruction*>::iterator instr_iter;
-	instruction *instr;
+	list<instruction>::iterator instr_iter;
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
-		instr = *instr_iter;
-		instr->generate_states(space, trans, init);
+		instr_iter->generate_states(space, trans, init);
 	}
 }
 

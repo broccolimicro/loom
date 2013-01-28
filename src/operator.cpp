@@ -19,7 +19,7 @@ operate::operate()
 	_kind = "operate";
 }
 
-operate::operate(string raw, map<string, keyword*> *types, map<string, variable*> vars, int verbosity)
+operate::operate(string raw, map<string, keyword> *types, map<string, variable> *vars, int verbosity)
 {
 	parse(raw, types, vars, verbosity);
 	_kind = "operate";
@@ -30,15 +30,6 @@ operate::~operate()
 	name = "";
 	_kind = "operate";
 
-	map<string, variable*>::iterator i;
-	for (i = local.begin(); i != local.end(); i++)
-	{
-		if (i->second != NULL)
-			delete i->second;
-		i->second = NULL;
-	}
-
-	local.clear();
 	global.clear();
 }
 
@@ -46,12 +37,11 @@ operate &operate::operator=(operate p)
 {
 	def = p.def;
 	prs = p.prs;
-	local = p.local;
 	global = p.global;
 	return *this;
 }
 
-void operate::parse(string raw, map<string, keyword*> *types, map<string, variable*> vars, int verbosity)
+void operate::parse(string raw, map<string, keyword> *types, map<string, variable> *vars, int verbosity)
 {
 	chp = raw;
 
@@ -66,8 +56,8 @@ void operate::parse(string raw, map<string, keyword*> *types, map<string, variab
 	string def_block;
 	string::iterator i, j;
 
-	map<string, variable*> temp;
-	map<string, keyword*>::iterator ti;
+	map<string, variable> temp;
+	map<string, keyword>::iterator ti;
 
 	cout << "Operator:\t" << chp << endl;
 
@@ -87,13 +77,12 @@ void operate::parse(string raw, map<string, keyword*> *types, map<string, variab
 		if (*(i+1) == ',' || i+1 == io_block.end())
 		{
 			temp = expand(io_block.substr(j-io_block.begin(), i+1 - j), "", types, "\t", verbosity);
-			local.insert(temp.begin(), temp.end());
 			global.insert(temp.begin(), temp.end());
 			j = i+2;
 		}
 	}
 
-	map<string, variable*>::iterator vi, vj;
+	map<string, variable>::iterator vi, vj;
 
 	string right, left, replace;
 	int skip;

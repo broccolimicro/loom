@@ -18,7 +18,7 @@ process::process()
 	_kind = "process";
 }
 
-process::process(string raw, map<string, keyword*> *types, map<string, variable*> vars, int verbosity)
+process::process(string raw, map<string, keyword> *types, map<string, variable> *vars, int verbosity)
 {
 	parse(raw, types, vars, verbosity);
 	_kind = "process";
@@ -29,15 +29,6 @@ process::~process()
 	name = "";
 	_kind = "process";
 
-	map<string, variable*>::iterator i;
-	for (i = local.begin(); i != local.end(); i++)
-	{
-		if (i->second != NULL)
-			delete i->second;
-		i->second = NULL;
-	}
-
-	local.clear();
 	global.clear();
 }
 
@@ -45,12 +36,11 @@ process &process::operator=(process p)
 {
 	def = p.def;
 	prs = p.prs;
-	local = p.local;
 	global = p.global;
 	return *this;
 }
 
-void process::parse(string raw, map<string, keyword*> *types, map<string, variable*> vars, int verbosity)
+void process::parse(string raw, map<string, keyword> *types, map<string, variable> *vars, int verbosity)
 {
 	chp = raw;
 
@@ -86,7 +76,6 @@ void process::parse(string raw, map<string, keyword*> *types, map<string, variab
 		if (*(i+1) == ',' || i+1 == io_block.end())
 		{
 			temp = expand(io_block.substr(j-io_block.begin(), i+1 - j), "", types, "\t", verbosity);
-			local.insert(temp.begin(), temp.end());
 			global.insert(temp.begin(), temp.end());
 			j = i+2;
 		}
