@@ -24,12 +24,12 @@
 struct operate : process
 {
 	operate();
-	operate(string raw, map<string, keyword*> *types, map<string, variable*> vars, int verbosity);
+	operate(string raw, map<string, keyword*> types, map<string, variable*> vars, int verbosity);
 	~operate();
 
 	operate &operator=(operate p);
 
-	void parse(string raw, map<string, keyword*> *types, map<string, variable*> vars, int verbosity);
+	void parse(string raw, map<string, keyword*> types, map<string, variable*> vars, int verbosity);
 };
 
 #endif

@@ -19,7 +19,7 @@ operate::operate()
 	_kind = "operate";
 }
 
-operate::operate(string raw, map<string, keyword> *types, map<string, variable> *vars, int verbosity)
+operate::operate(string raw, map<string, keyword*> types, map<string, variable> *vars, int verbosity)
 {
 	parse(raw, types, vars, verbosity);
 	_kind = "operate";
@@ -41,7 +41,7 @@ operate &operate::operator=(operate p)
 	return *this;
 }
 
-void operate::parse(string raw, map<string, keyword> *types, map<string, variable> *vars, int verbosity)
+void operate::parse(string raw, map<string, keyword*> types, map<string, variable> *vars, int verbosity)
 {
 	chp = raw;
 

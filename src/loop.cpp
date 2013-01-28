@@ -15,7 +15,7 @@ loop::loop()
 	_kind = "loop";
 }
 
-loop::loop(string chp, map<string, keyword> *types, map<string, variable> *globals, string tab, int verbosity)
+loop::loop(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity)
 {
 	clear();
 
@@ -140,7 +140,7 @@ void loop::generate_states(state_space *space, graph *trans, int init)
 	}
 }
 
-void loop::generate_prs(map<string, variable*> globals)
+void loop::generate_prs(map<string, variable> *globals)
 {
 
 

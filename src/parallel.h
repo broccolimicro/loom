@@ -16,11 +16,11 @@
 struct parallel : block
 {
 	parallel();
-	parallel(string chp, map<string, keyword> *types, map<string, variable> *globals, string tab, int verbosity);
+	parallel(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity);
 	~parallel();
 
 	void expand_shortcuts();
-	void parse(map<string, keyword> *types);
+	void parse(map<string, keyword*> types);
 	void generate_states(state_space *space, graph *trans, int init);
 	void generate_prs(map<string, variable> *globals);
 	void generate_statevars();

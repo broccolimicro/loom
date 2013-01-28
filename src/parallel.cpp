@@ -17,7 +17,7 @@ parallel::parallel()
 	chp = "";
 	_kind = "parallel";
 }
-parallel::parallel(string chp, map<string, keyword> *types, map<string, variable> *globals, string tab, int verbosity)
+parallel::parallel(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity)
 {
 	clear();
 
@@ -42,7 +42,7 @@ void parallel::expand_shortcuts()
 
 }
 
-void parallel::parse(map<string, keyword> *types)
+void parallel::parse(map<string, keyword*> types)
 {
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Parallel: " << chp << endl;
@@ -157,7 +157,7 @@ void parallel::generate_states(state_space *space, graph *trans, int init)
 	}
 }
 
-void parallel::generate_prs(map<string, variable*> globals)
+void parallel::generate_prs(map<string, variable> *globals)
 {
 
 
