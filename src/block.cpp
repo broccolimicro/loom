@@ -21,7 +21,7 @@ block::block()
 	chp = "";
 }
 
-block::block(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+block::block(int uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
 	clear();
 
@@ -59,7 +59,7 @@ block &block::operator=(block b)
 	return *this;
 }
 
-void block::init(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+void block::init(int uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
 	clear();
 

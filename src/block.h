@@ -28,7 +28,7 @@
 struct block : instruction
 {
 	block();
-	block(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity);
+	block(string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity);
 	~block();
 
 	list<instruction*>			instrs;		// an ordered list of instructions in block
@@ -37,7 +37,7 @@ struct block : instruction
 
 	block &operator=(block b);
 
-	void init(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity);
+	void init(string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity);
 
 	void expand_shortcuts();
 	void parse(map<string, keyword*> *types);

@@ -31,8 +31,6 @@ public:
 
 	// The raw CHP of this instruction.
 	string chp;
-	// A unique identifier to address this instruction.
-	string uid;	// TODO assign this in state space generation
 
 	/* the key is the name of the variable affected
 	 * the value is the value of that variable at the end of the instruction
@@ -55,7 +53,7 @@ public:
 
 	virtual void expand_shortcuts() = 0;
 	virtual void parse(map<string, keyword*> *types) = 0;
-	virtual void generate_states(state init) = 0;
+	virtual void generate_states(state_space *space, graph *trans, int init) = 0;
 	virtual void generate_prs(map<string, variable*> globals) = 0;
 };
 

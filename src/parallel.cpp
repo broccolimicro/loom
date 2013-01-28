@@ -17,7 +17,7 @@ parallel::parallel()
 	chp = "";
 	_kind = "parallel";
 }
-parallel::parallel(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+parallel::parallel(int uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
 	clear();
 

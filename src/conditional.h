@@ -25,7 +25,7 @@ enum conditional_type
 struct conditional : block
 {
 	conditional();
-	conditional(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity);
+	conditional(string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity);
 	~conditional();
 
 	conditional_type type;

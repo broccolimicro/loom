@@ -5,7 +5,7 @@ assignment::assignment()
 	_kind = "assignment";
 }
 
-assignment::assignment(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+assignment::assignment(int uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
 	this->_kind		= "assignment";
 	this->uid		= uid;

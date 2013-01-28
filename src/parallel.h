@@ -16,7 +16,7 @@
 struct parallel : block
 {
 	parallel();
-	parallel(string uid, string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity);
+	parallel(string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity);
 	~parallel();
 
 	void expand_shortcuts();

@@ -16,7 +16,7 @@
 struct loop : conditional
 {
 	loop();
-	loop(string id, string raw, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity);
+	loop(string raw, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity);
 	~loop();
 
 	void expand_shortcuts();
