@@ -169,5 +169,5 @@ void operate::parse(string raw, map<string, keyword*> *types, map<string, variab
 		}
 	}
 
-	def.init("", def_block, types, global, "\t", verbosity);
+	def.init(def_block, types, global, "\t", verbosity);
 }

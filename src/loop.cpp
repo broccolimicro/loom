@@ -139,7 +139,7 @@ void loop::parse(map<string, keyword*> *types)
 }
 
 
-void loop::generate_states(state init)
+void loop::generate_states(state_space *space, graph *trans, int init)
 {
 
 	map<string, block*>::iterator instr_iter;
@@ -148,7 +148,7 @@ void loop::generate_states(state init)
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = instr_iter->second;
-		instr->generate_states(state());
+		instr->generate_states(space, trans, init);
 	}
 }
 

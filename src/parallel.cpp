@@ -17,7 +17,7 @@ parallel::parallel()
 	chp = "";
 	_kind = "parallel";
 }
-parallel::parallel( string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+parallel::parallel(string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
 {
 	clear();
 
@@ -167,17 +167,15 @@ void parallel::parse(map<string, keyword*> *types)
 	}
 }
 
-void parallel::generate_states(state init)
+void parallel::generate_states(state_space *space, graph *trans, int init)
 {
-
-
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
-		instr->generate_states(state());
+		instr->generate_states(space, trans, init);
 	}
 }
 

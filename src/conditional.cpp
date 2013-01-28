@@ -275,7 +275,7 @@ for (ii = instrs.begin(); ii != instrs.end(); ii++)
 			}
  */
 
-void conditional::generate_states(state init)
+void conditional::generate_states(state_space *space, graph *trans, int init)
 {
 /*
 
@@ -324,7 +324,7 @@ void conditional::generate_states(state init)
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = instr_iter->second;
-		instr->generate_states(state());
+		instr->generate_states(space, trans, init);
 	}
 }
 
