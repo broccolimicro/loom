@@ -30,8 +30,13 @@ struct trace
 	vector<value>	values;
 
 	void clear();
+	int size();
+	void insert(int i, value v);
+
+
 	vector<value>::iterator begin();
 	vector<value>::iterator end();
+
 
 	void push_back(value v);
 
@@ -62,7 +67,8 @@ struct trace
 	trace &operator<<=(int n);
 	trace &operator>>=(int n);
 
-	trace operator[](int i);
+	trace operator()(int i);
+	value operator[](int i);
 };
 
 ostream &operator<<(ostream &os, trace s);

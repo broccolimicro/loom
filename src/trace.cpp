@@ -49,6 +49,16 @@ void trace::clear()
 	values.clear();
 }
 
+int trace::size()
+{
+	return values.size();
+}
+
+void trace::insert(int i, value v)
+{
+	values.insert(values.begin()+i,v);
+}
+
 vector<value>::iterator trace::begin()
 {
 	return values.begin();
@@ -178,7 +188,13 @@ trace &trace::operator>>=(int n)
 	return *this;
 }
 
-trace trace::operator[](int i)
+
+value trace::operator[](int i)
+{
+	return values[i];
+}
+
+trace trace::operator()(int i)
 {
 	trace result;
 	//result.var = var;
