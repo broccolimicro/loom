@@ -894,7 +894,7 @@ state down(state s, int idx)
 	return result;
 }*/
 
-bool drive(state s)
+/*bool drive(state s)
 {
 	bool result = false;
 	vector<value>::iterator i;
@@ -902,7 +902,7 @@ bool drive(state s)
 		result = result || i->prs;
 
 	return result;
-}
+}*/
 
 /* This function compares the left state to the right state. The right
  * state is what we desire for this production rule, and the left state
