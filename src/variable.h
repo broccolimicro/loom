@@ -29,11 +29,9 @@ struct variable
 	string		type;		// the name of the type of the instantiated variable
 	uint16_t	width;		// the bit width of the instantiated variable
 	bool		fixed;		// is the bit width of this variable fixed or variable?
-	value		last;		// TODO remove?
 	value		reset;
-	// TODO add field to keep track of whether or not to generate production rules for this variable
-
-	// TODO add index field
+	int			uid;		// unique identifier
+	bool		prs;		// keep track of whether or not to generate production rules
 
 	variable &operator=(variable v);
 	void parse(string raw, string tab, int verbosity);
