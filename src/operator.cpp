@@ -96,7 +96,7 @@ void operate::parse(string raw, map<string, keyword*> types, map<string, variabl
 
 		if ((vi = global.find(left)) != global.end())
 		{
-			if ((ti = types->find(vi->second->type)) != types->end())
+			if ((ti = types.find(vi->second->type)) != types.end())
 			{
 				if (ti->second != NULL)
 				{

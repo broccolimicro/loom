@@ -63,7 +63,7 @@ void loop::expand_shortcuts()
 	chp = "1->" + chp;
 }
 
-void loop::parse(map<string, keyword> *types)
+void loop::parse(map<string, keyword*> types)
 {
 	string guardstr, blockstr;
 
