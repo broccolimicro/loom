@@ -21,16 +21,6 @@ instruction::instruction()
 instruction::~instruction()
 {
 	_kind = "instruction";
-
-	map<string, variable*>::iterator i;
-	for (i = local.begin(); i != local.end(); i++)
-	{
-		if (i->second != NULL)
-			delete i->second;
-		i->second = NULL;
-	}
-
-	local.clear();
 }
 
 string instruction::kind()

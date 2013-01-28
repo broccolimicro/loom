@@ -24,7 +24,6 @@ conditional::conditional(string chp, map<string, keyword> *types, map<string, va
 	this->chp = chp.substr(1, chp.length()-2);
 	this->tab = tab;
 	this->verbosity = verbosity;
-	this->global = globals;
 	type = unknown;
 
 	expand_shortcuts();

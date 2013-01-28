@@ -11,7 +11,6 @@ assignment::assignment(string chp, map<string, keyword> *types, map<string, vari
 	this->chp		= chp;
 	this->tab		= tab;
 	this->verbosity = verbosity;
-	this->global	= globals;
 
 	expand_shortcuts();
 	parse(types);
