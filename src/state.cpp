@@ -23,6 +23,27 @@ state::state(vector<value> v)
 {
 	values = v;
 }
+
+void state::clear()
+{
+	values.clear();
+}
+
+vector<value>::iterator state::begin()
+{
+	return values.begin();
+}
+
+vector<value>::iterator state::end()
+{
+	return values.end();
+}
+
+void state::insert(int i, value v)
+{
+	values.insert(values.begin() + i, v);
+}
+
 ostream &operator<<(ostream &os, state s)
 {
     vector<value>::iterator i;

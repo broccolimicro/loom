@@ -431,9 +431,9 @@ void conditional::generate_prs(map<string, variable*> globals){
 
 state guard(string raw,  map<string, variable*> vars, string tab, int verbosity)
 {
-	map<string, state> outcomes;
-	map<string, state> a, b;
-	map<string, state>::iterator ai, bi;
+	state outcomes;
+	state a, b;
+	vector<value>::iterator ai, bi;
 	string::iterator i, j;
 	value temp;
 	int depth;

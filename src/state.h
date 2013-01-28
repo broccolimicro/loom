@@ -19,6 +19,11 @@ struct state
 	~state();
 	// Variable indexed using uid
 	vector<value> values;
+
+	void clear();
+	vector<value>::iterator begin();
+	vector<value>::iterator end();
+	void insert(int i, value v);
 };
 
 
