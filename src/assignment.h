@@ -11,6 +11,7 @@
 #include "keyword.h"
 #include "rule.h"
 #include "instruction.h"
+#include "graph.h"
 
 #ifndef assignment_h
 #define assignment_h

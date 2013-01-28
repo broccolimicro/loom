@@ -11,12 +11,12 @@
 #include "state.h"
 #include "common.h"
 
-void state_space::size()
+int state_space::size()
 {
 	return states.size();
 }
 
-void trace_space::size()
+int trace_space::size()
 {
 	return traces.size();
 }

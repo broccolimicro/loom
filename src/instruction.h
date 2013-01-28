@@ -12,6 +12,7 @@
 #include "variable.h"
 #include "keyword.h"
 #include "rule.h"
+#include "graph.h"
 
 #ifndef instruction_h
 #define instruction_h

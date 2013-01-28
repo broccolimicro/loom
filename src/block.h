@@ -13,6 +13,7 @@
 #include "variable.h"
 #include "space.h"
 #include "keyword.h"
+#include "graph.h"
 
 #ifndef block_h
 #define block_h
