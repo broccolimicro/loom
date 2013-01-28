@@ -32,12 +32,12 @@ trace::trace(string v, vector<value> s)
 
 trace::trace(string v, string s)
 {
-	values.push_back(value(s, true));
+	values.push_back(value(s));
 }
 
 trace::trace(string s)
 {
-	values.push_back(value(s, true));
+	values.push_back(value(s));
 }
 
 trace::~trace()
@@ -1062,16 +1062,6 @@ trace down(trace s, int idx)
 
 	return result;
 }*/
-
-bool drive(trace s)
-{
-	bool result = false;
-	vector<value>::iterator i;
-	for (i = s.values.begin(); i != s.values.end(); i++)
-		result = result || i->prs;
-
-	return result;
-}
 
 /* This function compares the left trace to the right trace. The right
  * trace is what we desire for this production rule, and the left trace

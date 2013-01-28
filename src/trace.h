@@ -138,7 +138,6 @@ int delta_count(trace s);
 trace up(trace s, int idx);
 trace down(trace s);
 trace down(trace s, int idx);*/
-bool drive(trace s);
 string conflicts(trace left, trace right);
 
 #endif
