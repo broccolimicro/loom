@@ -24,6 +24,7 @@ conditional::conditional(string chp, map<string, keyword*> types, map<string, va
 	this->chp = chp.substr(1, chp.length()-2);
 	this->tab = tab;
 	this->verbosity = verbosity;
+	this->global = globals;
 	type = unknown;
 
 	expand_shortcuts();
@@ -163,7 +164,7 @@ void conditional::generate_prs(map<string, variable> *globals)
 
 state guard(string raw,  map<string, variable> *vars, string tab, int verbosity)
 {
-	map<string, variable*>::iterator vi;
+	map<string, variable>::iterator vi;
 	state outcomes;
 	state a, b;
 	int ai, bi;
@@ -374,9 +375,9 @@ state guard(string raw,  map<string, variable> *vars, string tab, int verbosity)
 		return outcomes;
 	}
 
-	vi = vars.find(raw);
-	if (vi != vars.end())
-		outcomes.insert(vi->second->uid, value("1"));
+	vi = vars->find(raw);
+	if (vi != vars->end())
+		outcomes.insert(vi->second.uid, value("1"));
 
 	for (ai = 0; ai != outcomes.size(); ai++)
 	{

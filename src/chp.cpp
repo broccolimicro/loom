@@ -182,13 +182,13 @@ struct program
 					// Is this a process?
 					if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "process ") == 0)
 					{
-						p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, map<string, variable*>(), verbosity);
+						p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, map<string, variable>(), verbosity);
 						type_space.insert(pair<string, process*>(p->name, p));
 					}
 					// Is this an operator?
 					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "operator") == 0)
 					{
-						o = new operate(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, map<string, variable*>(), verbosity);
+						o = new operate(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, map<string, variable>(), verbosity);
 						type_space.insert(pair<string, operate*>(o->name, o));
 					}
 					// This isn't a process, is it a record?
@@ -216,12 +216,12 @@ struct program
 						// Make sure we don't miss the next record or process though.
 						if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "process ") == 0)
 						{
-							p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, map<string, variable*>(), verbosity);
+							p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, map<string, variable>(), verbosity);
 							type_space.insert(pair<string, process*>(p->name, p));
 						}
 						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "operator") == 0)
 						{
-							o = new operate(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, map<string, variable*>(), verbosity);
+							o = new operate(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, map<string, variable>(), verbosity);
 							type_space.insert(pair<string, operate*>(o->name, o));
 						}
 						else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "record ") == 0)
