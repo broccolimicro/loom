@@ -72,75 +72,37 @@ void assignment::generate_states(state_space *space, graph *trans, int init)
 {
 	uid = space->size();
 
-	/*map<string, space>::iterator space_iter;
-	map<string, state>::iterator state_iter;
-	map<string, string>::iterator expr_iter;
-	map<string, variable*>::iterator var_iter;
+	map<string, variable*>::iterator vi;
+	map<string, string>::iterator ei;
 
+	state s;
 
-	for (state_iter = init.begin(); state_iter != init.end(); state_iter++)
+	if (init != -1)
+		s = (*space)[init];
+	else
+		for (vi = global.begin(); vi != global.end(); vi++)
+			s.insert(vi->second->uid, value("X"));
+
+	for (ei = expr.begin(); ei != expr.end(); ei++)
 	{
-		space_iter = states.insert(pair<string, space>(state_iter->first, space())).first;
-		space_iter->second.var = state_iter->first;
-		space_iter->second.states.push_back(state_iter->second);
-		space_iter->second.states.push_back(state_iter->second);
+		vi = global.find(ei->first);
+
+		if (vi != global.end() && vi->second->uid < s.size())
+			s[vi->second->uid] = expression(ei->second, global, (*space)[init].values, tab, verbosity);
+		else if (vi != global.end())
+			s.insert(vi->second->uid, expression(ei->second, global, (*space)[init].values, tab, verbosity));
+		else
+			cout << "Error: Undefined variable " << vi->first << "." << endl;
 	}
 
-	for (expr_iter = expr.begin(); expr_iter != expr.end(); expr_iter++)
-	{
-		var_iter = global.find(expr_iter->first);
-		space_iter = states.find(expr_iter->first);
+	cout << s << endl;
 
-		if (var_iter != global.end() && space_iter != states.end())
-			*(space_iter->second.states.rbegin()) = expression(expr_iter->second, init, tab, verbosity);
-		else if (var_iter != global.end())
-		{
-			space_iter = states.insert(pair<string, space>(expr_iter->first, space())).first;
-			space_iter->second.var = expr_iter->first;
-			space_iter->second.states.push_back(state("X", false));
-			space_iter->second.states.push_back(expression(expr_iter->second, init, tab, verbosity));
-		}
-		else
-			cout << "Error: Undefined variable " << expr_iter->first << "." << endl;
-	}*/
+	space->push_back(s);
 }
 
 void assignment::generate_prs(map<string, variable*> globals)
 {
-	/*map<string, space>::iterator si, sj;
-	int bi0, bi1;
-	rule r;
-	state s0, s1;
-	bool first = true;
 
-	for (si = states.begin(); si != states.end(); si++)
-	{
-		// Expand multibit variables into their single bit constituents
-		for (bi0 = 0; bi0 < globals.find(si->first)->second->width && si->second.states.front().prs; bi0++)
-		{
-			s0 = si->second.states.front()[bi0];
-
-			r.clear(0);
-			r.right.var = si->first + (globals.find(si->first)->second->width > 1 ? "[" + to_string(bi0) + "]" : "") + (s0.data == "1" ? "+" : "-");
-			first = true;
-			for (sj = states.begin(); sj != states.end(); sj++)
-			{
-				// Expand multibit variables into their single bit constituents
-				for (bi1 = 0; bi1 < globals.find(sj->first)->second->width && si->first != sj->first; bi1++)
-				{
-					s1 = sj->second.states.back()[bi1];
-
-					if (s1.data != "X")
-					{
-						r.left.var = (s1.data == "0" ? "~" : "") + sj->first + (globals.find(sj->first)->second->width > 1 ? "[" + to_string(bi1) + "]" : "") + (first ? "" : "&") + r.left.var;
-						first = false;
-					}
-				}
-			}
-
-			rules.push_back(r);
-		}
-	}*/
 
 	print_prs();
 }

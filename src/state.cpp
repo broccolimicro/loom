@@ -54,6 +54,121 @@ value state::operator[](int i)
 	return values[i];
 }
 
+state &state::operator=(state s)
+{
+	values = s.values;
+
+	return *this;
+}
+
+state &state::operator+=(state s)
+{
+	*this = *this + s;
+	return *this;
+}
+
+state &state::operator-=(state s)
+{
+	*this = *this - s;
+	return *this;
+}
+
+state &state::operator*=(state s)
+{
+	*this = *this * s;
+	return *this;
+}
+
+state &state::operator/=(state s)
+{
+	*this = *this / s;
+	return *this;
+}
+
+state &state::operator<<=(state s)
+{
+	*this = *this << s;
+	return *this;
+}
+
+state &state::operator>>=(state s)
+{
+	*this = *this >> s;
+	return *this;
+}
+
+state &state::operator&=(state s)
+{
+	*this = *this & s;
+	return *this;
+}
+
+state &state::operator|=(state s)
+{
+	*this = *this | s;
+	return *this;
+}
+
+state &state::operator+=(value s)
+{
+	*this = *this + s;
+	return *this;
+}
+
+state &state::operator-=(value s)
+{
+	*this = *this - s;
+	return *this;
+}
+
+state &state::operator*=(value s)
+{
+	*this = *this * s;
+	return *this;
+}
+
+state &state::operator/=(value s)
+{
+	*this = *this / s;
+	return *this;
+}
+
+state &state::operator&=(value s)
+{
+	*this = *this & s;
+	return *this;
+}
+
+state &state::operator|=(value s)
+{
+	*this = *this | s;
+	return *this;
+}
+
+state &state::operator<<=(value s)
+{
+	*this = *this << s;
+	return *this;
+}
+
+state &state::operator>>=(value s)
+{
+	*this = *this >> s;
+	return *this;
+}
+
+state &state::operator<<=(int n)
+{
+	*this = *this << n;
+	return *this;
+}
+
+state &state::operator>>=(int n)
+{
+	*this = *this >> n;
+	return *this;
+}
+
 ostream &operator<<(ostream &os, state s)
 {
     vector<value>::iterator i;

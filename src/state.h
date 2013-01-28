@@ -27,8 +27,36 @@ struct state
 	int size();
 
 	value operator[](int i);
+
+	state &operator=(state s);
+
+	state &operator+=(state s);
+	state &operator-=(state s);
+	state &operator*=(state s);
+	state &operator/=(state s);
+
+	state &operator&=(state s);
+	state &operator|=(state s);
+
+	state &operator<<=(state s);
+	state &operator>>=(state s);
+
+	state &operator+=(value s);
+	state &operator-=(value s);
+	state &operator*=(value s);
+	state &operator/=(value s);
+
+	state &operator&=(value s);
+	state &operator|=(value s);
+
+	state &operator<<=(value s);
+	state &operator>>=(value s);
+
+	state &operator<<=(int n);
+	state &operator>>=(int n);
 };
 
+ostream &operator<<(ostream &os, state s);
 
 state operator+(state s1, state s2);
 state operator-(state s1, state s2);

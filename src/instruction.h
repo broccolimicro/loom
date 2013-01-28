@@ -33,14 +33,6 @@ public:
 	// The raw CHP of this instruction.
 	string chp;
 
-	/* the key is the name of the variable affected
-	 * the value is the value of that variable at the end of the instruction
-	 * 		the format of this value consists of 'i' or 'o' followed by n digits
-	 * 		with possible values '0', '1', and 'X'.
-	 */
-	map<string, variable*>		local;
-	map<string, variable*>		global;
-
 	// This is the list of production rules that defines this instruction
 	list<rule> rules;
 
@@ -54,7 +46,7 @@ public:
 
 	virtual void expand_shortcuts() = 0;
 	virtual void parse(map<string, keyword*> *types) = 0;
-	virtual void generate_states(state_space *space, graph *trans, int init) = 0;
+	virtual void generate_states(state_space *space, graph *trans, map<string, variable> *globals, int init) = 0;
 	virtual void generate_prs(map<string, variable*> globals) = 0;
 };
 

@@ -17,6 +17,9 @@ struct state_space
 	vector<state> states;
 
 	int size();
+	void push_back(state s);
+
+	state operator[](int i);
 };
 
 struct trace_space
@@ -25,6 +28,8 @@ struct trace_space
 	vector<trace> traces;
 
 	int size();
+
+	trace operator[](int i);
 };
 
 #endif
