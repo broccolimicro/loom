@@ -14,8 +14,76 @@
 
 struct state
 {
+	state();
+	state(vector<value> v);
+	~state();
 	// Variable indexed using uid
 	vector<value> values;
 };
+
+
+state operator+(state s1, state s2);
+state operator-(state s1, state s2);
+state operator*(state s1, state s2);
+state operator/(state s1, state s2);
+
+state operator+(state s1, value s2);
+state operator-(state s1, value s2);
+state operator*(state s1, value s2);
+state operator/(state s1, value s2);
+
+state operator+(value s1, state s2);
+state operator-(value s1, state s2);
+state operator*(value s1, state s2);
+state operator/(value s1, state s2);
+
+state operator-(state s);
+
+state operator&(state s1, state s2);
+state operator|(state s1, state s2);
+
+state operator&(state s1, value s2);
+state operator|(state s1, value s2);
+
+state operator&(value s1, state s2);
+state operator|(value s1, state s2);
+
+state operator~(state s);
+
+state operator<<(state s1, state s2);
+state operator>>(state s1, state s2);
+
+state operator<<(state s1, value s2);
+state operator>>(state s1, value s2);
+
+state operator<<(value s1, state s2);
+state operator>>(value s1, state s2);
+
+state operator<<(state s, int n);
+state operator>>(state s, int n);
+
+/*state operator<(state s1, int n);
+state operator>(state s1, int n);*/
+
+state operator==(state s1, state s2);
+state operator!=(state s1, state s2);
+state operator<=(state s1, state s2);
+state operator>=(state s1, state s2);
+state operator<(state s1, state s2);
+state operator>(state s1, state s2);
+
+state operator==(state s1, value s2);
+state operator!=(state s1, value s2);
+state operator<=(state s1, value s2);
+state operator>=(state s1, value s2);
+state operator<(state s1, value s2);
+state operator>(state s1, value s2);
+
+state operator==(value s1, state s2);
+state operator!=(value s1, state s2);
+state operator<=(value s1, state s2);
+state operator>=(value s1, state s2);
+state operator<(value s1, state s2);
+state operator>(value s1, state s2);
 
 #endif
