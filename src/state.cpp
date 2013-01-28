@@ -44,6 +44,16 @@ void state::insert(int i, value v)
 	values.insert(values.begin() + i, v);
 }
 
+int state::size()
+{
+	return values.size();
+}
+
+value state::operator[](int i)
+{
+	return values[i];
+}
+
 ostream &operator<<(ostream &os, state s)
 {
     vector<value>::iterator i;

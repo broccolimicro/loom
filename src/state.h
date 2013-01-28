@@ -24,6 +24,9 @@ struct state
 	vector<value>::iterator begin();
 	vector<value>::iterator end();
 	void insert(int i, value v);
+	int size();
+
+	value operator[](int i);
 };
 
 

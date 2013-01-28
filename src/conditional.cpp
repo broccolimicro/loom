@@ -431,9 +431,10 @@ void conditional::generate_prs(map<string, variable*> globals){
 
 state guard(string raw,  map<string, variable*> vars, string tab, int verbosity)
 {
+	map<string, variable*>::iterator vi;
 	state outcomes;
 	state a, b;
-	vector<value>::iterator ai, bi;
+	int ai, bi;
 	string::iterator i, j;
 	value temp;
 	int depth;
@@ -455,35 +456,34 @@ state guard(string raw,  map<string, variable*> vars, string tab, int verbosity)
 			a = guard(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity);
 			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
 
-			for (ai = a.begin(); ai != a.end(); ai++)
+			for (ai = 0; ai != a.size(); ai++)
 			{
-				if (b.find(ai->first) == b.end())
+				if (ai >= b.size())
 				{
-					temp = ai->second || (~ai->second);
-					outcomes.insert(pair<string, state>(ai->first, temp));
+					temp = a[ai] || (~a[ai]);
+					outcomes.insert(ai, temp);
 				}
 				else
-					outcomes.insert(pair<string, state>(ai->first, ai->second));
+					outcomes.insert(ai, a[ai]);
 			}
 
-			for (bi = b.begin(); bi != b.end(); bi++)
+			for (bi = 0; bi != b.size(); bi++)
 			{
-				if (a.find(bi->first) == a.end())
+				if (bi >= a.size())
 				{
-					temp = bi->second || (~bi->second);
-					outcomes.insert(pair<string, state>(bi->first, temp));
+					temp = b[bi] || (~b[bi]);
+					outcomes.insert(bi, temp);
 				}
 				else
 				{
-					ai = outcomes.find(bi->first);
-					ai->second = ai->second || bi->second;
+					a[bi] = a[bi] || b[bi];
 				}
 			}
 
-			for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
+			for (ai = 0; ai != outcomes.size(); ai++)
 			{
 				if (verbosity >= VERB_PARSE)
-					cout << tab << ai->first << ": " << ai->second << endl;
+					cout << tab << ai << ": " << outcomes[ai] << endl;
 			}
 
 			return outcomes;
@@ -503,21 +503,20 @@ state guard(string raw,  map<string, variable*> vars, string tab, int verbosity)
 			a = guard(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity);
 			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
 
-			outcomes.insert(a.begin(), a.end());
+			outcomes = a;
 
-			for (bi = b.begin(); bi != b.end(); bi++)
+			for (bi = 0; bi != b.size(); bi++)
 			{
-				ai = outcomes.find(bi->first);
-				if (ai == outcomes.end())
-					outcomes.insert(pair<string, state>(bi->first, bi->second));
+				if (bi >= outcomes.size())
+					outcomes.insert(bi, b[bi]);
 				else
-					ai->second = ai->second && bi->second;
+					outcomes[bi] = outcomes[bi] && b[bi];
 			}
 
-			for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
+			for (ai = 0; ai != outcomes.size(); ai++)
 			{
 				if (verbosity >= VERB_PARSE)
-					cout << tab << ai->first << ": " << ai->second << endl;
+					cout << tab << ai << ": " << outcomes[ai] << endl;
 			}
 
 			return outcomes;
@@ -613,13 +612,13 @@ state guard(string raw,  map<string, variable*> vars, string tab, int verbosity)
 		{
 			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
 
-			for (bi = b.begin(); bi != b.end(); bi++)
-				outcomes.insert(pair<string, state>(bi->first, ~bi->second));
+			for (bi = 0; bi != b.size(); bi++)
+				outcomes.insert(bi, ~b[bi]);
 
-			for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
+			for (ai = 0; ai != outcomes.size(); ai++)
 			{
 				if (verbosity >= VERB_PARSE)
-					cout << tab << ai->first << ": " << ai->second << endl;
+					cout << tab << ai << ": " << outcomes[ai] << endl;
 			}
 
 			return outcomes;
@@ -632,24 +631,25 @@ state guard(string raw,  map<string, variable*> vars, string tab, int verbosity)
 	{
 		a = guard(raw.substr(s+1, e-s-1), vars, tab+"\t", verbosity);
 
-		outcomes.insert(a.begin(), a.end());
+		outcomes = a;
 
-		for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
+		for (ai = 0; ai != outcomes.size(); ai++)
 		{
 			if (verbosity >= VERB_PARSE)
-				cout << tab << ai->first << ": " << ai->second << endl;
+				cout << tab << ai << ": " << outcomes[ai] << endl;
 		}
 
 		return outcomes;
 	}
 
-	if (vars.find(raw) != vars.end())
-		outcomes.insert(pair<string, state>(raw, state("1", false)));
+	vi = vars.find(raw);
+	if (vi != vars.end())
+		outcomes.insert(vi->second->uid, value("1"));
 
-	for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
+	for (ai = 0; ai != outcomes.size(); ai++)
 	{
 		if (verbosity >= VERB_PARSE)
-			cout << tab << ai->first << ": " << ai->second << endl;
+			cout << tab << ai << ": " << outcomes[ai] << endl;
 	}
 
 	return outcomes;
