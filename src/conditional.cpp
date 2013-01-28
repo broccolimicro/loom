@@ -482,7 +482,6 @@ state guard(string raw,  map<string, variable*> vars, string tab, int verbosity)
 
 			for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
 			{
-				ai->second.prs = false;
 				if (verbosity >= VERB_PARSE)
 					cout << tab << ai->first << ": " << ai->second << endl;
 			}
@@ -517,7 +516,6 @@ state guard(string raw,  map<string, variable*> vars, string tab, int verbosity)
 
 			for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
 			{
-				ai->second.prs = false;
 				if (verbosity >= VERB_PARSE)
 					cout << tab << ai->first << ": " << ai->second << endl;
 			}
@@ -620,7 +618,6 @@ state guard(string raw,  map<string, variable*> vars, string tab, int verbosity)
 
 			for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
 			{
-				ai->second.prs = false;
 				if (verbosity >= VERB_PARSE)
 					cout << tab << ai->first << ": " << ai->second << endl;
 			}
@@ -639,7 +636,6 @@ state guard(string raw,  map<string, variable*> vars, string tab, int verbosity)
 
 		for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
 		{
-			ai->second.prs = false;
 			if (verbosity >= VERB_PARSE)
 				cout << tab << ai->first << ": " << ai->second << endl;
 		}
@@ -652,7 +648,6 @@ state guard(string raw,  map<string, variable*> vars, string tab, int verbosity)
 
 	for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
 	{
-		ai->second.prs = false;
 		if (verbosity >= VERB_PARSE)
 			cout << tab << ai->first << ": " << ai->second << endl;
 	}
