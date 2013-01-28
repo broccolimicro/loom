@@ -45,9 +45,9 @@ public:
 	void print_prs();
 
 	virtual void expand_shortcuts() = 0;
-	virtual void parse(map<string, keyword*> *types) = 0;
+	virtual void parse(map<string, keyword> *types) = 0;
 	virtual void generate_states(state_space *space, graph *trans, map<string, variable> *globals, int init) = 0;
-	virtual void generate_prs(map<string, variable*> globals) = 0;
+	virtual void generate_prs(map<string, variable> *globals) = 0;
 };
 
 #endif

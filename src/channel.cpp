@@ -18,7 +18,7 @@ channel::channel()
 	_kind = "channel";
 }
 
-channel::channel(string chp, map<string, keyword*> *types, string tab, int verbosity)
+channel::channel(string chp, map<string, keyword> *types, string tab, int verbosity)
 {
 	parse(chp, types, tab, verbosity);
 	_kind = "channel";
@@ -46,7 +46,7 @@ channel &channel::operator=(channel r)
 	return *this;
 }
 
-void channel::parse(string chp, map<string, keyword*> *types, string tab, int verbosity)
+void channel::parse(string chp, map<string, keyword> *types, string tab, int verbosity)
 {
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Channel: " << chp << endl;

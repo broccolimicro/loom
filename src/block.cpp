@@ -21,7 +21,7 @@ block::block()
 	chp = "";
 }
 
-block::block(string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+block::block(string chp, map<string, keyword> *types, map<string, variable> *globals, string tab, int verbosity)
 {
 	clear();
 
@@ -58,7 +58,7 @@ block &block::operator=(block b)
 	return *this;
 }
 
-void block::init(string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+void block::init(string chp, map<string, keyword> *types, map<string, variable> *globals, string tab, int verbosity)
 {
 	clear();
 
@@ -77,7 +77,7 @@ void block::expand_shortcuts()
 
 }
 
-void block::parse(map<string, keyword*> *types)
+void block::parse(map<string, keyword> *types)
 {
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Block: " << chp << endl;

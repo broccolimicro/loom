@@ -16,7 +16,7 @@ conditional::conditional()
 	type = unknown;
 }
 
-conditional::conditional(string chp, map<string, keyword*> *types, map<string, variable*> globals, string tab, int verbosity)
+conditional::conditional(string chp, map<string, keyword> *types, map<string, variable> *globals, string tab, int verbosity)
 {
 	clear();
 
