@@ -83,7 +83,7 @@ void record::parse(string raw, map<string, keyword*> *types, string tab, int ver
 	}
 }
 
-map<string, variable*> expand(string chp, string super, map<string, keyword*> *types, string tab, int verbosity)
+map<string, variable*> expand(string chp, string super, map<string, keyword*> types, string tab, int verbosity)
 {
 	map<string, variable*> result;
 	map<string, keyword*>::iterator var_type;
