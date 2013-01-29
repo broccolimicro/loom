@@ -427,6 +427,25 @@ trace operator|(trace s1, trace s2)
 	return result;
 }
 
+trace operator||(trace s1, trace s2)
+{
+	vector<value>::iterator j, k;
+	value a, b;
+	trace result;
+
+	//result.var = s1.var + "||" + s2.var;
+
+	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
+	{
+		a = j != s1.values.end() ? *j++ : s1.values.back();
+		b = k != s2.values.end() ? *k++ : s2.values.back();
+
+		result.values.push_back(a || b);
+	}
+
+	return result;
+}
+
 trace operator&(trace s1, value s2)
 {
 	trace result;
