@@ -164,11 +164,11 @@ int conditional::generate_states(state_space *space, graph *trans, int init)
 	{
 		guardresult = instr_iter->second->generate_states(space, trans, init);
 		state_catcher = instr_iter->first->generate_states(space, trans, guardresult);
-		cout << "Unioning " << s << " and " << (*space)[state_catcher] << endl;
+		cout << tab << "Unioning " << s << " and " << (*space)[state_catcher] << endl;
 		s = s || (*space)[state_catcher];
 	}
 	uid = space->size();
-	cout << "resulting merge of " << s;
+	cout << tab << "resulting merge of " << s;
 	space->push_back(s);
 	return uid;
 }
