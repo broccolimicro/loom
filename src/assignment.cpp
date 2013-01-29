@@ -74,14 +74,16 @@ void assignment::generate_states(state_space *space, graph *trans, int init)
 
 	map<string, variable>::iterator vi;
 	map<string, string>::iterator ei;
+	int i;
 
 	state s;
 
+	for (vi = global->begin(); vi != global->end(); vi++)
+		s.assign(vi->second.uid, value("X"));
+
 	if (init != -1)
-		s = (*space)[init];
-	else
-		for (vi = global->begin(); vi != global->end(); vi++)
-			s.assign(vi->second.uid, value("X"));
+		for (i = 0; i < (*space)[init].size(); i++)
+			s.assign(i, (*space)[init][i]);
 
 	for (ei = expr.begin(); ei != expr.end(); ei++)
 	{
