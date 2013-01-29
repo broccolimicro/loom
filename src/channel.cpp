@@ -18,7 +18,7 @@ channel::channel()
 	_kind = "channel";
 }
 
-channel::channel(string chp, map<string, keyword> *types, string tab, int verbosity)
+channel::channel(string chp, map<string, keyword*> types, string tab, int verbosity)
 {
 	parse(chp, types, tab, verbosity);
 	_kind = "channel";
@@ -29,14 +29,6 @@ channel::~channel()
 	name = "";
 	_kind = "channel";
 
-	map<string, variable*>::iterator i;
-	for (i = vars.begin(); i != vars.end(); i++)
-	{
-		if (i->second != NULL)
-			delete i->second;
-		i->second = NULL;
-	}
-
 	vars.clear();
 }
 
@@ -46,7 +38,7 @@ channel &channel::operator=(channel r)
 	return *this;
 }
 
-void channel::parse(string chp, map<string, keyword> *types, string tab, int verbosity)
+void channel::parse(string chp, map<string, keyword*> types, string tab, int verbosity)
 {
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Channel: " << chp << endl;
@@ -62,7 +54,7 @@ void channel::parse(string chp, map<string, keyword> *types, string tab, int ver
 	map<string, state> res;
 	map<string, state>::iterator ri;
 
-	map<string, variable*> expansion;
+	map<string, variable> expansion;
 
 	name = chp.substr(name_start, name_end - name_start);
 	io_block = chp.substr(block_start, block_end - block_start);
@@ -126,10 +118,10 @@ void channel::parse(string chp, map<string, keyword> *types, string tab, int ver
 ostream &operator<<(ostream &os, channel s)
 {
     os << s.name << "{";
-    map<string, variable*>::iterator i;
+    map<string, variable>::iterator i;
     for (i = s.vars.begin(); i != s.vars.end(); i++)
     {
-    	os << *(i->second) << " ";
+    	os << i->second << " ";
     }
     os << "}";
 

@@ -19,7 +19,7 @@ operate::operate()
 	_kind = "operate";
 }
 
-operate::operate(string raw, map<string, keyword*> types, map<string, variable> *vars, int verbosity)
+operate::operate(string raw, map<string, keyword*> types, map<string, variable> vars, int verbosity)
 {
 	parse(raw, types, vars, verbosity);
 	_kind = "operate";
@@ -41,7 +41,7 @@ operate &operate::operator=(operate p)
 	return *this;
 }
 
-void operate::parse(string raw, map<string, keyword*> types, map<string, variable> *vars, int verbosity)
+void operate::parse(string raw, map<string, keyword*> types, map<string, variable> vars, int verbosity)
 {
 	chp = raw;
 
@@ -57,11 +57,11 @@ void operate::parse(string raw, map<string, keyword*> types, map<string, variabl
 	string::iterator i, j;
 
 	map<string, variable> temp;
-	map<string, keyword>::iterator ti;
+	map<string, keyword*>::iterator ti;
 
 	cout << "Operator:\t" << chp << endl;
 
-	global = vars;
+	global.insert(vars.begin(), vars.end());
 
 	name = chp.substr(name_start, name_end - name_start);
 	io_block = chp.substr(input_start, input_end - input_start);
@@ -96,7 +96,7 @@ void operate::parse(string raw, map<string, keyword*> types, map<string, variabl
 
 		if ((vi = global.find(left)) != global.end())
 		{
-			if ((ti = types.find(vi->second->type)) != types.end())
+			if ((ti = types.find(vi->second.type)) != types.end())
 			{
 				if (ti->second != NULL)
 				{
@@ -147,7 +147,7 @@ void operate::parse(string raw, map<string, keyword*> types, map<string, variabl
 			}
 			else
 			{
-				cout << "Error: Undefined type " << vi->second->type << endl;
+				cout << "Error: Undefined type " << vi->second.type << endl;
 				break;
 			}
 		}
@@ -158,5 +158,5 @@ void operate::parse(string raw, map<string, keyword*> types, map<string, variabl
 		}
 	}
 
-	def.init(def_block, types, global, "\t", verbosity);
+	def.init(def_block, types, &global, "\t", verbosity);
 }

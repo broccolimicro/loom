@@ -21,17 +21,17 @@
 struct record : keyword
 {
 	record();
-	record(string raw, map<string, keyword*> *types, string tab, int verbosity);
+	record(string raw, map<string, keyword*> types, string tab, int verbosity);
 	~record();
 
 	string					chp;
-	map<string, variable*>	vars;	// the list of member variables that make up this record
+	map<string, variable>	vars;	// the list of member variables that make up this record
 
 	record &operator=(record r);
-	void parse(string raw, map<string, keyword*> *types, string tab, int verbosity);
+	void parse(string raw, map<string, keyword*> types, string tab, int verbosity);
 };
 
-map<string, variable*> expand(string chp, string super, map<string, keyword*> types, string tab, int verbosity);
+map<string, variable> expand(string chp, string super, map<string, keyword*> types, string tab, int verbosity);
 ostream &operator<<(ostream &os, record s);
 
 #endif

@@ -23,7 +23,7 @@ struct state
 	void clear();
 	vector<value>::iterator begin();
 	vector<value>::iterator end();
-	void insert(int i, value v);
+	void assign(int i, value v);
 	int size();
 
 	value operator[](int i);

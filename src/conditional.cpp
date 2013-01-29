@@ -194,10 +194,10 @@ state guard(string raw,  map<string, variable> *vars, string tab, int verbosity)
 				if (ai >= b.size())
 				{
 					temp = a[ai] || (~a[ai]);
-					outcomes.insert(ai, temp);
+					outcomes.assign(ai, temp);
 				}
 				else
-					outcomes.insert(ai, a[ai]);
+					outcomes.assign(ai, a[ai]);
 			}
 
 			for (bi = 0; bi != b.size(); bi++)
@@ -205,7 +205,7 @@ state guard(string raw,  map<string, variable> *vars, string tab, int verbosity)
 				if (bi >= a.size())
 				{
 					temp = b[bi] || (~b[bi]);
-					outcomes.insert(bi, temp);
+					outcomes.assign(bi, temp);
 				}
 				else
 				{
@@ -241,7 +241,7 @@ state guard(string raw,  map<string, variable> *vars, string tab, int verbosity)
 			for (bi = 0; bi != b.size(); bi++)
 			{
 				if (bi >= outcomes.size())
-					outcomes.insert(bi, b[bi]);
+					outcomes.assign(bi, b[bi]);
 				else
 					outcomes[bi] = outcomes[bi] && b[bi];
 			}
@@ -346,7 +346,7 @@ state guard(string raw,  map<string, variable> *vars, string tab, int verbosity)
 			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
 
 			for (bi = 0; bi != b.size(); bi++)
-				outcomes.insert(bi, ~b[bi]);
+				outcomes.assign(bi, ~b[bi]);
 
 			for (ai = 0; ai != outcomes.size(); ai++)
 			{
@@ -377,7 +377,7 @@ state guard(string raw,  map<string, variable> *vars, string tab, int verbosity)
 
 	vi = vars->find(raw);
 	if (vi != vars->end())
-		outcomes.insert(vi->second.uid, value("1"));
+		outcomes.assign(vi->second.uid, value("1"));
 
 	for (ai = 0; ai != outcomes.size(); ai++)
 	{

@@ -66,6 +66,7 @@ void block::init(string chp, map<string, keyword*> types, map<string, variable> 
 	this->chp = chp;
 	this->tab = tab;
 	this->verbosity = verbosity;
+	this->global = globals;
 
 	expand_shortcuts();
 	parse(types);

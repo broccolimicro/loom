@@ -18,7 +18,7 @@ process::process()
 	_kind = "process";
 }
 
-process::process(string raw, map<string, keyword> *types, map<string, variable> *vars, int verbosity)
+process::process(string raw, map<string, keyword*> types, map<string, variable> vars, int verbosity)
 {
 	parse(raw, types, vars, verbosity);
 	_kind = "process";
@@ -40,7 +40,7 @@ process &process::operator=(process p)
 	return *this;
 }
 
-void process::parse(string raw, map<string, keyword> *types, map<string, variable> *vars, int verbosity)
+void process::parse(string raw, map<string, keyword*> types, map<string, variable> vars, int verbosity)
 {
 	chp = raw;
 
@@ -55,12 +55,12 @@ void process::parse(string raw, map<string, keyword> *types, map<string, variabl
 	string def_block;
 	string::iterator i, j;
 
-	map<string, variable*> temp;
+	map<string, variable> temp;
 	map<string, keyword*>::iterator ti;
 
 	cout << "Process:\t" << chp << endl;
 
-	global = vars;
+	global.insert(vars.begin(), vars.end());
 
 	name = chp.substr(name_start, name_end - name_start);
 	io_block = chp.substr(input_start, input_end - input_start);
@@ -81,7 +81,7 @@ void process::parse(string raw, map<string, keyword> *types, map<string, variabl
 		}
 	}
 
-	map<string, variable*>::iterator vi, vj;
+	map<string, variable>::iterator vi, vj;
 
 	string right, left, replace;
 	int skip;
@@ -95,7 +95,7 @@ void process::parse(string raw, map<string, keyword> *types, map<string, variabl
 
 		if ((vi = global.find(left)) != global.end())
 		{
-			if ((ti = types->find(vi->second->type)) != types->end())
+			if ((ti = types.find(vi->second.type)) != types.end())
 			{
 				if (ti->second != NULL)
 				{
@@ -146,7 +146,7 @@ void process::parse(string raw, map<string, keyword> *types, map<string, variabl
 			}
 			else
 			{
-				cout << "Error: Undefined type " << vi->second->type << endl;
+				cout << "Error: Undefined type " << vi->second.type << endl;
 				break;
 			}
 		}
@@ -157,7 +157,7 @@ void process::parse(string raw, map<string, keyword> *types, map<string, variabl
 		}
 	}
 
-	def.init(def_block, types, global, "\t", verbosity);
+	def.init(def_block, types, &global, "\t", verbosity);
 
 	def.generate_states(&space, &trans, -1);
 }

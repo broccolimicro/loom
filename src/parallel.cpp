@@ -25,6 +25,7 @@ parallel::parallel(string chp, map<string, keyword*> types, map<string, variable
 	this->chp = chp;
 	this->tab = tab;
 	this->verbosity = verbosity;
+	this->global = globals;
 
 	expand_shortcuts();
 	parse(types);
@@ -51,16 +52,16 @@ void parallel::parse(map<string, keyword*> types)
 	string		raw_instr;	// chp of a sub block
 
 	instruction *instr; 	// instruction parser
-	variable	*v;			// variable instantiation parser
+	variable	v;			// variable instantiation parser
 
 	map<string, state> current_state;
 
-	list<instruction>		::iterator	ii, ij;
+	list<instruction*>		::iterator	ii, ij;
 	map<string, variable>	::iterator	vi;
 	//map<string, space>		::iterator	si, sj, sk;
 	map<string, state>		::iterator	l, m;
 	list<state>				::iterator	a, b;
-	map<string, keyword>	::iterator	t;
+	map<string, keyword*>	::iterator	t;
 	list<bool>				::iterator	di;
 	string					::iterator	i, j;
 
@@ -116,7 +117,7 @@ void parallel::parse(map<string, keyword*> types)
 			else
 			{
 				vdef = false;
-				for (t = types->begin(); t != types->end(); t++)
+				for (t = types.begin(); t != types.end(); t++)
 					if (raw_instr.find(t->first) != raw_instr.npos)
 					{
 						vdef = true;
@@ -126,8 +127,8 @@ void parallel::parse(map<string, keyword*> types)
 				// This sub block is a variable definition. keyword<bitwidth> name
 				if (vdef)
 				{
-					v = new variable(raw_instr, tab, verbosity);
-					global.insert(pair<string, variable*>(v->name, v));
+					v = variable(raw_instr, tab, verbosity);
+					global->insert(pair<string, variable>(v.name, v));
 				}
 				// This sub block is an assignment instruction.
 				else if (raw_instr.length() != 0)
@@ -149,11 +150,13 @@ void parallel::parse(map<string, keyword*> types)
 
 void parallel::generate_states(state_space *space, graph *trans, int init)
 {
-	list<instruction>::iterator instr_iter;
+	list<instruction*>::iterator instr_iter;
+	instruction *instr;
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
-		instr_iter->generate_states(space, trans, init);
+		instr = *instr_iter;
+		instr->generate_states(space, trans, init);
 	}
 }
 

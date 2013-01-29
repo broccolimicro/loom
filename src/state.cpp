@@ -39,9 +39,9 @@ vector<value>::iterator state::end()
 	return values.end();
 }
 
-void state::insert(int i, value v)
+void state::assign(int i, value v)
 {
-	values.insert(values.begin() + i, v);
+	values.assign(i, v);
 }
 
 int state::size()

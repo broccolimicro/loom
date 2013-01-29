@@ -18,7 +18,7 @@ record::record()
 	_kind = "record";
 }
 
-record::record(string raw, map<string, keyword*> *types, string tab, int verbosity)
+record::record(string raw, map<string, keyword*> types, string tab, int verbosity)
 {
 	parse(raw, types, tab, verbosity);
 	_kind = "record";
@@ -29,14 +29,6 @@ record::~record()
 	name = "";
 	_kind = "record";
 
-	map<string, variable*>::iterator i;
-	for (i = vars.begin(); i != vars.end(); i++)
-	{
-		if (i->second != NULL)
-			delete i->second;
-		i->second = NULL;
-	}
-
 	vars.clear();
 }
 
@@ -46,7 +38,7 @@ record &record::operator=(record r)
 	return *this;
 }
 
-void record::parse(string raw, map<string, keyword*> *types, string tab, int verbosity)
+void record::parse(string raw, map<string, keyword*> types, string tab, int verbosity)
 {
 	chp = raw;
 
@@ -57,7 +49,7 @@ void record::parse(string raw, map<string, keyword*> *types, string tab, int ver
 	string::iterator i, j;
 	string io_block;
 
-	map<string, variable*> expansion;
+	map<string, variable> expansion;
 
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Record: " << chp << endl;
@@ -83,32 +75,32 @@ void record::parse(string raw, map<string, keyword*> *types, string tab, int ver
 	}
 }
 
-map<string, variable*> expand(string chp, string super, map<string, keyword*> types, string tab, int verbosity)
+map<string, variable> expand(string chp, string super, map<string, keyword*> types, string tab, int verbosity)
 {
-	map<string, variable*> result;
+	map<string, variable> result;
 	map<string, keyword*>::iterator var_type;
-	map<string, variable*>::iterator mem_var;
-	variable *v = new variable(chp, tab+"\t", verbosity);
+	map<string, variable>::iterator mem_var;
+	variable v = variable(chp, tab+"\t", verbosity);
 	string name;
 
-	if ((var_type = types->find(v->type)) != types->end())
+	if ((var_type = types.find(v.type)) != types.end())
 	{
-		result.insert(pair<string, variable*>(v->name, v));
+		result.insert(pair<string, variable>(v.name, v));
 
 		if (var_type->second->kind() == "record" || var_type->second->kind() == "channel")
 		{
-			name = v->name;
+			name = v.name;
 			for (mem_var = ((record*)var_type->second)->vars.begin(); mem_var != ((record*)var_type->second)->vars.end(); mem_var++)
 			{
 				v = mem_var->second;
-				result.insert(pair<string, variable*>(name + "." + v->name, new variable(name + "." + v->name, v->type, v->reset, v->width)));
+				result.insert(pair<string, variable>(name + "." + v.name, variable(name + "." + v.name, v.type, v.reset, v.width)));
 			}
 		}
 		else if (var_type->second->kind() == "process")
 			cout << "Error: Invalid use of type " << var_type->second->kind() << " in record definition." << endl;
 	}
 	else
-		cout << "Error: Invalid typename: " << v->type << endl;
+		cout << "Error: Invalid typename: " << v.type << endl;
 
 	return result;
 }
@@ -116,10 +108,10 @@ map<string, variable*> expand(string chp, string super, map<string, keyword*> ty
 ostream &operator<<(ostream &os, record s)
 {
     os << s.name << "{";
-    map<string, variable*>::iterator i;
+    map<string, variable>::iterator i;
     for (i = s.vars.begin(); i != s.vars.end(); i++)
     {
-    	os << *(i->second) << " ";
+    	os << i->second << " ";
     }
     os << "}";
 
