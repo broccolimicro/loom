@@ -20,8 +20,8 @@
 struct variable
 {
 	variable();
-	variable(string n, string t, value r, uint16_t w);
-	variable(string raw, string tab, int verbosity);
+	variable(string name, int uid, string type, value reset, uint16_t width);
+	variable(string chp, int uid, string tab, int verbosity);
 	~variable();
 
 	string		chp;
@@ -33,8 +33,12 @@ struct variable
 	int			uid;
 	bool		prs;		// keep track of whether or not to generate production rules
 
+	// For debugging purposes
+	string tab;
+	int verbosity;
+
 	variable &operator=(variable v);
-	void parse(string raw, string tab, int verbosity);
+	void parse(string chp);
 };
 
 ostream &operator<<(ostream &os, variable s);

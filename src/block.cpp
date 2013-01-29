@@ -145,8 +145,7 @@ void block::parse(map<string, keyword*> types)
 				// This sub block is a variable definition. keyword<bitwidth> name
 				if (vdef)
 				{
-					v = variable(raw_instr, tab, verbosity);
-					v.uid = global->size();
+					v = variable(raw_instr, global->size(), tab, verbosity);
 					global->insert(pair<string, variable>(v.name, v));
 				}
 				// This sub block is an assignment instruction.

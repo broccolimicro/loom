@@ -41,7 +41,9 @@ vector<value>::iterator state::end()
 
 void state::assign(int i, value v)
 {
-	values.assign(i, v);
+	if (i >= (int)values.size())
+		values.resize(i+1, value("X"));
+	values[i] = v;
 }
 
 int state::size()

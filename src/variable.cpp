@@ -19,18 +19,24 @@ variable::variable()
 	fixed = false;
 }
 
-variable::variable(string n, string t, value r, uint16_t w)
+variable::variable(string name, int uid, string type, value reset, uint16_t width)
 {
-	name = n;
-	type = t;
-	width = w;
-	reset = r;
-	fixed = true;
+	this->name = name;
+	this->uid = uid;
+	this->type = type;
+	this->width = width;
+	this->reset = reset;
+	this->fixed = true;
 }
 
-variable::variable(string raw, string tab, int verbosity)
+variable::variable(string chp, int uid, string tab, int verbosity)
 {
-	parse(raw, tab, verbosity);
+	this->chp = chp;
+	this->uid = uid;
+	this->tab = tab;
+	this->verbosity = verbosity;
+
+	parse(chp);
 }
 
 variable::~variable()
@@ -49,15 +55,17 @@ variable &variable::operator=(variable v)
 	width = v.width;
 	reset = v.reset;
 	fixed = v.fixed;
+	uid = v.uid;
+	prs = v.prs;
 	return *this;
 }
 
 // TODO we need to handle the case where we instantiate a process
-void variable::parse(string raw, string tab, int verbosity)
+void variable::parse(string chp)
 {
 	reset = "iX";
 
-	chp = raw;
+	this->chp = chp;
 
 	size_t width_start = chp.find_first_of("< ");
 	size_t name_start = chp.find_first_of("> ");

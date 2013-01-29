@@ -117,8 +117,6 @@ t expression(string raw, map<string, variable> *globals, vector<t> init, string 
 		return init[v->second.uid];
 	else if (v != globals->end())
 		return t();
-	else
-		cout << "Error: Undefined variable " << raw << "." << endl;
 
 	p = raw.find_first_of("bx");
 	if (p != raw.npos && raw[p] == 'x')

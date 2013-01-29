@@ -240,7 +240,7 @@ struct program
 			}
 		}
 
-		main.parse("main m()", "", verbosity);
+		main.parse("main m()");
 	}
 };
 
