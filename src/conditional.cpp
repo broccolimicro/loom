@@ -147,7 +147,7 @@ void conditional::parse(map<string, keyword*> types)
 	// TODO condition all production rules of the guarded blocks on their designated state variable.
 }
 
-void conditional::generate_states(state_space *space, graph *trans, int init)
+int conditional::generate_states(state_space *space, graph *trans, int init)
 {
 	cout << tab << "Conditional " << chp << endl;
 
@@ -158,6 +158,8 @@ void conditional::generate_states(state_space *space, graph *trans, int init)
 		instr_iter->second->generate_states(space, trans, init);
 		instr_iter->first->generate_states(space, trans, init);
 	}
+
+	return -1;
 }
 
 void conditional::generate_prs(map<string, variable> *globals)

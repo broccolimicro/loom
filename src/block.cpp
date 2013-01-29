@@ -168,7 +168,7 @@ void block::parse(map<string, keyword*> types)
 	}
 }
 
-void block::generate_states(state_space *space, graph *trans, int init)
+int block::generate_states(state_space *space, graph *trans, int init)
 {
 	cout << tab << "Block " << chp << endl;
 
@@ -178,7 +178,7 @@ void block::generate_states(state_space *space, graph *trans, int init)
 	{
 		instr = *instr_iter;
 		cout<<instr->chp<<endl;
-		instr->generate_states(space, trans, init);
+		init = instr->generate_states(space, trans, init);
 	}
 	instr_iter = instrs.begin();
 	for(int i = 0; i < space->size(); i++)
@@ -188,6 +188,8 @@ void block::generate_states(state_space *space, graph *trans, int init)
 			instr_iter++;
 		}
 	}
+
+	return init;
 }
 
 void block::generate_prs(map<string, variable> *globals)

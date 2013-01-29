@@ -28,6 +28,7 @@ struct trace_space
 	vector<trace> traces;
 
 	int size();
+	void assign(int i, trace t);
 
 	trace operator[](int i);
 };

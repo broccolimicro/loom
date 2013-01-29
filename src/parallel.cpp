@@ -148,7 +148,7 @@ void parallel::parse(map<string, keyword*> types)
 	}
 }
 
-void parallel::generate_states(state_space *space, graph *trans, int init)
+int parallel::generate_states(state_space *space, graph *trans, int init)
 {
 	cout << tab << "Parallel " << chp << endl;
 
@@ -160,6 +160,8 @@ void parallel::generate_states(state_space *space, graph *trans, int init)
 		instr = *instr_iter;
 		instr->generate_states(space, trans, init);
 	}
+
+	return -1;
 }
 
 void parallel::generate_prs(map<string, variable> *globals)

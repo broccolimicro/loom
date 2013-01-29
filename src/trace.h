@@ -21,8 +21,7 @@
 struct trace
 {
 	trace();
-	trace(string v, vector<value> s);
-	trace(string v, string s);
+	trace(vector<value> v);
 	trace(string s);
 	~trace();
 
@@ -31,13 +30,9 @@ struct trace
 
 	void clear();
 	int size();
-	void insert(int i, value v);
-
-
+	void assign(int i, value v);
 	vector<value>::iterator begin();
 	vector<value>::iterator end();
-
-
 	void push_back(value v);
 
 	trace &operator=(trace s);

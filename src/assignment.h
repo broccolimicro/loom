@@ -27,7 +27,7 @@ struct assignment : instruction
 
 	void expand_shortcuts();
 	void parse(map<string, keyword*> types);
-	void generate_states(state_space *space, graph *trans, int init);
+	int generate_states(state_space *space, graph *trans, int init);
 	void generate_prs(map<string, variable> *globals);
 };
 

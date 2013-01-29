@@ -65,12 +65,12 @@ void assignment::parse(map<string, keyword*> types)
 		cout << "Error: Instruction not handled: " << chp << endl;
 }
 
-void assignment::generate_states(state_space *space, graph *trans, int init)
+int assignment::generate_states(state_space *space, graph *trans, int init)
 {
 	cout << tab << "Assignment " << chp << endl;
 
 	uid = space->size();
-	init = uid - 1;
+
 	map<string, variable>::iterator vi;
 	map<string, string>::iterator ei;
 	int i;
@@ -97,6 +97,8 @@ void assignment::generate_states(state_space *space, graph *trans, int init)
 	cout << tab << s << endl;
 
 	space->push_back(s);
+
+	return uid;
 }
 
 void assignment::generate_prs(map<string, variable> *globals)

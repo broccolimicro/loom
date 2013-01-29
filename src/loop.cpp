@@ -129,8 +129,7 @@ void loop::parse(map<string, keyword*> types)
 	}
 }
 
-
-void loop::generate_states(state_space *space, graph *trans, int init)
+int loop::generate_states(state_space *space, graph *trans, int init)
 {
 	cout << tab << "Loop " << chp << endl;
 
@@ -141,6 +140,8 @@ void loop::generate_states(state_space *space, graph *trans, int init)
 		instr_iter->second->generate_states(space, trans, init);
 		instr_iter->first->generate_states(space, trans, init);
 	}
+
+	return -1;
 }
 
 void loop::generate_prs(map<string, variable> *globals)

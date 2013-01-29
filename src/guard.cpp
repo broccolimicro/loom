@@ -32,7 +32,7 @@ void guard::parse(map<string, keyword*> types)
 		cout << tab << "Guard:\t" + chp << endl;
 }
 
-void guard::generate_states(state_space *space, graph *trans, int init)
+int guard::generate_states(state_space *space, graph *trans, int init)
 {
 	map<string, variable>::iterator vi;
 	int i;
@@ -56,6 +56,8 @@ void guard::generate_states(state_space *space, graph *trans, int init)
 		si.assign(i, so[i]);
 
 	space->push_back(si);
+
+	return uid;
 }
 
 void guard::generate_prs(map<string, variable> *globals)
@@ -275,5 +277,4 @@ state solve(string raw,  map<string, variable> *vars, string tab, int verbosity)
 
 	return outcomes;
 }
-
 

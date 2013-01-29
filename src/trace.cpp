@@ -1,16 +1,6 @@
 /*
  * trace.cpp
  *
- *  Created on: Jan 26, 2013
- *      Author: nbingham
- */
-
-
-
-
-/*
- * trace.cpp
- *
  *  Created on: Oct 29, 2012
  *      Author: Ned Bingham and Nicholas Kramer
  *
@@ -25,14 +15,9 @@ trace::trace()
 {
 }
 
-trace::trace(string v, vector<value> s)
+trace::trace(vector<value> v)
 {
-	values = s;
-}
-
-trace::trace(string v, string s)
-{
-	values.push_back(value(s));
+	values = v;
 }
 
 trace::trace(string s)
@@ -54,9 +39,11 @@ int trace::size()
 	return values.size();
 }
 
-void trace::insert(int i, value v)
+void trace::assign(int i, value v)
 {
-	values.insert(values.begin()+i,v);
+	if (i >= (int)values.size())
+		values.resize(i+1, value("X"));
+	values[i] = v;
 }
 
 vector<value>::iterator trace::begin()
