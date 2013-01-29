@@ -150,7 +150,8 @@ void block::parse(map<string, keyword*> types)
 				}
 				// This sub block is an assignment instruction.
 				else if (raw_instr.length() != 0)
-					instr = new assignment(raw_instr, types, global, tab+"\t", verbosity);
+					if(raw_instr.find("skip") == raw_instr.npos)	//If an assignment is a skip, ignore. No state gen
+						instr = new assignment(raw_instr, types, global, tab+"\t", verbosity);
 			}
 
 			// Make sure that this wasn't a variable declaration (they don't affect the state space).
@@ -176,7 +177,16 @@ void block::generate_states(state_space *space, graph *trans, int init)
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
+		cout<<instr->chp<<endl;
 		instr->generate_states(space, trans, init);
+	}
+	instr_iter = instrs.begin();
+	for(int i = 0; i < space->size(); i++)
+	{
+		cout << (*space)[i] << endl;
+		if (instr_iter != instrs.end()){
+			instr_iter++;
+		}
 	}
 }
 

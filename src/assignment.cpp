@@ -60,9 +60,6 @@ void assignment::parse(map<string, keyword*> types)
 		}
 		expr.insert(pair<string, string>(left_raw.substr(k), right_raw.substr(l)));
 	}
-	// Parse skip
-	else if (chp.find("skip") != chp.npos)
-		return;
 	// If all else fails, complain to the user.
 	else
 		cout << "Error: Instruction not handled: " << chp << endl;
@@ -73,13 +70,13 @@ void assignment::generate_states(state_space *space, graph *trans, int init)
 	cout << tab << "Assignment " << chp << endl;
 
 	uid = space->size();
-
+	init = uid - 1;
 	map<string, variable>::iterator vi;
 	map<string, string>::iterator ei;
 	int i;
 
 	state s;
-
+	//cout << "I am trying to be here" << endl;
 	for (vi = global->begin(); vi != global->end(); vi++)
 		s.assign(vi->second.uid, value("X"));
 
@@ -96,7 +93,7 @@ void assignment::generate_states(state_space *space, graph *trans, int init)
 		else
 			cout << "Error: Undefined variable " << vi->first << "." << endl;
 	}
-
+	//cout << "I AM HERE!" << endl;
 	cout << tab << s << endl;
 
 	space->push_back(s);
