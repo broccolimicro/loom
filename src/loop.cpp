@@ -15,7 +15,7 @@ loop::loop()
 	_kind = "loop";
 }
 
-loop::loop(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity)
+loop::loop(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity)
 {
 	clear();
 
@@ -25,6 +25,7 @@ loop::loop(string chp, map<string, keyword*> types, map<string, variable> *globa
 	this->verbosity = verbosity;
 	this->type = unknown;
 	this->global = globals;
+	this->label = label;
 
 	expand_shortcuts();
 	parse(types);
@@ -102,7 +103,7 @@ void loop::parse(map<string, keyword*> types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block( blockstr, types, global, tab+"\t", verbosity), new guard(guardstr, types, global, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block( blockstr, types, global, label, tab+"\t", verbosity), new guard(guardstr, types, global, label, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 		}
@@ -120,7 +121,7 @@ void loop::parse(map<string, keyword*> types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block( blockstr, types, global, tab+"\t", verbosity), new guard(guardstr, types, global, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block( blockstr, types, global, label, tab+"\t", verbosity), new guard(guardstr, types, global, label, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}
@@ -144,7 +145,7 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 	return -1;
 }
 
-void loop::generate_prs(map<string, variable> *globals)
+void loop::generate_prs()
 {
 
 

@@ -16,7 +16,7 @@
 struct parallel : block
 {
 	parallel();
-	parallel(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity);
+	parallel(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity);
 	~parallel();
 
 	int uid;					// indexes into the state in the state space
@@ -24,7 +24,7 @@ struct parallel : block
 	void expand_shortcuts();
 	void parse(map<string, keyword*> types);
 	int generate_states(state_space *space, graph *trans, int init);
-	void generate_prs(map<string, variable> *globals);
+	void generate_prs();
 	void generate_statevars();
 	// void handshaking_reshuffle();
 	void bubble_reshuffle();

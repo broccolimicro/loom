@@ -29,7 +29,7 @@
 struct block : instruction
 {
 	block();
-	block(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity);
+	block(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity);
 	~block();
 
 	list<instruction*>			instrs;		// an ordered list of instructions in block
@@ -38,12 +38,12 @@ struct block : instruction
 
 	block &operator=(block b);
 
-	void init(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity);
+	void init(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity);
 
 	void expand_shortcuts();
 	void parse(map<string, keyword*> types);
 	int generate_states(state_space *space, graph *trans, int init);
-	void generate_prs(map<string, variable> *globals);
+	void generate_prs();
 	void generate_statevars();
 	// void handshaking_reshuffle();
 	void bubble_reshuffle();

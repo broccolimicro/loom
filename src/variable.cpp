@@ -109,6 +109,15 @@ void variable::parse(string chp)
 	}
 }
 
+ostream &operator<<(ostream &os, map<string, variable> g)
+{
+	map<string, variable>::iterator i;
+	for (i = g.begin(); i != g.end(); i++)
+		os << i->first << " ";
+
+	return os;
+}
+
 ostream &operator<<(ostream &os, variable s)
 {
     os << s.name << "<" << s.width << ">";

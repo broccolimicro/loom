@@ -26,12 +26,13 @@ struct record : keyword
 
 	string					chp;
 	map<string, variable>	vars;	// the list of member variables that make up this record
+	map<string, variable>	labels;
 
 	record &operator=(record r);
 	void parse(string raw, map<string, keyword*> types, string tab, int verbosity);
 };
 
-map<string, variable> expand(string chp, string super, map<string, keyword*> types, string tab, int verbosity);
+void expand(string chp, string super, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity);
 ostream &operator<<(ostream &os, record s);
 
 #endif

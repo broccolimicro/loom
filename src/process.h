@@ -32,6 +32,7 @@ struct process : keyword
 	block					def;	// the chp that defined this process
 	list<string>			prs;	// the final set of generated production rules
 	map<string, variable>	global;	// globally defined variables: only used for channel definitions
+	map<string, variable>	label;
 	state_space				space;
 	graph					trans;
 

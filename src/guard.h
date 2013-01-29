@@ -19,7 +19,7 @@
 struct guard : instruction
 {
 	guard();
-	guard(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity);
+	guard(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity);
 	~guard();
 
 	int uid;					// indexes into the state in the state space
@@ -27,7 +27,7 @@ struct guard : instruction
 	void expand_shortcuts();
 	void parse(map<string, keyword*> types);
 	int generate_states(state_space *space, graph *trans, int init);
-	void generate_prs(map<string, variable> *globals);
+	void generate_prs();
 };
 
 state solve(string raw, map<string, variable> *vars, string tab, int verbosity);

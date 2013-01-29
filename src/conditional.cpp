@@ -16,7 +16,7 @@ conditional::conditional()
 	type = unknown;
 }
 
-conditional::conditional(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity)
+conditional::conditional(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity)
 {
 	clear();
 
@@ -26,6 +26,7 @@ conditional::conditional(string chp, map<string, keyword*> types, map<string, va
 	this->verbosity = verbosity;
 	this->global = globals;
 	type = unknown;
+	this->label = label;
 
 	expand_shortcuts();
 	parse(types);
@@ -116,7 +117,7 @@ void conditional::parse(map<string, keyword*> types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block( blockstr, types, global, tab+"\t", verbosity), new guard(guardstr, types, global, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block( blockstr, types, global, label, tab+"\t", verbosity), new guard(guardstr, types, global, label, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 		}
@@ -134,7 +135,7 @@ void conditional::parse(map<string, keyword*> types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block( blockstr, types, global, tab+"\t", verbosity), new guard(guardstr, types, global, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block(blockstr, types, global, label, tab+"\t", verbosity), new guard(guardstr, types, global, label, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}
@@ -170,7 +171,7 @@ int conditional::generate_states(state_space *space, graph *trans, int init)
 	return uid;
 }
 
-void conditional::generate_prs(map<string, variable> *globals)
+void conditional::generate_prs()
 {
 }
 

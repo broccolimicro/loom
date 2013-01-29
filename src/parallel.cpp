@@ -17,7 +17,7 @@ parallel::parallel()
 	chp = "";
 	_kind = "parallel";
 }
-parallel::parallel(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity)
+parallel::parallel(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity)
 {
 	clear();
 
@@ -26,6 +26,7 @@ parallel::parallel(string chp, map<string, keyword*> types, map<string, variable
 	this->tab = tab;
 	this->verbosity = verbosity;
 	this->global = globals;
+	this->label = label;
 
 	expand_shortcuts();
 	parse(types);
@@ -103,16 +104,16 @@ void parallel::parse(map<string, keyword*> types)
 
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (sequential)
-				instr = new parallel(raw_instr, types, global, tab+"\t", verbosity);
+				instr = new parallel(raw_instr, types, global, label, tab+"\t", verbosity);
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
-				instr = new block(raw_instr.substr(1, raw_instr.length()-2), types, global, tab+"\t", verbosity);
+				instr = new block(raw_instr.substr(1, raw_instr.length()-2), types, global, label, tab+"\t", verbosity);
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new loop(raw_instr, types, global, tab+"\t", verbosity);
+				instr = new loop(raw_instr, types, global, label, tab+"\t", verbosity);
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new conditional(raw_instr, types, global, tab+"\t", verbosity);
+				instr = new conditional(raw_instr, types, global, label, tab+"\t", verbosity);
 			// This sub block is either a variable definition or an assignment instruction.
 			else
 			{
@@ -132,7 +133,7 @@ void parallel::parse(map<string, keyword*> types)
 				}
 				// This sub block is an assignment instruction.
 				else if (raw_instr.length() != 0)
-					instr = new assignment(raw_instr, types, global, tab+"\t", verbosity);
+					instr = new assignment(raw_instr, types, global, label, tab+"\t", verbosity);
 			}
 
 			if (instr != NULL)
@@ -164,7 +165,7 @@ int parallel::generate_states(state_space *space, graph *trans, int init)
 	return -1;
 }
 
-void parallel::generate_prs(map<string, variable> *globals)
+void parallel::generate_prs()
 {
 
 

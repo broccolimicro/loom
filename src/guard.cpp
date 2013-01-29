@@ -5,13 +5,14 @@ guard::guard()
 	_kind = "guard";
 }
 
-guard::guard(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity)
+guard::guard(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity)
 {
 	this->_kind		= "guard";
 	this->chp		= chp;
 	this->tab		= tab;
 	this->verbosity = verbosity;
 	this->global	= globals;
+	this->label		= label;
 
 	expand_shortcuts();
 	parse(types);
@@ -62,7 +63,7 @@ int guard::generate_states(state_space *space, graph *trans, int init)
 	return uid;
 }
 
-void guard::generate_prs(map<string, variable> *globals)
+void guard::generate_prs()
 {
 
 

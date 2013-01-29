@@ -41,6 +41,7 @@ struct variable
 	void parse(string chp);
 };
 
+ostream &operator<<(ostream &os, map<string, variable> g);
 ostream &operator<<(ostream &os, variable s);
 
 #endif

@@ -5,13 +5,14 @@ assignment::assignment()
 	_kind = "assignment";
 }
 
-assignment::assignment(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity)
+assignment::assignment(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity)
 {
 	this->_kind		= "assignment";
 	this->chp		= chp;
 	this->tab		= tab;
 	this->verbosity = verbosity;
 	this->global	= globals;
+	this->label		= label;
 
 	expand_shortcuts();
 	parse(types);
@@ -76,7 +77,7 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 	int i;
 
 	state s;
-	//cout << "I am trying to be here" << endl;
+
 	for (vi = global->begin(); vi != global->end(); vi++)
 		s.assign(vi->second.uid, value("X"));
 
@@ -93,7 +94,7 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 		else
 			cout << "Error: Undefined variable " << vi->first << "." << endl;
 	}
-	//cout << "I AM HERE!" << endl;
+
 	cout << tab << s << endl;
 
 	space->push_back(s);
@@ -101,7 +102,7 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 	return uid;
 }
 
-void assignment::generate_prs(map<string, variable> *globals)
+void assignment::generate_prs()
 {
 
 

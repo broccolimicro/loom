@@ -67,15 +67,14 @@ void record::parse(string raw, map<string, keyword*> types, string tab, int verb
 	{
 		if (*(i+1) == ';')
 		{
-			expansion = expand(io_block.substr(j-io_block.begin(), i+1 - j), name, types, tab+"\t", verbosity);
-			vars.insert(expansion.begin(), expansion.end());
+			expand(io_block.substr(j-io_block.begin(), i+1 - j), name, types, &vars, &labels, tab+"\t", verbosity);
 
 			j = i+2;
 		}
 	}
 }
 
-map<string, variable> expand(string chp, string super, map<string, keyword*> types, string tab, int verbosity)
+void expand(string chp, string super, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity)
 {
 	map<string, variable> result;
 	map<string, keyword*>::iterator var_type;
