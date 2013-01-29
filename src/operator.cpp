@@ -77,12 +77,7 @@ void operate::parse(string raw, map<string, keyword*> types, map<string, variabl
 	{
 		if (*(i+1) == ',' || i+1 == io_block.end())
 		{
-			temp = expand(io_block.substr(j-io_block.begin(), i+1 - j), "", types, "\t", verbosity);
-			for (vi = temp.begin(); vi != temp.end(); vi++)
-			{
-				vi->second.uid = global.size();
-				global.insert(*vi);
-			}
+			expand(io_block.substr(j-io_block.begin(), i+1 - j), "", types, &global, &label, "\t", verbosity);
 			j = i+2;
 		}
 	}

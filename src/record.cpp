@@ -76,15 +76,17 @@ void record::parse(string raw, map<string, keyword*> types, string tab, int verb
 
 void expand(string chp, string super, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity)
 {
-	map<string, variable> result;
 	map<string, keyword*>::iterator var_type;
 	map<string, variable>::iterator mem_var;
-	variable v = variable(chp, -1, tab+"\t", verbosity);
+	variable v = variable(chp, global->size(), tab+"\t", verbosity);
 	string name;
 
 	if ((var_type = types.find(v.type)) != types.end())
 	{
-		result.insert(pair<string, variable>(v.name, v));
+		if (v.type == "int")
+			global->insert(pair<string, variable>(v.name, v));
+		else
+			label->insert(pair<string, variable>(v.name, v));
 
 		if (var_type->second->kind() == "record" || var_type->second->kind() == "channel")
 		{
@@ -92,7 +94,11 @@ void expand(string chp, string super, map<string, keyword*> types, map<string, v
 			for (mem_var = ((record*)var_type->second)->vars.begin(); mem_var != ((record*)var_type->second)->vars.end(); mem_var++)
 			{
 				v = mem_var->second;
-				result.insert(pair<string, variable>(name + "." + v.name, variable(name + "." + v.name, -1, v.type, v.reset, v.width)));
+
+				if (v.type == "int")
+					global->insert(pair<string, variable>(name + "." + v.name, variable(name + "." + v.name, global->size(), v.type, v.reset, v.width)));
+				else
+					label->insert(pair<string, variable>(name + "." + v.name, variable(name + "." + v.name, global->size(), v.type, v.reset, v.width)));
 			}
 		}
 		else if (var_type->second->kind() == "process")
@@ -100,8 +106,6 @@ void expand(string chp, string super, map<string, keyword*> types, map<string, v
 	}
 	else
 		cout << "Error: Invalid typename: " << v.type << endl;
-
-	return result;
 }
 
 ostream &operator<<(ostream &os, record s)
