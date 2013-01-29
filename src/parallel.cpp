@@ -155,14 +155,24 @@ int parallel::generate_states(state_space *space, graph *trans, int init)
 
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
+	map<string, variable>::iterator vi;
+	int state_catcher = -1;
+	state s;
+	for (vi = global->begin(); vi != global->end(); vi++)
+		s.assign(vi->second.uid, value("_"));
+
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
 		instr->generate_states(space, trans, init);
+		cout << "Unioning " << s << " and " << (*space)[state_catcher] << endl;
+		s = s || (*space)[state_catcher];
 	}
-
-	return -1;
+	uid = space->size();
+	cout << "resulting merge of " << s;
+	space->push_back(s);
+	return uid;
 }
 
 void parallel::generate_prs()
