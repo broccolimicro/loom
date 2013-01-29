@@ -152,11 +152,12 @@ int conditional::generate_states(state_space *space, graph *trans, int init)
 	cout << tab << "Conditional " << chp << endl;
 
 	list<pair<block*, guard*> >::iterator instr_iter;
+	int guardresult = -1;
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
-		instr_iter->second->generate_states(space, trans, init);
-		instr_iter->first->generate_states(space, trans, init);
+		guardresult = instr_iter->second->generate_states(space, trans, init);
+		instr_iter->first->generate_states(space, trans, guardresult);
 	}
 
 	return -1;

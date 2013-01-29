@@ -57,6 +57,8 @@ int guard::generate_states(state_space *space, graph *trans, int init)
 
 	space->push_back(si);
 
+	cout << tab << si << endl;
+
 	return uid;
 }
 
