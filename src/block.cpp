@@ -180,13 +180,11 @@ int block::generate_states(state_space *space, graph *trans, int init)
 		cout<<instr->chp<<endl;
 		init = instr->generate_states(space, trans, init);
 	}
-	instr_iter = instrs.begin();
+
 	for(int i = 0; i < space->size(); i++)
 	{
 		cout << (*space)[i] << endl;
-		if (instr_iter != instrs.end()){
-			instr_iter++;
-		}
+
 	}
 
 	return init;
