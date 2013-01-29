@@ -12,6 +12,7 @@
 #include "keyword.h"
 #include "state.h"
 #include "guard.h"
+#include "parallel.h"
 
 #ifndef conditional_h
 #define conditional_h
@@ -23,7 +24,7 @@ enum conditional_type
 	choice = 2
 };
 
-struct conditional : block
+struct conditional : parallel
 {
 	conditional();
 	conditional(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity);

@@ -152,15 +152,22 @@ int conditional::generate_states(state_space *space, graph *trans, int init)
 	cout << tab << "Conditional " << chp << endl;
 
 	list<pair<block*, guard*> >::iterator instr_iter;
+	map<string, variable>::iterator vi;
 	int guardresult = -1;
+	int state_catcher = -1;
+	state s;
+	for (vi = global->begin(); vi != global->end(); vi++)
+			s.assign(vi->second.uid, value("X"));
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		guardresult = instr_iter->second->generate_states(space, trans, init);
-		instr_iter->first->generate_states(space, trans, guardresult);
+		state_catcher = instr_iter->first->generate_states(space, trans, guardresult);
+		s = s || (*space)[state_catcher];
 	}
-
-	return -1;
+	uid = space->size();
+	space->push_back(s);
+	return uid;
 }
 
 void conditional::generate_prs(map<string, variable> *globals)

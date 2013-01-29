@@ -19,6 +19,8 @@ struct parallel : block
 	parallel(string chp, map<string, keyword*> types, map<string, variable> *globals, string tab, int verbosity);
 	~parallel();
 
+	int uid;					// indexes into the state in the state space
+
 	void expand_shortcuts();
 	void parse(map<string, keyword*> types);
 	int generate_states(state_space *space, graph *trans, int init);

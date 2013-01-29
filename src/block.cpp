@@ -181,9 +181,10 @@ int block::generate_states(state_space *space, graph *trans, int init)
 		init = instr->generate_states(space, trans, init);
 	}
 
+	cout << tab << "For debugging purposes, THE WHOLE STATE SPACE!" << endl;
 	for(int i = 0; i < space->size(); i++)
 	{
-		cout << (*space)[i] << endl;
+		cout << tab << (*space)[i] << endl;
 
 	}
 
