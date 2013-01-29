@@ -169,7 +169,7 @@ void block::parse(map<string, keyword*> types)
 
 void block::generate_states(state_space *space, graph *trans, int init)
 {
-	cout << tab << "Generating State Space" << endl;
+	cout << tab << "Block " << chp << endl;
 
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;

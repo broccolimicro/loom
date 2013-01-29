@@ -132,6 +132,7 @@ void loop::parse(map<string, keyword*> types)
 
 void loop::generate_states(state_space *space, graph *trans, int init)
 {
+	cout << tab << "Loop " << chp << endl;
 
 	map<string, block*>::iterator instr_iter;
 	block *instr;

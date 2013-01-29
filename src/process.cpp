@@ -161,6 +161,6 @@ void process::parse(string raw, map<string, keyword*> types, map<string, variabl
 	}
 
 	def.init(def_block, types, &global, "\t", verbosity);
-
+	cout << "Generating State Space" << endl;
 	def.generate_states(&space, &trans, -1);
 }

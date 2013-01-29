@@ -150,6 +150,8 @@ void parallel::parse(map<string, keyword*> types)
 
 void parallel::generate_states(state_space *space, graph *trans, int init)
 {
+	cout << tab << "Parallel " << chp << endl;
+
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
 

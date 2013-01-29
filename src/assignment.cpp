@@ -70,7 +70,7 @@ void assignment::parse(map<string, keyword*> types)
 
 void assignment::generate_states(state_space *space, graph *trans, int init)
 {
-	cout << tab << "Generating State Space" << endl;
+	cout << tab << "Assignment " << chp << endl;
 
 	uid = space->size();
 
@@ -92,12 +92,12 @@ void assignment::generate_states(state_space *space, graph *trans, int init)
 		vi = global->find(ei->first);
 
 		if (vi != global->end())
-			s.assign(vi->second.uid, expression(ei->second, global, s.values, tab+"\t", verbosity));
+			s.assign(vi->second.uid, expression(ei->second, global, s.values, tab, verbosity));
 		else
 			cout << "Error: Undefined variable " << vi->first << "." << endl;
 	}
 
-	cout << tab + "\t" << s << endl;
+	cout << tab << s << endl;
 
 	space->push_back(s);
 }
