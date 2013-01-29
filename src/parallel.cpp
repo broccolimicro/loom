@@ -128,6 +128,7 @@ void parallel::parse(map<string, keyword*> types)
 				if (vdef)
 				{
 					v = variable(raw_instr, tab, verbosity);
+					v.uid = global->size();
 					global->insert(pair<string, variable>(v.name, v));
 				}
 				// This sub block is an assignment instruction.
