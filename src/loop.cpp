@@ -102,7 +102,7 @@ void loop::parse(map<string, keyword*> types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.insert(pair<string, block*>(guardstr, new block( blockstr, types, global, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block( blockstr, types, global, tab+"\t", verbosity), new guard(guardstr, types, global, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 		}
@@ -120,7 +120,7 @@ void loop::parse(map<string, keyword*> types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.insert(pair<string, block*>(guardstr, new block( blockstr, types, global, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block( blockstr, types, global, tab+"\t", verbosity), new guard(guardstr, types, global, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}
@@ -134,13 +134,12 @@ void loop::generate_states(state_space *space, graph *trans, int init)
 {
 	cout << tab << "Loop " << chp << endl;
 
-	map<string, block*>::iterator instr_iter;
-	block *instr;
+	list<pair<block*, guard*> >::iterator instr_iter;
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
-		instr = instr_iter->second;
-		instr->generate_states(space, trans, init);
+		instr_iter->second->generate_states(space, trans, init);
+		instr_iter->first->generate_states(space, trans, init);
 	}
 }
 

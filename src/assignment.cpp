@@ -92,7 +92,7 @@ void assignment::generate_states(state_space *space, graph *trans, int init)
 		vi = global->find(ei->first);
 
 		if (vi != global->end())
-			s.assign(vi->second.uid, expression(ei->second, global, s.values, tab, verbosity));
+			s.assign(vi->second.uid, evaluate(ei->second, global, s.values, tab, verbosity));
 		else
 			cout << "Error: Undefined variable " << vi->first << "." << endl;
 	}

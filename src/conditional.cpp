@@ -35,11 +35,14 @@ conditional::~conditional()
 	_kind = "conditional";
 	type = unknown;
 
-	map<string, block*>::iterator i;
+	list<pair<block*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
+		if (i->first != NULL)
+			delete i->first;
 		if (i->second != NULL)
 			delete i->second;
+		i->first = NULL;
 		i->second = NULL;
 	}
 
@@ -113,7 +116,7 @@ void conditional::parse(map<string, keyword*> types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.insert(pair<string, block*>(guardstr, new block( blockstr, types, global, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block( blockstr, types, global, tab+"\t", verbosity), new guard(guardstr, types, global, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 		}
@@ -131,9 +134,7 @@ void conditional::parse(map<string, keyword*> types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-
-
-			instrs.insert(pair<string, block*>(guardstr, new block( blockstr, types, global, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block( blockstr, types, global, tab+"\t", verbosity), new guard(guardstr, types, global, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}
@@ -150,243 +151,16 @@ void conditional::generate_states(state_space *space, graph *trans, int init)
 {
 	cout << tab << "Conditional " << chp << endl;
 
-	map<string, block*>::iterator instr_iter;
-	block *instr;
+	list<pair<block*, guard*> >::iterator instr_iter;
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
-		instr = instr_iter->second;
-		instr->generate_states(space, trans, init);
+		instr_iter->second->generate_states(space, trans, init);
+		instr_iter->first->generate_states(space, trans, init);
 	}
 }
 
 void conditional::generate_prs(map<string, variable> *globals)
 {
-}
-
-state guard(string raw,  map<string, variable> *vars, string tab, int verbosity)
-{
-	map<string, variable>::iterator vi;
-	state outcomes;
-	state a, b;
-	int ai, bi;
-	string::iterator i, j;
-	value temp;
-	int depth;
-
-	if (verbosity >= VERB_PARSE)
-		cout << tab << "Guard: " << raw << endl;
-
-	//Parse instructions!
-	depth = 0;
-	for (i = raw.begin(), j = raw.begin(); i != raw.end()+1; i++)
-	{
-		if (*i == '(')
-			depth++;
-		else if (*i == ')')
-			depth--;
-
-		if (depth == 0 && *i == '|')
-		{
-			a = guard(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity);
-			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
-
-			for (ai = 0; ai != a.size(); ai++)
-			{
-				if (ai >= b.size())
-				{
-					temp = a[ai] || (~a[ai]);
-					outcomes.assign(ai, temp);
-				}
-				else
-					outcomes.assign(ai, a[ai]);
-			}
-
-			for (bi = 0; bi != b.size(); bi++)
-			{
-				if (bi >= a.size())
-				{
-					temp = b[bi] || (~b[bi]);
-					outcomes.assign(bi, temp);
-				}
-				else
-				{
-					a[bi] = a[bi] || b[bi];
-				}
-			}
-
-			for (ai = 0; ai != outcomes.size(); ai++)
-			{
-				if (verbosity >= VERB_PARSE)
-					cout << tab << ai << ": " << outcomes[ai] << endl;
-			}
-
-			return outcomes;
-		}
-	}
-
-	depth = 0;
-	for (i = raw.begin(), j = raw.begin(); i != raw.end()+1; i++)
-	{
-		if (*i == '(')
-			depth++;
-		else if (*i == ')')
-			depth--;
-
-		if (depth == 0 && *i == '&')
-		{
-			a = guard(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity);
-			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
-
-			outcomes = a;
-
-			for (bi = 0; bi != b.size(); bi++)
-			{
-				if (bi >= outcomes.size())
-					outcomes.assign(bi, b[bi]);
-				else
-					outcomes[bi] = outcomes[bi] && b[bi];
-			}
-
-			for (ai = 0; ai != outcomes.size(); ai++)
-			{
-				if (verbosity >= VERB_PARSE)
-					cout << tab << ai << ": " << outcomes[ai] << endl;
-			}
-
-			return outcomes;
-		}
-	}
-
-	/*depth = 0;
-	for (i = raw.begin(), j = raw.begin(); i != raw.end()+1; i++)
-	{
-		if (*i == '(')
-			depth++;
-		else if (*i == ')')
-			depth--;
-
-		if (depth == 0 && *i == '=')
-		{
-			if (*(i-1) == '=')
-			{
-				a = guard(raw.substr(j-raw.begin(), i-j-1), tab+"\t");
-				b = guard(raw.substr(i+1-raw.begin()), tab+"\t");
-
-				for (bi = b.begin(); bi != b.end(); bi++)
-					outcomes.insert(pair<string, state>(bi->first, bi->second || ~(bi->second)));
-
-				for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
-					cout << tab << ai->first << ": " << ai->second << endl;
-			}
-			else if (*(i-1) == '~')
-			{
-				a = guard(raw.substr(j-raw.begin(), i-j-1), tab+"\t");
-				b = guard(raw.substr(i+1-raw.begin()), tab+"\t");
-
-				for (bi = b.begin(); bi != b.end(); bi++)
-					outcomes.insert(pair<string, state>(bi->first, bi->second || ~(bi->second)));
-
-				for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
-					cout << tab << ai->first << ": " << ai->second << endl;
-			}
-
-			return outcomes;
-		}
-	}
-
-	depth = 0;
-	for (i = raw.begin(), j = raw.begin(); i != raw.end()+1; i++)
-	{
-		if (*i == '(')
-			depth++;
-		else if (*i == ')')
-			depth--;
-
-		if (depth == 0 && ((*i == '<' && *(i+1) != '<') || (*i == '>' && *(i+1) != '>')))
-		{
-			if (*(i+1) == '=')
-			{
-				a = guard(raw.substr(j-raw.begin(), i-j), tab+"\t");
-				b = guard(raw.substr(i+2-raw.begin()), tab+"\t");
-
-				for (bi = b.begin(); bi != b.end(); bi++)
-					outcomes.insert(pair<string, state>(bi->first, bi->second || ~(bi->second)));
-
-				for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
-					cout << tab << ai->first << ": " << ai->second << endl;
-			}
-			else
-			{
-				a = guard(raw.substr(j-raw.begin(), i-j), tab+"\t");
-				b = guard(raw.substr(i+1-raw.begin()), tab+"\t");
-
-				for (bi = b.begin(); bi != b.end(); bi++)
-					outcomes.insert(pair<string, state>(bi->first, bi->second || ~(bi->second)));
-
-				for (ai = outcomes.begin(); ai != outcomes.end(); ai++)
-					cout << tab << ai->first << ": " << ai->second << endl;
-			}
-
-			return outcomes;
-		}
-	}*/
-
-	// TODO: Add support for the following operators {<<,>>,+,-,*,/}
-	// For shifting, reverse the shift. For add, you subtract and visa versa. For multiple, you divide and visa versa
-
-	depth = 0;
-	for (i = raw.begin(), j = raw.begin(); i != raw.end()+1; i++)
-	{
-		if (*i == '(')
-			depth++;
-		else if (*i == ')')
-			depth--;
-
-		if (depth == 0 && *i == '~')
-		{
-			b = guard(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
-
-			for (bi = 0; bi != b.size(); bi++)
-				outcomes.assign(bi, ~b[bi]);
-
-			for (ai = 0; ai != outcomes.size(); ai++)
-			{
-				if (verbosity >= VERB_PARSE)
-					cout << tab << ai << ": " << outcomes[ai] << endl;
-			}
-
-			return outcomes;
-		}
-	}
-
-	unsigned long s = raw.find_first_of("(");
-	unsigned long e = raw.find_last_of(")");
-	if (s != raw.npos && e != raw.npos)
-	{
-		a = guard(raw.substr(s+1, e-s-1), vars, tab+"\t", verbosity);
-
-		outcomes = a;
-
-		for (ai = 0; ai != outcomes.size(); ai++)
-		{
-			if (verbosity >= VERB_PARSE)
-				cout << tab << ai << ": " << outcomes[ai] << endl;
-		}
-
-		return outcomes;
-	}
-
-	vi = vars->find(raw);
-	if (vi != vars->end())
-		outcomes.assign(vi->second.uid, value("1"));
-
-	for (ai = 0; ai != outcomes.size(); ai++)
-	{
-		if (verbosity >= VERB_PARSE)
-			cout << tab << ai << ": " << outcomes[ai] << endl;
-	}
-
-	return outcomes;
 }
 

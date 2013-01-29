@@ -11,6 +11,7 @@
 #include "common.h"
 #include "keyword.h"
 #include "state.h"
+#include "guard.h"
 
 #ifndef conditional_h
 #define conditional_h
@@ -29,7 +30,7 @@ struct conditional : block
 	~conditional();
 
 	conditional_type type;
-	map<string, block*> instrs;		//Guards index instructions
+	list<pair<block*, guard*> > instrs;		//Guards index instructions
 
 	void expand_shortcuts();
 	void parse(map<string, keyword*> types);
@@ -40,7 +41,5 @@ struct conditional : block
 	void bubble_reshuffle();
 
 };
-
-state guard(string raw, map<string, variable> *vars, string tab, int verbosity);
 
 #endif

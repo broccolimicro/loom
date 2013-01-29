@@ -37,7 +37,7 @@ struct assignment : instruction
  * TODO Add support for less than and greater than operators
  */
 template <class t>
-t expression(string raw, map<string, variable> *globals, vector<t> init, string tab, int verbosity)
+t evaluate(string raw, map<string, variable> *globals, vector<t> init, string tab, int verbosity)
 {
 	// Tested to be fairly functional:
 	// Adds, subtracts
@@ -50,7 +50,7 @@ t expression(string raw, map<string, variable> *globals, vector<t> init, string 
 
 	// Weakest binding set, descending into strongest binding.
 	if (verbosity >= VERB_PARSE)
-		cout << tab << "Expression: " << raw << endl;
+		cout << tab << "Evaluate: " << raw << endl;
 
 	typename map<string, variable>::iterator v;
 	list<string> ops;
@@ -58,29 +58,29 @@ t expression(string raw, map<string, variable> *globals, vector<t> init, string 
 
 	p = find_first_of_l0(raw, "|");
 	if (p != raw.npos)
-		return expression(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) | expression(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) | evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
 
 	p = find_first_of_l0(raw, "&");
 	if (p != raw.npos)
-		return expression(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) & expression(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) & evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
 
 	ops.clear();
 	ops.push_back("==");
 	ops.push_back("~=");
 	p = find_first_of_l0(raw, ops);
 	if (p != raw.npos && raw.substr(p, 2) == "==")
-		return expression(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) == expression(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) == evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw.substr(p, 2) == "!=")
-		return expression(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) != expression(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) != evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
 
 	ops.clear();
 	ops.push_back("<=");
 	ops.push_back(">=");
 	p = find_first_of_l0(raw, ops);
 	if (p != raw.npos && raw.substr(p, 2) == "<=")
-		return expression(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) <= expression(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) <= evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw.substr(p, 2) == ">=")
-		return expression(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) >= expression(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) >= evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
 
 	// TODO Add support for greater than and less than operators
 
@@ -89,28 +89,28 @@ t expression(string raw, map<string, variable> *globals, vector<t> init, string 
 	ops.push_back(">>");
 	p = find_first_of_l0(raw, ops);
 	if (p != raw.npos && raw.substr(p, 2) == "<<")
-		return expression(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) << expression(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) << evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw.substr(p, 2) == ">>")
-		return expression(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) >> expression(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) >> evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
 
 	p = find_first_of_l0(raw, "+-");
 	if (p != raw.npos && raw[p] == '+')
-		return expression(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) + expression(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) + evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw[p] == '-')
-		return expression(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) - expression(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) - evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
 
 	p = find_first_of_l0(raw, "*/");
 	if (p != raw.npos && raw[p] == '*')
-		return expression(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) * expression(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) * evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw[p] == '/')
-		return expression(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) / expression(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) / evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
 
 	p = find_first_of_l0(raw, "~");
 	if (p != raw.npos)
-		return ~ expression(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return ~ evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
 
 	if (raw[0] == '(' && raw[raw.length()-1] == ')')
-		return expression(raw.substr(1, raw.length()-2), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(1, raw.length()-2), globals, init, tab+"\t", verbosity);
 
 	v = globals->find(raw);
 	if (v != globals->end() && v->second.uid < (int)init.size())
