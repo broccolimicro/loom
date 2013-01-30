@@ -65,7 +65,8 @@ void loop::expand_shortcuts()
 	chp = "1->" + chp;
 }
 
-void loop::parse(map<string, keyword*> types)
+void
+loop::parse(map<string, keyword*> types)
 {
 	string guardstr, blockstr;
 
@@ -140,6 +141,7 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 	vector<int> state_catcher;
 	int next = init;
 	bool done = false;
+	bool sub = false;
 	state s;
 	int count = 0;
 
@@ -152,9 +154,7 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 		for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 		{
 			guardresult = instr_iter->second->generate_states(space, trans, next);
-			trans->insert_edge(next, guardresult);		//Tie init to each of the states from guards
 			state_catcher.push_back(instr_iter->first->generate_states(space, trans, guardresult));
-			trans->insert_edge(guardresult, state_catcher.back());		//Tie init to each of the states from guards
 			cout << "Unioning " << s << " and " << (*space)[state_catcher.back()] << endl;
 			s = s || (*space)[state_catcher.back()];
 		}
@@ -168,18 +168,23 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 
 		for (int i = 0; i < state_catcher.size(); i++)
 			trans->insert_edge(state_catcher[i], next);
+		state_catcher.clear();
 
 		done = subset((*space)[init], (*space)[next]);
+		if (done)
+			trans->insert_edge(next, init);
 		for (int i = 0; i < uid.size()-1; i++)
-			done = done || subset((*space)[uid[i]], (*space)[next]);
+		{
+			sub = subset((*space)[uid[i]], (*space)[next]);
+			done = done || sub;
+			if (sub && uid[i] != next)
+				trans->insert_edge(next, uid[i]);
+		}
 	}
 
 	s = (*space)[init];
 	for (int i = 0; i < uid.size(); i++)
-	{
 		s = s || (*space)[uid[i]];
-		trans->insert_edge(uid[i], space->size());
-	}
 
 	cout << "Final Result " << s << endl;
 

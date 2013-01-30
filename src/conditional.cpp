@@ -165,9 +165,13 @@ int conditional::generate_states(state_space *space, graph *trans, int init)
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		guard_result = instr_iter->second->generate_states(space, trans, init);
-		trans->insert_edge(init, guard_result);		//Tie init to each of the states from guards
+
+		// THIS IS WRONG, assignment and guard should already do this
+		//trans->insert_edge(init, guard_result);		//Tie init to each of the states from guards
 		state_catcher.push_back(instr_iter->first->generate_states(space, trans, guard_result));
-		trans->insert_edge(guard_result, state_catcher.back());		//Tie guard to block
+
+		// THIS IS WRONG, assignment and guard should already do this
+		//trans->insert_edge(guard_result, state_catcher.back());		//Tie guard to block
 		cout << tab << "Unioning " << s << " and " << (*space)[state_catcher.back()] << endl;
 		s = s || (*space)[state_catcher.back()];
 		//merges.push_back(state_catcher);

@@ -57,6 +57,8 @@ int guard::generate_states(state_space *space, graph *trans, int init)
 		si.assign(i, so[i]);
 
 	space->push_back(si);
+	if (init != -1)
+		trans->insert_edge(init, uid);
 
 	cout << tab << si << endl;
 
