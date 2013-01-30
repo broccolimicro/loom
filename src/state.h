@@ -56,6 +56,8 @@ struct state
 	state &operator>>=(int n);
 };
 
+bool subset(state s1, state s2);
+
 ostream &operator<<(ostream &os, state s);
 
 state operator+(state s1, state s2);

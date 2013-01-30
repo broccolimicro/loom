@@ -19,6 +19,8 @@ struct loop : conditional
 	loop(string raw, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity);
 	~loop();
 
+	vector<int> uid;
+
 	void expand_shortcuts();
 	void parse(map<string, keyword*> types);
 	int generate_states(state_space *space, graph *trans, int init);
