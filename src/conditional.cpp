@@ -154,7 +154,7 @@ int conditional::generate_states(state_space *space, graph *trans, int init)
 
 	list<pair<block*, guard*> >::iterator instr_iter;
 	map<string, variable>::iterator vi;
-	int guardresult = -1;
+	int guard_result = -1;
 	int state_catcher = -1;
 	state s;
 	for (vi = global->begin(); vi != global->end(); vi++)
@@ -162,12 +162,16 @@ int conditional::generate_states(state_space *space, graph *trans, int init)
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
-		guardresult = instr_iter->second->generate_states(space, trans, init);
-		state_catcher = instr_iter->first->generate_states(space, trans, guardresult);
+		cout << "CONDITIONAL TRAIL" << endl;
+		guard_result = instr_iter->second->generate_states(space, trans, init);
+		trans->insert_edge(init, guard_result);		//Tie init to each of the states from guards
+		state_catcher = instr_iter->first->generate_states(space, trans, guard_result);
+		trans->insert_edge(guard_result, state_catcher);		//Tie guard to block
 		cout << tab << "Unioning " << s << " and " << (*space)[state_catcher] << endl;
 		s = s || (*space)[state_catcher];
 	}
 	uid = space->size();
+	//TODO: All instruction trails need to connect to UID
 	cout << tab << "resulting merge of " << s;
 	space->push_back(s);
 	return uid;

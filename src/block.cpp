@@ -173,19 +173,25 @@ void block::parse(map<string, keyword*> types)
 int block::generate_states(state_space *space, graph *trans, int init)
 {
 	cout << tab << "Block " << chp << endl;
-
+	int prev_init = init;
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
 		init = instr->generate_states(space, trans, init);
+		prev_init = init;
 	}
 
-	cout << *global << endl;
+	//Print status (for debugging purposes)
+	cout << tab <<*global << endl;
 	for(int i = 0; i < space->size(); i++)
-		cout << tab << (*space)[i] << endl;
-
+	{
+		cout << tab << (*space)[i] << "  ";
+		trans->print_line(i);
+	}
+	//cout << "Current connections: " << endl;
+	//cout << (*trans);
 	return init;
 }
 

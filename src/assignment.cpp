@@ -98,6 +98,9 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 	cout << tab << s << endl;
 
 	space->push_back(s);
+	if (init != -1)
+		trans->insert_edge(init, uid);
+	//TODO: MAKE THIS SHIT WORK!!!
 
 	return uid;
 }

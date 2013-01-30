@@ -11,7 +11,28 @@ record chan4p1b
 	int<1> f := 0;
 }
 
-process mux0b2(chan4p0b i, chan4p0b o1, chan4p0b o2, chan4p1b s)
+/*process mux0b2(chan4p0b i, chan4p0b o1, chan4p0b o2, chan4p1b s)
+{
+	// initialize variables at reset
+	i.a-;
+	o1.r-;
+	o2.r-;
+	s.ra-;
+	*[
+		// wait for a request
+		[s.t | s.f];
+		// service the request
+		[  s.f -> [i.r];o1.r+;[o1.a];i.a+;[~i.r];o1.r-;[~o1.a];i.a-
+		[] s.t -> [i.r];o2.r+;[o2.a];i.a+;[~i.r];o2.r-;[~o2.a];i.a-
+		];
+		// clean up
+		s.ra+;
+		[~s.t & ~s.f];
+		s.ra-;
+	]
+}*/
+
+process fakemux0b2(chan4p0b i, chan4p0b o1, chan4p0b o2, chan4p1b s)
 {
 	// initialize variables at reset
 	i.a-;
@@ -39,5 +60,5 @@ process main()
 	chan4p0b z;
 	chan4p1b w;
 	
-	mux0b2 m(x, y, z, w);
+	fakemux0b2 m(x, y, z, w);
 }
