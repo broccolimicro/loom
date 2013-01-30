@@ -137,7 +137,7 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 	list<pair<block*, guard*> >::iterator instr_iter;
 	map<string, variable>::iterator vi;
 	int guardresult = -1;
-	int state_catcher = -1;
+	vector<int> state_catcher;
 	int next = init;
 	bool done = false;
 	state s;
@@ -152,9 +152,11 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 		for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 		{
 			guardresult = instr_iter->second->generate_states(space, trans, next);
-			state_catcher = instr_iter->first->generate_states(space, trans, guardresult);
-			cout << "Unioning " << s << " and " << (*space)[state_catcher] << endl;
-			s = s || (*space)[state_catcher];
+			trans->insert_edge(next, guardresult);		//Tie init to each of the states from guards
+			state_catcher.push_back(instr_iter->first->generate_states(space, trans, guardresult));
+			trans->insert_edge(guardresult, state_catcher.back());		//Tie init to each of the states from guards
+			cout << "Unioning " << s << " and " << (*space)[state_catcher.back()] << endl;
+			s = s || (*space)[state_catcher.back()];
 		}
 
 		cout << "Result " << s << endl;
@@ -164,6 +166,9 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 
 		next = uid.back();
 
+		for (int i = 0; i < state_catcher.size(); i++)
+			trans->insert_edge(state_catcher[i], next);
+
 		done = subset((*space)[init], (*space)[next]);
 		for (int i = 0; i < uid.size()-1; i++)
 			done = done || subset((*space)[uid[i]], (*space)[next]);
@@ -171,7 +176,10 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 
 	s = (*space)[init];
 	for (int i = 0; i < uid.size(); i++)
+	{
 		s = s || (*space)[uid[i]];
+		trans->insert_edge(uid[i], space->size());
+	}
 
 	cout << "Final Result " << s << endl;
 
