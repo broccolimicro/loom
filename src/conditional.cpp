@@ -170,19 +170,19 @@ int conditional::generate_states(state_space *space, graph *trans, int init)
 		trans->insert_edge(guard_result, state_catcher.back());		//Tie guard to block
 		cout << tab << "Unioning " << s << " and " << (*space)[state_catcher.back()] << endl;
 		s = s || (*space)[state_catcher.back()];
-		merges.push_back(state_catcher);
+		//merges.push_back(state_catcher);
 		//cout << "PUSHING TO LIST " << state_catcher << endl;
 	}
 	uid = space->size();
 	cout << tab << "resulting merge of " << s;
 	space->push_back(s);
 
-	for (li = merges.begin(); li != merges.end(); li++)
-		trans->insert_edge(*li, uid);
+//	for (li = merges.begin(); li != merges.end(); li++)
+//		trans->insert_edge(*li, uid);
 
-//Ned's code, not sure what he was doing
-//	for (int i = 0; i < state_catcher.size(); i++)
-//		trans->insert_edge(state_catcher[i], uid);
+
+	for (int i = 0; i < (int)state_catcher.size(); i++)
+		trans->insert_edge(state_catcher[i], uid);
 
 	return uid;
 }
