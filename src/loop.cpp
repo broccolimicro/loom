@@ -190,6 +190,8 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 
 	uid.push_back(space->size());
 	space->push_back(s);
+	trans->insert_edge(next, uid.back());
+
 	next = uid.back();
 
 	return next;
