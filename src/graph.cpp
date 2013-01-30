@@ -17,7 +17,7 @@ void graph::insert_edge(int from, int to)
 	if(from >= (int)edges.size())
 		edges.resize(from+1, vector<int>());
 	edges[from].push_back(to);
-	cout << "Connecting " << from << " and " << to << endl;
+	//cout << "Connecting " << from << " and " << to << endl;
 	//cout << *this;
 }
 
