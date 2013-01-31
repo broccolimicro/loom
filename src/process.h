@@ -8,7 +8,7 @@
  */
 
 #include "keyword.h"
-#include "block.h"
+#include "parallel.h"
 #include "common.h"
 #include "space.h"
 #include "graph.h"
@@ -29,7 +29,7 @@ struct process : keyword
 	~process();
 
 	string					chp;	// the raw process definition
-	block					def;	// the chp that defined this process
+	parallel				def;	// the chp that defined this process
 	list<string>			prs;	// the final set of generated production rules
 	map<string, variable>	global;	// globally defined variables: only used for channel definitions
 	map<string, variable>	label;

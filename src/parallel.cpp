@@ -104,7 +104,7 @@ void parallel::parse(map<string, keyword*> types)
 
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (sequential)
-				instr = new parallel(raw_instr, types, global, label, tab+"\t", verbosity);
+				instr = new block(raw_instr, types, global, label, tab+"\t", verbosity);
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
 				instr = new block(raw_instr.substr(1, raw_instr.length()-2), types, global, label, tab+"\t", verbosity);
@@ -133,7 +133,8 @@ void parallel::parse(map<string, keyword*> types)
 				}
 				// This sub block is an assignment instruction.
 				else if (raw_instr.length() != 0)
-					instr = new assignment(raw_instr, types, global, label, tab+"\t", verbosity);
+					if(raw_instr.find("skip") == raw_instr.npos)
+						instr = new assignment(raw_instr, types, global, label, tab+"\t", verbosity);
 			}
 
 			if (instr != NULL)
