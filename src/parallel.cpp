@@ -143,7 +143,7 @@ int parallel::generate_states(state_space *space, graph *trans, int init)
 	space->push_back(s);
 
 	for (int i = 0; i < (int)state_catcher.size(); i++)
-		trans->insert_edge(state_catcher[i], uid);
+		trans->insert_edge(state_catcher[i], uid, chp);
 
 	return uid;
 }

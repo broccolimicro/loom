@@ -99,7 +99,7 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 
 	space->push_back(s);
 	if (init != -1)
-		trans->insert_edge(init, uid);
+		trans->insert_edge(init, uid, chp);
 
 
 	return uid;

@@ -13,11 +13,14 @@ struct graph
 	// From				  , To
 	// Instruction indexed, Instruction indexed
 	vector<vector<int> > edges;
+	// Strings that caused given transition
+	vector<vector<string> > transitions;
 	graph();
 	graph(state_space *spaces);
 
-	void insert_edge(int from, int to);
+	void insert_edge(int from, int to, string chp);
 	void print_line(int from);
+	void print_line_with_trans(int from);
 };
 
 ostream &operator<<(ostream &os, graph g);

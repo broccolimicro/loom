@@ -167,18 +167,18 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 		next = uid.back();
 
 		for (int i = 0; i < (int)state_catcher.size(); i++)
-			trans->insert_edge(state_catcher[i], next);
+			trans->insert_edge(state_catcher[i], next, "loop");
 		state_catcher.clear();
 
 		done = subset((*space)[init], (*space)[next]);
 		if (done)
-			trans->insert_edge(next, init);
+			trans->insert_edge(next, init,"loop");
 		for (int i = 0; i < (int)uid.size()-1; i++)
 		{
 			sub = subset((*space)[uid[i]], (*space)[next]);
 			done = done || sub;
 			if (sub && uid[i] != next)
-				trans->insert_edge(next, uid[i]);
+				trans->insert_edge(next, uid[i], "loop");
 		}
 	}
 
@@ -190,7 +190,7 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 
 	uid.push_back(space->size());
 	space->push_back(s);
-	trans->insert_edge(next, uid.back());
+	trans->insert_edge(next, uid.back(), "loop");
 
 	next = uid.back();
 

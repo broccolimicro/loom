@@ -15,10 +15,8 @@ struct state_space
 {
 	// Instruction indexed using uid
 	vector<state> states;
-
 	int size();
 	void push_back(state s);
-
 	state operator[](int i);
 };
 

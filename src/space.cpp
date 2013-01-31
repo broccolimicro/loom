@@ -11,6 +11,7 @@
 #include "state.h"
 #include "common.h"
 
+
 int state_space::size()
 {
 	return states.size();
@@ -20,6 +21,7 @@ state state_space::operator[](int i)
 {
 	return states[i];
 }
+
 
 void state_space::push_back(state s)
 {

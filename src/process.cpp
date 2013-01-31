@@ -12,6 +12,7 @@
 #include "common.h"
 #include "channel.h"
 
+
 process::process()
 {
 	name = "";
@@ -158,4 +159,18 @@ void process::parse(string raw, map<string, keyword*> types, map<string, variabl
 	def.init(def_block, types, &global, &label, "\t", verbosity);
 	cout << "Generating State Space" << endl;
 	def.generate_states(&space, &trans, -1);
+
+	//Print space (for debugging purposes)
+	cout << endl << endl << "\tState space:" << endl;
+	cout << "\t " << global << endl;
+	for(int i = 0; i < space.size(); i++)
+	{
+		cout << "\t "<<space[i] << "  ";
+		//trans->print_line(i);
+		trans.print_line_with_trans(i);
+	}
+	cout << endl << endl;
+	//cout << "Current connections: " << endl;
+	//cout << (*trans);
+
 }
