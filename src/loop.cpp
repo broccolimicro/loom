@@ -65,8 +65,7 @@ void loop::expand_shortcuts()
 	chp = "1->" + chp;
 }
 
-void
-loop::parse(map<string, keyword*> types)
+void loop::parse(map<string, keyword*> types)
 {
 	string guardstr, blockstr;
 
@@ -147,7 +146,7 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 
 	while (!done && count++ < 5)
 	{
-		cout << "Loop Iteration " << count << ": " << (*space)[next] << endl;
+		cout << tab << "Loop Iteration " << count << ": " << (*space)[next] << endl;
 		for (vi = global->begin(); vi != global->end(); vi++)
 			s.assign(vi->second.uid, value("_"));
 
@@ -155,11 +154,10 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 		{
 			guardresult = instr_iter->second->generate_states(space, trans, next);
 			state_catcher.push_back(instr_iter->first->generate_states(space, trans, guardresult));
-			cout << "Unioning " << s << " and " << (*space)[state_catcher.back()] << endl;
 			s = s || (*space)[state_catcher.back()];
 		}
 
-		cout << "Result " << s << endl;
+		cout << tab << "Result " << s << endl;
 		uid.push_back(space->size());
 
 		space->push_back(s);
@@ -186,7 +184,7 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 	for (int i = 0; i < (int)uid.size(); i++)
 		s = s || (*space)[uid[i]];
 
-	cout << "Final Result " << s << endl;
+	cout << tab << "Final Result " << s << endl;
 
 	uid.push_back(space->size());
 	space->push_back(s);

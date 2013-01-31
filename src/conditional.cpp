@@ -154,11 +154,10 @@ int conditional::generate_states(state_space *space, graph *trans, int init)
 
 	list<pair<block*, guard*> >::iterator instr_iter;
 	map<string, variable>::iterator vi;
-
-	list<int>::iterator li;
 	int guard_result = -1;
 	vector<int> state_catcher;
 	state s;
+
 	for (vi = global->begin(); vi != global->end(); vi++)
 		s.assign(vi->second.uid, value("_"));
 
@@ -167,18 +166,11 @@ int conditional::generate_states(state_space *space, graph *trans, int init)
 		guard_result = instr_iter->second->generate_states(space, trans, init);
 
 		state_catcher.push_back(instr_iter->first->generate_states(space, trans, guard_result));
-		cout << tab << "Unioning " << s << " and " << (*space)[state_catcher.back()] << endl;
 		s = s || (*space)[state_catcher.back()];
-		//merges.push_back(state_catcher);
-		//cout << "PUSHING TO LIST " << state_catcher << endl;
 	}
+
 	uid = space->size();
-	cout << tab << "resulting merge of " << s;
 	space->push_back(s);
-
-//	for (li = merges.begin(); li != merges.end(); li++)
-//		trans->insert_edge(*li, uid);
-
 
 	for (int i = 0; i < (int)state_catcher.size(); i++)
 		trans->insert_edge(state_catcher[i], uid, chp);

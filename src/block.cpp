@@ -155,12 +155,12 @@ int block::generate_states(state_space *space, graph *trans, int init)
 	cout << tab << "Block " << chp << endl;
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
+
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
 		init = instr->generate_states(space, trans, init);
 	}
-
 
 	return init;
 }

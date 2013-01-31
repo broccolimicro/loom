@@ -52,7 +52,7 @@ void graph::print_line_with_trans(int from)
 	}
 	for (i = 0; i < 10 - j; i++)
 		cout << " ";
-	for (i = 0; i < (int)transitions[from].size(); i++)
+	for (i = 0; from < transitions.size() && i < (int)transitions[from].size(); i++)
 		cout << (transitions[from])[i] << " ";
 
 	cout << endl;
