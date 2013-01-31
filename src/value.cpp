@@ -238,7 +238,9 @@ value operator&(value s1, value s2)
 		a = j != s1.data.rend() ? *j++ : '0';
 		b = k != s2.data.rend() ? *k++ : '0';
 
-		if (a == '0' || b == '0')
+		if (a == '_' && b == '_')
+			result.data = "_" + result.data;
+		else if (a == '0' || b == '0')
 			result.data = "0" + result.data;
 		else if (a == 'X' || b == 'X')
 			result.data = "X" + result.data;
@@ -260,7 +262,9 @@ value operator|(value s1, value s2)
 		a = j != s1.data.rend() ? *j++ : '0';
 		b = k != s2.data.rend() ? *k++ : '0';
 
-		if (a == '1' || b == '1')
+		if (a == '_' && b == '_')
+			result.data = "_" + result.data;
+		else if (a == '1' || b == '1')
 			result.data = "1" + result.data;
 		else if (a == 'X' || b == 'X')
 			result.data = "X" + result.data;
@@ -282,8 +286,10 @@ value operator~(value s)
 			result.data += "1";
 		else if (*j == '1')
 			result.data += "0";
-		else
+		else if (*j == 'X')
 			result.data += "X";
+		else
+			result.data += "_";
 	}
 
 	return result;

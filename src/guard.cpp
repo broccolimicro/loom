@@ -36,7 +36,7 @@ void guard::parse(map<string, keyword*> types)
 int guard::generate_states(state_space *space, graph *trans, int init)
 {
 	map<string, variable>::iterator vi;
-	int i;
+	int i, j;
 
 	cout << tab << "Guard " << chp << endl;
 
@@ -53,10 +53,7 @@ int guard::generate_states(state_space *space, graph *trans, int init)
 
 	so = solve(chp, global, tab, verbosity);
 
-	for (i = 0; i < so.size(); i++)
-		si.assign(i, so[i]);
-
-	space->push_back(si);
+	space->push_back(si && so);
 	if (init != -1)
 		trans->insert_edge(init, uid);
 
@@ -99,29 +96,7 @@ state solve(string raw,  map<string, variable> *vars, string tab, int verbosity)
 			a = solve(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity);
 			b = solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
 
-			for (ai = 0; ai != a.size(); ai++)
-			{
-				if (ai >= b.size())
-				{
-					temp = a[ai] || (~a[ai]);
-					outcomes.assign(ai, temp);
-				}
-				else
-					outcomes.assign(ai, a[ai]);
-			}
-
-			for (bi = 0; bi != b.size(); bi++)
-			{
-				if (bi >= a.size())
-				{
-					temp = b[bi] || (~b[bi]);
-					outcomes.assign(bi, temp);
-				}
-				else
-				{
-					a[bi] = a[bi] || b[bi];
-				}
-			}
+			outcomes = (a || b);
 
 			if (verbosity >= VERB_PARSE)
 				cout << tab << outcomes << endl;
@@ -143,15 +118,7 @@ state solve(string raw,  map<string, variable> *vars, string tab, int verbosity)
 			a = solve(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity);
 			b = solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
 
-			outcomes = a;
-
-			for (bi = 0; bi != b.size(); bi++)
-			{
-				if (bi >= outcomes.size())
-					outcomes.assign(bi, b[bi]);
-				else
-					outcomes[bi] = outcomes[bi] && b[bi];
-			}
+			outcomes = (a && b);
 
 			if (verbosity >= VERB_PARSE)
 				cout << tab << outcomes << endl;

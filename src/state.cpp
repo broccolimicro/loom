@@ -180,8 +180,8 @@ bool subset(state s1, state s2)
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
-		a = j != s1.values.end() ? *j++ : s1.values.back();
-		b = k != s2.values.end() ? *k++ : s2.values.back();
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
 
 		if (!subset(a, b))
 			return false;
@@ -209,8 +209,8 @@ state operator+(state s1, state s2)
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
-		a = j != s1.values.end() ? *j++ : s1.values.back();
-		b = k != s2.values.end() ? *k++ : s2.values.back();
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
 
 		result.values.push_back(a + b);
 	}
@@ -228,8 +228,8 @@ state operator-(state s1, state s2)
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
-		a = j != s1.values.end() ? *j++ : s1.values.back();
-		b = k != s2.values.end() ? *k++ : s2.values.back();
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
 
 		result.values.push_back(a - b);
 	}
@@ -247,8 +247,8 @@ state operator*(state s1, state s2)
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
-		a = j != s1.values.end() ? *j++ : s1.values.back();
-		b = k != s2.values.end() ? *k++ : s2.values.back();
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
 
 		result.values.push_back(a * b);
 	}
@@ -266,8 +266,8 @@ state operator/(state s1, state s2)
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
-		a = j != s1.values.end() ? *j++ : s1.values.back();
-		b = k != s2.values.end() ? *k++ : s2.values.back();
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
 
 		result.values.push_back(a / b);
 	}
@@ -394,8 +394,8 @@ state operator&(state s1, state s2)
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
-		a = j != s1.values.end() ? *j++ : s1.values.back();
-		b = k != s2.values.end() ? *k++ : s2.values.back();
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
 
 		result.values.push_back(a & b);
 	}
@@ -414,8 +414,8 @@ state operator|(state s1, state s2)
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
-		a = j != s1.values.end() ? *j++ : s1.values.back();
-		b = k != s2.values.end() ? *k++ : s2.values.back();
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
 
 		result.values.push_back(a | b);
 	}
@@ -433,10 +433,29 @@ state operator||(state s1, state s2)
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
-		a = j != s1.values.end() ? *j++ : s1.values.back();
-		b = k != s2.values.end() ? *k++ : s2.values.back();
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
 
 		result.values.push_back(a || b);
+	}
+
+	return result;
+}
+
+state operator&&(state s1, state s2)
+{
+	vector<value>::iterator j, k;
+	value a, b;
+	state result;
+
+	//result.var = s1.var + "|" + s2.var;
+
+	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
+	{
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
+
+		result.values.push_back(a && b);
 	}
 
 	return result;
@@ -513,8 +532,8 @@ state operator<<(state s1, state s2)
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
-		a = j != s1.values.end() ? *j++ : s1.values.back();
-		b = k != s2.values.end() ? *k++ : s2.values.back();
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
 
 		result.values.push_back(a << b);
 	}
@@ -532,8 +551,8 @@ state operator>>(state s1, state s2)
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
-		a = j != s1.values.end() ? *j++ : s1.values.back();
-		b = k != s2.values.end() ? *k++ : s2.values.back();
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
 
 		result.values.push_back(a >> b);
 	}
@@ -637,8 +656,8 @@ state operator==(state s1, state s2)
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
-		a = j != s1.values.end() ? *j++ : s1.values.back();
-		b = k != s2.values.end() ? *k++ : s2.values.back();
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
 
 		result.values.push_back(a == b);
 	}
@@ -656,8 +675,8 @@ state operator!=(state s1, state s2)
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
-		a = j != s1.values.end() ? *j++ : s1.values.back();
-		b = k != s2.values.end() ? *k++ : s2.values.back();
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
 
 		result.values.push_back(a != b);
 	}
@@ -675,8 +694,8 @@ state operator<=(state s1, state s2)
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
-		a = j != s1.values.end() ? *j++ : s1.values.back();
-		b = k != s2.values.end() ? *k++ : s2.values.back();
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
 
 		result.values.push_back(a <= b);
 	}
@@ -694,8 +713,8 @@ state operator>=(state s1, state s2)
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
-		a = j != s1.values.end() ? *j++ : s1.values.back();
-		b = k != s2.values.end() ? *k++ : s2.values.back();
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
 
 		result.values.push_back(a >= b);
 	}
@@ -713,8 +732,8 @@ state operator<(state s1, state s2)
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
-		a = j != s1.values.end() ? *j++ : s1.values.back();
-		b = k != s2.values.end() ? *k++ : s2.values.back();
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
 
 		result.values.push_back(a < b);
 	}
@@ -732,8 +751,8 @@ state operator>(state s1, state s2)
 
 	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
 	{
-		a = j != s1.values.end() ? *j++ : s1.values.back();
-		b = k != s2.values.end() ? *k++ : s2.values.back();
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
 
 		result.values.push_back(a > b);
 	}

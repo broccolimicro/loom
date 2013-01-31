@@ -88,6 +88,7 @@ trace operator-(trace s);
 trace operator&(trace s1, trace s2);
 trace operator|(trace s1, trace s2);
 trace operator||(trace s1, trace s2);
+trace operator&&(trace s1, trace s2);
 
 trace operator&(trace s1, value s2);
 trace operator|(trace s1, value s2);
