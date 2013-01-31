@@ -156,7 +156,7 @@ int parallel::generate_states(state_space *space, graph *trans, int init)
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
 	map<string, variable>::iterator vi;
-	int state_catcher = -1;
+	vector<int> state_catcher;
 	state s;
 	for (vi = global->begin(); vi != global->end(); vi++)
 		s.assign(vi->second.uid, value("_"));
@@ -165,13 +165,17 @@ int parallel::generate_states(state_space *space, graph *trans, int init)
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
-		instr->generate_states(space, trans, init);
-		cout << "Unioning " << s << " and " << (*space)[state_catcher] << endl;
-		s = s || (*space)[state_catcher];
+		state_catcher.push_back(instr->generate_states(space, trans, init));
+		cout << "Unioning " << s << " and " << (*space)[state_catcher.back()] << endl;
+		s = s || (*space)[state_catcher.back()];
 	}
 	uid = space->size();
 	cout << "resulting merge of " << s;
 	space->push_back(s);
+
+	for (int i = 0; i < (int)state_catcher.size(); i++)
+		trans->insert_edge(state_catcher[i], uid);
+
 	return uid;
 }
 
