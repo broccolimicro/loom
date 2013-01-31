@@ -14,6 +14,7 @@
 #include "parallel.h"
 #include "rule.h"
 #include "channel.h"
+#include "record.h"
 
 block::block()
 {
@@ -84,19 +85,13 @@ void block::parse(map<string, keyword*> types)
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Block: " << chp << endl;
 
-	string		raw_instr;	// chp of a sub block
-
-	instruction *instr; 	// instruction parser
-	variable	v;			// variable instantiation parser
-
-	map<string, keyword*>	::iterator	type_iter;
-	string					::iterator	i, j;
-
-	bool para		= false;
-	bool vdef		= false;
+	string				raw_instr;	// chp of a sub block
+	instruction			*instr; 	// instruction parser
+	string::iterator	i, j;
+	bool				para = false;
+	int					depth[3] = {0};
 
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
-	int depth[3] = {0};
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()+1; i++)
 	{
 		if (*i == '(')
@@ -133,28 +128,13 @@ void block::parse(map<string, keyword*> types)
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
 				instr = new conditional(raw_instr, types, global, label, tab+"\t", verbosity);
-			// This sub block is either a variable definition or an assignment instruction.
-			else
-			{
-				vdef = false;
-				for (type_iter = types.begin(); type_iter != types.end(); type_iter++)
-					if (raw_instr.find(type_iter->first) != raw_instr.npos)
-					{
-						vdef = true;
-						break;
-					}
-
-				// This sub block is a variable definition. keyword<bitwidth> name
-				if (vdef)
-				{
-					v = variable(raw_instr, global->size(), tab, verbosity);
-					global->insert(pair<string, variable>(v.name, v));
-				}
-				// This sub block is an assignment instruction.
-				else if (raw_instr.length() != 0)
-					if(raw_instr.find("skip") == raw_instr.npos)	//If an assignment is a skip, ignore. No state gen
-						instr = new assignment(raw_instr, types, global, label, tab+"\t", verbosity);
-			}
+			// This sub block is a variable definition. keyword<bitwidth> name
+			else if (contains(raw_instr, types))
+				expand(raw_instr, types, global, label, tab+"\t", verbosity);
+			// This sub block is an assignment instruction.
+			//If an assignment is a skip, ignore. No state gen
+			else if (raw_instr.length() != 0 && raw_instr.find("skip") == raw_instr.npos)
+				instr = new assignment(raw_instr, types, global, label, tab+"\t", verbosity);
 
 			// Make sure that this wasn't a variable declaration (they don't affect the state space).
 			if (instr != NULL)
@@ -173,14 +153,12 @@ void block::parse(map<string, keyword*> types)
 int block::generate_states(state_space *space, graph *trans, int init)
 {
 	cout << tab << "Block " << chp << endl;
-	int prev_init = init;
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
 		init = instr->generate_states(space, trans, init);
-		prev_init = init;
 	}
 
 	//Print status (for debugging purposes)

@@ -24,34 +24,17 @@ protected:
 
 public:
 
-	keyword()
-	{
-		name = "";
-		_kind = "keyword";
-	}
-	keyword(string n)
-	{
-		name = n;
-		_kind = "keyword";
-	}
-	~keyword()
-	{
-		name = "";
-		_kind = "keyword";
-	}
+	keyword();
+	keyword(string n);
+	~keyword();
 
 	string name;
 
-	string kind()
-	{
-		return _kind;
-	}
+	string kind();
 
-	keyword &operator=(keyword k)
-	{
-		name = k.name;
-		return *this;
-	}
+	keyword &operator=(keyword k);
 };
+
+bool contains(string s, map<string, keyword*> m);
 
 #endif

@@ -36,13 +36,12 @@ void guard::parse(map<string, keyword*> types)
 int guard::generate_states(state_space *space, graph *trans, int init)
 {
 	map<string, variable>::iterator vi;
-	int i, j;
+	state si, so;
+	int i;
 
 	cout << tab << "Guard " << chp << endl;
 
 	uid = space->size();
-
-	state si, so;
 
 	for (vi = global->begin(); vi != global->end(); vi++)
 		si.assign(vi->second.uid, value("X"));
@@ -73,16 +72,12 @@ state solve(string raw,  map<string, variable> *vars, string tab, int verbosity)
 {
 	map<string, variable>::iterator vi;
 	state outcomes;
-	state a, b;
-	int ai, bi;
 	string::iterator i, j;
-	value temp;
 	int depth;
 
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Solve: " << raw << endl;
 
-	//Parse instructions!
 	depth = 0;
 	for (i = raw.begin(), j = raw.begin(); i != raw.end()+1; i++)
 	{
@@ -93,10 +88,8 @@ state solve(string raw,  map<string, variable> *vars, string tab, int verbosity)
 
 		if (depth == 0 && *i == '|')
 		{
-			a = solve(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity);
-			b = solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
-
-			outcomes = (a || b);
+			outcomes = (solve(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity) ||
+						solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity));
 
 			if (verbosity >= VERB_PARSE)
 				cout << tab << outcomes << endl;
@@ -115,10 +108,8 @@ state solve(string raw,  map<string, variable> *vars, string tab, int verbosity)
 
 		if (depth == 0 && *i == '&')
 		{
-			a = solve(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity);
-			b = solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
-
-			outcomes = (a && b);
+			outcomes = (solve(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity) &&
+						solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity));
 
 			if (verbosity >= VERB_PARSE)
 				cout << tab << outcomes << endl;
@@ -214,10 +205,7 @@ state solve(string raw,  map<string, variable> *vars, string tab, int verbosity)
 
 		if (depth == 0 && *i == '~')
 		{
-			b = solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
-
-			for (bi = 0; bi != b.size(); bi++)
-				outcomes.assign(bi, ~b[bi]);
+			outcomes = ~solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
 
 			if (verbosity >= VERB_PARSE)
 				cout << tab << outcomes << endl;
@@ -230,9 +218,7 @@ state solve(string raw,  map<string, variable> *vars, string tab, int verbosity)
 	unsigned long e = raw.find_last_of(")");
 	if (s != raw.npos && e != raw.npos)
 	{
-		a = solve(raw.substr(s+1, e-s-1), vars, tab+"\t", verbosity);
-
-		outcomes = a;
+		outcomes = solve(raw.substr(s+1, e-s-1), vars, tab+"\t", verbosity);
 
 		if (verbosity >= VERB_PARSE)
 			cout << tab << outcomes << endl;

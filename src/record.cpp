@@ -67,14 +67,14 @@ void record::parse(string raw, map<string, keyword*> types, string tab, int verb
 	{
 		if (*(i+1) == ';')
 		{
-			expand(io_block.substr(j-io_block.begin(), i+1 - j), name, types, &vars, &labels, tab+"\t", verbosity);
+			expand(io_block.substr(j-io_block.begin(), i+1 - j), types, &vars, &labels, tab+"\t", verbosity);
 
 			j = i+2;
 		}
 	}
 }
 
-void expand(string chp, string super, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity)
+void expand(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity)
 {
 	map<string, keyword*>::iterator var_type;
 	map<string, variable>::iterator mem_var;
@@ -101,7 +101,7 @@ void expand(string chp, string super, map<string, keyword*> types, map<string, v
 					label->insert(pair<string, variable>(name + "." + v.name, variable(name + "." + v.name, global->size(), v.type, v.reset, v.width)));
 			}
 		}
-		else if (var_type->second->kind() == "process")
+		else if (var_type->second->kind() == "process" || var_type->second->kind() == "operator")
 			cout << "Error: Invalid use of type " << var_type->second->kind() << " in record definition." << endl;
 	}
 	else

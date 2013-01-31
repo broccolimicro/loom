@@ -11,6 +11,7 @@
 #include "conditional.h"
 #include "loop.h"
 #include "block.h"
+#include "record.h"
 
 parallel::parallel()
 {
@@ -49,34 +50,13 @@ void parallel::parse(map<string, keyword*> types)
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Parallel: " << chp << endl;
 
-
-	string		raw_instr;	// chp of a sub block
-
-	instruction *instr; 	// instruction parser
-	variable	v;			// variable instantiation parser
-
-	map<string, state> current_state;
-
-	list<instruction*>		::iterator	ii, ij;
-	map<string, variable>	::iterator	vi;
-	//map<string, space>		::iterator	si, sj, sk;
-	map<string, state>		::iterator	l, m;
-	list<state>				::iterator	a, b;
-	map<string, keyword*>	::iterator	t;
-	list<bool>				::iterator	di;
-	string					::iterator	i, j;
-
-	map<string, variable>				affected;
-	list<bool>							delta_out;
-
-	bool sequential	= false;
-	bool vdef		= false;
-
-	state xstate;
-	state tstate;
+	string				raw_instr;	// chp of a sub block
+	instruction			*instr; 	// instruction parser
+	string::iterator	i, j;
+	bool				sequential = false;
+	int					depth[3] = {0};
 
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
-	int depth[3] = {0};
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()+1; i++)
 	{
 		if (*i == '(')
@@ -114,28 +94,12 @@ void parallel::parse(map<string, keyword*> types)
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
 				instr = new conditional(raw_instr, types, global, label, tab+"\t", verbosity);
-			// This sub block is either a variable definition or an assignment instruction.
-			else
-			{
-				vdef = false;
-				for (t = types.begin(); t != types.end(); t++)
-					if (raw_instr.find(t->first) != raw_instr.npos)
-					{
-						vdef = true;
-						break;
-					}
-
-				// This sub block is a variable definition. keyword<bitwidth> name
-				if (vdef)
-				{
-					v = variable(raw_instr, global->size(), tab, verbosity);
-					global->insert(pair<string, variable>(v.name, v));
-				}
-				// This sub block is an assignment instruction.
-				else if (raw_instr.length() != 0)
-					if(raw_instr.find("skip") == raw_instr.npos)
-						instr = new assignment(raw_instr, types, global, label, tab+"\t", verbosity);
-			}
+			// This sub block is a variable definition. keyword<bitwidth> name
+			else if (contains(raw_instr, types))
+				expand(raw_instr, types, global, label, tab+"\t", verbosity);
+			// This sub block is an assignment instruction.
+			else if (raw_instr.length() != 0 && raw_instr.find("skip") == raw_instr.npos)
+				instr = new assignment(raw_instr, types, global, label, tab+"\t", verbosity);
 
 			if (instr != NULL)
 				instrs.push_back(instr);
