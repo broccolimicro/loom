@@ -67,16 +67,33 @@ void variable::parse(string chp)
 
 	this->chp = chp;
 
+	string input;
+
 	size_t width_start = chp.find_first_of("< ");
 	size_t name_start = chp.find_first_of("> ");
+	size_t input_start = chp.find_first_of("(");
+	size_t input_end = chp.find_first_of(")");
 	size_t reset_start = chp.find(":=");
 
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Variable: " << chp << endl;
 
+	if (input_start != chp.npos)
+	{
+		string temp;
+		name = chp.substr(name_start+1, input_start - (name_start+1));
+		input = chp.substr(input_start+1, input_end - (input_start+1));
+		inputs.push_back(input.substr(0, input.find_first_of(",")));
+		for (size_t i = input.find_first_of(","); i != input.npos; i = input.find_first_of(",", i+1))
+			inputs.push_back(input.substr(i+1, input.find_first_of(",", i+1) - i-1));
+	}
+	else if (reset_start != chp.npos)
+		name = chp.substr(name_start+1, reset_start - (name_start+1));
+	else
+		name = chp.substr(name_start+1);
+
 	if (reset_start != chp.npos)
 	{
-		name = chp.substr(name_start+1, reset_start - (name_start+1));
 		reset = value(chp.substr(reset_start+2));
 		if (reset.data[1] == 'x')				// hexadecimal e.g. 0xFEEDFACE
 			reset.data = hex_to_bin(reset.data.substr(2));
@@ -85,8 +102,6 @@ void variable::parse(string chp)
 		else									// decimal     e.g. 20114
 			reset.data = dec_to_bin(reset.data);
 	}
-	else
-		name = chp.substr(name_start+1);
 
 	type = chp.substr(0, width_start);
 	if (chp.find_first_of("<>") != chp.npos)

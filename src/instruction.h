@@ -48,6 +48,8 @@ public:
 
 	void print_prs();
 
+	virtual instruction *duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert) = 0;
+
 	virtual void expand_shortcuts() = 0;
 	virtual void parse(map<string, keyword*> types) = 0;
 	virtual int generate_states(state_space *space, graph *trans, int init) = 0;

@@ -23,6 +23,42 @@ guard::~guard()
 	_kind = "guard";
 }
 
+guard &guard::operator=(guard g)
+{
+	this->uid		= g.uid;
+	this->chp		= g.chp;
+	this->rules		= g.rules;
+	this->global	= g.global;
+	this->label		= g.label;
+	this->tab		= g.tab;
+	this->verbosity	= g.verbosity;
+	return *this;
+}
+
+/* This copies a guard to another process and replaces
+ * all of the specified variables.
+ * TODO Check to make sure that this actually works as specified
+ */
+instruction *guard::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert)
+{
+	guard *instr;
+
+	instr 				= new guard();
+	instr->chp			= this->chp;
+	instr->global		= globals;
+	instr->label		= labels;
+	instr->tab			= this->tab;
+	instr->verbosity	= this->verbosity;
+
+	map<string, string>::iterator i;
+	size_t j;
+	for (i = convert.begin(); i != convert.end(); i++)
+		while ((j = instr->chp.find(i->first)) != instr->chp.npos)
+			instr->chp.replace(j, i->first.length(), i->second);
+
+	return instr;
+}
+
 void guard::expand_shortcuts()
 {
 }

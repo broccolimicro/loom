@@ -23,7 +23,11 @@ struct assignment : instruction
 	~assignment();
 
 	int uid;					// indexes into the state in the state space
-	map<string, string> expr;
+	list<pair<string, string> > expr;
+
+	assignment &operator=(assignment a);
+
+	instruction *duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert);
 
 	void expand_shortcuts();
 	void parse(map<string, keyword*> types);

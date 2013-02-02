@@ -40,6 +40,47 @@ parallel::~parallel()
 	instrs.clear();
 }
 
+parallel &parallel::operator=(parallel p)
+{
+	this->uid		= p.uid;
+	this->chp		= p.chp;
+	this->instrs	= p.instrs;
+	this->rules		= p.rules;
+	this->global	= p.global;
+	this->label		= p.label;
+	this->tab		= p.tab;
+	this->verbosity	= p.verbosity;
+	return *this;
+}
+
+/* This copies a guard to another process and replaces
+ * all of the specified variables.
+ * TODO Check to make sure that this actually works as specified
+ */
+instruction *parallel::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert)
+{
+	parallel *instr;
+
+	instr 				= new parallel();
+	instr->chp			= this->chp;
+	instr->global		= globals;
+	instr->label		= labels;
+	instr->tab			= this->tab;
+	instr->verbosity	= this->verbosity;
+
+	map<string, string>::iterator i, j;
+	size_t k;
+	for (i = convert.begin(); i != convert.end(); i++)
+		while ((k = instr->chp.find(i->first)) != instr->chp.npos)
+			instr->chp.replace(k, i->first.length(), i->second);
+
+	list<instruction*>::iterator l;
+	for (l = instrs.begin(); l != instrs.end(); l++)
+		instr->instrs.push_back((*l)->duplicate(globals, labels, convert));
+
+	return instr;
+}
+
 void parallel::expand_shortcuts()
 {
 
@@ -96,7 +137,7 @@ void parallel::parse(map<string, keyword*> types)
 				instr = new conditional(raw_instr, types, global, label, tab+"\t", verbosity);
 			// This sub block is a variable definition. keyword<bitwidth> name
 			else if (contains(raw_instr, types))
-				expand(raw_instr, types, global, label, tab+"\t", verbosity);
+				instr = expand(raw_instr, types, global, label, NULL, tab+"\t", verbosity, true);
 			// This sub block is an assignment instruction.
 			else if (raw_instr.length() != 0 && raw_instr.find("skip") == raw_instr.npos)
 				instr = new assignment(raw_instr, types, global, label, tab+"\t", verbosity);

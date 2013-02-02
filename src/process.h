@@ -33,6 +33,7 @@ struct process : keyword
 	list<string>			prs;	// the final set of generated production rules
 	map<string, variable>	global;	// globally defined variables: only used for channel definitions
 	map<string, variable>	label;
+	list<string>			input;
 	state_space				space;
 	graph					trans;
 

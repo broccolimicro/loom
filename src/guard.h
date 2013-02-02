@@ -24,6 +24,10 @@ struct guard : instruction
 
 	int uid;					// indexes into the state in the state space
 
+	guard &operator=(guard g);
+
+	instruction *duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert);
+
 	void expand_shortcuts();
 	void parse(map<string, keyword*> types);
 	int generate_states(state_space *space, graph *trans, int init);

@@ -50,6 +50,49 @@ conditional::~conditional()
 	instrs.clear();
 }
 
+conditional &conditional::operator=(conditional c)
+{
+	this->type		= c.type;
+	this->uid		= c.uid;
+	this->chp		= c.chp;
+	this->instrs	= c.instrs;
+	this->rules		= c.rules;
+	this->global	= c.global;
+	this->label		= c.label;
+	this->tab		= c.tab;
+	this->verbosity	= c.verbosity;
+	return *this;
+}
+
+/* This copies a guard to another process and replaces
+ * all of the specified variables.
+ * TODO Check to make sure that this actually works as specified
+ */
+instruction *conditional::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert)
+{
+	conditional *instr;
+
+	instr 				= new conditional();
+	instr->chp			= this->chp;
+	instr->global		= globals;
+	instr->label		= labels;
+	instr->tab			= this->tab;
+	instr->verbosity	= this->verbosity;
+	instr->type			= this->type;
+
+	map<string, string>::iterator i, j;
+	size_t k;
+	for (i = convert.begin(); i != convert.end(); i++)
+		while ((k = instr->chp.find(i->first)) != instr->chp.npos)
+			instr->chp.replace(k, i->first.length(), i->second);
+
+	list<pair<block*, guard*> >::iterator l;
+	for (l = instrs.begin(); l != instrs.end(); l++)
+		instr->instrs.push_back(pair<block*, guard*>((block*)l->first->duplicate(globals, labels, convert), (guard*)l->second->duplicate(globals, labels, convert)));
+
+	return instr;
+}
+
 void conditional::expand_shortcuts()
 {
 	//Check for the shorthand [var] and replace it with [var -> skip]

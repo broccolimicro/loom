@@ -11,6 +11,7 @@
 #include "common.h"
 #include "keyword.h"
 #include "variable.h"
+#include "process.h"
 
 record::record()
 {
@@ -67,18 +68,22 @@ void record::parse(string raw, map<string, keyword*> types, string tab, int verb
 	{
 		if (*(i+1) == ';')
 		{
-			expand(io_block.substr(j-io_block.begin(), i+1 - j), types, &vars, &labels, tab+"\t", verbosity);
+			expand(io_block.substr(j-io_block.begin(), i+1 - j), types, &vars, &labels, NULL, tab+"\t", verbosity, false);
 
 			j = i+2;
 		}
 	}
 }
 
-void expand(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity)
+instruction *expand(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, list<string> *input, string tab, int verbosity, bool allow_process)
 {
 	map<string, keyword*>::iterator var_type;
 	map<string, variable>::iterator mem_var;
 	variable v = variable(chp, global->size(), tab+"\t", verbosity);
+
+	if (input != NULL)
+		input->push_back(v.name);
+
 	string name;
 
 	if ((var_type = types.find(v.type)) != types.end())
@@ -102,10 +107,26 @@ void expand(string chp, map<string, keyword*> types, map<string, variable> *glob
 			}
 		}
 		else if (var_type->second->kind() == "process" || var_type->second->kind() == "operator")
-			cout << "Error: Invalid use of type " << var_type->second->kind() << " in record definition." << endl;
+		{
+			if (allow_process)
+			{
+				cout << "Found the following process:" << endl << ((process*)var_type->second)->chp << endl;
+
+				map<string, string> convert;
+				list<string>::iterator i, j;
+				for (i = v.inputs.begin(), j = ((process*)var_type->second)->input.begin(); i != v.inputs.end() && j != ((process*)var_type->second)->input.end(); i++, j++)
+					convert.insert(pair<string, string>(*j, *i));
+
+				return ((process*)var_type->second)->def.duplicate(global, label, convert);
+			}
+			else
+				cout << "Error: Invalid use of type " << var_type->second->kind() << " in record definition." << endl;
+		}
 	}
 	else
 		cout << "Error: Invalid typename: " << v.type << endl;
+
+	return NULL;
 }
 
 ostream &operator<<(ostream &os, record s)

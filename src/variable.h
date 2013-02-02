@@ -33,6 +33,8 @@ struct variable
 	int			uid;
 	bool		prs;		// keep track of whether or not to generate production rules
 
+	list<string> inputs;
+
 	// For debugging purposes
 	string tab;
 	int verbosity;

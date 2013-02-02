@@ -55,8 +55,13 @@ block::~block()
 
 block &block::operator=(block b)
 {
-	chp = b.chp;
-	instrs = b.instrs;
+	this->chp		= b.chp;
+	this->instrs	= b.instrs;
+	this->rules		= b.rules;
+	this->global	= b.global;
+	this->label		= b.label;
+	this->tab		= b.tab;
+	this->verbosity	= b.verbosity;
 	return *this;
 }
 
@@ -73,6 +78,34 @@ void block::init(string chp, map<string, keyword*> types, map<string, variable> 
 
 	expand_shortcuts();
 	parse(types);
+}
+
+/* This copies a guard to another process and replaces
+ * all of the specified variables.
+ * TODO Check to make sure that this actually works as specified
+ */
+instruction *block::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert)
+{
+	block *instr;
+
+	instr 				= new block();
+	instr->chp			= this->chp;
+	instr->global		= globals;
+	instr->label		= labels;
+	instr->tab			= this->tab;
+	instr->verbosity	= this->verbosity;
+
+	map<string, string>::iterator i, j;
+	size_t k;
+	for (i = convert.begin(); i != convert.end(); i++)
+		while ((k = instr->chp.find(i->first)) != instr->chp.npos)
+			instr->chp.replace(k, i->first.length(), i->second);
+
+	list<instruction*>::iterator l;
+	for (l = instrs.begin(); l != instrs.end(); l++)
+		instr->instrs.push_back((*l)->duplicate(globals, labels, convert));
+
+	return instr;
 }
 
 void block::expand_shortcuts()
@@ -130,7 +163,7 @@ void block::parse(map<string, keyword*> types)
 				instr = new conditional(raw_instr, types, global, label, tab+"\t", verbosity);
 			// This sub block is a variable definition. keyword<bitwidth> name
 			else if (contains(raw_instr, types))
-				expand(raw_instr, types, global, label, tab+"\t", verbosity);
+				instr = expand(raw_instr, types, global, label, NULL, tab+"\t", verbosity, true);
 			// This sub block is an assignment instruction.
 			//If an assignment is a skip, ignore. No state gen
 			else if (raw_instr.length() != 0 && raw_instr.find("skip") == raw_instr.npos)
@@ -191,8 +224,6 @@ void block::clear()
 	}
 
 	instrs.clear();
-	waits.clear();
-	changes.clear();
 	rules.clear();
 }
 

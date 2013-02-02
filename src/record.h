@@ -10,6 +10,7 @@
 #include "common.h"
 #include "keyword.h"
 #include "variable.h"
+#include "instruction.h"
 
 #ifndef record_h
 #define record_h
@@ -32,7 +33,7 @@ struct record : keyword
 	void parse(string raw, map<string, keyword*> types, string tab, int verbosity);
 };
 
-void expand(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity);
+instruction *expand(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, list<string> *input, string tab, int verbosity, bool allow_process);
 ostream &operator<<(ostream &os, record s);
 
 #endif

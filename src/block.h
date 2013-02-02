@@ -33,12 +33,12 @@ struct block : instruction
 	~block();
 
 	list<instruction*>			instrs;		// an ordered list of instructions in block
-	list<size_t>				waits;
-	list<map<string, state> >	changes;
 
 	block &operator=(block b);
 
 	void init(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity);
+
+	instruction *duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert);
 
 	void expand_shortcuts();
 	void parse(map<string, keyword*> types);

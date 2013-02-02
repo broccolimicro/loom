@@ -55,10 +55,10 @@ process mux0b2(chan4p0b i, chan4p0b o1, chan4p0b o2, chan4p1b s)
 
 process main()
 {
-	chan4p0b x;
-	chan4p0b y;
-	chan4p0b z;
-	chan4p1b w;
+	chan4p0b blarg;
+	chan4p0b mrawr;
+	chan4p0b yay;
+	chan4p1b yeah;
 	
-	mux0b2 m(x, y, z, w);
+	mux0b2 m(blarg, mrawr, yay, yeah);
 }
