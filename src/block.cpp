@@ -98,7 +98,7 @@ instruction *block::duplicate(map<string, variable> *globals, map<string, variab
 	map<string, string>::iterator i, j;
 	size_t k;
 	for (i = convert.begin(); i != convert.end(); i++)
-		while ((k = instr->chp.find(i->first)) != instr->chp.npos)
+		while ((k = find_name(instr->chp, i->first)) != instr->chp.npos)
 			instr->chp.replace(k, i->first.length(), i->second);
 
 	list<instruction*>::iterator l;

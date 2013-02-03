@@ -51,10 +51,10 @@ instruction *guard::duplicate(map<string, variable> *globals, map<string, variab
 	instr->verbosity	= this->verbosity;
 
 	map<string, string>::iterator i;
-	size_t j;
+	size_t k;
 	for (i = convert.begin(); i != convert.end(); i++)
-		while ((j = instr->chp.find(i->first)) != instr->chp.npos)
-			instr->chp.replace(j, i->first.length(), i->second);
+		while ((k = find_name(instr->chp, i->first)) != instr->chp.npos)
+			instr->chp.replace(k, i->first.length(), i->second);
 
 	return instr;
 }

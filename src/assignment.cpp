@@ -57,13 +57,13 @@ instruction *assignment::duplicate(map<string, variable> *globals, map<string, v
 	size_t k;
 	for (i = convert.begin(); i != convert.end(); i++)
 	{
-		while ((k = instr->chp.find(i->first)) != instr->chp.npos)
+		while ((k = find_name(instr->chp, i->first)) != instr->chp.npos)
 			instr->chp.replace(k, i->first.length(), i->second);
 		for (j = instr->expr.begin(); j != instr->expr.end(); j++)
 		{
-			while ((k = j->first.find(i->first)) != j->first.npos)
+			while ((k = find_name(j->first, i->first)) != j->first.npos)
 				j->first.replace(k, i->first.length(), i->second);
-			while ((k = j->second.find(i->first)) != j->second.npos)
+			while ((k = find_name(j->second, i->first)) != j->second.npos)
 				j->second.replace(k, i->first.length(), i->second);
 		}
 	}
