@@ -60,7 +60,6 @@ variable &variable::operator=(variable v)
 	return *this;
 }
 
-// TODO we need to handle the case where we instantiate a process
 void variable::parse(string chp)
 {
 	reset = value("X");

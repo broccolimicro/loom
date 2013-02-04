@@ -38,7 +38,6 @@ struct assignment : instruction
 /*
  *
  * TODO Add support for signed numbers (specifically a*-b should not be a*0-b)
- * TODO Add support for less than and greater than operators
  */
 template <class t>
 t evaluate(string raw, map<string, variable> *globals, vector<t> init, string tab, int verbosity)
@@ -58,6 +57,7 @@ t evaluate(string raw, map<string, variable> *globals, vector<t> init, string ta
 
 	typename map<string, variable>::iterator v;
 	list<string> ops;
+	list<string> ex;
 	size_t p;
 
 	p = find_first_of_l0(raw, "|");
@@ -86,7 +86,19 @@ t evaluate(string raw, map<string, variable> *globals, vector<t> init, string ta
 	else if (p != raw.npos && raw.substr(p, 2) == ">=")
 		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) >= evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
 
-	// TODO Add support for greater than and less than operators
+	ops.clear();
+	ops.push_back("<");
+	ops.push_back(">");
+	ex.clear();
+	ex.push_back(">>");
+	ex.push_back("<<");
+	ex.push_back("<=");
+	ex.push_back(">=");
+	p = find_first_of_l0(raw, ops, 0, ex);
+	if (p != raw.npos && raw[p] == '<')
+		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) < evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
+	else if (p != raw.npos && raw[p] == '>')
+		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) > evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
 
 	ops.clear();
 	ops.push_back("<<");

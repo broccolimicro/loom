@@ -184,10 +184,6 @@ void conditional::parse(map<string, keyword*> types)
 		else if (depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '-' && *(i+1) == '>') || i == chp.end()))
 			guarded = false;
 	}
-
-	// TODO create a state variable per guarded block whose production rule is the guard.
-	// TODO a possible optimization would be to check to make sure that we need one first. If we don't, then we must already have one that works, add the guard to it's condition.
-	// TODO condition all production rules of the guarded blocks on their designated state variable.
 }
 
 int conditional::generate_states(state_space *space, graph *trans, int init)
@@ -222,5 +218,8 @@ int conditional::generate_states(state_space *space, graph *trans, int init)
 
 void conditional::generate_prs()
 {
+	// TODO CONDITION PRS create a state variable per guarded block whose production rule is the guard.
+	// TODO CONDITION PRS a possible optimization would be to check to make sure that we need one first. If we don't, then we must already have one that works, add the guard to it's condition.
+	// TODO CONDITION PRS condition all production rules of the guarded blocks on their designated state variable.
 }
 

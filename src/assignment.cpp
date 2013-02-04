@@ -98,8 +98,6 @@ void assignment::parse(map<string, keyword*> types)
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Assignment:\t" + chp << endl;
 
-	// TODO we need to involve the defined operators here as well, not just solve for the state space.
-
 	// Identify that this instruction is an assign.
 	if (chp.find(":=") != chp.npos)
 	{
@@ -134,13 +132,16 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 
 	state s;
 
+	// Set up the transparent state
 	for (vi = global->begin(); vi != global->end(); vi++)
 		s.assign(vi->second.uid, vi->second.reset, value("?"));
 
+	// Set up the inital state
 	if (init != -1)
 		for (i = 0; i < (*space)[init].size(); i++)
 			s.assign(i, (*space)[init][i], value("?"));
 
+	// Evaluate each expression
 	for (ei = expr.begin(); ei != expr.end(); ei++)
 	{
 		vi = global->find(ei->first);
@@ -150,16 +151,18 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 		else
 			cout << "Error: Undefined variable " << ei->first << "." << endl;
 
+		// TODO make this search smarter
+		// Search for this channel's other variables and X them out.
 		search = ei->first.substr(0, ei->first.find_last_of("."));
 		for (vi = global->begin(); vi != global->end(); vi++)
 		{
 			if (vi->first.substr(0, search.length()) == search && vi->first != ei->first)
 			{
 				s.assign(vi->second.uid, value("X"));
-				cout << vi->first << endl;
+				//cout << vi->first << endl;
 			}
 		}
-		cout << search << endl;
+		//cout << search << endl;
 	}
 
 	cout << tab << s << endl;

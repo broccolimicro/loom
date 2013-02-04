@@ -235,7 +235,7 @@ size_t find_first_of_l0(string subject, string search, size_t pos)
 	return ret;
 }
 
-size_t find_first_of_l0(string subject, list<string> search, size_t pos)
+size_t find_first_of_l0(string subject, list<string> search, size_t pos, list<string> exclude)
 {
 	bool found;
 	string::iterator i;
@@ -261,6 +261,9 @@ size_t find_first_of_l0(string subject, list<string> search, size_t pos)
 		for (j = search.begin(); j != search.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && !found; j++)
 			if (subject.substr(ret, j->length()) == *j)
 				found = true;
+		for (j = exclude.begin(); j != exclude.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && found; j++)
+			if (subject.substr(ret, j->length()) == *j)
+				found = false;
 	}
 
 	ret--;
