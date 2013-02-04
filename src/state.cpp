@@ -39,10 +39,10 @@ vector<value>::iterator state::end()
 	return values.end();
 }
 
-void state::assign(int i, value v)
+void state::assign(int i, value v, value r)
 {
 	if (i >= (int)values.size())
-		values.resize(i+1, value("X"));
+		values.resize(i+1, r);
 	values[i] = v;
 }
 
@@ -423,45 +423,6 @@ state operator|(state s1, state s2)
 	return result;
 }
 
-state operator||(state s1, state s2)
-{
-	vector<value>::iterator j, k;
-	value a, b;
-	state result;
-
-	//result.var = s1.var + "|" + s2.var;
-
-	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
-	{
-		a = j != s1.values.end() ? *j++ : value("X");
-		b = k != s2.values.end() ? *k++ : value("X");
-
-		result.values.push_back(a || b);
-	}
-
-	return result;
-}
-
-state operator&&(state s1, state s2)
-{
-	vector<value>::iterator j, k;
-	value a, b;
-	state result;
-
-	//result.var = s1.var + "|" + s2.var;
-
-	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
-	{
-		a = j != s1.values.end() ? *j++ : value("X");
-		b = k != s2.values.end() ? *k++ : value("X");
-
-		result.values.push_back(a && b);
-	}
-
-	return result;
-
-}
-
 state operator&(state s1, value s2)
 {
 	state result;
@@ -756,6 +717,57 @@ state operator>(state s1, state s2)
 
 		result.values.push_back(a > b);
 	}
+
+	return result;
+}
+
+state operator||(state s1, state s2)
+{
+	vector<value>::iterator j, k;
+	value a, b;
+	state result;
+
+	//result.var = s1.var + "|" + s2.var;
+
+	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
+	{
+		a = j != s1.values.end() ? *j++ : value("?");
+		b = k != s2.values.end() ? *k++ : value("?");
+
+		result.values.push_back(a || b);
+	}
+
+	return result;
+}
+
+state operator&&(state s1, state s2)
+{
+	vector<value>::iterator j, k;
+	value a, b;
+	state result;
+
+	//result.var = s1.var + "|" + s2.var;
+
+	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
+	{
+		a = j != s1.values.end() ? *j++ : value("?");
+		b = k != s2.values.end() ? *k++ : value("?");
+
+		result.values.push_back(a && b);
+	}
+
+	return result;
+
+}
+
+state operator!(state s)
+{
+	state result;
+	vector<value>::iterator i;
+
+	//result.var =  "~" + s.var;
+	for (i = s.values.begin(); i != s.values.end(); i++)
+		result.values.push_back(!*i);
 
 	return result;
 }

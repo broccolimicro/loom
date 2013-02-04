@@ -37,7 +37,6 @@ guard &guard::operator=(guard g)
 
 /* This copies a guard to another process and replaces
  * all of the specified variables.
- * TODO Check to make sure that this actually works as specified
  */
 instruction *guard::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert)
 {
@@ -80,7 +79,7 @@ int guard::generate_states(state_space *space, graph *trans, int init)
 	uid = space->size();
 
 	for (vi = global->begin(); vi != global->end(); vi++)
-		si.assign(vi->second.uid, value("X"));
+		si.assign(vi->second.uid, vi->second.reset, value("?"));
 
 	if (init != -1)
 		for (i = 0; i < (*space)[init].size(); i++)
@@ -91,8 +90,6 @@ int guard::generate_states(state_space *space, graph *trans, int init)
 	space->push_back(si && so);
 	if (init != -1)
 		trans->insert_edge(init, uid, chp);
-
-	cout << tab << si << endl;
 
 	return uid;
 }
@@ -110,6 +107,8 @@ state solve(string raw,  map<string, variable> *vars, string tab, int verbosity)
 	state outcomes;
 	string::iterator i, j;
 	int depth;
+
+	outcomes.assign(vars->rbegin()->second.uid, value("?"), value("?"));
 
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Solve: " << raw << endl;
@@ -241,7 +240,7 @@ state solve(string raw,  map<string, variable> *vars, string tab, int verbosity)
 
 		if (depth == 0 && *i == '~')
 		{
-			outcomes = ~solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
+			outcomes = !solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
 
 			if (verbosity >= VERB_PARSE)
 				cout << tab << outcomes << endl;
@@ -264,7 +263,12 @@ state solve(string raw,  map<string, variable> *vars, string tab, int verbosity)
 
 	vi = vars->find(raw);
 	if (vi != vars->end())
-		outcomes.assign(vi->second.uid, value("1"));
+		outcomes.assign(vi->second.uid, value("1"), value("?"));
+	else if (raw == "1")
+		for (vi = vars->begin(); vi != vars->end(); vi++)
+			outcomes.assign(vi->second.uid, value("X"), value("?"));
+	else
+		cout << "Error: Undefined variable " << raw << "." << endl;
 
 	if (verbosity >= VERB_PARSE)
 		cout << tab << outcomes << endl;

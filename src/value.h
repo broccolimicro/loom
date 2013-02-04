@@ -72,8 +72,8 @@ value operator>=(value s1, value s2);
 value operator<(value s1, value s2);
 value operator>(value s1, value s2);
 
-value operator!(value s);
 value operator||(value s1, value s2);
 value operator&&(value s1, value s2);
+value operator!(value s);
 
 #endif

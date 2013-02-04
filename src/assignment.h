@@ -120,7 +120,7 @@ t evaluate(string raw, map<string, variable> *globals, vector<t> init, string ta
 	if (v != globals->end() && v->second.uid < (int)init.size())
 		return init[v->second.uid];
 	else if (v != globals->end())
-		return t();
+		cout << "Error: Undefined variable " << raw << "." << endl;
 
 	p = raw.find_first_of("bx");
 	if (p != raw.npos && raw[p] == 'x')

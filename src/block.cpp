@@ -82,7 +82,6 @@ void block::init(string chp, map<string, keyword*> types, map<string, variable> 
 
 /* This copies a guard to another process and replaces
  * all of the specified variables.
- * TODO Check to make sure that this actually works as specified
  */
 instruction *block::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert)
 {

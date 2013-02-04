@@ -1,3 +1,10 @@
+/*
+ * assignment.cpp
+ *
+ *  Created on: Jan 22, 2013
+ *      Author: nbingham
+ */
+
 #include "assignment.h"
 
 assignment::assignment()
@@ -38,7 +45,6 @@ assignment &assignment::operator=(assignment a)
 
 /* This copies a guard to another process and replaces
  * all of the specified variables.
- * TODO Check to make sure that this actually works as specified
  */
 instruction *assignment::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert)
 {
@@ -124,23 +130,36 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 	list<pair<string, string> >::iterator ei;
 	int i;
 
+	string search;
+
 	state s;
 
 	for (vi = global->begin(); vi != global->end(); vi++)
-		s.assign(vi->second.uid, value("X"));
+		s.assign(vi->second.uid, vi->second.reset, value("?"));
 
 	if (init != -1)
 		for (i = 0; i < (*space)[init].size(); i++)
-			s.assign(i, (*space)[init][i]);
+			s.assign(i, (*space)[init][i], value("?"));
 
 	for (ei = expr.begin(); ei != expr.end(); ei++)
 	{
 		vi = global->find(ei->first);
 
 		if (vi != global->end())
-			s.assign(vi->second.uid, evaluate(ei->second, global, s.values, tab, verbosity));
+			s.assign(vi->second.uid, evaluate(ei->second, global, s.values, tab, verbosity), value("?"));
 		else
 			cout << "Error: Undefined variable " << ei->first << "." << endl;
+
+		search = ei->first.substr(0, ei->first.find_last_of("."));
+		for (vi = global->begin(); vi != global->end(); vi++)
+		{
+			if (vi->first.substr(0, search.length()) == search && vi->first != ei->first)
+			{
+				s.assign(vi->second.uid, value("X"));
+				cout << vi->first << endl;
+			}
+		}
+		cout << search << endl;
 	}
 
 	cout << tab << s << endl;

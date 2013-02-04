@@ -15,7 +15,7 @@ variable::variable()
 	name = "";
 	type = "";
 	width = 0;
-	reset = "iX";
+	reset = value("X");
 	fixed = false;
 }
 
@@ -44,7 +44,7 @@ variable::~variable()
 	name = "";
 	type = "";
 	width = 0;
-	reset = "iX";
+	reset = value("X");
 	fixed = false;
 }
 
@@ -63,7 +63,7 @@ variable &variable::operator=(variable v)
 // TODO we need to handle the case where we instantiate a process
 void variable::parse(string chp)
 {
-	reset = "iX";
+	reset = value("X");
 
 	this->chp = chp;
 
@@ -102,6 +102,8 @@ void variable::parse(string chp)
 		else									// decimal     e.g. 20114
 			reset.data = dec_to_bin(reset.data);
 	}
+	else
+		reset = value("X");
 
 	type = chp.substr(0, width_start);
 	if (chp.find_first_of("<>") != chp.npos)

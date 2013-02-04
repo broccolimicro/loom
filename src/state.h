@@ -23,7 +23,7 @@ struct state
 	void clear();
 	vector<value>::iterator begin();
 	vector<value>::iterator end();
-	void assign(int i, value v);
+	void assign(int i, value v, value r = value("?"));
 	int size();
 
 	value operator[](int i);
@@ -79,8 +79,6 @@ state operator-(state s);
 
 state operator&(state s1, state s2);
 state operator|(state s1, state s2);
-state operator||(state s1, state s2);
-state operator&&(state s1, state s2);
 
 state operator&(state s1, value s2);
 state operator|(state s1, value s2);
@@ -111,6 +109,10 @@ state operator<=(state s1, state s2);
 state operator>=(state s1, state s2);
 state operator<(state s1, state s2);
 state operator>(state s1, state s2);
+
+state operator||(state s1, state s2);
+state operator&&(state s1, state s2);
+state operator!(state s);
 
 state operator==(state s1, value s2);
 state operator!=(state s1, value s2);

@@ -1,14 +1,14 @@
 record chan4p0b
 {
-	int<1> r := 0;
-	int<1> a := 0;
+	int<1> r;
+	int<1> a;
 }
 
 record chan4p1b
 {
-	int<1> ra := 0;
-	int<1> t := 0;
-	int<1> f := 0;
+	int<1> ra;
+	int<1> t;
+	int<1> f;
 }
 
 process mux0b2(chan4p0b i, chan4p0b o1, chan4p0b o2, chan4p1b s)

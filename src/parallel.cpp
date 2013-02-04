@@ -55,7 +55,6 @@ parallel &parallel::operator=(parallel p)
 
 /* This copies a guard to another process and replaces
  * all of the specified variables.
- * TODO Check to make sure that this actually works as specified
  */
 instruction *parallel::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert)
 {
@@ -167,7 +166,7 @@ int parallel::generate_states(state_space *space, graph *trans, int init)
 
 
 	for (vi = global->begin(); vi != global->end(); vi++)
-		s.assign(vi->second.uid, value("_"));
+		s.assign(vi->second.uid, vi->second.reset);
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{

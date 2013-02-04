@@ -557,26 +557,6 @@ value operator>(value s1, value s2)
 	return value("0");
 }
 
-value operator!(value s)
-{
-	string::iterator j;
-	value result;
-
-	for (j = s.data.begin(); j != s.data.end(); j++)
-	{
-		if (*j == '_')
-			result.data += "X";
-		else if (*j == '0')
-			result.data += "1";
-		else if (*j == '1')
-			result.data += "0";
-		else
-			result.data += "_";
-	}
-
-	return result;
-}
-
 value operator||(value s1, value s2)
 {
 	string::reverse_iterator j, k;
@@ -585,17 +565,26 @@ value operator||(value s1, value s2)
 
 	for (j = s1.data.rbegin(), k = s2.data.rbegin(); j != s1.data.rend() || k != s2.data.rend();)
 	{
-		a = j != s1.data.rend() ? *j++ : '0';
-		b = k != s2.data.rend() ? *k++ : '0';
+		a = j != s1.data.rend() ? *j++ : '?';
+		b = k != s2.data.rend() ? *k++ : '?';
 
-		if (a == "_")
-			result.data = b + result.data;
-		else if (b == "_")
-			result.data = a + result.data;
-		else if (a == b)
-			result.data = a + result.data;
-		else
+
+		if (a == "X" || b == "X")
 			result.data = "X" + result.data;
+		else if ((a == "?" && (b == "0" || b == "1")) || (b == "?" && (a == "0" || a == "1")))
+			result.data = "X" + result.data;
+		else if ((a == "0" && b == "1") || (a == "1" && b == "0"))
+			result.data = "X" + result.data;
+		else if ((a == "0" && (b == "0" || b == "_")) || (b == "0" && (a == "0" || a == "_")))
+			result.data = "0" + result.data;
+		else if ((a == "1" && (b == "1" || b == "_")) || (b == "1" && (a == "1" || a == "_")))
+			result.data = "1" + result.data;
+		else if ((a == "_" && (b == "_" || b == "?")) || (b == "_" && (a == "_" || a == "?")))
+			result.data = "_" + result.data;
+		else if (a == "?" && b == "?")
+			result.data = "?" + result.data;
+		else
+			result.data = "FUCK(" + a + "," + b + ")" + result.data;
 	}
 
 	return result;
@@ -614,21 +603,46 @@ value operator&&(value s1, value s2)
 	for (j = s1.data.rbegin(), k = s2.data.rbegin(); j != s1.data.rend() || k != s2.data.rend(); j++, k++)
 	{
 
-		a = j != s1.data.rend() ? *j : '0';
-		b = k != s2.data.rend() ? *k : '0';
+		a = j != s1.data.rend() ? *j : '?';
+		b = k != s2.data.rend() ? *k : '?';
 
-		if (a == "X")
-			result.data = b + result.data;
-		else if(b == "X")
-			result.data = a + result.data;
-		else if (a == b)
-			result.data = a + result.data;
-		else if( a == "_" || b == "_")
+		if (a == "?" && b == "?")
+			result.data = "?" + result.data;
+		else if (a == "_" || b == "_")
 			result.data = "_" + result.data;
+		else if ((a == "0" && b == "1") || (a == "1" && b == "0"))
+			result.data = "_" + result.data;
+		else if ((a == "1" && (b == "1" || b == "X" || b == "?")) || (b == "1" && (a == "1" || a == "X" || a == "?")))
+			result.data = "1" + result.data;
+		else if ((a == "0" && (b == "0" || b == "X" || b == "?")) || (b == "0" && (a == "0" || a == "X" || a == "?")))
+			result.data = "0" + result.data;
+		else if ((a == "X" && (b == "X" || b == "?")) || (b == "X" && (a == "X" || a == "?")))
+			result.data = "X" + result.data;
 		else
-			result.data = "_" + result.data;
+			result.data = "FUCK(" + a + "," + b + ")" + result.data;
 	}
 
 	return result;
 }
 
+value operator!(value s)
+{
+	string::iterator j;
+	value result;
+
+	for (j = s.data.begin(); j != s.data.end(); j++)
+	{
+		if (*j == '_')
+			result.data += "X";
+		else if (*j == '0')
+			result.data += "1";
+		else if (*j == '1')
+			result.data += "0";
+		else if (*j == 'X')
+			result.data += "_";
+		else
+			result.data = "?";
+	}
+
+	return result;
+}

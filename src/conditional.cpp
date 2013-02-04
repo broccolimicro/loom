@@ -66,7 +66,6 @@ conditional &conditional::operator=(conditional c)
 
 /* This copies a guard to another process and replaces
  * all of the specified variables.
- * TODO Check to make sure that this actually works as specified
  */
 instruction *conditional::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert)
 {

@@ -54,7 +54,6 @@ loop &loop::operator=(loop l)
 
 /* This copies a guard to another process and replaces
  * all of the specified variables.
- * TODO Check to make sure that this actually works as specified
  */
 instruction *loop::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert)
 {
@@ -146,7 +145,7 @@ void loop::parse(map<string, keyword*> types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block( blockstr, types, global, label, tab+"\t", verbosity), new guard(guardstr, types, global, label, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block(blockstr, types, global, label, tab+"\t", verbosity), new guard(guardstr, types, global, label, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 		}
@@ -164,7 +163,7 @@ void loop::parse(map<string, keyword*> types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block( blockstr, types, global, label, tab+"\t", verbosity), new guard(guardstr, types, global, label, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block(blockstr, types, global, label, tab+"\t", verbosity), new guard(guardstr, types, global, label, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}
@@ -227,6 +226,14 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 	for (int i = 0; i < (int)uid.size(); i++)
 		s = s || (*space)[uid[i]];
 
+	state temp;
+	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+	{
+		temp = solve("~("+instr_iter->second->chp+")", instr_iter->second->global, instr_iter->second->tab, instr_iter->second->verbosity);
+		cout << "Intersecting " << s << " and " << temp;
+		s = s && temp;
+		cout << " to get " << s << endl;
+	}
 	cout << tab << "Final Result " << s << endl;
 
 	uid.push_back(space->size());
