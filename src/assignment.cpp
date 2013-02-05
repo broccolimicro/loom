@@ -122,15 +122,12 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 {
 	cout << tab << "Assignment " << chp << endl;
 
-	uid = space->size();
-
 	map<string, variable>::iterator vi;
 	list<pair<string, string> >::iterator ei;
-	int i;
-
 	string search;
-
 	state s;
+
+	uid = space->size();
 
 	// Set up the initial state
 	s = (*space)[init];
@@ -326,6 +323,8 @@ instruction *decompose_expression(string chp, map<string, keyword*> types, map<s
 		decompose_expression(chp.substr(1, chp.length()-2), types, global, label, tab+"\t", verbosity);
 		return NULL;
 	}
+
+	return NULL;
 }
 
 

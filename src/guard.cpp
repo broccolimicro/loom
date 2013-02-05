@@ -70,18 +70,14 @@ void guard::parse(map<string, keyword*> types)
 
 int guard::generate_states(state_space *space, graph *trans, int init)
 {
-	map<string, variable>::iterator vi;
-	state si, so;
-	int i;
-
 	cout << tab << "Guard " << chp << endl;
 
+	map<string, variable>::iterator vi;
+	state si, so;
+
 	uid = space->size();
-
 	si = (*space)[init];
-
 	so = solve(chp, global, tab, verbosity);
-
 	space->push_back(si && so);
 	trans->insert_edge(init, uid, chp+"->");
 
