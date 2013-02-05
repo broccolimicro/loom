@@ -30,16 +30,37 @@ void graph::print_line(int from)
 	int i;
 	if(from >= (int)edges.size())
 		edges.resize(from+1, vector<int>());
+
 	cout << from << ": ";
 	for (i = 0; i < (int)edges[from].size(); i++)
 		cout << (edges[from])[i] << " ";
 	cout << endl;
+}
+void graph::print_line_dot(int from, state_space *spaces) // Print a line following .dot graphvis formatting
+{
+	int i;
+	if(from >= (int)edges.size())
+		edges.resize(from+1, vector<int>());
+
+	//Each edge should be: 	"Node 1" -> "Node 2" [ label = "trans" ];
+	for (i = 0; i < (int)edges[from].size(); i++)
+	{
+		//	"Node 1" -> "Node 2" [ label = "trans" ];
+		//"Node 1" ->
+		cout << "\t\"" << from << ":" << (*spaces)[from] << "\"" << " -> ";
+		//"Node 2
+		cout << "\"" << edges[from][i] << ":" << (*spaces)[edges[from][i]];
+		//" [ label = "trans" ];
+		cout << "\" [ label = \"" << (transitions[from])[i] << "\" ];" << endl;
+	}
+
 }
 void graph::print_line_with_trans(int from)
 {
 	int i, j;
 	if(from >= (int)edges.size())
 		edges.resize(from+1, vector<int>());
+
 	cout << from << ":";
 	for (i = 0; i < 4 - (int)log10((double)max(from, 1)); i++)
 		cout << " ";

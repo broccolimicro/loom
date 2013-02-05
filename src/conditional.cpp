@@ -216,7 +216,12 @@ int conditional::generate_states(state_space *space, graph *trans, int init)
 
 	int i = 0;
 	for (i = 0, instr_iter = instrs.begin(); i < (int)state_catcher.size() && instr_iter != instrs.end(); i++, instr_iter++)
-		trans->insert_edge(state_catcher[i], uid, instr_iter->first->chp);
+	{
+		if (CHP_EDGE)
+			trans->insert_edge(state_catcher[i], uid, instr_iter->first->chp);
+		else
+			trans->insert_edge(state_catcher[i], uid, "Cond. Merge");
+	}
 
 	return uid;
 }

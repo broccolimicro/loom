@@ -159,7 +159,10 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 	cout << tab << s << endl;
 
 	space->push_back(s);
-	trans->insert_edge(init, uid, chp);
+	if(CHP_EDGE)
+		trans->insert_edge(init, uid, chp);
+	else
+		trans->insert_edge(init, uid, "Assign");
 
 	return uid;
 }
@@ -189,7 +192,7 @@ instruction *decompose_expression(string chp, map<string, keyword*> types, map<s
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Decompose: " << chp << endl;
 
-	typename map<string, variable>::iterator v;
+	map<string, variable>::iterator v;
 	list<string> ops;
 	list<string> ex;
 	size_t p;

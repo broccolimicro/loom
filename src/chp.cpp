@@ -247,19 +247,36 @@ struct program
 		cout << "Generating State Space" << endl;
 		space.states.push_back(state(value("X"), global.size()));
 		prgm->generate_states(&space, &trans, 0);
-
-		//Print space (for debugging purposes)
-		cout << endl << endl << "\tState space:" << endl;
-		cout << "\t " << global << endl;
-		for(int i = 0; i < space.size(); i++)
+		if(STATESP_CO)
 		{
-			cout << "\t "<< space[i] << "  ";
-			//trans->print_line(i);
-			trans.print_line_with_trans(i);
+			//Print space (for debugging purposes)
+			cout << endl << endl << "\tState space:" << endl;
+			cout << "\t " << global << endl;
+			for(int i = 0; i < space.size(); i++)
+			{
+				cout << "\t "<< space[i] << "  ";
+				trans.print_line_with_trans(i);
+			}
+			cout << endl << endl;
+			//cout << "Current connections: " << endl;
+			//cout << (*trans);
 		}
-		cout << endl << endl;
-		//cout << "Current connections: " << endl;
-		//cout << (*trans);
+		if(STATESP_GR)
+		{
+			//Print space (for debugging purposes)
+			cout << endl << endl << "\t " << global << endl << "\t.dot formatted graph:" << endl;
+			cout << "digraph finite_state_machine {"<< endl << "\tgraph [ label = \"\\n\\nState space graph!\" ];" << endl;
+			if (!GRAPH_VERT)
+				cout <<"\trankdir=LR;"<<endl;
+			cout <<"\tnode [shape = ellipse];"<<endl;
+			cout <<"\graph [ dpi =" << GRAPH_DPI << " ];" << endl;
+			for(int i = 0; i < space.size(); i++)
+			{
+				//cout << "\t "<< space[i] << "  ";
+				trans.print_line_dot(i, &space);
+			}
+			cout << "}" << endl << endl;
+		}
 	}
 };
 

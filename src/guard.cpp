@@ -79,8 +79,10 @@ int guard::generate_states(state_space *space, graph *trans, int init)
 	si = (*space)[init];
 	so = solve(chp, global, tab, verbosity);
 	space->push_back(si && so);
-	trans->insert_edge(init, uid, chp+"->");
-
+	if (CHP_EDGE)
+		trans->insert_edge(init, uid, chp+"->");
+	else
+		trans->insert_edge(init, uid, "Guard");
 	return uid;
 }
 

@@ -20,6 +20,7 @@ struct graph
 
 	void insert_edge(int from, int to, string chp);
 	void print_line(int from);
+	void print_line_dot(int from, state_space *spaces);
 	void print_line_with_trans(int from);
 };
 
