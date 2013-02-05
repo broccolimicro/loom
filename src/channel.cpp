@@ -83,30 +83,19 @@ void channel::parse(string chp, map<string, keyword*> types, string tab, int ver
 
 		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == ';')
 		{
-			expand(io_block.substr(j-io_block.begin(), i - j), types, &vars, &labels, NULL, tab+"\t", verbosity, false);
+			expand_instantiation(io_block.substr(j-io_block.begin(), i - j), types, &vars, &labels, NULL, tab+"\t", verbosity, false);
 			j = i+1;
 		}
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == '}')
 		{
 			// TODO do we need to reparse afterword and use the results of the first parsing as the init?
-			// TODO send and recv should be defined as operators instead
 			raw = io_block.substr(j-io_block.begin(), i - j + 1);
-			if (raw.find("process send") != raw.npos)
-			{
+			if (raw.find("operator!") != raw.npos)
 				send.parse(raw, types, vars, verbosity);
-				//res = send.def.result;
-				//for (ri = res.begin(); ri != res.end(); ri++)
-				//	ri->second.prs = false;
-				//send.def.parse(send.def.chp, types, vars, res, "\t", verbosity);
-			}
-			else if (raw.find("process recv") != raw.npos)
-			{
+			else if (raw.find("operator?") != raw.npos)
 				recv.parse(raw, types, vars, verbosity);
-				//res = recv.def.result;
-				//for (ri = res.begin(); ri != res.end(); ri++)
-				//	ri->second.prs = false;
-				//recv.def.parse(recv.def.chp, types, vars, res, "\t", verbosity);
-			}
+			else if (raw.find("operator@") != raw.npos)
+				probe.parse(raw, types, vars, verbosity);
 
 			j = i+1;
 		}

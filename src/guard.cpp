@@ -38,7 +38,7 @@ guard &guard::operator=(guard g)
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *guard::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert)
+instruction *guard::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert, string tab, int verbosity)
 {
 	guard *instr;
 
@@ -46,8 +46,8 @@ instruction *guard::duplicate(map<string, variable> *globals, map<string, variab
 	instr->chp			= this->chp;
 	instr->global		= globals;
 	instr->label		= labels;
-	instr->tab			= this->tab;
-	instr->verbosity	= this->verbosity;
+	instr->tab			= tab;
+	instr->verbosity	= verbosity;
 
 	map<string, string>::iterator i;
 	size_t k;
@@ -78,18 +78,12 @@ int guard::generate_states(state_space *space, graph *trans, int init)
 
 	uid = space->size();
 
-	for (vi = global->begin(); vi != global->end(); vi++)
-		si.assign(vi->second.uid, vi->second.reset, value("?"));
-
-	if (init != -1)
-		for (i = 0; i < (*space)[init].size(); i++)
-			si.assign(i, (*space)[init][i]);
+	si = (*space)[init];
 
 	so = solve(chp, global, tab, verbosity);
 
 	space->push_back(si && so);
-	if (init != -1)
-		trans->insert_edge(init, uid, chp);
+	trans->insert_edge(init, uid, chp+"->");
 
 	return uid;
 }
@@ -108,7 +102,8 @@ state solve(string raw,  map<string, variable> *vars, string tab, int verbosity)
 	string::iterator i, j;
 	int depth;
 
-	outcomes.assign(vars->rbegin()->second.uid, value("?"), value("?"));
+	if (vars->size() != 0)
+		outcomes.assign(vars->rbegin()->second.uid, value("?"), value("?"));
 
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Solve: " << raw << endl;

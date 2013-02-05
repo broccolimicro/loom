@@ -100,14 +100,15 @@ struct program
 	}
 
 	map<string, keyword*>	type_space;
-	variable				main;
 	list<string>			prs;
 	list<string>			errors;
+	state_space				space;
+	graph					trans;
+	parallel				*prgm;
 
 	program &operator=(program p)
 	{
 		type_space = p.type_space;
-		main = p.main;
 		prs = p.prs;
 		errors = p.errors;
 		return *this;
@@ -240,7 +241,25 @@ struct program
 			}
 		}
 
-		main.parse("main m()");
+		map<string, variable> global, label;
+		prgm = (parallel*)expand_instantiation("main _()", type_space, &global, &label, NULL, "", verbosity, true);
+
+		cout << "Generating State Space" << endl;
+		space.states.push_back(state(value("X"), global.size()));
+		prgm->generate_states(&space, &trans, 0);
+
+		//Print space (for debugging purposes)
+		cout << endl << endl << "\tState space:" << endl;
+		cout << "\t " << global << endl;
+		for(int i = 0; i < space.size(); i++)
+		{
+			cout << "\t "<< space[i] << "  ";
+			//trans->print_line(i);
+			trans.print_line_with_trans(i);
+		}
+		cout << endl << endl;
+		//cout << "Current connections: " << endl;
+		//cout << (*trans);
 	}
 };
 

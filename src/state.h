@@ -16,6 +16,7 @@ struct state
 {
 	state();
 	state(vector<value> v);
+	state(value v, int c);
 	~state();
 	// Variable indexed using uid
 	vector<value> values;

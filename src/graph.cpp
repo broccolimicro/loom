@@ -14,7 +14,6 @@ graph::graph(state_space *spaces)
 
 void graph::insert_edge(int from, int to, string chp)
 {
-
 	if(from >= (int)edges.size())
 		edges.resize(from+1, vector<int>());
 	edges[from].push_back(to);

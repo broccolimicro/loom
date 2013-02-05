@@ -83,7 +83,7 @@ void block::init(string chp, map<string, keyword*> types, map<string, variable> 
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *block::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert)
+instruction *block::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert, string tab, int verbosity)
 {
 	block *instr;
 
@@ -91,8 +91,8 @@ instruction *block::duplicate(map<string, variable> *globals, map<string, variab
 	instr->chp			= this->chp;
 	instr->global		= globals;
 	instr->label		= labels;
-	instr->tab			= this->tab;
-	instr->verbosity	= this->verbosity;
+	instr->tab			= tab;
+	instr->verbosity	= verbosity;
 
 	map<string, string>::iterator i, j;
 	size_t k;
@@ -102,7 +102,7 @@ instruction *block::duplicate(map<string, variable> *globals, map<string, variab
 
 	list<instruction*>::iterator l;
 	for (l = instrs.begin(); l != instrs.end(); l++)
-		instr->instrs.push_back((*l)->duplicate(globals, labels, convert));
+		instr->instrs.push_back((*l)->duplicate(globals, labels, convert, tab+"\t", verbosity));
 
 	return instr;
 }
@@ -126,18 +126,21 @@ void block::parse(map<string, keyword*> types)
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()+1; i++)
 	{
-		if (*i == '(')
-			depth[0]++;
-		else if (*i == '[')
-			depth[1]++;
-		else if (*i == '{')
-			depth[2]++;
-		else if (*i == ')')
-			depth[0]--;
-		else if (*i == ']')
-			depth[1]--;
-		else if (*i == '}')
-			depth[2]--;
+		if (i != chp.end())
+		{
+			if (*i == '(')
+				depth[0]++;
+			else if (*i == '[')
+				depth[1]++;
+			else if (*i == '{')
+				depth[2]++;
+			else if (*i == ')')
+				depth[0]--;
+			else if (*i == ']')
+				depth[1]--;
+			else if (*i == '}')
+				depth[2]--;
+		}
 
 		// We are in the current scope, and the current character
 		// is a semicolon or the end of the chp string. This is
@@ -161,12 +164,14 @@ void block::parse(map<string, keyword*> types)
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
 				instr = new conditional(raw_instr, types, global, label, tab+"\t", verbosity);
 			// This sub block is a variable definition. keyword<bitwidth> name
+			// It also expands process calls
 			else if (contains(raw_instr, types))
-				instr = expand(raw_instr, types, global, label, NULL, tab+"\t", verbosity, true);
+				instr = expand_instantiation(raw_instr, types, global, label, NULL, tab+"\t", verbosity, true);
 			// This sub block is an assignment instruction.
 			//If an assignment is a skip, ignore. No state gen
+			// TODO expand operators here
 			else if (raw_instr.length() != 0 && raw_instr.find("skip") == raw_instr.npos)
-				instr = new assignment(raw_instr, types, global, label, tab+"\t", verbosity);
+				instr = expand_expression(raw_instr, types, global, label, tab+"\t", verbosity);
 
 			// Make sure that this wasn't a variable declaration (they don't affect the state space).
 			if (instr != NULL)

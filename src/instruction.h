@@ -48,7 +48,7 @@ public:
 
 	void print_prs();
 
-	virtual instruction *duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert) = 0;
+	virtual instruction *duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert, string tab, int verbosity) = 0;
 
 	virtual void expand_shortcuts() = 0;
 	virtual void parse(map<string, keyword*> types) = 0;

@@ -24,6 +24,12 @@ state::state(vector<value> v)
 	values = v;
 }
 
+state::state(value v, int c)
+{
+	for (int i = 0; i < c; i++)
+		values.push_back(v);
+}
+
 void state::clear()
 {
 	values.clear();

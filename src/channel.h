@@ -11,7 +11,7 @@
 #include "keyword.h"
 #include "variable.h"
 #include "record.h"
-#include "process.h"
+#include "operator.h"
 
 #ifndef channel_h
 #define channel_h
@@ -32,8 +32,9 @@ struct channel : record
 	channel(string chp, map<string, keyword*> types, string tab, int verbosity);
 	~channel();
 
-	process send;
-	process recv;
+	operate send;
+	operate recv;
+	operate probe;
 
 	channel &operator=(channel r);
 	void parse(string chp, map<string, keyword*> types, string tab, int verbosity);

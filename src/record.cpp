@@ -68,18 +68,18 @@ void record::parse(string raw, map<string, keyword*> types, string tab, int verb
 	{
 		if (*(i+1) == ';')
 		{
-			expand(io_block.substr(j-io_block.begin(), i+1 - j), types, &vars, &labels, NULL, tab+"\t", verbosity, false);
+			expand_instantiation(io_block.substr(j-io_block.begin(), i+1 - j), types, &vars, &labels, NULL, tab+"\t", verbosity, false);
 
 			j = i+2;
 		}
 	}
 }
 
-instruction *expand(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, list<string> *input, string tab, int verbosity, bool allow_process)
+instruction *expand_instantiation(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, list<string> *input, string tab, int verbosity, bool allow_process)
 {
 	map<string, keyword*>::iterator var_type;
 	map<string, variable>::iterator mem_var;
-	variable v = variable(chp, global->size(), tab+"\t", verbosity);
+	variable v = variable(chp, global->size(), !allow_process, tab, verbosity);
 
 	if (input != NULL)
 		input->push_back(v.name);
@@ -101,23 +101,36 @@ instruction *expand(string chp, map<string, keyword*> types, map<string, variabl
 				v = mem_var->second;
 
 				if (v.type == "int")
-					global->insert(pair<string, variable>(name + "." + v.name, variable(name + "." + v.name, global->size(), v.type, v.reset, v.width)));
+					global->insert(pair<string, variable>(name + "." + v.name, variable(name + "." + v.name, global->size(), v.type, v.reset, v.width, !allow_process)));
 				else
-					label->insert(pair<string, variable>(name + "." + v.name, variable(name + "." + v.name, global->size(), v.type, v.reset, v.width)));
+					label->insert(pair<string, variable>(name + "." + v.name, variable(name + "." + v.name, global->size(), v.type, v.reset, v.width, !allow_process)));
 			}
 		}
 		else if (var_type->second->kind() == "process" || var_type->second->kind() == "operator")
 		{
 			if (allow_process)
 			{
-				cout << "Found the following process:" << endl << ((process*)var_type->second)->chp << endl;
+				cout << "Instantiating Process: " << v.type << " " << v.name << endl;
 
 				map<string, string> convert;
 				list<string>::iterator i, j;
 				for (i = v.inputs.begin(), j = ((process*)var_type->second)->input.begin(); i != v.inputs.end() && j != ((process*)var_type->second)->input.end(); i++, j++)
 					convert.insert(pair<string, string>(*j, *i));
 
-				return ((process*)var_type->second)->def.duplicate(global, label, convert);
+				for (mem_var = ((process*)var_type->second)->global.begin(); mem_var != ((process*)var_type->second)->global.end(); mem_var++)
+					if (!mem_var->second.io)
+					{
+						global->insert(pair<string, variable>(v.name + "." + mem_var->second.name, variable(mem_var->second.name, global->size(), mem_var->second.type, mem_var->second.reset, mem_var->second.width, mem_var->second.io)));
+						convert.insert(pair<string, string>(mem_var->second.name, v.name + "." + mem_var->second.name));
+					}
+				for (mem_var = ((process*)var_type->second)->label.begin(); mem_var != ((process*)var_type->second)->label.end(); mem_var++)
+					if (!mem_var->second.io)
+					{
+						label->insert(pair<string, variable>(v.name + "." + mem_var->second.name, variable(mem_var->second.name, global->size(), mem_var->second.type, mem_var->second.reset, mem_var->second.width, mem_var->second.io)));
+						convert.insert(pair<string, string>(mem_var->second.name, v.name + "." + mem_var->second.name));
+					}
+
+				return ((process*)var_type->second)->def.duplicate(global, label, convert, tab, verbosity);
 			}
 			else
 				cout << "Error: Invalid use of type " << var_type->second->kind() << " in record definition." << endl;
@@ -141,6 +154,3 @@ ostream &operator<<(ostream &os, record s)
 
     return os;
 }
-
-
-

@@ -1,0 +1,38 @@
+operator&(chan4p1b a, chan4p1b b, chan4p1b s)
+{
+	int<1> A;
+	int<1> B;
+	a?A || b?B;
+	[   A &  B -> s!1
+	[] ~A | ~B -> s!0
+	]
+}
+
+operator|(chan4p1b a, chan4p1b b, chan4p1b s)
+{
+	(int<1> A||
+	int<1> B);
+	a?A || b?B;
+	[   A |  B -> s!1
+	[] ~A & ~B -> s!0
+	]
+}
+
+operator~(chan4p1b a, chan4p1b s)
+{
+	int<1> A;
+	a?A;
+	[  ~A -> s!1
+	[]  A -> s!0
+	]
+}
+
+operator^(chan4p1b a, chan4p1b b, chan4p1b s)
+{
+	(int<1> A||
+	int<1> B);
+	a?A || b?B;
+	[   ~A &  B  |   A & ~B  -> s!1
+	[] ( A | ~B) & (~A |  B) -> s!0
+	]
+}

@@ -34,8 +34,6 @@ struct process : keyword
 	map<string, variable>	global;	// globally defined variables: only used for channel definitions
 	map<string, variable>	label;
 	list<string>			input;
-	state_space				space;
-	graph					trans;
 
 	process &operator=(process p);
 

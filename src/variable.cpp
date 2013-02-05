@@ -19,7 +19,7 @@ variable::variable()
 	fixed = false;
 }
 
-variable::variable(string name, int uid, string type, value reset, uint16_t width)
+variable::variable(string name, int uid, string type, value reset, uint16_t width, bool io)
 {
 	this->name = name;
 	this->uid = uid;
@@ -27,12 +27,14 @@ variable::variable(string name, int uid, string type, value reset, uint16_t widt
 	this->width = width;
 	this->reset = reset;
 	this->fixed = true;
+	this->io = io;
 }
 
-variable::variable(string chp, int uid, string tab, int verbosity)
+variable::variable(string chp, int uid, bool io, string tab, int verbosity)
 {
 	this->chp = chp;
 	this->uid = uid;
+	this->io = io;
 	this->tab = tab;
 	this->verbosity = verbosity;
 
@@ -121,7 +123,8 @@ void variable::parse(string chp)
 		cout << tab << "\tName:  " << name << endl;
 		cout << tab << "\tType:  " << type << endl;
 		cout << tab << "\tWidth: " << width << endl;
-		cout << tab << "\tReset:  " << reset << endl;
+		cout << tab << "\tReset: " << reset << endl;
+		cout << tab << "\tIO:    " << io << endl;
 	}
 }
 

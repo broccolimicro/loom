@@ -67,7 +67,7 @@ conditional &conditional::operator=(conditional c)
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *conditional::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert)
+instruction *conditional::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert, string tab, int verbosity)
 {
 	conditional *instr;
 
@@ -75,8 +75,8 @@ instruction *conditional::duplicate(map<string, variable> *globals, map<string, 
 	instr->chp			= this->chp;
 	instr->global		= globals;
 	instr->label		= labels;
-	instr->tab			= this->tab;
-	instr->verbosity	= this->verbosity;
+	instr->tab			= tab;
+	instr->verbosity	= verbosity;
 	instr->type			= this->type;
 
 	map<string, string>::iterator i, j;
@@ -87,7 +87,7 @@ instruction *conditional::duplicate(map<string, variable> *globals, map<string, 
 
 	list<pair<block*, guard*> >::iterator l;
 	for (l = instrs.begin(); l != instrs.end(); l++)
-		instr->instrs.push_back(pair<block*, guard*>((block*)l->first->duplicate(globals, labels, convert), (guard*)l->second->duplicate(globals, labels, convert)));
+		instr->instrs.push_back(pair<block*, guard*>((block*)l->first->duplicate(globals, labels, convert, tab+"\t", verbosity), (guard*)l->second->duplicate(globals, labels, convert, tab+"\t", verbosity)));
 
 	return instr;
 }
@@ -192,26 +192,31 @@ int conditional::generate_states(state_space *space, graph *trans, int init)
 
 	list<pair<block*, guard*> >::iterator instr_iter;
 	map<string, variable>::iterator vi;
-	int guard_result = -1;
+	int guard_result = init;
 	vector<int> state_catcher;
 	state s;
-
-	for (vi = global->begin(); vi != global->end(); vi++)
-		s.assign(vi->second.uid, value("_"));
+	bool first = true;
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		guard_result = instr_iter->second->generate_states(space, trans, init);
 
 		state_catcher.push_back(instr_iter->first->generate_states(space, trans, guard_result));
-		s = s || (*space)[state_catcher.back()];
+		if (first)
+		{
+			s = (*space)[state_catcher.back()];
+			first = false;
+		}
+		else
+			s = s || (*space)[state_catcher.back()];
 	}
 
 	uid = space->size();
 	space->push_back(s);
 
-	for (int i = 0; i < (int)state_catcher.size(); i++)
-		trans->insert_edge(state_catcher[i], uid, chp);
+	int i = 0;
+	for (i = 0, instr_iter = instrs.begin(); i < (int)state_catcher.size() && instr_iter != instrs.end(); i++, instr_iter++)
+		trans->insert_edge(state_catcher[i], uid, instr_iter->first->chp);
 
 	return uid;
 }

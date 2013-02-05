@@ -56,7 +56,7 @@ parallel &parallel::operator=(parallel p)
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *parallel::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert)
+instruction *parallel::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert, string tab, int verbosity)
 {
 	parallel *instr;
 
@@ -64,8 +64,8 @@ instruction *parallel::duplicate(map<string, variable> *globals, map<string, var
 	instr->chp			= this->chp;
 	instr->global		= globals;
 	instr->label		= labels;
-	instr->tab			= this->tab;
-	instr->verbosity	= this->verbosity;
+	instr->tab			= tab;
+	instr->verbosity	= verbosity;
 
 	map<string, string>::iterator i, j;
 	size_t k;
@@ -75,7 +75,7 @@ instruction *parallel::duplicate(map<string, variable> *globals, map<string, var
 
 	list<instruction*>::iterator l;
 	for (l = instrs.begin(); l != instrs.end(); l++)
-		instr->instrs.push_back((*l)->duplicate(globals, labels, convert));
+		instr->instrs.push_back((*l)->duplicate(globals, labels, convert, tab+"\t", verbosity));
 
 	return instr;
 }
@@ -136,10 +136,10 @@ void parallel::parse(map<string, keyword*> types)
 				instr = new conditional(raw_instr, types, global, label, tab+"\t", verbosity);
 			// This sub block is a variable definition. keyword<bitwidth> name
 			else if (contains(raw_instr, types))
-				instr = expand(raw_instr, types, global, label, NULL, tab+"\t", verbosity, true);
+				instr = expand_instantiation(raw_instr, types, global, label, NULL, tab+"\t", verbosity, true);
 			// This sub block is an assignment instruction.
 			else if (raw_instr.length() != 0 && raw_instr.find("skip") == raw_instr.npos)
-				instr = new assignment(raw_instr, types, global, label, tab+"\t", verbosity);
+				instr = expand_expression(raw_instr, types, global, label, tab+"\t", verbosity);
 
 			if (instr != NULL)
 				instrs.push_back(instr);
@@ -163,26 +163,28 @@ int parallel::generate_states(state_space *space, graph *trans, int init)
 	map<string, variable>::iterator vi;
 	vector<int> state_catcher;
 	state s;
+	bool first = true;
 
-
-	for (vi = global->begin(); vi != global->end(); vi++)
-		s.assign(vi->second.uid, vi->second.reset);
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
 		state_catcher.push_back(instr->generate_states(space, trans, init));
-		if (state_catcher.back() != -1)
-			s = s || (*space)[state_catcher.back()];
+		if (first)
+		{
+			s = (*space)[state_catcher.back()];
+			first = false;
+		}
 		else
-			state_catcher.pop_back();
+			s = s || (*space)[state_catcher.back()];
 	}
 	uid = space->size();
 
 	space->push_back(s);
 
-	for (int i = 0; i < (int)state_catcher.size(); i++)
-		trans->insert_edge(state_catcher[i], uid, chp);
+	int i = 0;
+	for (i = 0, instr_iter = instrs.begin(); i < (int)state_catcher.size() && instr_iter != instrs.end(); i++, instr_iter++)
+		trans->insert_edge(state_catcher[i], uid, (*instr_iter)->chp);
 
 	return uid;
 }

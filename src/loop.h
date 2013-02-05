@@ -23,7 +23,7 @@ struct loop : conditional
 
 	loop &operator=(loop l);
 
-	instruction *duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert);
+	instruction *duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert, string tab, int verbosity);
 
 	void expand_shortcuts();
 	void parse(map<string, keyword*> types);

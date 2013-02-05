@@ -55,7 +55,7 @@ loop &loop::operator=(loop l)
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *loop::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert)
+instruction *loop::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert, string tab, int verbosity)
 {
 	loop *instr;
 
@@ -63,8 +63,8 @@ instruction *loop::duplicate(map<string, variable> *globals, map<string, variabl
 	instr->chp			= this->chp;
 	instr->global		= globals;
 	instr->label		= labels;
-	instr->tab			= this->tab;
-	instr->verbosity	= this->verbosity;
+	instr->tab			= tab;
+	instr->verbosity	= verbosity;
 	instr->type			= this->type;
 
 	map<string, string>::iterator i, j;
@@ -75,7 +75,7 @@ instruction *loop::duplicate(map<string, variable> *globals, map<string, variabl
 
 	list<pair<block*, guard*> >::iterator l;
 	for (l = instrs.begin(); l != instrs.end(); l++)
-		instr->instrs.push_back(pair<block*, guard*>((block*)l->first->duplicate(globals, labels, convert), (guard*)l->second->duplicate(globals, labels, convert)));
+		instr->instrs.push_back(pair<block*, guard*>((block*)l->first->duplicate(globals, labels, convert, tab+"\t", verbosity), (guard*)l->second->duplicate(globals, labels, convert, tab+"\t", verbosity)));
 
 	return instr;
 }
@@ -183,20 +183,27 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 	int next = init;
 	bool done = false;
 	bool sub = false;
+	bool first = true;
 	state s;
 	int count = 0;
+	int i = 0;
 
 	while (!done && count++ < 5)
 	{
 		cout << tab << "Loop Iteration " << count << ": " << (*space)[next] << endl;
-		for (vi = global->begin(); vi != global->end(); vi++)
-			s.assign(vi->second.uid, value("_"));
 
+		first = true;
 		for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 		{
 			guardresult = instr_iter->second->generate_states(space, trans, next);
 			state_catcher.push_back(instr_iter->first->generate_states(space, trans, guardresult));
-			s = s || (*space)[state_catcher.back()];
+			if (first)
+			{
+				s = (*space)[state_catcher.back()];
+				first = false;
+			}
+			else
+				s = s || (*space)[state_catcher.back()];
 		}
 
 		cout << tab << "Result " << s << endl;
@@ -206,11 +213,12 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 
 		next = uid.back();
 
-		for (int i = 0; i < (int)state_catcher.size(); i++)
-			trans->insert_edge(state_catcher[i], next, "loop");
+		for (i = 0, instr_iter = instrs.begin(); i < (int)state_catcher.size() && instr_iter != instrs.end(); i++, instr_iter++)
+			trans->insert_edge(state_catcher[i], next, instr_iter->second->chp + "->block");
 		state_catcher.clear();
 
 		done = subset((*space)[init], (*space)[next]);
+
 		if (done)
 			trans->insert_edge(next, init,"loop");
 		for (int i = 0; i < (int)uid.size()-1; i++)
@@ -223,6 +231,7 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 	}
 
 	s = (*space)[init];
+
 	for (int i = 0; i < (int)uid.size(); i++)
 		s = s || (*space)[uid[i]];
 

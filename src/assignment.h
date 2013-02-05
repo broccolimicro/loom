@@ -27,13 +27,15 @@ struct assignment : instruction
 
 	assignment &operator=(assignment a);
 
-	instruction *duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert);
+	instruction *duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert, string tab, int verbosity);
 
 	void expand_shortcuts();
 	void parse(map<string, keyword*> types);
 	int generate_states(state_space *space, graph *trans, int init);
 	void generate_prs();
 };
+
+instruction* expand_expression(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity);
 
 /*
  *

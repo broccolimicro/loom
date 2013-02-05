@@ -20,8 +20,8 @@
 struct variable
 {
 	variable();
-	variable(string name, int uid, string type, value reset, uint16_t width);
-	variable(string chp, int uid, string tab, int verbosity);
+	variable(string name, int uid, string type, value reset, uint16_t width, bool io);
+	variable(string chp, int uid, bool io, string tab, int verbosity);
 	~variable();
 
 	string		chp;
@@ -32,6 +32,8 @@ struct variable
 	value		reset;
 	int			uid;
 	bool		prs;		// keep track of whether or not to generate production rules
+	bool		io;			// Is this variable an input variable into a process?
+
 
 	list<string> inputs;
 
