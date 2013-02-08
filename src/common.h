@@ -56,9 +56,9 @@ size_t find_name(string subject, string search);
 #define VERB_TRACE		5
 
 //State space output customization flags
-#define STATESP_CO 0		//Output the statespace to the console
-#define STATESP_GR 1		//Output the .dot formatted graph of the statespace
-#define CHP_EDGE 0			// If 1, output CHP on graph edges. If 0, output functional labels (loop, conditional, etc)
+#define STATESP_CO 1		//Output the statespace to the console
+#define STATESP_GR 0		//Output the .dot formatted graph of the statespace
+#define CHP_EDGE 1			// If 1, output CHP on graph edges. If 0, output functional labels (loop, conditional, etc)
 #define GRAPH_VERT 0		//If 1, the graph will be high to low. Else, it will be left to right
 #define GRAPH_DPI 450		//DPI of the output graph
 

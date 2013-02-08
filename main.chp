@@ -40,10 +40,16 @@ process mux0b2(chan4p0b i, chan4p0b o1, chan4p0b o2, chan4p1b s)
 
 process main()
 {
-	chan4p0b blarg;
+	/*chan4p0b blarg;
 	chan4p0b mrawr;
 	chan4p0b yay;
 	chan4p1b yeah;
 	
-	mux0b2 MyMux(blarg, mrawr, yay, yeah);
+	mux0b2 MyMux(blarg, mrawr, yay, yeah);*/
+	chan4p0b a;
+	chan4p0b b;
+	chan4p0b c;
+	chan4p1b d;
+	
+	mux0b2 MyMux(a,b,c,d);
 }

@@ -1,5 +1,5 @@
 /*
- * state.h
+  * state.h
  *
  *  Created on: Jan 26, 2013
  *      Author: nbingham
@@ -20,7 +20,9 @@ struct state
 	~state();
 	// Variable indexed using uid
 	vector<value> values;
-
+	//Optional tag field to 'label' states.
+	//(Currently only used to mark from states in diff spaces)
+	int tag;
 	void clear();
 	vector<value>::iterator begin();
 	vector<value>::iterator end();
@@ -129,4 +131,6 @@ state operator>=(value s1, state s2);
 state operator<(value s1, state s2);
 state operator>(value s1, state s2);
 
+
+state diff(state s1, state s2);
 #endif

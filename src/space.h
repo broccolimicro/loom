@@ -7,6 +7,7 @@
 
 #include "state.h"
 #include "trace.h"
+#include "graph.h"
 
 #ifndef space_h
 #define space_h
@@ -18,8 +19,10 @@ struct state_space
 
 	int size();
 	void push_back(state s);
+//	state_space delta_space_gen(state_space spaces, graph trans);
 
 	state operator[](int i);
+
 };
 
 struct trace_space

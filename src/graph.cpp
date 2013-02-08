@@ -1,16 +1,10 @@
 #include "graph.h"
-#include "space.h"
-#include "common.h"
 
 graph::graph()
 {
 
 }
 
-graph::graph(state_space *spaces)
-{
-	//I'd like to do something here. Not sure what.
-}
 
 void graph::insert_edge(int from, int to, string chp)
 {
@@ -24,59 +18,6 @@ void graph::insert_edge(int from, int to, string chp)
 	//cout << *this;
 }
 
-
-void graph::print_line(int from)
-{
-	int i;
-	if(from >= (int)edges.size())
-		edges.resize(from+1, vector<int>());
-
-	cout << from << ": ";
-	for (i = 0; i < (int)edges[from].size(); i++)
-		cout << (edges[from])[i] << " ";
-	cout << endl;
-}
-void graph::print_line_dot(int from, state_space *spaces) // Print a line following .dot graphvis formatting
-{
-	int i;
-	if(from >= (int)edges.size())
-		edges.resize(from+1, vector<int>());
-
-	//Each edge should be: 	"Node 1" -> "Node 2" [ label = "trans" ];
-	for (i = 0; i < (int)edges[from].size(); i++)
-	{
-		//	"Node 1" -> "Node 2" [ label = "trans" ];
-		//"Node 1" ->
-		cout << "\t\"" << from << ":" << (*spaces)[from] << "\"" << " -> ";
-		//"Node 2
-		cout << "\"" << edges[from][i] << ":" << (*spaces)[edges[from][i]];
-		//" [ label = "trans" ];
-		cout << "\" [ label = \"" << (transitions[from])[i] << "\" ];" << endl;
-	}
-
-}
-void graph::print_line_with_trans(int from)
-{
-	int i, j;
-	if(from >= (int)edges.size())
-		edges.resize(from+1, vector<int>());
-
-	cout << from << ":";
-	for (i = 0; i < 4 - (int)log10((double)max(from, 1)); i++)
-		cout << " ";
-	j = 0;
-	for (i = 0; i < (int)edges[from].size(); i++)
-	{
-		cout << edges[from][i] << " ";
-		j += (int)log10((double)max(edges[from][i], 1)) + 2;
-	}
-	for (i = 0; i < 10 - j; i++)
-		cout << " ";
-	for (i = 0; from < (int)transitions.size() && i < (int)transitions[from].size(); i++)
-		cout << (transitions[from])[i] << " ";
-
-	cout << endl;
-}
 ostream &operator<<(ostream &os, graph g)
 {
 	int i, j;

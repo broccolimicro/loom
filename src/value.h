@@ -76,4 +76,6 @@ value operator||(value s1, value s2);
 value operator&&(value s1, value s2);
 value operator!(value s);
 
+value diff(value a, value b);
+
 #endif

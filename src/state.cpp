@@ -922,6 +922,22 @@ state operator>(value s1, state s2)
 	return result;
 }
 
+state diff(state s1, state s2)
+{
+	state result;
+	if (s1.size() != s2.size())
+	{
+		cout << "state diff run on states with differing sizes. Returning the s1" << endl;
+		return s1;
+	}
+	for( int i =0; i < s1.size(); i++)
+	{
+		result.values.push_back(diff(s1[i],s2[i]));
+
+	}
+	return result;
+}
+
 int count(state s)
 {
 	int result = 0;
