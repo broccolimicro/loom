@@ -195,6 +195,7 @@ instruction *expand_assignment(string chp, map<string, keyword*> types, map<stri
 
 			if (get_kind(i->second, global, label, types) == "channel")
 			{
+				cout << "This is a channel!!! Yay!!" << endl;
 				result = expand_expression(i->second+"?", types, global, label, tab, verbosity);
 				i->second = result.first;
 				p->push(result.second);

@@ -45,3 +45,15 @@ string get_kind(string name, map<string, variable> *global, map<string, variable
 
 	return i->second->kind();
 }
+
+string get_name(int uid, map<string, variable> *global, map<string, variable> *label)
+{
+	map<string, variable>::iterator i;
+	for (i = global->begin(); i != global->end(); i++)
+		if (i->second.uid == uid)
+			return i->first;
+	for (i = label->begin(); i != label->end(); i++)
+		if (i->second.uid == uid)
+			return i->first;
+	return "";
+}

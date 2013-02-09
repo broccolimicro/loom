@@ -117,9 +117,9 @@ void program::parse(string chp, int verbosity)
 				{
 					c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "", verbosity);
 					type_space.insert(pair<string, channel*>(c->name, c));
-					type_space.insert(pair<string, operate*>(c->send.name, &c->send));
-					type_space.insert(pair<string, operate*>(c->recv.name, &c->recv));
-					type_space.insert(pair<string, operate*>(c->probe.name, &c->probe));
+					type_space.insert(pair<string, operate*>(c->name + "." + c->send.name, &c->send));
+					type_space.insert(pair<string, operate*>(c->name + "." + c->recv.name, &c->recv));
+					type_space.insert(pair<string, operate*>(c->name + "." + c->probe.name, &c->probe));
 				}
 				// This isn't either a process or a record, this is an error.
 				else
@@ -151,9 +151,9 @@ void program::parse(string chp, int verbosity)
 					{
 						c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "", verbosity);
 						type_space.insert(pair<string, channel*>(c->name, c));
-						type_space.insert(pair<string, operate*>(c->send.name, &c->send));
-						type_space.insert(pair<string, operate*>(c->recv.name, &c->recv));
-						type_space.insert(pair<string, operate*>(c->probe.name, &c->probe));
+						type_space.insert(pair<string, operate*>(c->name + "." + c->send.name, &c->send));
+						type_space.insert(pair<string, operate*>(c->name + "." + c->recv.name, &c->recv));
+						type_space.insert(pair<string, operate*>(c->name + "." + c->probe.name, &c->probe));
 					}
 				}
 			}
