@@ -26,7 +26,7 @@ bool nc(char c)
 	return ((c >= 'a' && c <= 'z') ||
 			(c >= 'A' && c <= 'Z') ||
 			(c >= '0' && c <= '9') ||
-			(c == '_'));
+			(c == '_') || (c == '.'));
 }
 
 /* Is this character an operator?
@@ -277,19 +277,4 @@ size_t find_first_of_l0(string subject, list<string> search, size_t pos, list<st
 	}
 
 	return subject.npos;
-}
-
-size_t find_name(string subject, string search, size_t pos)
-{
-	size_t ret = -1 + pos;
-	bool alpha0, alpha1;
-
-	do
-	{
-		ret = subject.find(search, ret + 1);
-		alpha0 = ret > 0 && (nc(subject[ret-1]) || subject[ret-1] == '.');
-		alpha1 = ret + search.length() < subject.length() && nc(subject[ret + search.length()]);
-	} while (ret != subject.npos && (alpha0 || alpha1));
-
-	return ret;
 }

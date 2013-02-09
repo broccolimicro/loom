@@ -9,6 +9,7 @@
 
 #include "loop.h"
 #include "common.h"
+#include "utility.h"
 
 loop::loop()
 {

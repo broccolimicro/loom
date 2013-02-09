@@ -1,4 +1,5 @@
 #include "guard.h"
+#include "utility.h"
 
 guard::guard()
 {

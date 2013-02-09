@@ -16,6 +16,7 @@
 #include "channel.h"
 #include "record.h"
 #include "process.h"
+#include "utility.h"
 
 block::block()
 {

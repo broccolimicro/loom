@@ -45,8 +45,6 @@ string dec_to_bin(string str);
 size_t find_first_of_l0(string subject, string search, size_t pos = 0);
 size_t find_first_of_l0(string subject, list<string> search, size_t pos = 0, list<string> exclude = list<string>());
 
-size_t find_name(string subject, string search, size_t pos = 0);
-
 #define VERB_SUPPRESS	-1
 #define VERB_PRS		0
 #define VERB_STATES		1

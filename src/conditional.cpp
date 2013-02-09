@@ -9,6 +9,7 @@
 
 #include "conditional.h"
 #include "common.h"
+#include "utility.h"
 
 conditional::conditional()
 {

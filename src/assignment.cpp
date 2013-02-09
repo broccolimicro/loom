@@ -8,6 +8,7 @@
 #include "assignment.h"
 #include "operator.h"
 #include "record.h"
+#include "utility.h"
 
 assignment::assignment()
 {
@@ -182,8 +183,6 @@ instruction *expand_assignment(string chp, map<string, keyword*> types, map<stri
 	parallel *p = new parallel("", types, global, label, tab, verbosity);;
 	pair<string, instruction*> result;
 	list<pair<string, string> >::iterator i;
-	list<instruction*>::iterator ii;
-	pair<string, instruction*> comm;
 
 	for (i = a->expr.begin(); i != a->expr.end(); i++)
 	{
@@ -193,6 +192,13 @@ instruction *expand_assignment(string chp, map<string, keyword*> types, map<stri
 			result = expand_expression(i->second, types, global, label, tab, verbosity);
 			i->second = result.first;
 			p->push(result.second);
+
+			if (get_kind(i->second, global, label, types) == "channel")
+			{
+				result = expand_expression(i->second+"?", types, global, label, tab, verbosity);
+				i->second = result.first;
+				p->push(result.second);
+			}
 		}
 	}
 

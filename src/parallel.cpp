@@ -13,6 +13,7 @@
 #include "block.h"
 #include "record.h"
 #include "process.h"
+#include "utility.h"
 
 parallel::parallel()
 {
