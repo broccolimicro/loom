@@ -34,6 +34,8 @@ struct parallel : block
 	void bubble_reshuffle();
 
 	void print_hse();
+
+	void push(instruction *i);
 };
 
 #endif

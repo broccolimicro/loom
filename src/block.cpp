@@ -118,13 +118,10 @@ void block::parse(map<string, keyword*> types)
 		cout << tab << "Block: " << chp << endl;
 
 	string				raw_instr;	// chp of a sub block
-	instruction			*instr; 	// instruction parser
 	string::iterator	i, j;
 	bool				para = false;
 	int					depth[3] = {0};
 	size_t				k;
-	string temp;
-	pair<string, instruction*> a;
 
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()+1; i++)
@@ -153,56 +150,33 @@ void block::parse(map<string, keyword*> types)
 			// Get the instruction string.
 			raw_instr = chp.substr(j-chp.begin(), i-j);
 
-			instr = NULL;
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (para)
-			{
-				instr = new parallel(raw_instr, types, global, label, tab+"\t", verbosity);
-				if (((parallel*)instr)->instrs.size() == 0)
-				{
-					delete instr;
-					instr = NULL;
-				}
-			}
+				push(new parallel(raw_instr, types, global, label, tab+"\t", verbosity));
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
-			{
-				instr = new block(raw_instr.substr(1, raw_instr.length()-2), types, global, label, tab+"\t", verbosity);
-				if (((block*)instr)->instrs.size() == 0)
-				{
-					delete instr;
-					instr = NULL;
-				}
-			}
+				push(new block(raw_instr.substr(1, raw_instr.length()-2), types, global, label, tab+"\t", verbosity));
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new loop(raw_instr, types, global, label, tab+"\t", verbosity);
+				push(new loop(raw_instr, types, global, label, tab+"\t", verbosity));
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				instr = new conditional(raw_instr, types, global, label, tab+"\t", verbosity);
+				push(new conditional(raw_instr, types, global, label, tab+"\t", verbosity));
 			// This sub block is a variable definition. keyword<bitwidth> name
 			// It also expands process calls
 			else if (contains(raw_instr, types))
-				instr = expand_instantiation(raw_instr, types, global, label, NULL, tab+"\t", verbosity, true);
+				push(expand_instantiation(raw_instr, types, global, label, NULL, tab+"\t", verbosity, true));
 			else if ((k = raw_instr.find_first_of("?!@")) != raw_instr.npos && raw_instr.find(":=") == raw_instr.npos)
 			{
-				temp = "(";
-				if (k+1 < raw_instr.length())
-					temp += raw_instr.substr(k+1);
-				temp += ")";
-				cout << "Instantiating Communication " << string("operator") + raw_instr[k] + "_fn" + "X" + temp << endl;
+				cout << "Instantiating Communication " << string("operator") + raw_instr[k] + "_fn" + "X" + "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")" << endl;
 
-				a = add_unique_variable("_fn", temp, string("operator") + raw_instr[k], types, global, label, tab, verbosity);
-				instr = a.second;
+				push(add_unique_variable("_fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", string("operator") + raw_instr[k], types, global, label, tab, verbosity).second);
 			}
 			// This sub block is an assignment instruction.
 			//If an assignment is a skip, ignore. No state gen
 			else if (raw_instr.length() != 0 && raw_instr.find("skip") == raw_instr.npos)
-				instr = expand_assignment(raw_instr, types, global, label, tab+"\t", verbosity);
+				push(expand_assignment(raw_instr, types, global, label, tab+"\t", verbosity));
 
-			// Make sure that this wasn't a variable declaration (they don't affect the state space).
-			if (instr != NULL)
-				instrs.push_back(instr);
 			j = i+1;
 			para = false;
 		}
@@ -267,6 +241,35 @@ void block::print_hse()
 			cout << ";";
 		(*i)->print_hse();
 	}
+}
+
+void block::push(instruction *i)
+{
+	if (i == NULL)
+		return;
+
+	list<instruction*>::iterator j;
+	if (i->kind() == "parallel")
+	{
+		if (((parallel*)i)->instrs.size() <= 1)
+		{
+			for (j = ((parallel*)i)->instrs.begin(); j != ((parallel*)i)->instrs.end(); j++)
+				push(*j);
+			((parallel*)i)->instrs.clear();
+			delete (parallel*)i;
+		}
+		else
+			instrs.push_back(i);
+	}
+	else if (i->kind() == "block")
+	{
+		for (j = ((block*)i)->instrs.begin(); j != ((block*)i)->instrs.end(); j++)
+			push(*j);
+		((block*)i)->instrs.clear();
+		delete (block*)i;
+	}
+	else
+		instrs.push_back(i);
 }
 
 /*bool cycle(rule start, rule end, list<rule> *prs)

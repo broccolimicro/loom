@@ -191,15 +191,8 @@ instruction *expand_assignment(string chp, map<string, keyword*> types, map<stri
 		if (i->second.find_first_of("|&=<>/+-*~?@") != i->second.npos)
 		{
 			result = expand_expression(i->second, types, global, label, tab, verbosity);
-			i->second = result.first + "?";
-			comm = expand_expression(i->second, types, global, label, tab, verbosity);
-			i->second = comm.first;
-			if (result.second != NULL)
-				for (ii = ((parallel*)result.second)->instrs.begin(); ii != ((parallel*)result.second)->instrs.end(); ii++)
-					p->instrs.push_back(*ii);
-			if (comm.second != NULL)
-				for (ii = ((parallel*)comm.second)->instrs.begin(); ii != ((parallel*)comm.second)->instrs.end(); ii++)
-					p->instrs.push_back(*ii);
+			i->second = result.first;
+			p->push(result.second);
 		}
 	}
 
@@ -209,7 +202,7 @@ instruction *expand_assignment(string chp, map<string, keyword*> types, map<stri
 		return a;
 	}
 
-	p->instrs.push_back(a);
+	p->push(a);
 
 	return p;
 }
@@ -466,13 +459,8 @@ pair<string, instruction*> expand_expression(string chp, map<string, keyword*> t
 
 	ret = (parallel*)expand_instantiation(dec, types, global, label, NULL, tab, verbosity, true);
 
-	if (A.second != NULL)
-		for (i = ((parallel*)A.second)->instrs.begin(); i != ((parallel*)A.second)->instrs.end(); i++)
-			ret->instrs.push_back(*i);
-
-	if (B.second != NULL)
-		for (i = ((parallel*)B.second)->instrs.begin(); i != ((parallel*)B.second)->instrs.end(); i++)
-			ret->instrs.push_back(*i);
+	ret->push(A.second);
+	ret->push(B.second);
 
 	return pair<string, instruction*>(C.first, ret);
 }

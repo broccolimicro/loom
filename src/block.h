@@ -51,6 +51,8 @@ struct block : instruction
 	void clear();
 
 	void print_hse();
+
+	void push(instruction *i);
 };
 
 //bool cycle(space start, space end, list<rule> prs);
