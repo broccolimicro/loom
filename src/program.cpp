@@ -189,7 +189,7 @@ void program::parse(string chp, int verbosity)
 
 	//Find the implicants of the diff space
 
-	for(int i = 0; i < diff_space.size();i++)
+	/*for(int i = 0; i < diff_space.size();i++)
 	{
 		for(int j = 0; j< diff_space[i].size(); j++)
 		{
@@ -205,7 +205,7 @@ void program::parse(string chp, int verbosity)
 			}
 
 		}
-	}
+	}*/
 
 }
 

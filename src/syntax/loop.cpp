@@ -72,10 +72,13 @@ instruction *loop::duplicate(map<string, variable> *globals, map<string, variabl
 	instr->type			= this->type;
 
 	map<string, string>::iterator i, j;
-	size_t k;
+	size_t k = -1;
 	for (i = convert.begin(); i != convert.end(); i++)
+	{
+		k = -1;
 		while ((k = find_name(instr->chp, i->first, k+1)) != instr->chp.npos)
 			instr->chp.replace(k, i->first.length(), i->second);
+	}
 
 	list<pair<block*, guard*> >::iterator l;
 	for (l = instrs.begin(); l != instrs.end(); l++)

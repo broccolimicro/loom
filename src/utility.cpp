@@ -91,7 +91,7 @@ size_t find_name(string subject, string search, size_t pos)
 	do
 	{
 		ret = subject.find(search, ret + 1);
-		alpha0 = ret > 0 && nc(subject[ret-1]);
+		alpha0 = ret > 0 && (nc(subject[ret-1]) || subject[ret-1] == '.');
 		alpha1 = ret + search.length() < subject.length() && nc(subject[ret + search.length()]);
 	} while (ret != subject.npos && (alpha0 || alpha1));
 

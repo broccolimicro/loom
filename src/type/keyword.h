@@ -33,7 +33,6 @@ public:
 	string kind();
 
 	keyword &operator=(keyword k);
-	void parse(string raw, map<string, keyword*> types, int verbosity);
 };
 
 bool contains(string s, map<string, keyword*> m);

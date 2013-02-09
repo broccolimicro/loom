@@ -57,8 +57,11 @@ instruction *guard::duplicate(map<string, variable> *globals, map<string, variab
 	map<string, string>::iterator i;
 	size_t k;
 	for (i = convert.begin(); i != convert.end(); i++)
+	{
+		k = -1;
 		while ((k = find_name(instr->chp, i->first, k+1)) != instr->chp.npos)
 			instr->chp.replace(k, i->first.length(), i->second);
+	}
 
 	return instr;
 }

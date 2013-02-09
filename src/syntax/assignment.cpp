@@ -68,12 +68,15 @@ instruction *assignment::duplicate(map<string, variable> *globals, map<string, v
 	size_t k;
 	for (i = convert.begin(); i != convert.end(); i++)
 	{
+		k = -1;
 		while ((k = find_name(instr->chp, i->first, k+1)) != instr->chp.npos)
 			instr->chp.replace(k, i->first.length(), i->second);
 		for (j = instr->expr.begin(); j != instr->expr.end(); j++)
 		{
+			k = -1;
 			while ((k = find_name(j->first, i->first, k+1)) != j->first.npos)
 				j->first.replace(k, i->first.length(), i->second);
+			k = -1;
 			while ((k = find_name(j->second, i->first, k+1)) != j->second.npos)
 				j->second.replace(k, i->first.length(), i->second);
 		}
