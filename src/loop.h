@@ -32,6 +32,8 @@ struct loop : conditional
 	void generate_statevars();
 	// void handshaking_reshuffle();
 	void bubble_reshuffle();
+
+	void print_hse();
 };
 
 #endif

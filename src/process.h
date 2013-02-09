@@ -40,4 +40,6 @@ struct process : keyword
 	void parse(string raw, map<string, keyword*> types, map<string, variable> vars, int verbosity);
 };
 
+pair<string, instruction*> add_unique_variable(string prefix, string postfix, string type, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity);
+
 #endif

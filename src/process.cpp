@@ -82,3 +82,12 @@ void process::parse(string raw, map<string, keyword*> types, map<string, variabl
 
 	def.init(chp.substr(block_start, block_end - block_start), types, &global, &label, "\t", verbosity);
 }
+
+pair<string, instruction*> add_unique_variable(string prefix, string postfix, string type, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity)
+{
+	int id = 0;
+	while (global->find(prefix + to_string(id)) != global->end() || label->find(prefix + to_string(id)) != label->end())
+		id++;
+
+	return pair<string, instruction*>(prefix + to_string(id), expand_instantiation(type + " " + prefix + to_string(id) + postfix, types, global, label, NULL, tab, verbosity, true));
+}

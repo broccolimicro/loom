@@ -45,6 +45,7 @@ struct conditional : parallel
 	// void handshaking_reshuffle();
 	void bubble_reshuffle();
 
+	void print_hse();
 };
 
 #endif

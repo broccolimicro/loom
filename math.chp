@@ -1,38 +1,46 @@
-operator&(chan4p1b a, chan4p1b b, chan4p1b s)
-{
-	int<1> A;
-	int<1> B;
-	a?A || b?B;
-	[   A &  B -> s!1
-	[] ~A | ~B -> s!0
-	]
-}
-
-operator|(chan4p1b a, chan4p1b b, chan4p1b s)
+operator&(chan4p1b s, chan4p1b a, chan4p1b b)
 {
 	(int<1> A||
-	int<1> B);
-	a?A || b?B;
-	[   A |  B -> s!1
-	[] ~A & ~B -> s!0
-	]
+	int<1> B||
+	int<1> S);
+	A, B := a?, b?;
+	[   A &  B -> S+
+	[] ~A | ~B -> S-
+	];
+	s!S
 }
 
-operator~(chan4p1b a, chan4p1b s)
+operator|(chan4p1b s, chan4p1b a, chan4p1b b)
 {
-	int<1> A;
+	(int<1> A||
+	int<1> B||
+	int<1> S);
+	A, B := a?, b?;
+	[   A |  B -> S+
+	[] ~A & ~B -> S-
+	];
+	s!S
+}
+
+operator~(chan4p1b s, chan4p1b a)
+{
+	(int<1> A||
+	int<1> S);
 	a?A;
-	[  ~A -> s!1
-	[]  A -> s!0
-	]
+	[  ~A -> S+
+	[]  A -> S-
+	];
+	s!S
 }
 
-operator^(chan4p1b a, chan4p1b b, chan4p1b s)
+operator^(chan4p1b s, chan4p1b a, chan4p1b b)
 {
 	(int<1> A||
-	int<1> B);
+	int<1> B||
+	int<1> S);
 	a?A || b?B;
-	[   ~A &  B  |   A & ~B  -> s!1
-	[] ( A | ~B) & (~A |  B) -> s!0
-	]
+	[   ~A &  B  |   A & ~B  -> S+
+	[] ( A | ~B) & (~A |  B) -> S-
+	];
+	s!S
 }

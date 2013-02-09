@@ -32,6 +32,8 @@ struct guard : instruction
 	void parse(map<string, keyword*> types);
 	int generate_states(state_space *space, graph *trans, int init);
 	void generate_prs();
+
+	void print_hse();
 };
 
 state solve(string raw, map<string, variable> *vars, string tab, int verbosity);

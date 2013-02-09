@@ -6,6 +6,8 @@
  */
 
 #include "assignment.h"
+#include "operator.h"
+#include "record.h"
 
 assignment::assignment()
 {
@@ -63,13 +65,13 @@ instruction *assignment::duplicate(map<string, variable> *globals, map<string, v
 	size_t k;
 	for (i = convert.begin(); i != convert.end(); i++)
 	{
-		while ((k = find_name(instr->chp, i->first)) != instr->chp.npos)
+		while ((k = find_name(instr->chp, i->first, k+1)) != instr->chp.npos)
 			instr->chp.replace(k, i->first.length(), i->second);
 		for (j = instr->expr.begin(); j != instr->expr.end(); j++)
 		{
-			while ((k = find_name(j->first, i->first)) != j->first.npos)
+			while ((k = find_name(j->first, i->first, k+1)) != j->first.npos)
 				j->first.replace(k, i->first.length(), i->second);
-			while ((k = find_name(j->second, i->first)) != j->second.npos)
+			while ((k = find_name(j->second, i->first, k+1)) != j->second.npos)
 				j->second.replace(k, i->first.length(), i->second);
 		}
 	}
@@ -142,7 +144,7 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 		else
 			cout << "Error: Undefined variable " << ei->first << "." << endl;
 
-		// TODO make this search smarter
+		// TODO Make this search smarter
 		// Search for this channel's other variables and X them out.
 		search = ei->first.substr(0, ei->first.find_last_of("."));
 		for (vi = global->begin(); vi != global->end(); vi++)
@@ -174,160 +176,330 @@ void assignment::generate_prs()
 	print_prs();
 }
 
-instruction *expand_expression(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity)
+instruction *expand_assignment(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity)
 {
 	assignment *a = new assignment(chp, types, global, label, tab, verbosity);
+	parallel *p = new parallel("", types, global, label, tab, verbosity);;
+	pair<string, instruction*> result;
 	list<pair<string, string> >::iterator i;
+	list<instruction*>::iterator ii;
+	pair<string, instruction*> comm;
 
 	for (i = a->expr.begin(); i != a->expr.end(); i++)
 	{
-
+		cout << i->first << " " << i->second << endl;
+		if (i->second.find_first_of("|&=<>/+-*~?@") != i->second.npos)
+		{
+			result = expand_expression(i->second, types, global, label, tab, verbosity);
+			i->second = result.first + "?";
+			comm = expand_expression(i->second, types, global, label, tab, verbosity);
+			i->second = comm.first;
+			if (result.second != NULL)
+				for (ii = ((parallel*)result.second)->instrs.begin(); ii != ((parallel*)result.second)->instrs.end(); ii++)
+					p->instrs.push_back(*ii);
+			if (comm.second != NULL)
+				for (ii = ((parallel*)comm.second)->instrs.begin(); ii != ((parallel*)comm.second)->instrs.end(); ii++)
+					p->instrs.push_back(*ii);
+		}
 	}
 
-	return a;
+	if (p->instrs.size() == 0)
+	{
+		delete p;
+		return a;
+	}
+
+	p->instrs.push_back(a);
+
+	return p;
 }
 
-instruction *decompose_expression(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity)
+pair<string, instruction*> expand_expression(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity)
 {
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Decompose: " << chp << endl;
 
 	map<string, variable>::iterator v;
+	map<string, keyword*>::iterator k;
+	map<string, string>::iterator c;
+	list<string>::iterator s;
+	list<instruction*>::iterator i;
 	list<string> ops;
 	list<string> ex;
+
+	string left, right, op = "";
+	operate *proc;
+
+	pair<string, instruction*> A, B, C;
+
 	size_t p;
 
-	p = find_first_of_l0(chp, "|");
-	if (p != chp.npos)
+	if (op == "")
 	{
-		decompose_expression(chp.substr(0, p-1), types, global, label, tab+"\t", verbosity);
-		decompose_expression(chp.substr(p), types, global, label, tab+"\t", verbosity);
-		return NULL;
+		p = find_first_of_l0(chp, "|");
+		if (p != chp.npos)
+		{
+			op = "|";
+			left = chp.substr(0, p);
+			right = chp.substr(p+1);
+		}
 	}
 
-	p = find_first_of_l0(chp, "&");
-	if (p != chp.npos)
+	if (op == "")
 	{
-		decompose_expression(chp.substr(0, p-1), types, global, label, tab+"\t", verbosity);
-		decompose_expression(chp.substr(p), types, global, label, tab+"\t", verbosity);
-		return NULL;
+		p = find_first_of_l0(chp, "&");
+		if (p != chp.npos)
+		{
+			op = "&";
+			left = chp.substr(0, p);
+			right = chp.substr(p+1);
+		}
 	}
 
-	ops.clear();
-	ops.push_back("==");
-	ops.push_back("~=");
-	p = find_first_of_l0(chp, ops);
-	if (p != chp.npos && chp.substr(p, 2) == "==")
+	if (op == "")
 	{
-		decompose_expression(chp.substr(0, p-1), types, global, label, tab+"\t", verbosity);
-		decompose_expression(chp.substr(p), types, global, label, tab+"\t", verbosity);
-		return NULL;
-	}
-	else if (p != chp.npos && chp.substr(p, 2) == "!=")
-	{
-		decompose_expression(chp.substr(0, p-1), types, global, label, tab+"\t", verbosity);
-		decompose_expression(chp.substr(p), types, global, label, tab+"\t", verbosity);
-		return NULL;
-	}
-
-	ops.clear();
-	ops.push_back("<=");
-	ops.push_back(">=");
-	p = find_first_of_l0(chp, ops);
-	if (p != chp.npos && chp.substr(p, 2) == "<=")
-	{
-		decompose_expression(chp.substr(0, p-1), types, global, label, tab+"\t", verbosity);
-		decompose_expression(chp.substr(p), types, global, label, tab+"\t", verbosity);
-		return NULL;
-	}
-	else if (p != chp.npos && chp.substr(p, 2) == ">=")
-	{
-		decompose_expression(chp.substr(0, p-1), types, global, label, tab+"\t", verbosity);
-		decompose_expression(chp.substr(p), types, global, label, tab+"\t", verbosity);
-		return NULL;
+		ops.clear();
+		ops.push_back("==");
+		ops.push_back("~=");
+		p = find_first_of_l0(chp, ops);
+		if (p != chp.npos && chp.substr(p, 2) == "==")
+		{
+			op = "==";
+			left = chp.substr(0, p);
+			right = chp.substr(p+1);
+		}
+		else if (p != chp.npos && chp.substr(p, 2) == "!=")
+		{
+			op = "!=";
+			left = chp.substr(0, p);
+			right = chp.substr(p+1);
+		}
 	}
 
-	ops.clear();
-	ops.push_back("<");
-	ops.push_back(">");
-	ex.clear();
-	ex.push_back(">>");
-	ex.push_back("<<");
-	ex.push_back("<=");
-	ex.push_back(">=");
-	p = find_first_of_l0(chp, ops, 0, ex);
-	if (p != chp.npos && chp[p] == '<')
+	if (op == "")
 	{
-		decompose_expression(chp.substr(0, p-1), types, global, label, tab+"\t", verbosity);
-		decompose_expression(chp.substr(p), types, global, label, tab+"\t", verbosity);
-		return NULL;
-	}
-	else if (p != chp.npos && chp[p] == '>')
-	{
-		decompose_expression(chp.substr(0, p-1), types, global, label, tab+"\t", verbosity);
-		decompose_expression(chp.substr(p), types, global, label, tab+"\t", verbosity);
-		return NULL;
+		ops.clear();
+		ops.push_back("<=");
+		ops.push_back(">=");
+		p = find_first_of_l0(chp, ops);
+		if (p != chp.npos && chp.substr(p, 2) == "<=")
+		{
+			op = "<=";
+			left = chp.substr(0, p);
+			right = chp.substr(p+1);
+		}
+		else if (p != chp.npos && chp.substr(p, 2) == ">=")
+		{
+			op = ">=";
+			left = chp.substr(0, p);
+			right = chp.substr(p+1);
+		}
 	}
 
-	ops.clear();
-	ops.push_back("<<");
-	ops.push_back(">>");
-	p = find_first_of_l0(chp, ops);
-	if (p != chp.npos && chp.substr(p, 2) == "<<")
+	if (op == "")
 	{
-		decompose_expression(chp.substr(0, p-1), types, global, label, tab+"\t", verbosity);
-		decompose_expression(chp.substr(p), types, global, label, tab+"\t", verbosity);
-		return NULL;
-	}
-	else if (p != chp.npos && chp.substr(p, 2) == ">>")
-	{
-		decompose_expression(chp.substr(0, p-1), types, global, label, tab+"\t", verbosity);
-		decompose_expression(chp.substr(p), types, global, label, tab+"\t", verbosity);
-		return NULL;
-	}
-
-	p = find_first_of_l0(chp, "+-");
-	if (p != chp.npos && chp[p] == '+')
-	{
-		decompose_expression(chp.substr(0, p-1), types, global, label, tab+"\t", verbosity);
-		decompose_expression(chp.substr(p), types, global, label, tab+"\t", verbosity);
-		return NULL;
-	}
-	else if (p != chp.npos && chp[p] == '-')
-	{
-		decompose_expression(chp.substr(0, p-1), types, global, label, tab+"\t", verbosity);
-		decompose_expression(chp.substr(p), types, global, label, tab+"\t", verbosity);
-		return NULL;
+		ops.clear();
+		ops.push_back("<");
+		ops.push_back(">");
+		ex.clear();
+		ex.push_back(">>");
+		ex.push_back("<<");
+		ex.push_back("<=");
+		ex.push_back(">=");
+		p = find_first_of_l0(chp, ops, 0, ex);
+		if (p != chp.npos && chp[p] == '<')
+		{
+			op = "<";
+			left = chp.substr(0, p);
+			right = chp.substr(p+1);
+		}
+		else if (p != chp.npos && chp[p] == '>')
+		{
+			op = ">";
+			left = chp.substr(0, p);
+			right = chp.substr(p+1);
+		}
 	}
 
-	p = find_first_of_l0(chp, "*/");
-	if (p != chp.npos && chp[p] == '*')
+	if (op == "")
 	{
-		decompose_expression(chp.substr(0, p-1), types, global, label, tab+"\t", verbosity);
-		decompose_expression(chp.substr(p), types, global, label, tab+"\t", verbosity);
-		return NULL;
-	}
-	else if (p != chp.npos && chp[p] == '/')
-	{
-		decompose_expression(chp.substr(0, p-1), types, global, label, tab+"\t", verbosity);
-		decompose_expression(chp.substr(p), types, global, label, tab+"\t", verbosity);
-		return NULL;
-	}
-
-	p = find_first_of_l0(chp, "~");
-	if (p != chp.npos)
-	{
-		decompose_expression(chp.substr(p), types, global, label, tab+"\t", verbosity);
-		return NULL;
-	}
-
-	if (chp[0] == '(' && chp[chp.length()-1] == ')')
-	{
-		decompose_expression(chp.substr(1, chp.length()-2), types, global, label, tab+"\t", verbosity);
-		return NULL;
+		ops.clear();
+		ops.push_back("<<");
+		ops.push_back(">>");
+		p = find_first_of_l0(chp, ops);
+		if (p != chp.npos && chp.substr(p, 2) == "<<")
+		{
+			op = "<<";
+			left = chp.substr(0, p);
+			right = chp.substr(p+1);
+		}
+		else if (p != chp.npos && chp.substr(p, 2) == ">>")
+		{
+			op = ">>";
+			left = chp.substr(0, p);
+			right = chp.substr(p+1);
+		}
 	}
 
-	return NULL;
+	if (op == "")
+	{
+		p = find_first_of_l0(chp, "+-");
+		if (p != chp.npos && chp[p] == '+')
+		{
+			op = "+";
+			left = chp.substr(0, p);
+			right = chp.substr(p+1);
+		}
+		else if (p != chp.npos && chp[p] == '-')
+		{
+			op = "-";
+			left = chp.substr(0, p);
+			right = chp.substr(p+1);
+		}
+	}
+
+	if (op == "")
+	{
+		p = find_first_of_l0(chp, "*/");
+		if (p != chp.npos && chp[p] == '*')
+		{
+			op = "*";
+			left = chp.substr(0, p);
+			right = chp.substr(p+1);
+		}
+		else if (p != chp.npos && chp[p] == '/')
+		{
+			op = "/";
+			left = chp.substr(0, p);
+			right = chp.substr(p+1);
+		}
+	}
+
+	if (op == "")
+	{
+		p = find_first_of_l0(chp, "~");
+		if (p != chp.npos)
+		{
+			op = "~";
+			left = "";
+			right = chp.substr(p+1);
+		}
+	}
+
+	if (op == "")
+	{
+		p = find_first_of_l0(chp, "?");
+		if (p != chp.npos)
+		{
+			op = "?";
+			left = chp.substr(0, p);
+			right = "";
+		}
+	}
+
+	cout << p << " " << left << " " << right << " " << chp << endl;
+
+	if (chp[0] == '(' && chp[chp.length()-1] == ')' && op == "")
+		return expand_expression(chp.substr(1, chp.length()-2), types, global, label, tab+"\t", verbosity);
+
+	k = types.find("operator" + op);
+	if (k == types.end())
+	{
+		cout << "Error: Undefined operator " << op << " used in " << chp << "." << endl;
+		return pair<string, instruction*>("", NULL);
+	}
+
+	proc = (operate*)k->second;
+
+	A = pair<string, instruction*>("", NULL);
+	B = pair<string, instruction*>("", NULL);
+	if (left.find_first_of("|&=<>/+-*~?!@") != left.npos)
+		A = expand_expression(left, types, global, label, tab+"\t", verbosity);
+
+	if (right.find_first_of("|&=<>/+-*~?!@") != right.npos)
+		B = expand_expression(right, types, global, label, tab+"\t", verbosity);
+
+	map<string, string> convert;
+	parallel* ret;
+	for (s = proc->input.begin(); s != proc->input.end() && s->find_first_of(".") != s->npos; s++);
+	if (s != proc->input.end())
+	{
+		v = proc->label.find(*s);
+		if (v == proc->label.end())
+			v = proc->global.find(*s);
+
+		C = add_unique_variable("_op", "", v->second.type, types, global, label, tab+"\t", verbosity);
+		convert.insert(pair<string, string>(*s, C.first));
+		cout << *s << " " << C.first << endl;
+	}
+	if (left != "")
+	{
+		for (s++; s != proc->input.end() && s->find_first_of(".") != s->npos; s++);
+		if (s != proc->input.end())
+			convert.insert(pair<string, string>(*s, A.second == NULL ? left : A.first));
+		cout << *s << " " << (A.second == NULL ? left : A.first) << endl;
+	}
+	if (right != "")
+	{
+		for (s++; s != proc->input.end() && s->find_first_of(".") != s->npos; s++);
+		if (s != proc->input.end())
+			convert.insert(pair<string, string>(*s, B.second == NULL ? right : B.first));
+		cout << *s << " " << (B.second == NULL ? right : B.first) << endl;
+	}
+
+	int id = 0;
+	while (global->find("_fn" + to_string(id)) != global->end() || label->find("_fn" + to_string(id)) != label->end())
+		id++;
+
+	string dec = "operator" + op + " " + "_fn" + to_string(id) + "(";
+
+	for (c = convert.begin(); c != convert.end(); c++)
+	{
+		if (c != convert.begin())
+			dec += ",";
+		dec += c->second;
+		cout << c->first << " -> " << c->second << endl;
+	}
+
+	dec += ")";
+	cout << dec << endl;
+
+	ret = (parallel*)expand_instantiation(dec, types, global, label, NULL, tab, verbosity, true);
+
+	if (A.second != NULL)
+		for (i = ((parallel*)A.second)->instrs.begin(); i != ((parallel*)A.second)->instrs.end(); i++)
+			ret->instrs.push_back(*i);
+
+	if (B.second != NULL)
+		for (i = ((parallel*)B.second)->instrs.begin(); i != ((parallel*)B.second)->instrs.end(); i++)
+			ret->instrs.push_back(*i);
+
+	return pair<string, instruction*>(C.first, ret);
 }
 
+void assignment::print_hse()
+{
+	if (expr.size() == 1 && expr.begin()->second == "0")
+		cout << expr.begin()->first << "-";
+	else if (expr.size() == 1 && expr.begin()->second == "1")
+		cout << expr.begin()->first << "+";
+	else
+	{
+		list<pair<string, string> >::iterator i;
+		for (i = expr.begin(); i != expr.end(); i++)
+		{
+			if (i != expr.begin())
+				cout << ",";
+			cout << i->first;
+		}
 
+		cout << ":=";
+
+		for (i = expr.begin(); i != expr.end(); i++)
+		{
+			if (i != expr.begin())
+				cout << ",";
+			cout << i->second;
+		}
+	}
+}

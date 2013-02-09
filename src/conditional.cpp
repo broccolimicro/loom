@@ -82,7 +82,7 @@ instruction *conditional::duplicate(map<string, variable> *globals, map<string, 
 	map<string, string>::iterator i, j;
 	size_t k;
 	for (i = convert.begin(); i != convert.end(); i++)
-		while ((k = find_name(instr->chp, i->first)) != instr->chp.npos)
+		while ((k = find_name(instr->chp, i->first, k+1)) != instr->chp.npos)
 			instr->chp.replace(k, i->first.length(), i->second);
 
 	list<pair<block*, guard*> >::iterator l;
@@ -228,8 +228,27 @@ int conditional::generate_states(state_space *space, graph *trans, int init)
 
 void conditional::generate_prs()
 {
-	// TODO CONDITION PRS create a state variable per guarded block whose production rule is the guard.
-	// TODO CONDITION PRS a possible optimization would be to check to make sure that we need one first. If we don't, then we must already have one that works, add the guard to it's condition.
-	// TODO CONDITION PRS condition all production rules of the guarded blocks on their designated state variable.
+	// TODO Create a state variable per guarded block whose production rule is the guard.
+	// TODO A possible optimization would be to check to make sure that we need one first. If we don't, then we must already have one that works, add the guard to it's condition.
+	// TODO Condition all production rules of the guarded blocks on their designated state variable.
 }
 
+void conditional::print_hse()
+{
+	cout << "[";
+	list<pair<block*, guard*> >::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		if (i != instrs.begin() && type == mutex)
+			cout << "[]";
+		else if (i != instrs.begin() && type == choice)
+			cout << "|";
+		i->second->print_hse();
+		if (i->first->instrs.size() > 0)
+		{
+			cout << " -> ";
+			i->first->print_hse();
+		}
+	}
+	cout << "]";
+}

@@ -81,4 +81,5 @@ void operate::parse(string raw, map<string, keyword*> types, map<string, variabl
 	}
 
 	def.init(chp.substr(block_start, block_end - block_start), types, &global, &label, "\t", verbosity);
+	def.print_hse();
 }

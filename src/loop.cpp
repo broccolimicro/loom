@@ -70,7 +70,7 @@ instruction *loop::duplicate(map<string, variable> *globals, map<string, variabl
 	map<string, string>::iterator i, j;
 	size_t k;
 	for (i = convert.begin(); i != convert.end(); i++)
-		while ((k = find_name(instr->chp, i->first)) != instr->chp.npos)
+		while ((k = find_name(instr->chp, i->first, k+1)) != instr->chp.npos)
 			instr->chp.replace(k, i->first.length(), i->second);
 
 	list<pair<block*, guard*> >::iterator l;
@@ -258,4 +258,21 @@ void loop::generate_prs()
 {
 
 
+}
+
+void loop::print_hse()
+{
+	cout << "\n*[\t";
+	list<pair<block*, guard*> >::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		if (i != instrs.begin() && type == mutex)
+			cout << "\n[]\t";
+		else if (i != instrs.begin() && type == choice)
+			cout << "\n|\t";
+		i->second->print_hse();
+		cout << "\t->\t";
+		i->first->print_hse();
+	}
+	cout << "\n]";
 }

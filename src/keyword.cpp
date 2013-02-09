@@ -40,5 +40,6 @@ bool contains(string s, map<string, keyword*> m)
 	for (i = m.begin(); i != m.end(); i++)
 		if (s.find(i->first) != s.npos)
 			return true;
+
 	return false;
 }

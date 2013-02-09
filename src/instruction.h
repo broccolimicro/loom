@@ -54,6 +54,8 @@ public:
 	virtual void parse(map<string, keyword*> types) = 0;
 	virtual int generate_states(state_space *space, graph *trans, int init) = 0;
 	virtual void generate_prs() = 0;
+
+	virtual void print_hse() = 0;
 };
 
 #endif

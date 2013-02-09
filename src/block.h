@@ -49,6 +49,8 @@ struct block : instruction
 	void bubble_reshuffle();
 
 	void clear();
+
+	void print_hse();
 };
 
 //bool cycle(space start, space end, list<rule> prs);

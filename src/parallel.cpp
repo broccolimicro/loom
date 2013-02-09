@@ -12,6 +12,7 @@
 #include "loop.h"
 #include "block.h"
 #include "record.h"
+#include "process.h"
 
 parallel::parallel()
 {
@@ -70,8 +71,11 @@ instruction *parallel::duplicate(map<string, variable> *globals, map<string, var
 	map<string, string>::iterator i, j;
 	size_t k;
 	for (i = convert.begin(); i != convert.end(); i++)
-		while ((k = find_name(instr->chp, i->first)) != instr->chp.npos)
+	{
+		k = -1;
+		while ((k = find_name(instr->chp, i->first, k+1)) != instr->chp.npos)
 			instr->chp.replace(k, i->first.length(), i->second);
+	}
 
 	list<instruction*>::iterator l;
 	for (l = instrs.begin(); l != instrs.end(); l++)
@@ -95,6 +99,9 @@ void parallel::parse(map<string, keyword*> types)
 	string::iterator	i, j;
 	bool				sequential = false;
 	int					depth[3] = {0};
+	size_t				k;
+	string temp;
+	pair<string, instruction*> a;
 
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()+1; i++)
@@ -124,10 +131,24 @@ void parallel::parse(map<string, keyword*> types)
 
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (sequential)
+			{
 				instr = new block(raw_instr, types, global, label, tab+"\t", verbosity);
+				if (((block*)instr)->instrs.size() == 0)
+				{
+					delete instr;
+					instr = NULL;
+				}
+			}
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
+			{
 				instr = new block(raw_instr.substr(1, raw_instr.length()-2), types, global, label, tab+"\t", verbosity);
+				if (((block*)instr)->instrs.size() == 0)
+				{
+					delete instr;
+					instr = NULL;
+				}
+			}
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')
 				instr = new loop(raw_instr, types, global, label, tab+"\t", verbosity);
@@ -137,9 +158,20 @@ void parallel::parse(map<string, keyword*> types)
 			// This sub block is a variable definition. keyword<bitwidth> name
 			else if (contains(raw_instr, types))
 				instr = expand_instantiation(raw_instr, types, global, label, NULL, tab+"\t", verbosity, true);
+			else if ((k = raw_instr.find_first_of("?!@")) != raw_instr.npos && raw_instr.find(":=") == raw_instr.npos)
+			{
+				temp = "(";
+				if (k+1 < raw_instr.length())
+					temp += raw_instr.substr(k+1);
+				temp += ")";
+				cout << "Instantiating Communication " << string("operator") + raw_instr[k] + "_fn" + "X" + temp << endl;
+
+				a = add_unique_variable("_fn", temp, string("operator") + raw_instr[k], types, global, label, tab+"\t", verbosity);
+				instr = a.second;
+			}
 			// This sub block is an assignment instruction.
 			else if (raw_instr.length() != 0 && raw_instr.find("skip") == raw_instr.npos)
-				instr = expand_expression(raw_instr, types, global, label, tab+"\t", verbosity);
+				instr = expand_assignment(raw_instr, types, global, label, tab+"\t", verbosity);
 
 			if (instr != NULL)
 				instrs.push_back(instr);
@@ -165,7 +197,7 @@ int parallel::generate_states(state_space *space, graph *trans, int init)
 	state s;
 	bool first = true;
 
-
+	// TODO X out variables modified in other branches of the parallel
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
@@ -198,5 +230,18 @@ void parallel::generate_prs()
 {
 
 
+}
+
+void parallel::print_hse()
+{
+	cout << "(";
+	list<instruction*>::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		if (i != instrs.begin())
+			cout << "||";
+		(*i)->print_hse();
+	}
+	cout << ")";
 }
 

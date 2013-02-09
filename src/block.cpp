@@ -15,6 +15,7 @@
 #include "rule.h"
 #include "channel.h"
 #include "record.h"
+#include "process.h"
 
 block::block()
 {
@@ -97,7 +98,7 @@ instruction *block::duplicate(map<string, variable> *globals, map<string, variab
 	map<string, string>::iterator i, j;
 	size_t k;
 	for (i = convert.begin(); i != convert.end(); i++)
-		while ((k = find_name(instr->chp, i->first)) != instr->chp.npos)
+		while ((k = find_name(instr->chp, i->first, k+1)) != instr->chp.npos)
 			instr->chp.replace(k, i->first.length(), i->second);
 
 	list<instruction*>::iterator l;
@@ -109,7 +110,6 @@ instruction *block::duplicate(map<string, variable> *globals, map<string, variab
 
 void block::expand_shortcuts()
 {
-
 }
 
 void block::parse(map<string, keyword*> types)
@@ -122,6 +122,9 @@ void block::parse(map<string, keyword*> types)
 	string::iterator	i, j;
 	bool				para = false;
 	int					depth[3] = {0};
+	size_t				k;
+	string temp;
+	pair<string, instruction*> a;
 
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()+1; i++)
@@ -153,10 +156,24 @@ void block::parse(map<string, keyword*> types)
 			instr = NULL;
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (para)
+			{
 				instr = new parallel(raw_instr, types, global, label, tab+"\t", verbosity);
+				if (((parallel*)instr)->instrs.size() == 0)
+				{
+					delete instr;
+					instr = NULL;
+				}
+			}
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
+			{
 				instr = new block(raw_instr.substr(1, raw_instr.length()-2), types, global, label, tab+"\t", verbosity);
+				if (((block*)instr)->instrs.size() == 0)
+				{
+					delete instr;
+					instr = NULL;
+				}
+			}
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')
 				instr = new loop(raw_instr, types, global, label, tab+"\t", verbosity);
@@ -167,11 +184,21 @@ void block::parse(map<string, keyword*> types)
 			// It also expands process calls
 			else if (contains(raw_instr, types))
 				instr = expand_instantiation(raw_instr, types, global, label, NULL, tab+"\t", verbosity, true);
+			else if ((k = raw_instr.find_first_of("?!@")) != raw_instr.npos && raw_instr.find(":=") == raw_instr.npos)
+			{
+				temp = "(";
+				if (k+1 < raw_instr.length())
+					temp += raw_instr.substr(k+1);
+				temp += ")";
+				cout << "Instantiating Communication " << string("operator") + raw_instr[k] + "_fn" + "X" + temp << endl;
+
+				a = add_unique_variable("_fn", temp, string("operator") + raw_instr[k], types, global, label, tab, verbosity);
+				instr = a.second;
+			}
 			// This sub block is an assignment instruction.
 			//If an assignment is a skip, ignore. No state gen
-			// TODO expand operators here
 			else if (raw_instr.length() != 0 && raw_instr.find("skip") == raw_instr.npos)
-				instr = expand_expression(raw_instr, types, global, label, tab+"\t", verbosity);
+				instr = expand_assignment(raw_instr, types, global, label, tab+"\t", verbosity);
 
 			// Make sure that this wasn't a variable declaration (they don't affect the state space).
 			if (instr != NULL)
@@ -231,6 +258,17 @@ void block::clear()
 	rules.clear();
 }
 
+void block::print_hse()
+{
+	list<instruction*>::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		if (i != instrs.begin())
+			cout << ";";
+		(*i)->print_hse();
+	}
+}
+
 /*bool cycle(rule start, rule end, list<rule> *prs)
 {
 	list<rule>::iterator ri;
@@ -255,7 +293,7 @@ void block::clear()
  * It is the job of the state variable generation algorithm and the handshaking reshuffling algorithms
  * to remove all of the conflicts that this algorithm leaves behind.
  *
- * TODO The handshaking reshuffling algorithm has not yet been completed.
+ * The handshaking reshuffling algorithm has not yet been completed.
  */
 /*list<rule> production_rule(list<instruction*> instrs, map<string, space> states, string tab, int verbosity)
 {
@@ -310,7 +348,7 @@ void block::clear()
 /* Search a backward in a conflict string starting at a necessary
  * firing for a clean state variable position.
  *
- * TODO I think it is valid to place a state variable transition
+ * I think it is valid to place a state variable transition
  * right before an indistinguishable state, but not after. Right
  * now we make sure we have a distinguishable state both before and
  * after the state variable transition, but I don't think this is necessary.
@@ -546,7 +584,7 @@ size_t search_front(string s, size_t offset)
 		//Loop through to find the semicolon at which we want to insert the current state variable
 		//Note that the offset of how_many_added/inserted is required as the instruction size of
 		//the instruction stream grows as instructions are added.
-		// TODO Clean this up, there was an error where we were simply looking for semicolons in the string instead of paying attention to depth
+		// Clean this up, there was an error where we were simply looking for semicolons in the string instead of paying attention to depth
 		depth[0] = 0;
 		depth[1] = 0;
 		depth[2] = 0;

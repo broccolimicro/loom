@@ -106,7 +106,7 @@ instruction *expand_instantiation(string chp, map<string, keyword*> types, map<s
 					label->insert(pair<string, variable>(name + "." + v.name, variable(name + "." + v.name, global->size(), v.type, v.reset, v.width, !allow_process)));
 			}
 		}
-		else if (var_type->second->kind() == "process" || var_type->second->kind() == "operator")
+		else if (var_type->second->kind() == "process" || var_type->second->kind() == "operate")
 		{
 			if (allow_process)
 			{

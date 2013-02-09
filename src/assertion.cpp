@@ -25,7 +25,7 @@ assertion::~assertion()
 
 }
 
-// TODO parse and process assertions
+// TODO Parse and process assertions
 void assertion::parse(string raw)
 {
 

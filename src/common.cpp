@@ -204,12 +204,11 @@ string dec_to_bin(string str)
 
 size_t find_first_of_l0(string subject, string search, size_t pos)
 {
-	bool found;
 	string::iterator i, j;
 	int depth[3] = {0, 0, 0};
 	size_t ret;
 
-	for (i = subject.begin() + pos, ret = pos, found = false; i != subject.end() && !found; i++, ret++)
+	for (i = subject.begin() + pos, ret = pos; i != subject.end(); i++, ret++)
 	{
 		if (*i == '(')
 			depth[0]++;
@@ -224,15 +223,17 @@ size_t find_first_of_l0(string subject, string search, size_t pos)
 		else if (*i == '}')
 			depth[2]--;
 
-		for (j = search.begin(); j != search.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && !found; j++)
+		for (j = search.begin(); j != search.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0; j++)
 			if (*i == *j)
-				found = true;
+			{
+				if (i == subject.end())
+					return subject.npos;
+				else
+					return ret;
+			}
 	}
 
-	if (i == subject.end())
-		ret = subject.npos;
-
-	return ret;
+	return subject.npos;
 }
 
 size_t find_first_of_l0(string subject, list<string> search, size_t pos, list<string> exclude)
@@ -243,7 +244,8 @@ size_t find_first_of_l0(string subject, list<string> search, size_t pos, list<st
 	int depth[3] = {0, 0, 0};
 	size_t ret;
 
-	for (i = subject.begin() + pos, ret = pos, found = false; i != subject.end() && !found; i++, ret++)
+	found = false;
+	for (i = subject.begin() + pos, ret = pos; i != subject.end(); i++, ret++)
 	{
 		if (*i == '(')
 			depth[0]++;
@@ -264,19 +266,22 @@ size_t find_first_of_l0(string subject, list<string> search, size_t pos, list<st
 		for (j = exclude.begin(); j != exclude.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && found; j++)
 			if (subject.substr(ret, j->length()) == *j)
 				found = false;
+
+		if (found)
+		{
+			if (i == subject.end())
+				return subject.npos;
+			else
+				return ret;
+		}
 	}
 
-	ret--;
-
-	if (i == subject.end())
-		ret = subject.npos;
-
-	return ret;
+	return subject.npos;
 }
 
-size_t find_name(string subject, string search)
+size_t find_name(string subject, string search, size_t pos)
 {
-	size_t ret = -1;
+	size_t ret = -1 + pos;
 	bool alpha0, alpha1;
 
 	do

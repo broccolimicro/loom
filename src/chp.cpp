@@ -330,6 +330,9 @@ struct program
 					{
 						c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "", verbosity);
 						type_space.insert(pair<string, channel*>(c->name, c));
+						type_space.insert(pair<string, operate*>(c->send.name, &c->send));
+						type_space.insert(pair<string, operate*>(c->recv.name, &c->recv));
+						type_space.insert(pair<string, operate*>(c->probe.name, &c->probe));
 					}
 					// This isn't either a process or a record, this is an error.
 					else
@@ -361,6 +364,9 @@ struct program
 						{
 							c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, "", verbosity);
 							type_space.insert(pair<string, channel*>(c->name, c));
+							type_space.insert(pair<string, operate*>(c->send.name, &c->send));
+							type_space.insert(pair<string, operate*>(c->recv.name, &c->recv));
+							type_space.insert(pair<string, operate*>(c->probe.name, &c->probe));
 						}
 					}
 				}
@@ -387,6 +393,7 @@ struct program
 		//Generate+print diff_space
 		state_space diff_space = delta_space_gen(space, trans);
 		print_diff_space_to_console(diff_space);
+		prgm->print_hse();
 	}
 };
 

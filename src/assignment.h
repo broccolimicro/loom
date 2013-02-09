@@ -33,9 +33,13 @@ struct assignment : instruction
 	void parse(map<string, keyword*> types);
 	int generate_states(state_space *space, graph *trans, int init);
 	void generate_prs();
+
+	void print_hse();
 };
 
-instruction* expand_expression(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity);
+instruction *expand_assignment(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity);
+pair<string, instruction*> expand_expression(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity);
+
 
 /*
  *
@@ -44,6 +48,8 @@ instruction* expand_expression(string chp, map<string, keyword*> types, map<stri
 template <class t>
 t evaluate(string raw, map<string, variable> *globals, vector<t> init, string tab, int verbosity)
 {
+	// TODO Bug with two character operators and sub string indices
+
 	// Tested to be fairly functional:
 	// Adds, subtracts
 	// Multiplies
@@ -64,29 +70,29 @@ t evaluate(string raw, map<string, variable> *globals, vector<t> init, string ta
 
 	p = find_first_of_l0(raw, "|");
 	if (p != raw.npos)
-		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) | evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) | evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
 
 	p = find_first_of_l0(raw, "&");
 	if (p != raw.npos)
-		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) & evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) & evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
 
 	ops.clear();
 	ops.push_back("==");
 	ops.push_back("~=");
 	p = find_first_of_l0(raw, ops);
 	if (p != raw.npos && raw.substr(p, 2) == "==")
-		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) == evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) == evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw.substr(p, 2) == "!=")
-		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) != evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) != evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
 
 	ops.clear();
 	ops.push_back("<=");
 	ops.push_back(">=");
 	p = find_first_of_l0(raw, ops);
 	if (p != raw.npos && raw.substr(p, 2) == "<=")
-		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) <= evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) <= evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw.substr(p, 2) == ">=")
-		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) >= evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) >= evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
 
 	ops.clear();
 	ops.push_back("<");
@@ -98,34 +104,34 @@ t evaluate(string raw, map<string, variable> *globals, vector<t> init, string ta
 	ex.push_back(">=");
 	p = find_first_of_l0(raw, ops, 0, ex);
 	if (p != raw.npos && raw[p] == '<')
-		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) < evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) < evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw[p] == '>')
-		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) > evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) > evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
 
 	ops.clear();
 	ops.push_back("<<");
 	ops.push_back(">>");
 	p = find_first_of_l0(raw, ops);
 	if (p != raw.npos && raw.substr(p, 2) == "<<")
-		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) << evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) << evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw.substr(p, 2) == ">>")
-		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) >> evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) >> evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
 
 	p = find_first_of_l0(raw, "+-");
 	if (p != raw.npos && raw[p] == '+')
-		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) + evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) + evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw[p] == '-')
-		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) - evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) - evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
 
 	p = find_first_of_l0(raw, "*/");
 	if (p != raw.npos && raw[p] == '*')
-		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) * evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) * evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw[p] == '/')
-		return evaluate(raw.substr(0, p-1), globals, init, tab+"\t", verbosity) / evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) / evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
 
 	p = find_first_of_l0(raw, "~");
 	if (p != raw.npos)
-		return ~ evaluate(raw.substr(p), globals, init, tab+"\t", verbosity);
+		return ~ evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
 
 	if (raw[0] == '(' && raw[raw.length()-1] == ')')
 		return evaluate(raw.substr(1, raw.length()-2), globals, init, tab+"\t", verbosity);
@@ -138,9 +144,9 @@ t evaluate(string raw, map<string, variable> *globals, vector<t> init, string ta
 
 	p = raw.find_first_of("bx");
 	if (p != raw.npos && raw[p] == 'x')
-		return t(hex_to_bin(raw.substr(p)));
+		return t(hex_to_bin(raw.substr(p+1)));
 	else if (p != raw.npos && raw[p] == 'b')
-		return t(raw.substr(p));
+		return t(raw.substr(p+1));
 	else
 		return t(dec_to_bin(raw));
 }
