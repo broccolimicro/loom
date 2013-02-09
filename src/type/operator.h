@@ -11,7 +11,7 @@
 #define operator_h
 
 #include "../common.h"
-#include "../variable.h"
+#include "../data.h"
 #include "keyword.h"
 #include "process.h"
 

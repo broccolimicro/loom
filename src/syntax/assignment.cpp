@@ -407,7 +407,11 @@ pair<string, instruction*> expand_expression(string chp, map<string, keyword*> t
 	if (chp[0] == '(' && chp[chp.length()-1] == ')' && op == "")
 		return expand_expression(chp.substr(1, chp.length()-2), types, global, label, tab+"\t", verbosity);
 
-	k = types.find("operator" + op);
+	string type = "operator" + op;
+	if (op == "?")
+		type = get_type(left, global, label) + "." + type;
+
+	k = types.find(type);
 	if (k == types.end())
 	{
 		cout << "Error: Undefined operator " << op << " used in " << chp << "." << endl;

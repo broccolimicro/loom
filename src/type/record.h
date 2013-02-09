@@ -11,7 +11,7 @@
 #define record_h
 
 #include "../common.h"
-#include "../variable.h"
+#include "../data.h"
 #include "keyword.h"
 
 /* This structure represents a structure or record. A record

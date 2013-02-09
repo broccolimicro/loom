@@ -11,8 +11,8 @@
 #ifndef variable_h
 #define variable_h
 
-#include "common.h"
-#include "data.h"
+#include "../common.h"
+#include "value.h"
 
 /* This structure describes a variable in the chp program. We need
  * to keep track of a variables name, its type (record, keyword, process),

@@ -8,7 +8,7 @@
  */
 
 #include "../common.h"
-#include "space.h"
+#include "trace.h"
 
 #ifndef rule_h
 #define rule_h

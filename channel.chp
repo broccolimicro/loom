@@ -33,7 +33,9 @@ channel chan4p1b
 	
 	operator!(int<1> i)
 	{
-		t,f := i,~i;[ra]; t,f := 0,0; [~ra];
+		[	i  -> t,f := 1,0
+		[]	~i -> t,f := 0,1
+		];[ra]; t,f := 0,0; [~ra];
 	}
 	
 	operator?(int<1> i)

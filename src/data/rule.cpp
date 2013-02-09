@@ -8,7 +8,6 @@
  */
 
 #include "rule.h"
-#include "space.h"
 #include "state.h"
 
 rule::rule()

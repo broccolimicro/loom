@@ -7,11 +7,6 @@
  *  DO NOT DISTRIBUTE
  */
 
-#include "common.h"
-#include "utility.h"
-#include "type.h"
-#include "data.h"
-
 #include "variable.h"
 
 variable::variable()

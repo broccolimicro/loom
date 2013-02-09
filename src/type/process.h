@@ -12,7 +12,6 @@
 
 #include "../common.h"
 #include "../data.h"
-#include "../variable.h"
 #include "../syntax.h"
 #include "keyword.h"
 

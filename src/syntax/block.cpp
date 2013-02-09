@@ -171,9 +171,9 @@ void block::parse(map<string, keyword*> types)
 				push(expand_instantiation(raw_instr, types, global, label, NULL, tab+"\t", verbosity, true));
 			else if ((k = raw_instr.find_first_of("?!@")) != raw_instr.npos && raw_instr.find(":=") == raw_instr.npos)
 			{
-				cout << "Instantiating Communication " << string("operator") + raw_instr[k] + "_fn" + "X" + "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")" << endl;
+				cout << "Instantiating Communication " << get_type(raw_instr.substr(0, k), global, label) + ".operator" + raw_instr[k] + "_fn" + "X" + "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")" << endl;
 
-				push(add_unique_variable("_fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", string("operator") + raw_instr[k], types, global, label, tab, verbosity).second);
+				push(add_unique_variable("_fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", get_type(raw_instr.substr(0, k), global, label) + ".operator" + raw_instr[k], types, global, label, tab, verbosity).second);
 			}
 			// This sub block is an assignment instruction.
 			//If an assignment is a skip, ignore. No state gen

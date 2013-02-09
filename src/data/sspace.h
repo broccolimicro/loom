@@ -1,16 +1,15 @@
 /*
- * space.h
+ * sspace.h
  *
  *  Created on: Jan 26, 2013
  *      Author: nbingham
  */
 
-#include "state.h"
-#include "trace.h"
-#include "graph.h"
+#ifndef sspace_h
+#define sspace_h
 
-#ifndef space_h
-#define space_h
+#include "../common.h"
+#include "state.h"
 
 struct state_space
 {
@@ -23,17 +22,6 @@ struct state_space
 
 	state operator[](int i);
 
-};
-
-struct trace_space
-{
-	// Variable indexed using uid
-	vector<trace> traces;
-
-	int size();
-	void assign(int i, trace t);
-
-	trace operator[](int i);
 };
 
 #endif

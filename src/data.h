@@ -11,7 +11,10 @@
 #include "data/value.h"
 #include "data/state.h"
 #include "data/trace.h"
-#include "data/space.h"
+#include "data/variable.h"
+#include "data/sspace.h"
+#include "data/tspace.h"
+#include "data/vspace.h"
 #include "data/graph.h"
 #include "data/rule.h"
 

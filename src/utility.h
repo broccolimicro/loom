@@ -10,7 +10,7 @@
 
 #include "common.h"
 #include "type.h"
-#include "variable.h"
+#include "data/variable.h"
 
 pair<string, instruction*> add_unique_variable(string prefix, string postfix, string type, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity);
 instruction *expand_instantiation(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, list<string> *input, string tab, int verbosity, bool allow_process);

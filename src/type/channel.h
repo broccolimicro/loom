@@ -11,7 +11,7 @@
 #define channel_h
 
 #include "../common.h"
-#include "../variable.h"
+#include "../data.h"
 #include "keyword.h"
 #include "record.h"
 #include "operator.h"
