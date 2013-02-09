@@ -28,7 +28,8 @@ struct program
 	~program();
 
 	map<string, keyword*>	type_space;
-	list<rule>				prs;
+	vector<rule>			prs_up;
+	vector<rule>			prs_down;
 	list<string>			errors;
 	state_space				space;
 	graph					trans;

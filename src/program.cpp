@@ -22,7 +22,8 @@ program::~program()
 program &program::operator=(program p)
 {
 	type_space = p.type_space;
-	prs = p.prs;
+	prs_up = p.prs_up;
+	prs_down = p.prs_down;
 	errors = p.errors;
 	return *this;
 }
@@ -189,10 +190,18 @@ void program::parse(string chp, int verbosity)
 
 	for(int i = 0; i < diff_space.size();i++)
 	{
-		for(j = 0; j< diff_space[i].size(), j++)
+		for(int j = 0; j< diff_space[i].size(); j++)
 		{
-			if((diff_space[i][j].data == "1")
-					i;
+			if((diff_space[i])[j].data == "1")
+			{
+				if(!global[get_name(j, &global, &label)].io)	//Output variable needs to fire high
+					prs_up[j].implicants.push_back("OneThing");
+			}
+			if((diff_space[i])[j].data == "0")
+			{
+				if(!global[get_name(j, &global, &label)].io)	//Output variable needs to fire low
+					prs_down[j].implicants.push_back("OtherThing ");
+			}
 
 		}
 	}
