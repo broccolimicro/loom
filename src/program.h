@@ -7,6 +7,7 @@
 #include "type.h"
 #include "syntax.h"
 #include "data.h"
+#include "utility.h"
 
 #ifndef program_h
 #define program_h
