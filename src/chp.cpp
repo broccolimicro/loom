@@ -63,16 +63,9 @@
  */
 
 #include "common.h"
-#include "keyword.h"
-#include "variable.h"
-#include "instruction.h"
-#include "space.h"
-#include "record.h"
-#include "block.h"
-#include "process.h"
-#include "operator.h"
-#include "channel.h"
-#include "graph.h"
+#include "syntax.h"
+#include "data.h"
+#include "type.h"
 #include "program.h"
 
 /* This structure describes a whole program. It contains a record of all

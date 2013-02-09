@@ -4,16 +4,9 @@
  */
 
 #include "common.h"
-#include "keyword.h"
-#include "variable.h"
-#include "instruction.h"
-#include "space.h"
-#include "record.h"
-#include "block.h"
-#include "process.h"
-#include "operator.h"
-#include "channel.h"
-#include "graph.h"
+#include "type.h"
+#include "syntax.h"
+#include "data.h"
 
 #ifndef program_h
 #define program_h
