@@ -13,17 +13,17 @@
 
 rule::rule()
 {
-	actual.clear();
+	//actual.clear();
 	left = "";
-	desired.clear();
+	//desired.clear();
 	right = "";
 }
 
 rule::~rule()
 {
-	actual.clear();
+	//actual.clear();
 	left = "";
-	desired.clear();
+	//desired.clear();
 	right = "";
 }
 
@@ -36,11 +36,11 @@ rule &rule::operator=(rule s)
 
 void rule::clear(int n)
 {
-	actual.clear();
-	for (int i = 0; i < n; i++)
-		actual.push_back(value("1"));
+	//actual.clear();
+	//for (int i = 0; i < n; i++)
+	//	actual.push_back(value("1"));
 	left = "";
-	desired.clear();
+	//desired.clear();
 	right = "";
 }
 
@@ -49,13 +49,13 @@ void rule::clear(int n)
  */
 int rule::index(int n)
 {
-	vector<value>::iterator i;
-	int j;
-	for (i = desired.begin(), j = 0; i != desired.end() && n > 0; i++, j++)
-		if (i->data == "1")
-			n--;
+	//vector<value>::iterator i;
+	//int j;
+	//for (i = desired.begin(), j = 0; i != desired.end() && n > 0; i++, j++)
+	//	if (i->data == "1")
+	//		n--;
 
-	return j;
+	//-return j;
 }
 
 ostream &operator<<(ostream &os, rule r)

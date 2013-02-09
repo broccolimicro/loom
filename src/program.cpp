@@ -167,6 +167,9 @@ void program::parse(string chp, int verbosity)
 	cout << "Generating State Space" << endl;
 	space.states.push_back(state(value("X"), global.size()));
 	prgm->generate_states(&space, &trans, 0);
+
+	//The whole program has states now!
+
 	if(STATESP_CO)
 	{
 		cout << "\t " << global << endl;
@@ -181,6 +184,19 @@ void program::parse(string chp, int verbosity)
 	state_space diff_space = delta_space_gen(space, trans);
 	print_diff_space_to_console(diff_space);
 	prgm->print_hse();
+
+	//Find the implicants of the diff space
+
+	for(int i = 0; i < diff_space.size();i++)
+	{
+		for(j = 0; j< diff_space[i].size(), j++)
+		{
+			if((diff_space[i][j].data == "1")
+					i;
+
+		}
+	}
+
 }
 
 
@@ -302,7 +318,6 @@ state_space delta_space_gen(state_space spaces, graph trans)
 			leaving_state = spaces[i];
 			//Node 2
 			incoming_state = spaces[trans.edges[i][j]];
-			cout << i << " " << trans.edges[i][j] << endl;
 			result_state = diff(leaving_state,incoming_state);
 			result_state.tag = i;
 			delta_space.states.push_back(result_state);

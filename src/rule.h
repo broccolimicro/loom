@@ -18,8 +18,9 @@ struct rule
 	rule();
 	~rule();
 
+	list<string> implicants;
 	string left, right;
-	trace actual, desired;
+	//trace actual, desired;
 
 	rule &operator=(rule s);
 
