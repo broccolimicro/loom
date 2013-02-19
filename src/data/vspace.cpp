@@ -23,7 +23,7 @@ variable *vspace::find(string name)
 {
 	map<string, variable>::iterator i;
 	i = global.find(name);
-	if (i != global.end());
+	if (i != global.end())
 		return &(i->second);
 	i = label.find(name);
 	if (i != label.end())
@@ -75,7 +75,7 @@ int vspace::get_uid(string name)
 {
 	map<string, variable>::iterator i;
 	i = global.find(name);
-	if (i != global.end());
+	if (i != global.end())
 		return i->second.uid;
 	i = label.find(name);
 	if (i != label.end())
