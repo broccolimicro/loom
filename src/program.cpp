@@ -169,7 +169,10 @@ void program::parse(string chp, int verbosity)
 
 
 	cout << "Generating State Space" << endl;
-	space.states.push_back(state(value("X"), vars.global.size()));
+	state s;
+	for (map<string, variable>::iterator ri = vars.global.begin(); ri != vars.global.end(); ri++)
+		s.values.push_back(ri->second.reset);
+	space.states.push_back(s);
 	prgm->generate_states(&space, &trans, 0);
 
 	//Generate states is done. Launching post-state info gathering
