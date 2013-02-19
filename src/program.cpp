@@ -163,28 +163,28 @@ void program::parse(string chp, int verbosity)
 		}
 	}
 
-	map<string, variable> global, label;
-	prgm = (parallel*)expand_instantiation("main _()", type_space, &global, &label, NULL, "", verbosity, true);
+	prgm = (parallel*)expand_instantiation("main _()", type_space, &vars, NULL, "", verbosity, true);
 
 	cout << "Generating State Space" << endl;
-	space.states.push_back(state(value("X"), global.size()));
+	space.states.push_back(state(value("X"), vars.global.size()));
 	prgm->generate_states(&space, &trans, 0);
 
 	//The whole program has states now!
 
 	if(STATESP_CO)
 	{
-		cout << "\t " << global << endl;
 		print_space_to_console();
 	}
 	if(STATESP_GR)
 	{
-		cout << "\t " << global << endl;
 		print_space_graph_to_console();
 	}
 	//Generate+print diff_space
 	state_space diff_space = delta_space_gen(space, trans);
 	print_diff_space_to_console(diff_space);
+
+	cout << vars << endl;
+
 	prgm->print_hse();
 
 	//Find the implicants of the diff space

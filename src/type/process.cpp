@@ -33,14 +33,14 @@ process::~process()
 	name = "";
 	_kind = "process";
 
-	global.clear();
+	vars.clear();
 }
 
 process &process::operator=(process p)
 {
 	def = p.def;
 	prs = p.prs;
-	global = p.global;
+	vars = p.vars;
 	return *this;
 }
 
@@ -76,10 +76,12 @@ void process::parse(string raw, map<string, keyword*> types, int verbosity)
 	{
 		if (*(i+1) == ',' || i+1 == io_block.end())
 		{
-			expand_instantiation(io_block.substr(j-io_block.begin(), i+1 - j), types, &global, &label, &input, "\t", verbosity, false);
+			expand_instantiation(io_block.substr(j-io_block.begin(), i+1 - j), types, &vars, &input, "\t", verbosity, false);
 			j = i+2;
 		}
 	}
 
-	def.init(chp.substr(block_start, block_end - block_start), types, &global, &label, "\t", verbosity);
+	def.init(chp.substr(block_start, block_end - block_start), types, &vars, "\t", verbosity);
+	def.print_hse();
+	cout << endl << endl;
 }

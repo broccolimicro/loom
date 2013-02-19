@@ -19,33 +19,23 @@
 
 process mux0b2(chan4p0b i, chan4p0b o1, chan4p0b o2, chan4p1b s)
 {
-	// initialize variables at reset
-	i.a-;
-	o1.r-;
-	o2.r-;
-	s.ra-;
+	int<1> c;
 	*[
-		// wait for a request
-		[s.t | s.f];
-		// service the request
-		[  s.f -> [i.r];o1.r+;[o1.a];i.a+;[~i.r];o1.r-;[~o1.a];i.a-
-		[] s.t -> [i.r];o2.r+;[o2.a];i.a+;[~i.r];o2.r-;[~o2.a];i.a-
+		s?c;
+		[ ~c -> o1?;i!
+		[] c -> o2?;i!
 		];
-		// clean up
-		s.ra+;
-		[~s.t & ~s.f];
-		s.ra-;
 	]
 }
 
 process main()
 {
-	/*chan4p0b blarg;
+	chan4p0b blarg;
 	chan4p0b mrawr;
 	chan4p0b yay;
 	chan4p1b yeah;
 	
-	mux0b2 MyMux(blarg, mrawr, yay, yeah);*/
+	mux0b2 MyMux(blarg, mrawr, yay, yeah);
 	
 	int<1> x := 1;
 	int<1> y := 1;
@@ -53,5 +43,5 @@ process main()
 	int<1> w := 0;
 	int<1> q;
 	
-	q := x&y | z&w;
+	q := x^y | z^w;
 }

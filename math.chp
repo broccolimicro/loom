@@ -1,46 +1,32 @@
-operator&(chan4p1b s, chan4p1b a, chan4p1b b)
+operator&(int<1> s, int<1> a, int<1> b)
 {
-	(int<1> A||
-	int<1> B||
-	int<1> S);
-	A, B := a?, b?;
-	[   A &  B -> S+
-	[] ~A | ~B -> S-
+	[    a & b -> s+
+	[] ~(a & b) -> s-
 	];
-	s!S
 }
 
-operator|(chan4p1b s, chan4p1b a, chan4p1b b)
+operator|(int<1> s, int<1> a, int<1> b)
 {
-	(int<1> A||
-	int<1> B||
-	int<1> S);
-	A, B := a?, b?;
-	[   A |  B -> S+
-	[] ~A & ~B -> S-
+	[    a | b -> s+
+	[] ~(a | b) -> s-
 	];
-	s!S
 }
 
-operator~(chan4p1b s, chan4p1b a)
+operator~(int<1> s, int<1> a)
 {
-	(int<1> A||
-	int<1> S);
-	a?A;
-	[  ~A -> S+
-	[]  A -> S-
+	[  ~a -> s+
+	[]  a -> s-
 	];
-	s!S
 }
 
-operator^(chan4p1b s, chan4p1b a, chan4p1b b)
+operator^(int<1> s, int<1> a, int<1> b)
 {
-	(int<1> A||
-	int<1> B||
-	int<1> S);
-	a?A || b?B;
-	[   ~A &  B  |   A & ~B  -> S+
-	[] ( A | ~B) & (~A |  B) -> S-
-	];
-	s!S
+	s := a&~b | ~a&b;
 }
+
+operator+(int<1> s, int<1> co, int<1> a, int<1> b, int<1> ci)
+{
+	s := a^b^ci;
+	co := a&b | a&ci | b&ci;
+}
+

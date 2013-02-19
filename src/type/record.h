@@ -25,8 +25,7 @@ struct record : keyword
 	~record();
 
 	string					chp;
-	map<string, variable>	globals;	// the list of member variables that make up this record
-	map<string, variable>	labels;
+	vspace					vars;
 
 	record &operator=(record r);
 	void parse(string raw, map<string, keyword*> types, int verbosity);

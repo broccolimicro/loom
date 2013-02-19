@@ -10,14 +10,13 @@ guard::guard()
 	_kind = "guard";
 }
 
-guard::guard(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity)
+guard::guard(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity)
 {
 	this->_kind		= "guard";
 	this->chp		= chp;
 	this->tab		= tab;
 	this->verbosity = verbosity;
-	this->global	= globals;
-	this->label		= label;
+	this->vars		= vars;
 
 	expand_shortcuts();
 	parse(types);
@@ -33,8 +32,7 @@ guard &guard::operator=(guard g)
 	this->uid		= g.uid;
 	this->chp		= g.chp;
 	this->rules		= g.rules;
-	this->global	= g.global;
-	this->label		= g.label;
+	this->vars		= g.vars;
 	this->tab		= g.tab;
 	this->verbosity	= g.verbosity;
 	return *this;
@@ -43,25 +41,43 @@ guard &guard::operator=(guard g)
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *guard::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert, string tab, int verbosity)
+instruction *guard::duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity)
 {
 	guard *instr;
 
 	instr 				= new guard();
 	instr->chp			= this->chp;
-	instr->global		= globals;
-	instr->label		= labels;
+	instr->vars			= vars;
 	instr->tab			= tab;
 	instr->verbosity	= verbosity;
 
-	map<string, string>::iterator i;
-	size_t k;
-	for (i = convert.begin(); i != convert.end(); i++)
+	map<string, string>::iterator i, j;
+	size_t k = 0, min, curr;
+	while (k != instr->chp.npos)
 	{
-		k = -1;
-		while ((k = find_name(instr->chp, i->first, k+1)) != instr->chp.npos)
-			instr->chp.replace(k, i->first.length(), i->second);
+		j = convert.end();
+		min = instr->chp.length();
+		curr = 0;
+		for (i = convert.begin(); i != convert.end(); i++)
+		{
+			curr = find_name(instr->chp, i->first, k);
+			if (curr < min)
+			{
+				min = curr;
+				j = i;
+			}
+		}
+
+		if (j != convert.end())
+		{
+			instr->chp.replace(min, j->first.length(), j->second);
+			k = min + j->second.length();
+		}
+		else
+			k = instr->chp.npos;
 	}
+
+	instr->chp = strip(demorgan(instr->chp, false));
 
 	return instr;
 }
@@ -72,6 +88,7 @@ void guard::expand_shortcuts()
 
 void guard::parse(map<string, keyword*> types)
 {
+	chp = strip(demorgan(chp, false));
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Guard:\t" + chp << endl;
 }
@@ -85,7 +102,7 @@ int guard::generate_states(state_space *space, graph *trans, int init)
 
 	uid = space->size();
 	si = (*space)[init];
-	so = solve(chp, global, tab, verbosity);
+	so = solve(chp, vars, tab, verbosity);
 	space->push_back(si && so);
 	if (CHP_EDGE)
 		trans->insert_edge(init, uid, chp+"->");
@@ -101,15 +118,15 @@ void guard::generate_prs()
 	print_prs();
 }
 
-state solve(string raw,  map<string, variable> *vars, string tab, int verbosity)
+state solve(string raw, vspace *vars, string tab, int verbosity)
 {
-	map<string, variable>::iterator vi;
+	int id;
 	state outcomes;
 	string::iterator i, j;
 	int depth;
 
-	if (vars->size() != 0)
-		outcomes.assign(vars->rbegin()->second.uid, value("?"), value("?"));
+	if (vars->global.size() != 0)
+		outcomes.assign(vars->global.size()-1, value("?"), value("?"));
 
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Solve: " << raw << endl;
@@ -241,7 +258,7 @@ state solve(string raw,  map<string, variable> *vars, string tab, int verbosity)
 
 		if (depth == 0 && *i == '~')
 		{
-			outcomes = !solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
+			outcomes = ~solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
 
 			if (verbosity >= VERB_PARSE)
 				cout << tab << outcomes << endl;
@@ -262,11 +279,11 @@ state solve(string raw,  map<string, variable> *vars, string tab, int verbosity)
 		return outcomes;
 	}
 
-	vi = vars->find(raw);
-	if (vi != vars->end())
-		outcomes.assign(vi->second.uid, value("1"), value("?"));
+	id = vars->get_uid(raw);
+	if (id != -1)
+		outcomes.assign(id, value("1"), value("?"));
 	else if (raw == "1")
-		for (vi = vars->begin(); vi != vars->end(); vi++)
+		for (map<string, variable>::iterator vi = vars->global.begin(); vi != vars->global.end(); vi++)
 			outcomes.assign(vi->second.uid, value("X"), value("?"));
 	else
 		cout << "Error: Undefined variable " << raw << "." << endl;

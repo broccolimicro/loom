@@ -24,8 +24,18 @@ struct vspace
 
 	string get_type(string name);
 	int	   get_uid(string name);
+	int    get_width(string name);
 
 	string unique_name(string prefix);
+
+	map<string, string> instantiate(string parent, vspace* s);
+
+	void insert(variable v);
+	void clear();
+
+	vspace &operator=(vspace s);
 };
+
+ostream &operator<<(ostream &os, vspace s);
 
 #endif

@@ -23,16 +23,16 @@
 struct block : instruction
 {
 	block();
-	block(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity);
+	block(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity);
 	~block();
 
 	list<instruction*>			instrs;		// an ordered list of instructions in block
 
 	block &operator=(block b);
 
-	void init(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity);
+	void init(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity);
 
-	instruction *duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert, string tab, int verbosity);
+	instruction *duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity);
 
 	void expand_shortcuts();
 	void parse(map<string, keyword*> types);

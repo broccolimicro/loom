@@ -67,6 +67,7 @@
 #include "data.h"
 #include "type.h"
 #include "program.h"
+#include "utility.h"
 
 /* This structure describes a whole program. It contains a record of all
  * of the types described in this program and all of the global variables

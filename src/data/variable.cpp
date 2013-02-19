@@ -11,28 +11,34 @@
 
 variable::variable()
 {
+	chp = "";
 	name = "";
 	type = "";
 	width = 0;
-	reset = value("X");
 	fixed = false;
+	reset = value("X");
+	uid = -1;
+	prs = false;
+	io = false;
 }
 
-variable::variable(string name, int uid, string type, value reset, uint16_t width, bool io)
+variable::variable(string name, string type, value reset, uint16_t width, bool io)
 {
+	this->chp = type + "<" + to_string(width) + ">" + name + ":=" + reset.data;
 	this->name = name;
-	this->uid = uid;
 	this->type = type;
 	this->width = width;
 	this->reset = reset;
 	this->fixed = true;
+	this->uid = -1;
+	this->prs = ~io;
 	this->io = io;
 }
 
-variable::variable(string chp, int uid, bool io, string tab, int verbosity)
+variable::variable(string chp, bool io, string tab, int verbosity)
 {
 	this->chp = chp;
-	this->uid = uid;
+	this->uid = -1;
 	this->io = io;
 	this->tab = tab;
 	this->verbosity = verbosity;
@@ -51,13 +57,16 @@ variable::~variable()
 
 variable &variable::operator=(variable v)
 {
+	chp = v.chp;
 	name = v.name;
 	type = v.type;
 	width = v.width;
-	reset = v.reset;
 	fixed = v.fixed;
+	reset = v.reset;
 	uid = v.uid;
 	prs = v.prs;
+	io = v.io;
+
 	return *this;
 }
 
@@ -72,7 +81,7 @@ void variable::parse(string chp)
 	size_t width_start = chp.find_first_of("< ");
 	size_t name_start = chp.find_first_of("> ");
 	size_t input_start = chp.find_first_of("(");
-	size_t input_end = chp.find_first_of(")");
+	size_t input_end = find_first_of_l0(chp, ")", input_start);
 	size_t reset_start = chp.find(":=");
 
 	if (verbosity >= VERB_PARSE)

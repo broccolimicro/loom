@@ -17,14 +17,13 @@ assignment::assignment()
 	_kind = "assignment";
 }
 
-assignment::assignment(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity)
+assignment::assignment(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity)
 {
 	this->_kind		= "assignment";
 	this->chp		= chp;
 	this->tab		= tab;
 	this->verbosity = verbosity;
-	this->global	= globals;
-	this->label		= label;
+	this->vars		= vars;
 
 	expand_shortcuts();
 	parse(types);
@@ -41,8 +40,7 @@ assignment &assignment::operator=(assignment a)
 	this->expr		= a.expr;
 	this->chp		= a.chp;
 	this->rules		= a.rules;
-	this->global	= a.global;
-	this->label		= a.label;
+	this->vars		= a.vars;
 	this->tab		= a.tab;
 	this->verbosity	= a.verbosity;
 	return *this;
@@ -51,34 +49,94 @@ assignment &assignment::operator=(assignment a)
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *assignment::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert, string tab, int verbosity)
+instruction *assignment::duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity)
 {
 	assignment *instr;
 
 	instr 				= new assignment();
 	instr->chp			= this->chp;
-	instr->global		= globals;
-	instr->label		= labels;
+	instr->vars			= vars;
 	instr->tab			= tab;
 	instr->verbosity	= verbosity;
 	instr->expr			= this->expr;
 
-	map<string, string>::iterator i;
-	list<pair<string, string> >::iterator j;
-	size_t k;
-	for (i = convert.begin(); i != convert.end(); i++)
+	map<string, string>::iterator i, j;
+	list<pair<string, string> >::iterator e;
+	size_t k = 0, min, curr;
+	while (k != instr->chp.npos)
 	{
-		k = -1;
-		while ((k = find_name(instr->chp, i->first, k+1)) != instr->chp.npos)
-			instr->chp.replace(k, i->first.length(), i->second);
-		for (j = instr->expr.begin(); j != instr->expr.end(); j++)
+		j = convert.end();
+		min = instr->chp.length();
+		curr = 0;
+		for (i = convert.begin(); i != convert.end(); i++)
 		{
-			k = -1;
-			while ((k = find_name(j->first, i->first, k+1)) != j->first.npos)
-				j->first.replace(k, i->first.length(), i->second);
-			k = -1;
-			while ((k = find_name(j->second, i->first, k+1)) != j->second.npos)
-				j->second.replace(k, i->first.length(), i->second);
+			curr = find_name(instr->chp, i->first, k);
+			if (curr < min)
+			{
+				min = curr;
+				j = i;
+			}
+		}
+
+		if (j != convert.end())
+		{
+			instr->chp.replace(min, j->first.length(), j->second);
+			k = min + j->second.length();
+		}
+		else
+			k = instr->chp.npos;
+	}
+
+	for (e = instr->expr.begin(); e != instr->expr.end(); e++)
+	{
+		k = 0;
+		while (k != e->first.npos)
+		{
+			j = convert.end();
+			min = e->first.length();
+			curr = 0;
+			for (i = convert.begin(); i != convert.end(); i++)
+			{
+				curr = find_name(e->first, i->first, k);
+				if (curr < min)
+				{
+					min = curr;
+					j = i;
+				}
+			}
+
+			if (j != convert.end())
+			{
+				e->first.replace(min, j->first.length(), j->second);
+				k = min + j->second.length();
+			}
+			else
+				k = e->first.npos;
+		}
+
+		k = 0;
+		while (k != e->second.npos)
+		{
+			j = convert.end();
+			min = e->second.length();
+			curr = 0;
+			for (i = convert.begin(); i != convert.end(); i++)
+			{
+				curr = find_name(e->second, i->first, k);
+				if (curr < min)
+				{
+					min = curr;
+					j = i;
+				}
+			}
+
+			if (j != convert.end())
+			{
+				e->second.replace(min, j->first.length(), j->second);
+				k = min + j->second.length();
+			}
+			else
+				k = e->second.npos;
 		}
 	}
 
@@ -130,6 +188,7 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 {
 	cout << tab << "Assignment " << chp << endl;
 
+	variable *v;
 	map<string, variable>::iterator vi;
 	list<pair<string, string> >::iterator ei;
 	string search;
@@ -143,31 +202,27 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 	// Evaluate each expression
 	for (ei = expr.begin(); ei != expr.end(); ei++)
 	{
-		vi = global->find(ei->first);
+		v = vars->find(ei->first);
 
-		if (vi != global->end())
-			s.assign(vi->second.uid, evaluate(ei->second, global, s.values, tab, verbosity), value("?"));
+		if (v != NULL)
+		{
+			s.assign(v->uid, evaluate(ei->second, vars, s.values, tab, verbosity), value("?"));
+
+			// TODO Make this search smarter
+			// Search for this channel's other variables and X them out.
+			search = ei->first.substr(0, ei->first.find_last_of("."));
+			for (vi = vars->global.begin(); vi != vars->global.end(); vi++)
+				if (vi->first.substr(0, search.length()) == search && vi->first != ei->first)
+					s.assign(vi->second.uid, value("X"));
+		}
 		else
 			cout << "Error: Undefined variable " << ei->first << "." << endl;
-
-		// TODO Make this search smarter
-		// Search for this channel's other variables and X them out.
-		search = ei->first.substr(0, ei->first.find_last_of("."));
-		for (vi = global->begin(); vi != global->end(); vi++)
-		{
-			if (vi->first.substr(0, search.length()) == search && vi->first != ei->first)
-			{
-				s.assign(vi->second.uid, value("X"));
-				//cout << vi->first << endl;
-			}
-		}
-		//cout << search << endl;
 	}
 
 	cout << tab << s << endl;
 
 	space->push_back(s);
-	if(CHP_EDGE)
+	if (CHP_EDGE)
 		trans->insert_edge(init, uid, chp);
 	else
 		trans->insert_edge(init, uid, "Assign");
@@ -182,31 +237,27 @@ void assignment::generate_prs()
 	print_prs();
 }
 
-instruction *expand_assignment(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity)
+instruction *expand_assignment(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity)
 {
-	assignment *a = new assignment(chp, types, global, label, tab, verbosity);
-	parallel *p = new parallel("", types, global, label, tab, verbosity);;
+	assignment *a = new assignment(chp, types, vars, tab, verbosity);
+	parallel *p = new parallel("", types, vars, tab, verbosity);;
 	pair<string, instruction*> result;
 	list<pair<string, string> >::iterator i;
+	list<pair<string, string> > remove;
 
 	for (i = a->expr.begin(); i != a->expr.end(); i++)
 	{
-		cout << i->first << " " << i->second << endl;
-		if (i->second.find_first_of("|&=<>/+-*~?@") != i->second.npos)
+		if (i->second.find_first_of("&|~^=<>/+-*?@()") != i->second.npos)
 		{
-			result = expand_expression(i->second, types, global, label, tab, verbosity);
+			result = expand_expression(i->second, types, vars, i->first, tab, verbosity);
 			i->second = result.first;
 			p->push(result.second);
-
-			if (get_kind(i->second, global, label, types) == "channel")
-			{
-				cout << "This is a channel!!! Yay!!" << endl;
-				result = expand_expression(i->second+"?", types, global, label, tab, verbosity);
-				i->second = result.first;
-				p->push(result.second);
-			}
+			remove.push_back(*i);
 		}
 	}
+
+	for (i = remove.begin(); i != remove.end(); i++)
+		a->expr.remove(*i);
 
 	if (p->instrs.size() == 0)
 	{
@@ -214,12 +265,15 @@ instruction *expand_assignment(string chp, map<string, keyword*> types, map<stri
 		return a;
 	}
 
-	p->push(a);
+	if (a->expr.size() > 0)
+		p->push(a);
+	else
+		delete a;
 
 	return p;
 }
 
-pair<string, instruction*> expand_expression(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity)
+pair<string, instruction*> expand_expression(string chp, map<string, keyword*> types, vspace *vars, string top, string tab, int verbosity)
 {
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Decompose: " << chp << endl;
@@ -256,6 +310,17 @@ pair<string, instruction*> expand_expression(string chp, map<string, keyword*> t
 		if (p != chp.npos)
 		{
 			op = "&";
+			left = chp.substr(0, p);
+			right = chp.substr(p+1);
+		}
+	}
+
+	if (op == "")
+	{
+		p = find_first_of_l0(chp, "^");
+		if (p != chp.npos)
+		{
+			op = "^";
 			left = chp.substr(0, p);
 			right = chp.substr(p+1);
 		}
@@ -402,81 +467,88 @@ pair<string, instruction*> expand_expression(string chp, map<string, keyword*> t
 		}
 	}
 
-	cout << p << " " << left << " " << right << " " << chp << endl;
-
+	C = pair<string, instruction*>("", NULL);
 	if (chp[0] == '(' && chp[chp.length()-1] == ')' && op == "")
-		return expand_expression(chp.substr(1, chp.length()-2), types, global, label, tab+"\t", verbosity);
+	{
+		C = expand_expression(chp.substr(1, chp.length()-2), types, vars, top, tab+"\t", verbosity);
+		if (C.first.find_first_of("&|^=<>/+-*?!@()") != C.first.npos)
+			C.first = "(" + C.first + ")";
+		return C;
+	}
 
 	string type = "operator" + op;
 	if (op == "?")
-		type = get_type(left, global, label) + "." + type;
+		type = vars->get_type(left) + "." + type;
 
 	k = types.find(type);
 	if (k == types.end())
 	{
-		cout << "Error: Undefined operator " << op << " used in " << chp << "." << endl;
-		return pair<string, instruction*>("", NULL);
+		cout << "Error: Undefined operator " << type << " used in " << chp << "." << endl;
+		return pair<string, instruction*>(chp, NULL);
 	}
 
 	proc = (operate*)k->second;
 
-	A = pair<string, instruction*>("", NULL);
-	B = pair<string, instruction*>("", NULL);
-	if (left.find_first_of("|&=<>/+-*~?!@") != left.npos)
-		A = expand_expression(left, types, global, label, tab+"\t", verbosity);
+	A = pair<string, instruction*>(left, NULL);
+	B = pair<string, instruction*>(right, NULL);
+	if (left.find_first_of("&|~^=<>/+-*?!@()") != left.npos)
+		A = expand_expression(left, types, vars, "", tab+"\t", verbosity);
+	if (right.find_first_of("&|~^=<>/+-*?!@()") != right.npos)
+		B = expand_expression(right, types, vars, "", tab+"\t", verbosity);
 
-	if (right.find_first_of("|&=<>/+-*~?!@") != right.npos)
-		B = expand_expression(right, types, global, label, tab+"\t", verbosity);
+	if (top != "" && A.first.find_first_of("&|~^=<>/+-*?!@()") != A.first.npos)
+		A.first = "(" + A.first + ")";
+	if (top != "" && B.first.find_first_of("&|~^=<>/+-*?!@()") != B.first.npos)
+		B.first = "(" + B.first + ")";
 
-	map<string, string> convert;
-	parallel* ret;
-	for (s = proc->input.begin(); s != proc->input.end() && s->find_first_of(".") != s->npos; s++);
-	if (s != proc->input.end())
+	if (A.second == NULL && B.second == NULL && (op == "&" || op == "|" || op == "~") && top == "" &&
+	   (A.first.find_first_of("&|~") != A.first.npos || (vars->get_type(A.first) == "int" && vars->get_width(A.first) == 1) || A.first == "") &&
+	   (B.first.find_first_of("&|~") != B.first.npos || (vars->get_type(B.first) == "int" && vars->get_width(B.first) == 1) || B.first == ""))
+		return pair<string, instruction*>(A.first + op + B.first, NULL);
+
+	string name = vars->unique_name("_fn");
+	if (op == "?")
+		name = A.first + "." + name;
+	string dec = type + " " + name + "(";
+
+	if (proc->input.size() >= 1)
 	{
-		v = proc->label.find(*s);
-		if (v == proc->label.end())
-			v = proc->global.find(*s);
-
-		C = add_unique_variable("_op", "", v->second.type, types, global, label, tab+"\t", verbosity);
-		convert.insert(pair<string, string>(*s, C.first));
-		cout << *s << " " << C.first << endl;
+		if (top == "")
+		{
+			C = add_unique_variable("_op", "", proc->vars.get_type(proc->input.front()), types, vars, tab+"\t", verbosity);
+			dec += C.first;
+		}
+		else
+			dec += top;
 	}
-	if (left != "")
-	{
-		for (s++; s != proc->input.end() && s->find_first_of(".") != s->npos; s++);
-		if (s != proc->input.end())
-			convert.insert(pair<string, string>(*s, A.second == NULL ? left : A.first));
-		cout << *s << " " << (A.second == NULL ? left : A.first) << endl;
-	}
-	if (right != "")
-	{
-		for (s++; s != proc->input.end() && s->find_first_of(".") != s->npos; s++);
-		if (s != proc->input.end())
-			convert.insert(pair<string, string>(*s, B.second == NULL ? right : B.first));
-		cout << *s << " " << (B.second == NULL ? right : B.first) << endl;
-	}
+	else
+		cout << "Error: What the hell does this operator do? " << proc->chp << endl;
 
-	int id = 0;
-	while (global->find("_fn" + to_string(id)) != global->end() || label->find("_fn" + to_string(id)) != label->end())
-		id++;
+	if (A.first != "" && proc->input.size() >= 2)
+		dec += "," + A.first;
+	else if (A.first != "")
+		cout << "Error: Argument count mismatch. This operator should have no inputs. " << proc->chp << endl;
 
-	string dec = "operator" + op + " " + "_fn" + to_string(id) + "(";
-
-	for (c = convert.begin(); c != convert.end(); c++)
-	{
-		if (c != convert.begin())
-			dec += ",";
-		dec += c->second;
-		cout << c->first << " -> " << c->second << endl;
-	}
+	if (B.first != "" && ((proc->input.size() >= 2 && A.first == "") || (proc->input.size() >= 3)))
+		dec += "," + B.first;
+	else if (B.first != "")
+		cout << "Error: Argument count mismatch. This operator should have only one input. " << proc->chp << endl;
 
 	dec += ")";
-	cout << dec << endl;
 
-	ret = (parallel*)expand_instantiation(dec, types, global, label, NULL, tab, verbosity, true);
+	parallel *sub = new parallel();
+	sub->tab = tab;
+	sub->verbosity = verbosity;
+	sub->vars = vars;
+	sub->push(A.second);
+	sub->push(B.second);
 
-	ret->push(A.second);
-	ret->push(B.second);
+	block* ret = new block();
+	ret->tab = tab;
+	ret->verbosity = verbosity;
+	ret->vars = vars;
+	ret->push(sub);
+	ret->push(expand_instantiation(dec, types, vars, NULL, tab, verbosity, true));
 
 	return pair<string, instruction*>(C.first, ret);
 }

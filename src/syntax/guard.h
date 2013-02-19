@@ -13,14 +13,14 @@
 struct guard : instruction
 {
 	guard();
-	guard(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity);
+	guard(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity);
 	~guard();
 
 	int uid;					// indexes into the state in the state space
 
 	guard &operator=(guard g);
 
-	instruction *duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert, string tab, int verbosity);
+	instruction *duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity);
 
 	void expand_shortcuts();
 	void parse(map<string, keyword*> types);
@@ -30,6 +30,6 @@ struct guard : instruction
 	void print_hse();
 };
 
-state solve(string raw, map<string, variable> *vars, string tab, int verbosity);
+state solve(string raw, vspace *vars, string tab, int verbosity);
 
 #endif

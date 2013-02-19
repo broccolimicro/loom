@@ -20,7 +20,7 @@ conditional::conditional()
 	type = unknown;
 }
 
-conditional::conditional(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity)
+conditional::conditional(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity)
 {
 	clear();
 
@@ -28,9 +28,8 @@ conditional::conditional(string chp, map<string, keyword*> types, map<string, va
 	this->chp = chp.substr(1, chp.length()-2);
 	this->tab = tab;
 	this->verbosity = verbosity;
-	this->global = globals;
 	type = unknown;
-	this->label = label;
+	this->vars = vars;
 
 	expand_shortcuts();
 	parse(types);
@@ -61,8 +60,7 @@ conditional &conditional::operator=(conditional c)
 	this->chp		= c.chp;
 	this->instrs	= c.instrs;
 	this->rules		= c.rules;
-	this->global	= c.global;
-	this->label		= c.label;
+	this->vars		= c.vars;
 	this->tab		= c.tab;
 	this->verbosity	= c.verbosity;
 	return *this;
@@ -71,30 +69,46 @@ conditional &conditional::operator=(conditional c)
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *conditional::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert, string tab, int verbosity)
+instruction *conditional::duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity)
 {
 	conditional *instr;
 
 	instr 				= new conditional();
 	instr->chp			= this->chp;
-	instr->global		= globals;
-	instr->label		= labels;
+	instr->vars			= vars;
 	instr->tab			= tab;
 	instr->verbosity	= verbosity;
 	instr->type			= this->type;
 
 	map<string, string>::iterator i, j;
-	size_t k;
-	for (i = convert.begin(); i != convert.end(); i++)
+	size_t k = 0, min, curr;
+	while (k != instr->chp.npos)
 	{
-		k = -1;
-		while ((k = find_name(instr->chp, i->first, k+1)) != instr->chp.npos)
-			instr->chp.replace(k, i->first.length(), i->second);
+		j = convert.end();
+		min = instr->chp.length();
+		curr = 0;
+		for (i = convert.begin(); i != convert.end(); i++)
+		{
+			curr = find_name(instr->chp, i->first, k);
+			if (curr < min)
+			{
+				min = curr;
+				j = i;
+			}
+		}
+
+		if (j != convert.end())
+		{
+			instr->chp.replace(min, j->first.length(), j->second);
+			k = min + j->second.length();
+		}
+		else
+			k = instr->chp.npos;
 	}
 
 	list<pair<block*, guard*> >::iterator l;
 	for (l = instrs.begin(); l != instrs.end(); l++)
-		instr->instrs.push_back(pair<block*, guard*>((block*)l->first->duplicate(globals, labels, convert, tab+"\t", verbosity), (guard*)l->second->duplicate(globals, labels, convert, tab+"\t", verbosity)));
+		instr->instrs.push_back(pair<block*, guard*>((block*)l->first->duplicate(vars, convert, tab+"\t", verbosity), (guard*)l->second->duplicate(vars, convert, tab+"\t", verbosity)));
 
 	return instr;
 }
@@ -166,7 +180,7 @@ void conditional::parse(map<string, keyword*> types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block( blockstr, types, global, label, tab+"\t", verbosity), new guard(guardstr, types, global, label, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block( blockstr, types, vars, tab+"\t", verbosity), new guard(guardstr, types, vars, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 		}
@@ -184,7 +198,7 @@ void conditional::parse(map<string, keyword*> types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block(blockstr, types, global, label, tab+"\t", verbosity), new guard(guardstr, types, global, label, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block(blockstr, types, vars, tab+"\t", verbosity), new guard(guardstr, types, vars, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}

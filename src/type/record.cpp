@@ -33,12 +33,13 @@ record::~record()
 	name = "";
 	_kind = "record";
 
-	globals.clear();
+	vars.clear();
 }
 
 record &record::operator=(record r)
 {
-	globals = r.globals;
+	chp = r.chp;
+	vars = r.vars;
 	return *this;
 }
 
@@ -71,7 +72,7 @@ void record::parse(string raw, map<string, keyword*> types, int verbosity)
 	{
 		if (*(i+1) == ';')
 		{
-			expand_instantiation(io_block.substr(j-io_block.begin(), i+1 - j), types, &globals, &labels, NULL, "\t", verbosity, false);
+			expand_instantiation(io_block.substr(j-io_block.begin(), i+1 - j), types, &vars, NULL, "\t", verbosity, false);
 
 			j = i+2;
 		}
@@ -81,11 +82,7 @@ void record::parse(string raw, map<string, keyword*> types, int verbosity)
 ostream &operator<<(ostream &os, record s)
 {
     os << s.name << "{";
-    map<string, variable>::iterator i;
-    for (i = s.globals.begin(); i != s.globals.end(); i++)
-    {
-    	os << i->second << " ";
-    }
+    os << s.vars;
     os << "}";
 
     return os;

@@ -16,14 +16,14 @@
 struct parallel : block
 {
 	parallel();
-	parallel(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity);
+	parallel(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity);
 	~parallel();
 
 	int uid;					// indexes into the state in the state space
 
 	parallel &operator=(parallel p);
 
-	instruction *duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert, string tab, int verbosity);
+	instruction *duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity);
 
 	void expand_shortcuts();
 	void parse(map<string, keyword*> types);

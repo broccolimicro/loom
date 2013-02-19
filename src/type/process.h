@@ -30,8 +30,7 @@ struct process : keyword
 	string					chp;	// the raw process definition
 	parallel				def;	// the chp that defined this process
 	list<string>			prs;	// the final set of generated production rules
-	map<string, variable>	global;	// globally defined variables: only used for channel definitions
-	map<string, variable>	label;
+	vspace					vars;
 	list<string>			input;
 
 	process &operator=(process p);

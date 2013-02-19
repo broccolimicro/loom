@@ -6,63 +6,66 @@
  */
 
 #include "utility.h"
+#include "common.h"
 
-instruction *expand_instantiation(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, list<string> *input, string tab, int verbosity, bool allow_process)
+instruction *expand_instantiation(string chp, map<string, keyword*> types, vspace *vars, list<string> *input, string tab, int verbosity, bool allow_process)
 {
 	map<string, keyword*>::iterator var_type;
 	map<string, variable>::iterator mem_var;
-	variable v = variable(chp, global->size(), !allow_process, tab, verbosity);
+	variable v = variable(chp, !allow_process, tab, verbosity);
+	variable v2;
 
 	if (input != NULL)
 		input->push_back(v.name);
 
-	string name;
-
 	if ((var_type = types.find(v.type)) != types.end())
 	{
-		if (v.type == "int")
-			global->insert(pair<string, variable>(v.name, v));
-		else
-			label->insert(pair<string, variable>(v.name, v));
+		vars->insert(v);
 
 		if (var_type->second->kind() == "record" || var_type->second->kind() == "channel")
-		{
-			name = v.name;
-			for (mem_var = ((record*)var_type->second)->globals.begin(); mem_var != ((record*)var_type->second)->globals.end(); mem_var++)
-			{
-				v = mem_var->second;
-
-				if (v.type == "int")
-					global->insert(pair<string, variable>(name + "." + v.name, variable(name + "." + v.name, global->size(), v.type, v.reset, v.width, !allow_process)));
-				else
-					label->insert(pair<string, variable>(name + "." + v.name, variable(name + "." + v.name, global->size(), v.type, v.reset, v.width, !allow_process)));
-			}
-		}
+			vars->instantiate(v.name, &(((record*)var_type->second)->vars));
 		else if (var_type->second->kind() == "process" || var_type->second->kind() == "operate")
 		{
 			if (allow_process)
 			{
-				cout << "Instantiating Process: " << v.type << " " << v.name << endl;
-
-				map<string, string> convert;
+				map<string, string> rename;
+				map<string, string>::iterator ri;
 				list<string>::iterator i, j;
+
+				rename = vars->instantiate(v.name, &(((process*)var_type->second)->vars));
+
+				if (v.type.find_first_of("!?@") != v.type.npos && v.name.find_first_of(".") != v.name.npos)
+				{
+					string chname = v.name.substr(0, v.name.find_first_of("."));
+					string chtype = v.type.substr(0, v.type.find_first_of("."));
+					map<string, keyword*>::iterator ch = types.find(chtype);
+					if (ch != types.end())
+					{
+						for (mem_var = ((channel*)ch->second)->vars.global.begin(); mem_var != ((channel*)ch->second)->vars.global.end(); mem_var++)
+						{
+							rename.insert(pair<string, string>(mem_var->second.name, chname + "." + mem_var->second.name));
+							v2 = mem_var->second;
+							v2.name = chname + "." + v2.name;
+							v2.uid = vars->global.size();
+							v2.io = false;
+							vars->global.insert(pair<string, variable>(v2.name, v2));
+						}
+						for (mem_var = ((channel*)ch->second)->vars.label.begin(); mem_var != ((channel*)ch->second)->vars.label.end(); mem_var++)
+						{
+							rename.insert(pair<string, string>(mem_var->second.name, chname + "." + mem_var->second.name));
+							v2 = mem_var->second;
+							v2.name = chname + "." + v2.name;
+							v2.uid = vars->label.size();
+							v2.io = false;
+							vars->label.insert(pair<string, variable>(v2.name, v2));
+						}
+					}
+				}
+
 				for (i = v.inputs.begin(), j = ((process*)var_type->second)->input.begin(); i != v.inputs.end() && j != ((process*)var_type->second)->input.end(); i++, j++)
-					convert.insert(pair<string, string>(*j, *i));
+					rename.insert(pair<string, string>(*j, *i));
 
-				for (mem_var = ((process*)var_type->second)->global.begin(); mem_var != ((process*)var_type->second)->global.end(); mem_var++)
-					if (!mem_var->second.io)
-					{
-						global->insert(pair<string, variable>(v.name + "." + mem_var->second.name, variable(mem_var->second.name, global->size(), mem_var->second.type, mem_var->second.reset, mem_var->second.width, mem_var->second.io)));
-						convert.insert(pair<string, string>(mem_var->second.name, v.name + "." + mem_var->second.name));
-					}
-				for (mem_var = ((process*)var_type->second)->label.begin(); mem_var != ((process*)var_type->second)->label.end(); mem_var++)
-					if (!mem_var->second.io)
-					{
-						label->insert(pair<string, variable>(v.name + "." + mem_var->second.name, variable(mem_var->second.name, global->size(), mem_var->second.type, mem_var->second.reset, mem_var->second.width, mem_var->second.io)));
-						convert.insert(pair<string, string>(mem_var->second.name, v.name + "." + mem_var->second.name));
-					}
-
-				return ((process*)var_type->second)->def.duplicate(global, label, convert, tab, verbosity);
+				return ((process*)var_type->second)->def.duplicate(vars, rename, tab, verbosity);
 			}
 			else
 				cout << "Error: Invalid use of type " << var_type->second->kind() << " in record definition." << endl;
@@ -74,13 +77,11 @@ instruction *expand_instantiation(string chp, map<string, keyword*> types, map<s
 	return NULL;
 }
 
-pair<string, instruction*> add_unique_variable(string prefix, string postfix, string type, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity)
+pair<string, instruction*> add_unique_variable(string prefix, string postfix, string type, map<string, keyword*> types, vspace *vars, string tab, int verbosity)
 {
-	int id = 0;
-	while (global->find(prefix + to_string(id)) != global->end() || label->find(prefix + to_string(id)) != label->end())
-		id++;
+	string name = vars->unique_name(prefix);
 
-	return pair<string, instruction*>(prefix + to_string(id), expand_instantiation(type + " " + prefix + to_string(id) + postfix, types, global, label, NULL, tab, verbosity, true));
+	return pair<string, instruction*>(name, expand_instantiation(type + " " + name + postfix, types, vars, NULL, tab, verbosity, true));
 }
 
 size_t find_name(string subject, string search, size_t pos)
@@ -98,22 +99,9 @@ size_t find_name(string subject, string search, size_t pos)
 	return ret;
 }
 
-string get_type(string name, map<string, variable> *global, map<string, variable> *label)
+string get_kind(string name, vspace *vars, map<string, keyword*> types)
 {
-	map<string, variable>::iterator i;
-	i = global->find(name);
-	if (i == global->end());
-		i = label->find(name);
-
-	if (i == label->end())
-		return "";
-
-	return i->second.type;
-}
-
-string get_kind(string name, map<string, variable> *global, map<string, variable> *label, map<string, keyword*> types)
-{
-	string type = get_type(name, global, label);
+	string type = vars->get_type(name);
 	map<string, keyword*>::iterator i;
 	i = types.find(type);
 	if (i == types.end())
@@ -122,14 +110,125 @@ string get_kind(string name, map<string, variable> *global, map<string, variable
 	return i->second->kind();
 }
 
-string get_name(int uid, map<string, variable> *global, map<string, variable> *label)
+// Only | & ~ operators allowed
+string demorgan(string exp, bool invert)
 {
-	map<string, variable>::iterator i;
-	for (i = global->begin(); i != global->end(); i++)
-		if (i->second.uid == uid)
-			return i->first;
-	for (i = label->begin(); i != label->end(); i++)
-		if (i->second.uid == uid)
-			return i->first;
-	return "";
+	list<string> ops, ex;
+
+	string left, right, op = "";
+	size_t p;
+
+	if (op == "")
+	{
+		p = find_first_of_l0(exp, "|");
+		if (p != exp.npos)
+		{
+			left = exp.substr(0, p);
+			right = exp.substr(p+1);
+			if (invert)
+				return demorgan(left, true) + "&" + demorgan(right, true);
+			else
+				return "(" + demorgan(left, false) + "|" + demorgan(right, false) + ")";
+		}
+	}
+
+	if (op == "")
+	{
+		p = find_first_of_l0(exp, "&");
+		if (p != exp.npos)
+		{
+			left = exp.substr(0, p);
+			right = exp.substr(p+1);
+			if (invert)
+				return "(" + demorgan(left, true) + "|" + demorgan(right, true) + ")";
+			else
+				return demorgan(left, false) + "&" + demorgan(right, false);
+		}
+	}
+
+	if (op == "")
+	{
+		p = find_first_of_l0(exp, "~");
+		if (p != exp.npos)
+		{
+			if (invert)
+				return demorgan(exp.substr(p+1), false);
+			else
+				return demorgan(exp.substr(p+1), true);
+		}
+	}
+
+	if (exp[0] == '(' && exp[exp.length()-1] == ')' && op == "")
+		return demorgan(exp.substr(1, exp.length()-2), invert);
+
+	if (invert)
+		return "~" + exp;
+	else
+		return exp;
+}
+
+string strip(string e)
+{
+	while (e.length() >= 2 && find_first_of_l0(e, "|&~") == e.npos && e.find_first_of("()") != e.npos)
+		e = e.substr(1, e.length() - 2);
+	return e;
+}
+
+string distribute(string exp, string sib)
+{
+	list<string> ops, ex;
+
+	string left, right, op = "";
+	size_t p;
+
+	if (op == "")
+	{
+		p = find_first_of_l0(exp, "|");
+		if (p != exp.npos)
+		{
+			op = "|";
+			left = exp.substr(0, p);
+			right = exp.substr(p+1);
+			cout << left << " " << right << endl;
+
+			if (sib == "")
+				return distribute(left, "") + "|" + distribute(right, "");
+			else
+				return distribute(left + "&" + sib, "") + "|" + distribute(right + "&" + sib, "");
+		}
+	}
+
+	if (op == "")
+	{
+		p = find_first_of_l0(exp, "&");
+		if (p != exp.npos)
+		{
+			op = "&";
+			left = exp.substr(0, p);
+			right = exp.substr(p+1);
+			cout << left << " " << right << endl;
+
+			return distribute(left, right);
+		}
+	}
+
+	if (op == "")
+	{
+		p = find_first_of_l0(exp, "~");
+		if (p != exp.npos)
+		{
+			op = "~";
+			left = "";
+			right = exp.substr(p+1);
+			cout << left << " " << right << endl;
+		}
+	}
+
+	if (exp[0] == '(' && exp[exp.length()-1] == ')' && op == "")
+		return distribute(exp.substr(1, exp.length()-2), sib);
+
+	if (sib == "")
+		return exp;
+	else
+		return exp + "&" + sib;
 }

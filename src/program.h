@@ -25,6 +25,7 @@ struct program
 	vector<rule>			prs_up;
 	vector<rule>			prs_down;
 	list<string>			errors;
+	vspace					vars;
 	state_space				space;
 	graph					trans;
 	parallel				*prgm;

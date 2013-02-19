@@ -32,12 +32,12 @@ channel::~channel()
 	name = "";
 	_kind = "channel";
 
-	globals.clear();
+	vars.clear();
 }
 
 channel &channel::operator=(channel r)
 {
-	globals = r.globals;
+	vars = r.vars;
 	return *this;
 }
 
@@ -53,6 +53,8 @@ void channel::parse(string chp, map<string, keyword*> types, int verbosity)
 	string::iterator i, j;
 	string io_block;
 	string raw;
+
+	string s = "", r = "", p = "";
 
 	map<string, state> res;
 	map<string, state>::iterator ri;
@@ -86,7 +88,7 @@ void channel::parse(string chp, map<string, keyword*> types, int verbosity)
 
 		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == ';')
 		{
-			expand_instantiation(io_block.substr(j-io_block.begin(), i - j), types, &globals, &labels, NULL, "\t", verbosity, false);
+			expand_instantiation(io_block.substr(j-io_block.begin(), i - j), types, &vars, NULL, "\t", verbosity, false);
 			j = i+1;
 		}
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == '}')
@@ -94,22 +96,38 @@ void channel::parse(string chp, map<string, keyword*> types, int verbosity)
 			// TODO Do we need to reparse afterword and use the results of the first parsing as the init?
 			raw = io_block.substr(j-io_block.begin(), i - j + 1);
 			if (raw.find("operator!") != raw.npos)
-				send.parse(raw, types, verbosity);
+				s = raw;
 			else if (raw.find("operator?") != raw.npos)
-				recv.parse(raw, types, verbosity);
+				r = raw;
 			else if (raw.find("operator@") != raw.npos)
-				probe.parse(raw, types, verbosity);
+				p = raw;
 
 			j = i+1;
 		}
 	}
+
+	/* These variables won't automatically be instantiated as
+	 * [operator name].[var name] because they are considered
+	 * to be io variables. If you look above at the expand instantiation
+	 * function, allow process is false, making the io flag true.
+	 */
+
+	send.vars.global.insert(vars.global.begin(), vars.global.end());
+	send.vars.label.insert(vars.label.begin(), vars.label.end());
+	recv.vars.global.insert(vars.global.begin(), vars.global.end());
+	recv.vars.label.insert(vars.label.begin(), vars.label.end());
+	probe.vars.global.insert(vars.global.begin(), vars.global.end());
+	probe.vars.label.insert(vars.label.begin(), vars.label.end());
+
+	send.parse(s, types, verbosity);
+	recv.parse(r, types, verbosity);
+	probe.parse(p, types, verbosity);
 }
 
 ostream &operator<<(ostream &os, channel s)
 {
     os << s.name << "{";
-    for (map<string, variable>::iterator i = s.globals.begin(); i != s.globals.end(); i++)
-    	os << i->second << " ";
+    os << s.vars;
     os << "}";
 
     return os;

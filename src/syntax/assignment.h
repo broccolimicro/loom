@@ -13,7 +13,7 @@
 struct assignment : instruction
 {
 	assignment();
-	assignment(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity);
+	assignment(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity);
 	~assignment();
 
 	int uid;					// indexes into the state in the state space
@@ -21,7 +21,7 @@ struct assignment : instruction
 
 	assignment &operator=(assignment a);
 
-	instruction *duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert, string tab, int verbosity);
+	instruction *duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity);
 
 	void expand_shortcuts();
 	void parse(map<string, keyword*> types);
@@ -31,8 +31,8 @@ struct assignment : instruction
 	void print_hse();
 };
 
-instruction *expand_assignment(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity);
-pair<string, instruction*> expand_expression(string chp, map<string, keyword*> types, map<string, variable> *global, map<string, variable> *label, string tab, int verbosity);
+instruction *expand_assignment(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity);
+pair<string, instruction*> expand_expression(string chp, map<string, keyword*> types, vspace *vars, string top, string tab, int verbosity);
 
 
 /*
@@ -40,7 +40,7 @@ pair<string, instruction*> expand_expression(string chp, map<string, keyword*> t
  * TODO Add support for signed numbers (specifically a*-b should not be a*0-b)
  */
 template <class t>
-t evaluate(string raw, map<string, variable> *globals, vector<t> init, string tab, int verbosity)
+t evaluate(string raw, vspace *vars, vector<t> init, string tab, int verbosity)
 {
 	// TODO Bug with two character operators and sub string indices
 
@@ -57,36 +57,36 @@ t evaluate(string raw, map<string, variable> *globals, vector<t> init, string ta
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Evaluate: " << raw << endl;
 
-	typename map<string, variable>::iterator v;
+	int id;
 	list<string> ops;
 	list<string> ex;
 	size_t p;
 
 	p = find_first_of_l0(raw, "|");
 	if (p != raw.npos)
-		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) | evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), vars, init, tab+"\t", verbosity) | evaluate(raw.substr(p+1), vars, init, tab+"\t", verbosity);
 
 	p = find_first_of_l0(raw, "&");
 	if (p != raw.npos)
-		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) & evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), vars, init, tab+"\t", verbosity) & evaluate(raw.substr(p+1), vars, init, tab+"\t", verbosity);
 
 	ops.clear();
 	ops.push_back("==");
 	ops.push_back("~=");
 	p = find_first_of_l0(raw, ops);
 	if (p != raw.npos && raw.substr(p, 2) == "==")
-		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) == evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), vars, init, tab+"\t", verbosity) == evaluate(raw.substr(p+1), vars, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw.substr(p, 2) == "!=")
-		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) != evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), vars, init, tab+"\t", verbosity) != evaluate(raw.substr(p+1), vars, init, tab+"\t", verbosity);
 
 	ops.clear();
 	ops.push_back("<=");
 	ops.push_back(">=");
 	p = find_first_of_l0(raw, ops);
 	if (p != raw.npos && raw.substr(p, 2) == "<=")
-		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) <= evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), vars, init, tab+"\t", verbosity) <= evaluate(raw.substr(p+1), vars, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw.substr(p, 2) == ">=")
-		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) >= evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), vars, init, tab+"\t", verbosity) >= evaluate(raw.substr(p+1), vars, init, tab+"\t", verbosity);
 
 	ops.clear();
 	ops.push_back("<");
@@ -98,42 +98,42 @@ t evaluate(string raw, map<string, variable> *globals, vector<t> init, string ta
 	ex.push_back(">=");
 	p = find_first_of_l0(raw, ops, 0, ex);
 	if (p != raw.npos && raw[p] == '<')
-		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) < evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), vars, init, tab+"\t", verbosity) < evaluate(raw.substr(p+1), vars, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw[p] == '>')
-		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) > evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), vars, init, tab+"\t", verbosity) > evaluate(raw.substr(p+1), vars, init, tab+"\t", verbosity);
 
 	ops.clear();
 	ops.push_back("<<");
 	ops.push_back(">>");
 	p = find_first_of_l0(raw, ops);
 	if (p != raw.npos && raw.substr(p, 2) == "<<")
-		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) << evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), vars, init, tab+"\t", verbosity) << evaluate(raw.substr(p+1), vars, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw.substr(p, 2) == ">>")
-		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) >> evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), vars, init, tab+"\t", verbosity) >> evaluate(raw.substr(p+1), vars, init, tab+"\t", verbosity);
 
 	p = find_first_of_l0(raw, "+-");
 	if (p != raw.npos && raw[p] == '+')
-		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) + evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), vars, init, tab+"\t", verbosity) + evaluate(raw.substr(p+1), vars, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw[p] == '-')
-		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) - evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), vars, init, tab+"\t", verbosity) - evaluate(raw.substr(p+1), vars, init, tab+"\t", verbosity);
 
 	p = find_first_of_l0(raw, "*/");
 	if (p != raw.npos && raw[p] == '*')
-		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) * evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), vars, init, tab+"\t", verbosity) * evaluate(raw.substr(p+1), vars, init, tab+"\t", verbosity);
 	else if (p != raw.npos && raw[p] == '/')
-		return evaluate(raw.substr(0, p), globals, init, tab+"\t", verbosity) / evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(0, p), vars, init, tab+"\t", verbosity) / evaluate(raw.substr(p+1), vars, init, tab+"\t", verbosity);
 
 	p = find_first_of_l0(raw, "~");
 	if (p != raw.npos)
-		return ~ evaluate(raw.substr(p+1), globals, init, tab+"\t", verbosity);
+		return ~ evaluate(raw.substr(p+1), vars, init, tab+"\t", verbosity);
 
 	if (raw[0] == '(' && raw[raw.length()-1] == ')')
-		return evaluate(raw.substr(1, raw.length()-2), globals, init, tab+"\t", verbosity);
+		return evaluate(raw.substr(1, raw.length()-2), vars, init, tab+"\t", verbosity);
 
-	v = globals->find(raw);
-	if (v != globals->end() && v->second.uid < (int)init.size())
-		return init[v->second.uid];
-	else if (v != globals->end())
+	id = vars->get_uid(raw);
+	if (id >= 0 && id < (int)init.size())
+		return init[id];
+	else
 		cout << "Error: Undefined variable " << raw << "." << endl;
 
 	p = raw.find_first_of("bx");

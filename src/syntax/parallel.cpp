@@ -21,7 +21,7 @@ parallel::parallel()
 	chp = "";
 	_kind = "parallel";
 }
-parallel::parallel(string chp, map<string, keyword*> types, map<string, variable> *globals, map<string, variable> *label, string tab, int verbosity)
+parallel::parallel(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity)
 {
 	clear();
 
@@ -29,8 +29,7 @@ parallel::parallel(string chp, map<string, keyword*> types, map<string, variable
 	this->chp = chp;
 	this->tab = tab;
 	this->verbosity = verbosity;
-	this->global = globals;
-	this->label = label;
+	this->vars = vars;
 
 	expand_shortcuts();
 	parse(types);
@@ -49,8 +48,7 @@ parallel &parallel::operator=(parallel p)
 	this->chp		= p.chp;
 	this->instrs	= p.instrs;
 	this->rules		= p.rules;
-	this->global	= p.global;
-	this->label		= p.label;
+	this->vars		= p.vars;
 	this->tab		= p.tab;
 	this->verbosity	= p.verbosity;
 	return *this;
@@ -59,29 +57,45 @@ parallel &parallel::operator=(parallel p)
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *parallel::duplicate(map<string, variable> *globals, map<string, variable> *labels, map<string, string> convert, string tab, int verbosity)
+instruction *parallel::duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity)
 {
 	parallel *instr;
 
 	instr 				= new parallel();
 	instr->chp			= this->chp;
-	instr->global		= globals;
-	instr->label		= labels;
+	instr->vars			= vars;
 	instr->tab			= tab;
 	instr->verbosity	= verbosity;
 
 	map<string, string>::iterator i, j;
-	size_t k;
-	for (i = convert.begin(); i != convert.end(); i++)
+	size_t k = 0, min, curr;
+	while (k != instr->chp.npos)
 	{
-		k = -1;
-		while ((k = find_name(instr->chp, i->first, k+1)) != instr->chp.npos)
-			instr->chp.replace(k, i->first.length(), i->second);
+		j = convert.end();
+		min = instr->chp.length();
+		curr = 0;
+		for (i = convert.begin(); i != convert.end(); i++)
+		{
+			curr = find_name(instr->chp, i->first, k);
+			if (curr < min)
+			{
+				min = curr;
+				j = i;
+			}
+		}
+
+		if (j != convert.end())
+		{
+			instr->chp.replace(min, j->first.length(), j->second);
+			k = min + j->second.length();
+		}
+		else
+			k = instr->chp.npos;
 	}
 
 	list<instruction*>::iterator l;
 	for (l = instrs.begin(); l != instrs.end(); l++)
-		instr->instrs.push_back((*l)->duplicate(globals, labels, convert, tab+"\t", verbosity));
+		instr->instrs.push_back((*l)->duplicate(vars, convert, tab+"\t", verbosity));
 
 	return instr;
 }
@@ -127,29 +141,27 @@ void parallel::parse(map<string, keyword*> types)
 			raw_instr = chp.substr(j-chp.begin(), i-j);
 
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
-			if (sequential)
-				push(new block(raw_instr, types, global, label, tab+"\t", verbosity));
+			if (sequential && raw_instr.length() > 0)
+				push(new block(raw_instr, types, vars, tab+"\t", verbosity));
 			// This sub block has a specific order of operations. (s)
-			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')')
-				push(new block(raw_instr.substr(1, raw_instr.length()-2), types, global, label, tab+"\t", verbosity));
+			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')' && raw_instr.length() > 0)
+				push(new block(raw_instr.substr(1, raw_instr.length()-2), types, vars, tab+"\t", verbosity));
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
-			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				push(new loop(raw_instr, types, global, label, tab+"\t", verbosity));
+			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
+				push(new loop(raw_instr, types, vars, tab+"\t", verbosity));
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
-			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']')
-				push(new conditional(raw_instr, types, global, label, tab+"\t", verbosity));
+			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
+				push(new conditional(raw_instr, types, vars, tab+"\t", verbosity));
 			// This sub block is a variable definition. keyword<bitwidth> name
-			else if (contains(raw_instr, types))
-				push(expand_instantiation(raw_instr, types, global, label, NULL, tab+"\t", verbosity, true));
-			else if ((k = raw_instr.find_first_of("?!@")) != raw_instr.npos && raw_instr.find(":=") == raw_instr.npos)
-			{
-				cout << "Instantiating Communication " << get_type(raw_instr.substr(0, k), global, label) + ".operator" + raw_instr[k] + "_fn" + "X" + "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")" << endl;
-
-				push(add_unique_variable("_fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", get_type(raw_instr.substr(0, k), global, label) + ".operator" + raw_instr[k], types, global, label, tab+"\t", verbosity).second);
-			}
+			else if (contains(raw_instr, types) && raw_instr.length() > 0)
+				push(expand_instantiation(raw_instr, types, vars, NULL, tab+"\t", verbosity, true));
+			else if ((k = raw_instr.find_first_of("?!@")) != raw_instr.npos && raw_instr.find(":=") == raw_instr.npos && raw_instr.length() > 0)
+				push(add_unique_variable("_fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", vars->get_type(raw_instr.substr(0, k)) + ".operator" + raw_instr[k], types, vars, tab+"\t", verbosity).second);
 			// This sub block is an assignment instruction.
-			else if (raw_instr.length() != 0 && raw_instr.find("skip") == raw_instr.npos)
-				push(expand_assignment(raw_instr, types, global, label, tab+"\t", verbosity));
+			else if ((raw_instr.find(":=") != raw_instr.npos || raw_instr[raw_instr.length()-1] == '+' || raw_instr[raw_instr.length()-1] == '-') && raw_instr.length() > 0)
+				push(expand_assignment(raw_instr, types, vars, tab+"\t", verbosity));
+			else if (raw_instr.find("skip") == raw_instr.npos && raw_instr.length() > 0)
+				push(new guard(raw_instr, types, vars, tab, verbosity));
 
 			j = i+2;
 			sequential = false;

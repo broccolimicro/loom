@@ -284,6 +284,8 @@ value operator~(value s)
 			result.data += "0";
 		else if (*j == 'X')
 			result.data += "X";
+		else if (*j == '?')
+			result.data += "?";
 		else
 			result.data += "_";
 	}
