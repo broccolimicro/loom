@@ -9,6 +9,7 @@
 
 #include "../common.h"
 #include "trace.h"
+#include "state.h"
 
 #ifndef rule_h
 #define rule_h
@@ -19,12 +20,13 @@ struct rule
 	~rule();
 
 	string left, right;
-	trace actual, desired;
+	list<state> implicants;
+	//trace actual, desired;
 
 	rule &operator=(rule s);
 
 	void clear(int n);
-	int index(int n);
+	//int index(int n);
 };
 
 ostream &operator<<(ostream &os, rule r);

@@ -7,7 +7,6 @@
 
 #include "utility.h"
 #include "common.h"
-
 instruction *expand_instantiation(string chp, map<string, keyword*> types, vspace *vars, list<string> *input, string tab, int verbosity, bool allow_process)
 {
 	map<string, keyword*>::iterator var_type;

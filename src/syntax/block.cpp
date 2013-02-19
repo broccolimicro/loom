@@ -223,6 +223,8 @@ void block::generate_prs()
 
 void block::generate_statevars()
 {
+	//TODO: Remember "factoring" idea
+
 }
 
 /* This function cleans up all of the memory allocated

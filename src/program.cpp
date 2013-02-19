@@ -165,9 +165,14 @@ void program::parse(string chp, int verbosity)
 
 	prgm = (parallel*)expand_instantiation("main _()", type_space, &vars, NULL, "", verbosity, true);
 
+	//At this point in the program, 'parsing' is done. Launching State Space Gen
+
+
 	cout << "Generating State Space" << endl;
 	space.states.push_back(state(value("X"), vars.global.size()));
 	prgm->generate_states(&space, &trans, 0);
+
+	//Generate states is done. Launching post-state info gathering
 
 	//The whole program has states now!
 
@@ -187,26 +192,64 @@ void program::parse(string chp, int verbosity)
 
 	prgm->print_hse();
 
+	//Create an up and down PRS for each variable  (UID indexed)
+	prs_up.resize(global.size());
+	prs_down.resize(global.size());
+	//Inserting names into each PRS
+	for(int i = 0; i < (int)prs_up.size(); i++)
+	{
+		//prs_up[i].right = global[i]+"+"; 		//TODO: UID lookup variable name
+		//prs_down[i].right = global[i]+"-";
+	}
 	//Find the implicants of the diff space
 
-	/*for(int i = 0; i < diff_space.size();i++)
+	for(int i = 0; i < diff_space.size();i++)
 	{
 		for(int j = 0; j< diff_space[i].size(); j++)
 		{
 			if((diff_space[i])[j].data == "1")
 			{
+				cout << "HEer" << endl;
 				if(!global[get_name(j, &global, &label)].io)	//Output variable needs to fire high
-					prs_up[j].implicants.push_back("OneThing");
+					prs_up[j].implicants.push_back(space[diff_space[i].tag]);
+
+
 			}
 			if((diff_space[i])[j].data == "0")
 			{
+				cout << "HEer" << endl;
 				if(!global[get_name(j, &global, &label)].io)	//Output variable needs to fire low
-					prs_down[j].implicants.push_back("OtherThing ");
+					prs_down[j].implicants.push_back(space[diff_space[i].tag]);
+
 			}
 
 		}
-	}*/
+	}
+	cout << "exiting looppp" << endl;
 
+	//Print out implicants
+	map<string, variable>::iterator globali = global.begin();
+	for (int i = 0; i< (int)prs_up.size(); i++, globali++)
+	{
+		cout << globali->first << endl;
+		cout << "Up: ";
+		for(list<state>::iterator upi = prs_up[i].implicants.begin(); upi!=prs_up[i].implicants.end(); upi++)
+		{
+			cout << *upi << " || ";
+
+		}
+		cout << endl;
+
+		cout << "Down: ";
+		for(list<state>::iterator downi = prs_down[i].implicants.begin(); downi!=prs_down[i].implicants.end(); downi++)
+		{
+			cout << *downi << " || ";
+
+		}
+		cout << endl;
+
+	}
+	cout << "Done!" << endl;
 }
 
 

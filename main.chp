@@ -30,18 +30,15 @@ process mux0b2(chan4p0b i, chan4p0b o1, chan4p0b o2, chan4p1b s)
 
 process main()
 {
-	chan4p0b blarg;
-	chan4p0b mrawr;
-	chan4p0b yay;
-	chan4p1b yeah;
-	
-	mux0b2 MyMux(blarg, mrawr, yay, yeah);
-	
+	chan4p0b A;
+	chan4p0b B;
+	chan4p0b C;
+	chan4p1b D;
+	mux0b2 MyMux(A, B, C, D);
 	int<1> x := 1;
 	int<1> y := 1;
 	int<1> z := 1;
 	int<1> w := 0;
 	int<1> q;
-	
 	q := x^y | z^w;
 }
