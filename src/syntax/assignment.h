@@ -133,7 +133,7 @@ t evaluate(string raw, vspace *vars, vector<t> init, string tab, int verbosity)
 	id = vars->get_uid(raw);
 	if (id >= 0 && id < (int)init.size())
 		return init[id];
-	else
+	else if (raw.substr(0, 2) != "0x" && raw.substr(0, 2) != "0b" && raw.find_first_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_") != raw.npos)
 		cout << "Error: Undefined variable " << raw << "." << endl;
 
 	p = raw.find_first_of("bx");

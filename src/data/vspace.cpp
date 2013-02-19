@@ -106,7 +106,7 @@ string vspace::unique_name(string prefix)
 	return prefix + to_string(id);
 }
 
-map<string, string> vspace::instantiate(string parent, vspace* s)
+map<string, string> vspace::instantiate(string parent, bool parent_io, vspace* s, bool io)
 {
 	if (s == NULL)
 		return map<string, string>();
@@ -117,24 +117,26 @@ map<string, string> vspace::instantiate(string parent, vspace* s)
 	map<string, variable>::iterator i;
 	for (i = s->global.begin(); i != s->global.end(); i++)
 	{
-		if (!i->second.io)
+		if (i->second.io == io)
 		{
 			v = i->second;
 			rename.insert(pair<string, string>(v.name, parent + "." + v.name));
 			v.name = parent + "." + v.name;
 			v.uid = global.size();
+			v.io = parent_io;
 			global.insert(pair<string, variable>(v.name, v));
 		}
 	}
 
 	for (i = s->label.begin(); i != s->label.end(); i++)
 	{
-		if (!i->second.io)
+		if (i->second.io == io)
 		{
 			v = i->second;
 			rename.insert(pair<string, string>(v.name, parent + "." + v.name));
 			v.name = parent + "." + v.name;
 			v.uid = label.size();
+			v.io = parent_io;
 			label.insert(pair<string, variable>(v.name, v));
 		}
 	}
@@ -180,10 +182,10 @@ ostream &operator<<(ostream &os, vspace s)
 {
 	map<string, variable>::iterator i;
 	for (i = s.global.begin(); i != s.global.end(); i++)
-		os << i->second.type << " " << i->first << ": " << i->second.uid << "\n";
+		os << i->second.type << " " << i->first << ": " << i->second.uid << "," << i->second.io << "\n";
 
 	for (i = s.label.begin(); i != s.label.end(); i++)
-		os << i->second.type << " " << i->first << ": " << i->second.uid << "\n";
+		os << i->second.type << " " << i->first << ": " << i->second.uid << "," << i->second.io << "\n";
 
 	return os;
 }

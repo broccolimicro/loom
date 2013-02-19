@@ -14,6 +14,11 @@ instruction *expand_instantiation(string chp, map<string, keyword*> types, vspac
 	variable v = variable(chp, !allow_process, tab, verbosity);
 	variable v2;
 
+	map<string, string> rename;
+	map<string, string> rename2;
+	map<string, string>::iterator ri;
+	list<string>::iterator i, j;
+
 	if (input != NULL)
 		input->push_back(v.name);
 
@@ -22,16 +27,12 @@ instruction *expand_instantiation(string chp, map<string, keyword*> types, vspac
 		vars->insert(v);
 
 		if (var_type->second->kind() == "record" || var_type->second->kind() == "channel")
-			vars->instantiate(v.name, &(((record*)var_type->second)->vars));
+			vars->instantiate(v.name, !allow_process, &(((record*)var_type->second)->vars), true);
 		else if (var_type->second->kind() == "process" || var_type->second->kind() == "operate")
 		{
 			if (allow_process)
 			{
-				map<string, string> rename;
-				map<string, string>::iterator ri;
-				list<string>::iterator i, j;
-
-				rename = vars->instantiate(v.name, &(((process*)var_type->second)->vars));
+				rename = vars->instantiate(v.name, !allow_process, &(((process*)var_type->second)->vars), false);
 
 				if (v.type.find_first_of("!?@") != v.type.npos && v.name.find_first_of(".") != v.name.npos)
 				{
@@ -40,24 +41,8 @@ instruction *expand_instantiation(string chp, map<string, keyword*> types, vspac
 					map<string, keyword*>::iterator ch = types.find(chtype);
 					if (ch != types.end())
 					{
-						for (mem_var = ((channel*)ch->second)->vars.global.begin(); mem_var != ((channel*)ch->second)->vars.global.end(); mem_var++)
-						{
-							rename.insert(pair<string, string>(mem_var->second.name, chname + "." + mem_var->second.name));
-							v2 = mem_var->second;
-							v2.name = chname + "." + v2.name;
-							v2.uid = vars->global.size();
-							v2.io = false;
-							vars->global.insert(pair<string, variable>(v2.name, v2));
-						}
-						for (mem_var = ((channel*)ch->second)->vars.label.begin(); mem_var != ((channel*)ch->second)->vars.label.end(); mem_var++)
-						{
-							rename.insert(pair<string, string>(mem_var->second.name, chname + "." + mem_var->second.name));
-							v2 = mem_var->second;
-							v2.name = chname + "." + v2.name;
-							v2.uid = vars->label.size();
-							v2.io = false;
-							vars->label.insert(pair<string, variable>(v2.name, v2));
-						}
+						rename2 = vars->instantiate(chname, !allow_process, &(((channel*)ch->second)->vars), true);
+						rename.insert(rename2.begin(), rename2.end());
 					}
 				}
 

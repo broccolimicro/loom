@@ -28,7 +28,7 @@ struct vspace
 
 	string unique_name(string prefix);
 
-	map<string, string> instantiate(string parent, vspace* s);
+	map<string, string> instantiate(string parent, bool parent_io, vspace* s, bool io);
 
 	void insert(variable v);
 	void clear();
