@@ -44,6 +44,8 @@ string vspace::get_name(int uid)
 	return "";
 }
 
+
+
 string vspace::get_type(int uid)
 {
 	map<string, variable>::iterator i;

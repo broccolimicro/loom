@@ -193,8 +193,8 @@ void program::parse(string chp, int verbosity)
 	prgm->print_hse();
 
 	//Create an up and down PRS for each variable  (UID indexed)
-	prs_up.resize(global.size());
-	prs_down.resize(global.size());
+	prs_up.resize(vars.global.size());
+	prs_down.resize(vars.global.size());
 	//Inserting names into each PRS
 	for(int i = 0; i < (int)prs_up.size(); i++)
 	{
@@ -209,16 +209,16 @@ void program::parse(string chp, int verbosity)
 		{
 			if((diff_space[i])[j].data == "1")
 			{
-				cout << "HEer" << endl;
-				if(!global[get_name(j, &global, &label)].io)	//Output variable needs to fire high
+				cout << "HEer1" << endl;
+				if(!vars.find(j)->io)	//Output variable needs to fire high
 					prs_up[j].implicants.push_back(space[diff_space[i].tag]);
 
 
 			}
 			if((diff_space[i])[j].data == "0")
 			{
-				cout << "HEer" << endl;
-				if(!global[get_name(j, &global, &label)].io)	//Output variable needs to fire low
+				cout << "HEer0" << endl;
+				if(!vars.find(j)->io)	//Output variable needs to fire low
 					prs_down[j].implicants.push_back(space[diff_space[i].tag]);
 
 			}
@@ -228,7 +228,7 @@ void program::parse(string chp, int verbosity)
 	cout << "exiting looppp" << endl;
 
 	//Print out implicants
-	map<string, variable>::iterator globali = global.begin();
+	map<string, variable>::iterator globali = vars.global.begin();
 	for (int i = 0; i< (int)prs_up.size(); i++, globali++)
 	{
 		cout << globali->first << endl;
