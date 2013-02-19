@@ -212,7 +212,6 @@ void program::parse(string chp, int verbosity)
 		{
 			if((diff_space[i])[j].data == "1")
 			{
-				cout << "HEer1" << endl;
 				if(!vars.find(j)->io)	//Output variable needs to fire high
 					prs_up[j].implicants.push_back(space[diff_space[i].tag]);
 
@@ -220,7 +219,6 @@ void program::parse(string chp, int verbosity)
 			}
 			if((diff_space[i])[j].data == "0")
 			{
-				cout << "HEer0" << endl;
 				if(!vars.find(j)->io)	//Output variable needs to fire low
 					prs_down[j].implicants.push_back(space[diff_space[i].tag]);
 
@@ -228,7 +226,6 @@ void program::parse(string chp, int verbosity)
 
 		}
 	}
-	cout << "exiting looppp" << endl;
 
 	//Print out implicants
 	map<string, variable>::iterator globali = vars.global.begin();
