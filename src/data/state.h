@@ -23,6 +23,8 @@ struct state
 	//Optional tag field to 'label' states.
 	//(Currently only used to mark from states in diff spaces)
 	int tag;
+	//Should this state be used to generate state variables from?
+	bool prs;
 	void clear();
 	vector<value>::iterator begin();
 	vector<value>::iterator end();
@@ -58,6 +60,8 @@ struct state
 	state &operator<<=(int n);
 	state &operator>>=(int n);
 };
+
+bool is_all_x(state s1);
 
 bool subset(state s1, state s2);
 

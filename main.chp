@@ -19,6 +19,7 @@
 
 process mux0b2(chan4p0b i, chan4p0b o1, chan4p0b o2, chan4p1b s)
 {
+	//UM. DUDE. INPUT VALUES NEVER GET Xed OUT IF WE DON'T DO A CHANNEL COMM
 	// initialize variables at reset
 	i.a-;
 	o1.r-;

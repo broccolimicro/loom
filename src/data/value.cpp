@@ -654,19 +654,19 @@ value diff(value a, value b)
 	value result;
 	// _ means don't care. 1 means must fire high. 0 means must fire low.
 	if(a.data == "X" && b.data == "X")
-		result.data = "."; //X
+		result.data = "_"; //X .
 	if(a.data == "X" && b.data == "1")
 		result.data = "1";
 	if(a.data == "X" && b.data == "0")
 		result.data = "0";
 	if(a.data == "1" && b.data == "X")
-		result.data = "?"; // X
+		result.data = "_"; // X ?
 	if(a.data == "1" && b.data == "1")
 		result.data = "_";
 	if(a.data == "1" && b.data == "0")
 		result.data = "0";
 	if(a.data == "0" && b.data == "X")
-		result.data = "?"; // X
+		result.data = "_"; // X ?
 	if(a.data == "0" && b.data == "1")
 		result.data = "1";
 	if(a.data == "0" && b.data == "0")

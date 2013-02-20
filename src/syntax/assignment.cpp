@@ -198,7 +198,12 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 
 	// Set up the initial state
 	s = (*space)[init];
-
+	s.prs = true;
+	/*for(ei = expr.begin(); ei != expr.end(); ei++)
+	{
+		cout << ei->first << endl;
+		vars->global[ei->first].prs = true;  //SET THE VAR AT THIS LOCATION TO PRS 1
+	}*/
 	// Evaluate each expression
 	for (ei = expr.begin(); ei != expr.end(); ei++)
 	{

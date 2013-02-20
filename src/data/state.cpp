@@ -13,6 +13,7 @@
 
 state::state()
 {
+	prs = false;
 }
 
 state::~state()
@@ -22,10 +23,12 @@ state::~state()
 state::state(vector<value> v)
 {
 	values = v;
+	prs = false;
 }
 
 state::state(value v, int c)
 {
+	prs = false;
 	for (int i = 0; i < c; i++)
 		values.push_back(v);
 }
@@ -65,7 +68,7 @@ value state::operator[](int i)
 state &state::operator=(state s)
 {
 	values = s.values;
-
+	prs = s.prs;
 	return *this;
 }
 
@@ -177,6 +180,15 @@ state &state::operator>>=(int n)
 	return *this;
 }
 
+bool is_all_x(state s1)
+{
+	for(int i = 0; i < s1.size(); i++)
+		if(s1[i].data != "X")
+			return false;
+
+	return true;
+
+}
 bool subset(state s1, state s2)
 {
 	vector<value>::iterator j, k;

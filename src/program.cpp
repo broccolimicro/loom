@@ -32,6 +32,12 @@ program &program::operator=(program p)
 
 void program::parse(string chp, int verbosity)
 {
+	//TODO: Lost information in statespace from guard (example a xor b) not incorperated. Copy into PRS?
+	//TODO: THIS BREAKS IF THERE ARE NO IMPLICANTS FOR A OUTPUT
+	//TODO: Logic minimization
+	//TODO: Figure out indistinguishable states
+	//TODO: Add state variables
+	//TODO: Explore State Variable Factorization
 	string::iterator i, j;
 	string cleaned_chp = "";
 	string word;
@@ -194,62 +200,39 @@ void program::parse(string chp, int verbosity)
 	cout << vars << endl;
 
 	prgm->print_hse();
-
+	cout << endl;
 	//Create an up and down PRS for each variable  (UID indexed)
 	prs_up.resize(vars.global.size());
 	prs_down.resize(vars.global.size());
 	//Inserting names into each PRS
 	for(int i = 0; i < (int)prs_up.size(); i++)
 	{
-		//prs_up[i].right = global[i]+"+"; 		//TODO: UID lookup variable name
-		//prs_down[i].right = global[i]+"-";
+		prs_up[i].right = vars.get_name(i)+"+";
+		prs_down[i].right = vars.get_name(i)+"-";
 	}
-	//Find the implicants of the diff space
 
+
+	//Find the implicants of the diff space
 	for(int i = 0; i < diff_space.size();i++)
 	{
 		for(int j = 0; j< diff_space[i].size(); j++)
 		{
 			if((diff_space[i])[j].data == "1")
 			{
-				if(!vars.find(j)->io)	//Output variable needs to fire high
+				if(diff_space[i].tag!=-1)	//Output variable needs to fire high
 					prs_up[j].implicants.push_back(space[diff_space[i].tag]);
-
-
 			}
 			if((diff_space[i])[j].data == "0")
 			{
-				if(!vars.find(j)->io)	//Output variable needs to fire low
+				if(diff_space[i].tag!=-1)	//Output variable needs to fire low
 					prs_down[j].implicants.push_back(space[diff_space[i].tag]);
-
 			}
 
 		}
 	}
-
-	//Print out implicants
-	map<string, variable>::iterator globali = vars.global.begin();
-	for (int i = 0; i< (int)prs_up.size(); i++, globali++)
-	{
-		cout << globali->first << endl;
-		cout << "Up: ";
-		for(list<state>::iterator upi = prs_up[i].implicants.begin(); upi!=prs_up[i].implicants.end(); upi++)
-		{
-			cout << *upi << " || ";
-
-		}
-		cout << endl;
-
-		cout << "Down: ";
-		for(list<state>::iterator downi = prs_down[i].implicants.begin(); downi!=prs_down[i].implicants.end(); downi++)
-		{
-			cout << *downi << " || ";
-
-		}
-		cout << endl;
-
-	}
-	cout << "Done!" << endl;
+	merge_implicants();
+	print_prs();
+	cout << "Done!" << endl<< endl << endl;
 }
 
 
@@ -351,6 +334,93 @@ void program::print_space_graph_to_console()
 
 }
 
+void program::merge_implicants()
+{
+	//Print out implicants
+	map<string, variable>::iterator globali = vars.global.begin();
+	for (int i = 0; i< (int)prs_up.size(); i++, globali++)
+	{
+		for(list<state>::iterator upi = prs_up[i].implicants.begin(); upi!=prs_up[i].implicants.end(); upi++)
+		{
+			if(!is_all_x(*upi))
+			{
+				prs_up[i].left += "(";
+				bool first = true;
+				for(int j = 0; j < upi->size(); j++)
+				{
+					if ( ((*upi)[j].data != "X") && (vars.get_name(j) != prs_up[i].right.substr(0,prs_up[i].right.size()-1)))
+					{
+						if(!first)
+							prs_up[i].left += " & ";
+						else
+							first = false;
+
+						//if(vars.get_name(j) != prs_up[i].right.substr(0,prs_up[i].right.size()-1))
+						//{
+						if((*upi)[j].data == "0")
+							prs_up[i].left += "~";
+						prs_up[i].left += vars.get_name(j);
+						//}
+					}
+				}
+				prs_up[i].left += ")";
+				prs_up[i].left += " | ";
+			}
+		}
+		if(prs_up[i].left.size() >= 3)
+			prs_up[i].left = prs_up[i].left.substr(0, prs_up[i].left.size() - 3);
+		for(list<state>::iterator downi = prs_down[i].implicants.begin(); downi!=prs_down[i].implicants.end(); downi++)
+		{
+			if(!is_all_x(*downi))
+			{
+				prs_down[i].left += "(";
+				bool first = true;
+				for(int j = 0; j < downi->size(); j++)
+				{
+					if ( ((*downi)[j].data != "X")  && (vars.get_name(j) != prs_down[i].right.substr(0,prs_down[i].right.size()-1)))
+					{
+						if (!first)
+							prs_down[i].left += " & ";
+						else
+							first = false;
+
+						//if(vars.get_name(j) != prs_down[i].right.substr(0,prs_down[i].right.size()-1)){
+						if((*downi)[j].data == "0")
+							prs_down[i].left += "~";
+						prs_down[i].left += vars.get_name(j);
+						//}
+
+					}
+				}
+				prs_down[i].left += ")";
+				prs_down[i].left += " | ";
+			}
+		}
+		if(prs_down[i].left.size() >= 3)
+			prs_down[i].left = prs_down[i].left.substr(0, prs_down[i].left.size() - 3);
+
+	}
+}
+
+void program::print_prs()
+{
+	//Print out implicants
+	map<string, variable>::iterator globali = vars.global.begin();
+
+	cout << endl << endl << endl << "Production Rules: " << endl;
+
+	for (int i = 0; i< (int)prs_up.size(); i++, globali++)
+	{
+		if (prs_up[i].left != "")
+			cout << prs_up[i].left << " -> " << prs_up[i].right << endl;
+		if (prs_down[i].left != "")
+			cout << prs_down[i].left << " -> " << prs_down[i].right << endl;
+
+	}
+
+}
+
+
 state_space delta_space_gen(state_space spaces, graph trans)
 {
 	state_space delta_space;
@@ -372,11 +442,16 @@ state_space delta_space_gen(state_space spaces, graph trans)
 			//Node 2
 			incoming_state = spaces[trans.edges[i][j]];
 			result_state = diff(leaving_state,incoming_state);
-			result_state.tag = i;
-			delta_space.states.push_back(result_state);
+			if(incoming_state.prs)
+				result_state.tag = i;
+			else
+				result_state.tag = -1;
+
+			if(incoming_state.prs || SHOW_ALL_DIFF_STATES)
+				delta_space.states.push_back(result_state);
 		}
 	}
-	//TODO! return a graph, too, so that the states mean something.
+	//TODO: return a graph, too, so that the states mean something mathematically?
 	return delta_space;
 
 }

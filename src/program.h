@@ -37,6 +37,8 @@ struct program
 	void parse(string chp, int verbosity);
 	void print_space_to_console();
 	void print_space_graph_to_console();
+	void merge_implicants();
+	void print_prs();
 };
 
 
