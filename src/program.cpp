@@ -226,6 +226,7 @@ void program::parse(string chp, int verbosity)
 
 
 	//Find the implicants of the diff space
+	//TODO: Move this out into a function that returns a pair<vector<rule>, vector<rule> >
 	for(int i = 0; i < diff_space.size();i++)
 	{
 		for(int j = 0; j< diff_space[i].size(); j++)
@@ -243,6 +244,7 @@ void program::parse(string chp, int verbosity)
 
 		}
 	}
+
 	merge_implicants();
 	print_prs();
 	cout << "Done!" << endl<< endl << endl;
@@ -433,6 +435,40 @@ void program::print_prs()
 
 }
 
+rule minimize_rule(rule pr)
+{
+	rule result = pr;
+	//Eliminate all 'unneccisarily strong' guards
+	//Totally is a more efficient/logical way to do this
+	list<state>::iterator i,j;
+	while(i != result.implicants.end())
+		for (i = result.implicants.begin(); i != result.implicants.end(); i++)
+		{
+			for (j = i; j != result.implicants.end(); j++)
+			{
+
+
+			}
+
+		}
+
+
+
+	return result;
+
+}
+
+vector<rule> minimize_rule_list(vector<rule> prs)
+{
+	vector<rule> result = prs;
+	for (int i = 0; i < (int)result.size(); i++)
+	{
+		result[i] = minimize_rule(result[i]);
+
+	}
+	return result;
+
+}
 
 state_space delta_space_gen(state_space spaces, graph trans)
 {

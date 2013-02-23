@@ -933,7 +933,7 @@ state operator>(value s1, state s2)
 
 	return result;
 }
-
+//Calculates when, due to a state change, something must fire.
 state diff(state s1, state s2)
 {
 	state result;
@@ -950,6 +950,51 @@ state diff(state s1, state s2)
 	return result;
 }
 
+//Takes two states. Returns 0 if neither is weaker, 1 if s1 is weaker, 2 if s2 is weaker.
+//TODO UNTESTED
+int who_weaker(state s1, state s2)
+{
+	int result = 0;
+	bool same = true;
+	if (s1.size() != s2.size())
+	{
+		cout << "state diff run on states with differing sizes. 0" << endl;
+		return 0;
+	}
+
+	for( int i = 0; i < s1.size(); i++)
+	{
+		if (s1[i].data != s2[i].data)
+			same = false;
+	}
+	//If they are the same, arbitrarily say the first one is the weaker (throw one out)
+	if(same)
+		return 1;
+
+	for( int i = 0; i < s1.size(); i++)
+	{
+		//The have a definite disagreement. Neither is weaker. Return.
+		if ((s1[i].data == "1" && s2[i].data == "0")||(s1[i].data == "1" && s2[i].data == "0"))
+			return 0;
+		if((s1[i].data == "X") && ((s2[i].data == "0")||(s2[i].data == "1")))
+		{
+			//x<y and x>y
+			if (result == 2)
+				return 0;
+			result = 1;
+		}
+		if((s2[i].data == "X") && ((s1[i].data == "0")||(s1[i].data == "1")))
+		{
+			//x>y and x<y
+			if (result == 1)
+				return 0;
+			result = 2;
+		}
+	}
+	return result;
+}
+
+/*
 int count(state s)
 {
 	int result = 0;
@@ -974,7 +1019,7 @@ int strict_count(state s)
 	}
 
 	return result;
-}
+}*/
 
 /* This function compares the left state to the right state. The right
  * state is what we desire for this production rule, and the left state
@@ -986,6 +1031,7 @@ int strict_count(state s)
  * C is conflict if no value variable
  * ! is necessary fire
  */
+/*
 string conflicts(state left, state right)
 {
 	vector<value>::iterator i,j;
@@ -1018,3 +1064,5 @@ string conflicts(state left, state right)
 
 	return conflict;
 }
+*/
+
