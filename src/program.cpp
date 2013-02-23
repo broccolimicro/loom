@@ -169,12 +169,12 @@ void program::parse(string chp, int verbosity)
 		}
 	}
 
+	vars.insert(variable("Reset", "int", value("0"), 1, false));
+	vars.insert(variable("Reset_", "int", value("1"), 1, false));
+
 	prgm = (parallel*)expand_instantiation("main _()", type_space, &vars, NULL, "", verbosity, true);
 
 	//At this point in the program, 'parsing' is done. Launching State Space Gen
-
-	vars.insert(variable("Reset", "int", value("0"), 1, false));
-	vars.insert(variable("Reset_", "int", value("1"), 1, false));
 
 	cout << "Generating State Space" << endl;
 	state sr, s;
