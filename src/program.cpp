@@ -173,13 +173,26 @@ void program::parse(string chp, int verbosity)
 
 	//At this point in the program, 'parsing' is done. Launching State Space Gen
 
+	vars.insert(variable("Reset", "int", value("0"), 1, false));
+	vars.insert(variable("Reset_", "int", value("1"), 1, false));
 
 	cout << "Generating State Space" << endl;
-	state s;
+	state sr, s;
 	for (map<string, variable>::iterator ri = vars.global.begin(); ri != vars.global.end(); ri++)
+	{
+		if (ri->first == "Reset")
+			sr.values.push_back(value("1"));
+		else if (ri->first == "Reset_")
+			sr.values.push_back(value("0"));
+		else
+			sr.values.push_back(value("X"));
+
 		s.values.push_back(ri->second.reset);
+	}
+	space.states.push_back(sr);
 	space.states.push_back(s);
-	prgm->generate_states(&space, &trans, 0);
+	trans.insert_edge(0, 1, "Reset");
+	prgm->generate_states(&space, &trans, 1);
 
 	//Generate states is done. Launching post-state info gathering
 

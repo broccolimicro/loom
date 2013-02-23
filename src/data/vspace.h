@@ -23,6 +23,7 @@ struct vspace
 	string get_type(int uid);
 
 	string get_type(string name);
+	string get_info(string name);
 	int	   get_uid(string name);
 	int    get_width(string name);
 

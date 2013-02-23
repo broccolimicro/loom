@@ -71,6 +71,18 @@ string vspace::get_type(string name)
 	return "Error";
 }
 
+string vspace::get_info(string name)
+{
+	variable *v = find(name);
+	if (v == NULL)
+		return "";
+
+	if (v->type == "int" && v->fixed)
+		return v->type + "<" + to_string(v->width) + ">";
+
+	return v->type;
+}
+
 int vspace::get_uid(string name)
 {
 	map<string, variable>::iterator i;

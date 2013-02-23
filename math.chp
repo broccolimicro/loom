@@ -5,6 +5,13 @@ operator&(int<1> s, int<1> a, int<1> b)
 	];
 }
 
+operator&(int<2> s, int<2> a, int<2> b)
+{
+	[    a & b -> s+
+	[] ~(a & b) -> s-
+	];
+}
+
 operator|(int<1> s, int<1> a, int<1> b)
 {
 	[    a | b -> s+

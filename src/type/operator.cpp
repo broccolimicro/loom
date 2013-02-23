@@ -61,6 +61,7 @@ void operate::parse(string raw, map<string, keyword*> types, int verbosity)
 	map<string, variable> temp;
 	map<string, variable>::iterator vi, vj;
 	map<string, keyword*>::iterator ti;
+	list<string>::iterator ii;
 
 	cout << "Operator:\t" << chp << endl;
 
@@ -81,6 +82,24 @@ void operate::parse(string raw, map<string, keyword*> types, int verbosity)
 			j = i+2;
 		}
 	}
+
+	/*
+
+	variable *tv;
+
+	name += "(";
+	for (ii = input.begin(); ii != input.end(); ii++)
+	{
+		if (ii != input.begin())
+			name += ",";
+		tv = vars.find(*ii);
+		name += tv->type;
+		if (tv->type == "int" && tv->fixed)
+			name += "<" + to_string(tv->width) + ">";
+	}
+	name += ")";
+
+	cout<< "MYNAMEIS " << name << endl;*/
 
 	def.init(chp.substr(block_start, block_end - block_start), types, &vars, "\t", verbosity);
 	cout << vars << endl;
