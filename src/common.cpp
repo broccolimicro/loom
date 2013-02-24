@@ -210,13 +210,7 @@ size_t find_first_of_l0(string subject, string search, size_t pos)
 
 	for (i = subject.begin() + pos, ret = pos; i != subject.end(); i++, ret++)
 	{
-		if (*i == '(')
-			depth[0]++;
-		else if (*i == '[')
-			depth[1]++;
-		else if (*i == '{')
-			depth[2]++;
-		else if (*i == ')')
+		if (*i == ')')
 			depth[0]--;
 		else if (*i == ']')
 			depth[1]--;
@@ -231,6 +225,13 @@ size_t find_first_of_l0(string subject, string search, size_t pos)
 				else
 					return ret;
 			}
+
+		if (*i == '(')
+			depth[0]++;
+		else if (*i == '[')
+			depth[1]++;
+		else if (*i == '{')
+			depth[2]++;
 	}
 
 	return subject.npos;
@@ -247,13 +248,7 @@ size_t find_first_of_l0(string subject, list<string> search, size_t pos, list<st
 	found = false;
 	for (i = subject.begin() + pos, ret = pos; i != subject.end(); i++, ret++)
 	{
-		if (*i == '(')
-			depth[0]++;
-		else if (*i == '[')
-			depth[1]++;
-		else if (*i == '{')
-			depth[2]++;
-		else if (*i == ')')
+		if (*i == ')')
 			depth[0]--;
 		else if (*i == ']')
 			depth[1]--;
@@ -267,12 +262,108 @@ size_t find_first_of_l0(string subject, list<string> search, size_t pos, list<st
 			if (subject.substr(ret, j->length()) == *j)
 				found = false;
 
+		if (*i == '(')
+			depth[0]++;
+		else if (*i == '[')
+			depth[1]++;
+		else if (*i == '{')
+			depth[2]++;
+
 		if (found)
 		{
 			if (i == subject.end())
 				return subject.npos;
 			else
 				return ret;
+		}
+	}
+
+	return subject.npos;
+}
+
+size_t find_last_of_l0(string subject, string search, size_t pos)
+{
+	string::reverse_iterator i, j;
+	int depth[3] = {0, 0, 0};
+	size_t ret;
+
+	if (pos == string::npos)
+		pos = 0;
+	else
+		pos = subject.length() - pos;
+
+	for (i = subject.rbegin() + pos, ret = pos; i != subject.rend(); i++, ret++)
+	{
+		if (*i == '(')
+			depth[0]--;
+		else if (*i == '[')
+			depth[1]--;
+		else if (*i == '{')
+			depth[2]--;
+
+		for (j = search.rbegin(); j != search.rend() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0; j++)
+			if (*i == *j)
+			{
+				if (i == subject.rend())
+					return subject.npos;
+				else
+					return subject.length() - ret - 1;
+			}
+
+		if (*i == ')')
+			depth[0]++;
+		else if (*i == ']')
+			depth[1]++;
+		else if (*i == '}')
+			depth[2]++;
+	}
+
+	return subject.npos;
+}
+
+size_t find_last_of_l0(string subject, list<string> search, size_t pos, list<string> exclude)
+{
+	bool found;
+	string::reverse_iterator i;
+	list<string>::iterator j;
+	int depth[3] = {0, 0, 0};
+	size_t ret;
+
+	if (pos == string::npos)
+		pos = 0;
+	else
+		pos = subject.length() - pos;
+
+	found = false;
+	for (i = subject.rbegin() + pos, ret = pos; i != subject.rend(); i++, ret++)
+	{
+		if (*i == '(')
+			depth[0]--;
+		else if (*i == '[')
+			depth[1]--;
+		else if (*i == '{')
+			depth[2]--;
+
+		for (j = search.begin(); j != search.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && !found; j++)
+			if (subject.substr(subject.length() - ret - 1 - j->length(), j->length()) == *j)
+				found = true;
+		for (j = exclude.begin(); j != exclude.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && found; j++)
+			if (subject.substr(subject.length() - ret - 1 - j->length(), j->length()) == *j)
+				found = false;
+
+		if (*i == ')')
+			depth[0]++;
+		else if (*i == ']')
+			depth[1]++;
+		else if (*i == '}')
+			depth[2]++;
+
+		if (found)
+		{
+			if (i == subject.rend())
+				return subject.npos;
+			else
+				return subject.length() - ret - 1;
 		}
 	}
 

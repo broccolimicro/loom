@@ -97,7 +97,7 @@ string vspace::get_info(string name)
 	if (v == NULL)
 		return "";
 
-	if (v->type == "int" && v->fixed)
+	if (v->type == "int")
 		return v->type + "<" + to_string(v->width) + ">";
 
 	return v->type;

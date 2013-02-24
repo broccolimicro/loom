@@ -78,9 +78,9 @@ void variable::parse(string chp)
 
 	string input;
 
-	size_t width_start = chp.find_first_of("< ");
-	size_t name_start = chp.find_first_of("> ");
-	size_t input_start = chp.find_first_of("(");
+	size_t width_start = find_first_of_l0(chp, "< ");
+	size_t name_start = find_first_of_l0(chp, "> ");
+	size_t input_start = find_first_of_l0(chp, "(", name_start);
 	size_t input_end = find_first_of_l0(chp, ")", input_start);
 	size_t reset_start = chp.find(":=");
 
@@ -129,6 +129,7 @@ void variable::parse(string chp)
 	if (verbosity >= VERB_PARSE)
 	{
 		cout << tab << "\tName:  " << name << endl;
+		cout << tab << "\tIO:    " << input << endl;
 		cout << tab << "\tType:  " << type << endl;
 		cout << tab << "\tWidth: " << width << endl;
 		cout << tab << "\tReset: " << reset << endl;

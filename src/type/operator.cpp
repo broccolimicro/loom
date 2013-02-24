@@ -63,7 +63,7 @@ void operate::parse(string raw, int verbosity)
 	map<string, variable> temp;
 	map<string, variable>::iterator vi, vj;
 	map<string, keyword*>::iterator ti;
-	list<string>::iterator ii;
+	list<string>::iterator ii, ij;
 
 	cout << "Operator:\t" << chp << endl;
 
@@ -85,14 +85,17 @@ void operate::parse(string raw, int verbosity)
 		}
 	}
 
-	/*
+	if (input.size() > 3)
+		cout << "Error: Operators can have at most two inputs and one output." << endl;
 
 	variable *tv;
 
 	name += "(";
-	for (ii = input.begin(); ii != input.end(); ii++)
+	ij = input.begin();
+	ij++;
+	for (ii = ij; ii != input.end(); ii++)
 	{
-		if (ii != input.begin())
+		if (ii != ij)
 			name += ",";
 		tv = vars.find(*ii);
 		name += tv->type;
@@ -101,7 +104,7 @@ void operate::parse(string raw, int verbosity)
 	}
 	name += ")";
 
-	cout<< "MYNAMEIS " << name << endl;*/
+	cout<< "MYNAMEIS " << name << endl;
 
 	def.init(chp.substr(block_start, block_end - block_start), &vars, "\t", verbosity);
 	cout << vars << endl;

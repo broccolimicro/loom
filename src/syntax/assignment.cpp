@@ -218,7 +218,6 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 			search = ei->first.substr(0, ei->first.find_last_of("."));
 			if (vars->get_kind(search) == "channel")
 			{
-				cout << "LOOKHERE " << search << endl;
 				for (vi = vars->global.begin(); vi != vars->global.end(); vi++)
 					if (vi->first.substr(0, search.length()) == search && vi->first != ei->first)
 						s.assign(vi->second.uid, value("X"));
@@ -485,17 +484,6 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 		return C;
 	}
 
-	string type = "operator" + op;
-	if (op == "?")
-		type = vars->get_type(left) + "." + type;
-
-	proc = (operate*)vars->find_type(type);
-	if (proc == NULL)
-	{
-		cout << "Error: Undefined operator " << type << " used in " << chp << "." << endl;
-		return pair<string, instruction*>(chp, NULL);
-	}
-
 	A = pair<string, instruction*>(left, NULL);
 	B = pair<string, instruction*>(right, NULL);
 	if (left.find_first_of("&|~^=<>/+-*?!@()") != left.npos)
@@ -513,35 +501,61 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 	   (B.first.find_first_of("&|~") != B.first.npos || (vars->get_type(B.first) == "int" && vars->get_width(B.first) == 1) || B.first == ""))
 		return pair<string, instruction*>(A.first + op + B.first, NULL);
 
+	string type = "operator" + op + "(";
+	if (op == "?")
+		type = vars->get_type(left) + "." + type;
+
+	if (A.first != "")
+	{
+		if (A.first.find_first_of("|&~") != A.first.npos)
+			type += "int<1>";
+		else
+			type += vars->get_info(A.first);
+	}
+
+	if (B.first != "")
+	{
+		if (B.first.find_first_of("|&~") != B.first.npos)
+			type += ",int<1>";
+		else
+			type += "," + vars->get_info(B.first);
+	}
+
+	type += ")";
+
+	proc = (operate*)vars->find_type(type);
+	if (proc == NULL)
+	{
+		cout << "Error: Undefined operator " << type << " used in " << chp << "." << endl;
+
+		if (A.second != NULL)
+			delete A.second;
+		if (B.second != NULL)
+			delete B.second;
+
+		return pair<string, instruction*>(chp, NULL);
+	}
+
 	string name = vars->unique_name("_fn");
 	if (op == "?")
 		name = A.first + "." + name;
-	string dec = type + " " + name + "(";
 
-	if (proc->input.size() >= 1)
+	name += "(";
+	if (top == "")
 	{
-		if (top == "")
-		{
-			C = add_unique_variable("_op", "", proc->vars.get_type(proc->input.front()), vars, tab+"\t", verbosity);
-			dec += C.first;
-		}
-		else
-			dec += top;
+		C = add_unique_variable("_op", "", proc->vars.get_type(proc->input.front()), vars, tab+"\t", verbosity);
+		name += C.first;
 	}
 	else
-		cout << "Error: What the hell does this operator do? " << proc->chp << endl;
+		name += top;
 
-	if (A.first != "" && proc->input.size() >= 2)
-		dec += "," + A.first;
-	else if (A.first != "")
-		cout << "Error: Argument count mismatch. This operator should have no inputs. " << proc->chp << endl;
+	if (A.first != "")
+		name += "," + A.first;
+	if (B.first != "")
+		name += "," + B.first;
+	name += ")";
 
-	if (B.first != "" && ((proc->input.size() >= 2 && A.first == "") || (proc->input.size() >= 3)))
-		dec += "," + B.first;
-	else if (B.first != "")
-		cout << "Error: Argument count mismatch. This operator should have only one input. " << proc->chp << endl;
-
-	dec += ")";
+	cout << "LOOKHERE " << type + " " + name << endl;
 
 	parallel *sub = new parallel();
 	sub->tab = tab;
@@ -555,7 +569,7 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 	ret->verbosity = verbosity;
 	ret->vars = vars;
 	ret->push(sub);
-	ret->push(expand_instantiation(dec, vars, NULL, tab, verbosity, true));
+	ret->push(expand_instantiation(type + " " + name, vars, NULL, tab, verbosity, true));
 
 	return pair<string, instruction*>(C.first, ret);
 }

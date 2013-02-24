@@ -34,6 +34,6 @@ operator^(int<1> s, int<1> a, int<1> b)
 operator+(int<1> s, int<1> co, int<1> a, int<1> b, int<1> ci)
 {
 	s := a^b^ci;
-	co := a&b | a&ci | b&ci;
+	co := (a&b) | ((a&ci) | (b&ci));
 }
 
