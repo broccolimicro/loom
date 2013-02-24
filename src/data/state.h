@@ -65,6 +65,8 @@ bool is_all_x(state s1);
 
 bool subset(state s1, state s2);
 
+int who_weaker(state s1, state s2);
+
 ostream &operator<<(ostream &os, state s);
 
 state operator+(state s1, state s2);
@@ -110,8 +112,8 @@ state operator>>(state s, int n);
 /*state operator<(state s1, int n);
 state operator>(state s1, int n);*/
 
-state operator==(state s1, state s2);
-state operator!=(state s1, state s2);
+bool operator==(state s1, state s2);
+bool operator!=(state s1, state s2);
 state operator<=(state s1, state s2);
 state operator>=(state s1, state s2);
 state operator<(state s1, state s2);

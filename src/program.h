@@ -47,7 +47,7 @@ void print_line_dot(int from, state_space *spaces, graph *trans); // Print a lin
 void print_line_with_trans(int from, graph *trans);
 void print_diff_space_to_console(state_space diff_space);
 rule minimize_rule(rule pr);
-vector<rule> minimize_rule_list(vector<rule> prs);
+vector<rule> minimize_rule_vector(vector<rule> prs);
 state_space delta_space_gen(state_space spaces,graph trans);
 
 

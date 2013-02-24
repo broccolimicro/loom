@@ -247,6 +247,17 @@ void program::parse(string chp, int verbosity)
 
 	merge_implicants();
 	print_prs();
+
+	cout << "trying to minimize..." << endl << endl;
+
+	//state temp;
+	//temp = prs_up[3].implicants.front();
+	//prs_up[3].implicants.push_back(temp);
+	//prs_up = minimize_rule_vector(prs_up);
+
+
+	//print_prs();
+
 	cout << "Done!" << endl<< endl << endl;
 }
 
@@ -355,15 +366,22 @@ void program::merge_implicants()
 	map<string, variable>::iterator globali = vars.global.begin();
 	for (int i = 0; i< (int)prs_up.size(); i++, globali++)
 	{
-		for(list<state>::iterator upi = prs_up[i].implicants.begin(); upi!=prs_up[i].implicants.end(); upi++)
+
+		for(int j = 0; j < (int)prs_up[i].implicants.size(); j++)
 		{
-			if(!is_all_x(*upi))
+				cout << i << "+ "<<   prs_up[i].implicants[j] << endl;
+				cout << i << "- "<< prs_down[i].implicants[j] << endl;
+		}
+
+		for(int upi = 0; upi<prs_up[i].implicants.size(); upi++)
+		{
+			if(!is_all_x(prs_up[i].implicants[upi]))
 			{
 				prs_up[i].left += "(";
 				bool first = true;
-				for(int j = 0; j < upi->size(); j++)
+				for(int j = 0; j < prs_up[i].implicants[upi].size(); j++)
 				{
-					if ( ((*upi)[j].data != "X") && (vars.get_name(j) != prs_up[i].right.substr(0,prs_up[i].right.size()-1)))
+					if ( (prs_up[i].implicants[upi][j].data != "X") && (vars.get_name(j) != prs_up[i].right.substr(0,prs_up[i].right.size()-1))     )
 					{
 						if(!first)
 							prs_up[i].left += " & ";
@@ -372,7 +390,7 @@ void program::merge_implicants()
 
 						//if(vars.get_name(j) != prs_up[i].right.substr(0,prs_up[i].right.size()-1))
 						//{
-						if((*upi)[j].data == "0")
+						if((prs_up[i].implicants[upi])[j].data == "0")
 							prs_up[i].left += "~";
 						prs_up[i].left += vars.get_name(j);
 						//}
@@ -384,15 +402,16 @@ void program::merge_implicants()
 		}
 		if(prs_up[i].left.size() >= 3)
 			prs_up[i].left = prs_up[i].left.substr(0, prs_up[i].left.size() - 3);
-		for(list<state>::iterator downi = prs_down[i].implicants.begin(); downi!=prs_down[i].implicants.end(); downi++)
+
+		for(int downi = 0; downi<prs_down[i].implicants.size(); downi++)
 		{
-			if(!is_all_x(*downi))
+			if(!is_all_x(prs_down[i].implicants[downi]))
 			{
 				prs_down[i].left += "(";
 				bool first = true;
-				for(int j = 0; j < downi->size(); j++)
+				for(int j = 0; j < prs_down[i].implicants[downi].size(); j++)
 				{
-					if ( ((*downi)[j].data != "X")  && (vars.get_name(j) != prs_down[i].right.substr(0,prs_down[i].right.size()-1)))
+					if ( ((prs_down[i].implicants[downi])[j].data != "X")  && (vars.get_name(j) != prs_down[i].right.substr(0,prs_down[i].right.size()-1)))
 					{
 						if (!first)
 							prs_down[i].left += " & ";
@@ -400,7 +419,7 @@ void program::merge_implicants()
 							first = false;
 
 						//if(vars.get_name(j) != prs_down[i].right.substr(0,prs_down[i].right.size()-1)){
-						if((*downi)[j].data == "0")
+						if((prs_down[i].implicants[downi])[j].data == "0")
 							prs_down[i].left += "~";
 						prs_down[i].left += vars.get_name(j);
 						//}
@@ -435,36 +454,83 @@ void program::print_prs()
 
 }
 
-rule minimize_rule(rule pr)
+rule remove_too_strong(rule pr)
 {
 	rule result = pr;
-	//Eliminate all 'unneccisarily strong' guards
+/*	//Eliminate all 'unneccisarily strong' guards
 	//Totally is a more efficient/logical way to do this
 	list<state>::iterator i,j;
 	while(i != result.implicants.end())
+	{
+		cout << "here" << endl;
+		bool removed_junk = false;
 		for (i = result.implicants.begin(); i != result.implicants.end(); i++)
 		{
-			for (j = i; j != result.implicants.end(); j++)
+			cout << "and here!" << endl;
+			j = i;
+			j++;
+			for (; j != result.implicants.end(); j++)
 			{
+				cout << "But also here" << endl;
+				int weaker_result = who_weaker(*i,*j);
+				if(weaker_result == -1)
+				{
+					cout << "-1??" << endl;
+					state temp = *i;
+					result.implicants.remove(temp);
+					result.implicants.push_back(temp);
+					removed_junk = true;
+					break;
+					//Remove all of the duplicate, and then add one back on so we don't lose it.
+				}
+				else if(weaker_result == 1)
+				{
+					cout << "1??" << endl;
+					result.implicants.remove(*j);
+					removed_junk = true;
+					break;
+				}
+				else if(weaker_result == 2)
+				{
+					cout << "2??" << endl;
+					result.implicants.remove(*i);
+					cout << "2." << endl;
+					removed_junk = true;
+					break;
+				}
 
-
+			}//inner for
+			if(removed_junk == true)
+			{
+				cout << "RAW" << endl;
+				break;	//Reiterate through the loop now. Iterators changed.
 			}
-
-		}
-
-
-
+		}//Outer for
+	} // while
+*/
 	return result;
 
 }
 
-vector<rule> minimize_rule_list(vector<rule> prs)
+//Given a single rule, minimize the implicants to that rule
+rule minimize_rule(rule pr)
+{
+	rule result = pr;
+	result = remove_too_strong(pr);
+	cout << "finished " << pr.right << endl;
+	return result;
+
+}
+
+//Given a vector of rules, minimize every implicant in that vector
+vector<rule> minimize_rule_vector(vector<rule> prs)
 {
 	vector<rule> result = prs;
+
 	for (int i = 0; i < (int)result.size(); i++)
 	{
+		cout << "trying " << i << endl;
 		result[i] = minimize_rule(result[i]);
-
 	}
 	return result;
 

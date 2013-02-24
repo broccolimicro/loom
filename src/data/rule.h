@@ -20,7 +20,7 @@ struct rule
 	~rule();
 
 	string left, right;
-	list<state> implicants;
+	vector<state> implicants;
 	//trace actual, desired;
 
 	rule &operator=(rule s);

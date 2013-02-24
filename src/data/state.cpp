@@ -625,7 +625,8 @@ state operator>(state s1, int n)
 	return s1;
 }*/
 
-state operator==(state s1, state s2)
+//TODO: Switch the other operators too. I am stealing this one and turning it into a boolean compare.
+/*state operator==(state s1, state s2)
 {
 	vector<value>::iterator j, k;
 	value a, b;
@@ -661,6 +662,31 @@ state operator!=(state s1, state s2)
 	}
 
 	return result;
+}*/
+bool operator==(state s1, state s2)
+{
+	if(s1.size() != s2.size())
+		return false;
+	for(int i = 0;i<s1.size();i++)
+	{
+		if(s1[i].data != s2[i].data)
+			return false;
+	}
+	return true;
+
+}
+
+bool operator!=(state s1, state s2)
+{
+	if(s1.size() != s2.size())
+		return true;
+	for(int i = 0;i<s1.size();i++)
+	{
+		if(s1[i].data != s2[i].data)
+			return true;
+	}
+	return false;
+
 }
 
 state operator<=(state s1, state s2)
@@ -967,9 +993,12 @@ int who_weaker(state s1, state s2)
 		if (s1[i].data != s2[i].data)
 			same = false;
 	}
-	//If they are the same, arbitrarily say the first one is the weaker (throw one out)
+	//If they are the same, return -1
 	if(same)
-		return 1;
+		return -1;
+
+	if((same != (s1 == s2) )||(same == (s1 != s2)  ) )
+		cout << "DUDE WE HAVE BIG PROBLEMS WITH STATE OPERATORS" << endl;
 
 	for( int i = 0; i < s1.size(); i++)
 	{
