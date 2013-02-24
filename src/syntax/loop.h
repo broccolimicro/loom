@@ -16,7 +16,7 @@
 struct loop : conditional
 {
 	loop();
-	loop(string raw, map<string, keyword*> types, vspace *vars, string tab, int verbosity);
+	loop(string raw, vspace *vars, string tab, int verbosity);
 	~loop();
 
 	vector<int> uid;
@@ -26,7 +26,7 @@ struct loop : conditional
 	instruction *duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity);
 
 	void expand_shortcuts();
-	void parse(map<string, keyword*> types);
+	void parse();
 	int generate_states(state_space *space, graph *trans, int init);
 	void generate_prs();
 	void generate_statevars();

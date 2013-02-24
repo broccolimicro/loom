@@ -7,9 +7,9 @@
 
 #include "utility.h"
 #include "common.h"
-instruction *expand_instantiation(string chp, map<string, keyword*> types, vspace *vars, list<string> *input, string tab, int verbosity, bool allow_process)
+instruction *expand_instantiation(string chp, vspace *vars, list<string> *input, string tab, int verbosity, bool allow_process)
 {
-	map<string, keyword*>::iterator var_type;
+	keyword* type;
 	map<string, variable>::iterator mem_var;
 	variable v = variable(chp, !allow_process, tab, verbosity);
 	variable v2;
@@ -22,37 +22,37 @@ instruction *expand_instantiation(string chp, map<string, keyword*> types, vspac
 	if (input != NULL)
 		input->push_back(v.name);
 
-	if ((var_type = types.find(v.type)) != types.end())
+	if ((type = vars->find_type(v.type)) != NULL)
 	{
 		vars->insert(v);
 
-		if (var_type->second->kind() == "record" || var_type->second->kind() == "channel")
-			vars->instantiate(v.name, !allow_process, &(((record*)var_type->second)->vars), true);
-		else if (var_type->second->kind() == "process" || var_type->second->kind() == "operate")
+		if (type->kind() == "record" || type->kind() == "channel")
+			vars->instantiate(v.name, !allow_process, &(((record*)type)->vars), true);
+		else if (type->kind() == "process" || type->kind() == "operate")
 		{
 			if (allow_process)
 			{
-				rename = vars->instantiate(v.name, !allow_process, &(((process*)var_type->second)->vars), false);
+				rename = vars->instantiate(v.name, !allow_process, &(((process*)type)->vars), false);
 
 				if (v.type.find_first_of("!?@") != v.type.npos && v.name.find_first_of(".") != v.name.npos)
 				{
 					string chname = v.name.substr(0, v.name.find_first_of("."));
 					string chtype = v.type.substr(0, v.type.find_first_of("."));
-					map<string, keyword*>::iterator ch = types.find(chtype);
-					if (ch != types.end())
+					keyword* ch = vars->find_type(chtype);
+					if (ch != NULL)
 					{
-						rename2 = vars->instantiate(chname, !allow_process, &(((channel*)ch->second)->vars), true);
+						rename2 = vars->instantiate(chname, !allow_process, &(((channel*)ch)->vars), true);
 						rename.insert(rename2.begin(), rename2.end());
 					}
 				}
 
-				for (i = v.inputs.begin(), j = ((process*)var_type->second)->input.begin(); i != v.inputs.end() && j != ((process*)var_type->second)->input.end(); i++, j++)
+				for (i = v.inputs.begin(), j = ((process*)type)->input.begin(); i != v.inputs.end() && j != ((process*)type)->input.end(); i++, j++)
 					rename.insert(pair<string, string>(*j, *i));
 
-				return ((process*)var_type->second)->def.duplicate(vars, rename, tab, verbosity);
+				return ((process*)type)->def.duplicate(vars, rename, tab, verbosity);
 			}
 			else
-				cout << "Error: Invalid use of type " << var_type->second->kind() << " in record definition." << endl;
+				cout << "Error: Invalid use of type " << type->kind() << " in record definition." << endl;
 		}
 	}
 	else
@@ -61,11 +61,11 @@ instruction *expand_instantiation(string chp, map<string, keyword*> types, vspac
 	return NULL;
 }
 
-pair<string, instruction*> add_unique_variable(string prefix, string postfix, string type, map<string, keyword*> types, vspace *vars, string tab, int verbosity)
+pair<string, instruction*> add_unique_variable(string prefix, string postfix, string type, vspace *vars, string tab, int verbosity)
 {
 	string name = vars->unique_name(prefix);
 
-	return pair<string, instruction*>(name, expand_instantiation(type + " " + name + postfix, types, vars, NULL, tab, verbosity, true));
+	return pair<string, instruction*>(name, expand_instantiation(type + " " + name + postfix, vars, NULL, tab, verbosity, true));
 }
 
 size_t find_name(string subject, string search, size_t pos)
@@ -81,17 +81,6 @@ size_t find_name(string subject, string search, size_t pos)
 	} while (ret != subject.npos && (alpha0 || alpha1));
 
 	return ret;
-}
-
-string get_kind(string name, vspace *vars, map<string, keyword*> types)
-{
-	string type = vars->get_type(name);
-	map<string, keyword*>::iterator i;
-	i = types.find(type);
-	if (i == types.end())
-		return "";
-
-	return i->second->kind();
 }
 
 // Only | & ~ operators allowed

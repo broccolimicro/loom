@@ -10,7 +10,7 @@ guard::guard()
 	_kind = "guard";
 }
 
-guard::guard(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity)
+guard::guard(string chp, vspace *vars, string tab, int verbosity)
 {
 	this->_kind		= "guard";
 	this->chp		= chp;
@@ -19,7 +19,7 @@ guard::guard(string chp, map<string, keyword*> types, vspace *vars, string tab, 
 	this->vars		= vars;
 
 	expand_shortcuts();
-	parse(types);
+	parse();
 }
 
 guard::~guard()
@@ -86,7 +86,7 @@ void guard::expand_shortcuts()
 {
 }
 
-void guard::parse(map<string, keyword*> types)
+void guard::parse()
 {
 	chp = strip(demorgan(chp, false));
 	if (verbosity >= VERB_PARSE)
@@ -98,12 +98,12 @@ int guard::generate_states(state_space *space, graph *trans, int init)
 	cout << tab << "Guard " << chp << endl;
 
 	map<string, variable>::iterator vi;
-	state si, so;
+	state s;
 
 	uid = space->size();
-	si = (*space)[init];
-	so = solve(chp, vars, tab, verbosity);
-	space->push_back(si && so);
+	s = (*space)[init];
+	s = s && solve(chp, vars, tab, verbosity);
+	space->push_back(s);
 	if (CHP_EDGE)
 		trans->insert_edge(init, uid, chp+"->");
 	else

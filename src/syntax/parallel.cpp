@@ -21,7 +21,7 @@ parallel::parallel()
 	chp = "";
 	_kind = "parallel";
 }
-parallel::parallel(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity)
+parallel::parallel(string chp, vspace *vars, string tab, int verbosity)
 {
 	clear();
 
@@ -32,7 +32,7 @@ parallel::parallel(string chp, map<string, keyword*> types, vspace *vars, string
 	this->vars = vars;
 
 	expand_shortcuts();
-	parse(types);
+	parse();
 }
 parallel::~parallel()
 {
@@ -105,7 +105,7 @@ void parallel::expand_shortcuts()
 
 }
 
-void parallel::parse(map<string, keyword*> types)
+void parallel::parse()
 {
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Parallel: " << chp << endl;
@@ -142,26 +142,26 @@ void parallel::parse(map<string, keyword*> types)
 
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (sequential && raw_instr.length() > 0)
-				push(new block(raw_instr, types, vars, tab+"\t", verbosity));
+				push(new block(raw_instr, vars, tab+"\t", verbosity));
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')' && raw_instr.length() > 0)
-				push(new block(raw_instr.substr(1, raw_instr.length()-2), types, vars, tab+"\t", verbosity));
+				push(new block(raw_instr.substr(1, raw_instr.length()-2), vars, tab+"\t", verbosity));
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
-				push(new loop(raw_instr, types, vars, tab+"\t", verbosity));
+				push(new loop(raw_instr, vars, tab+"\t", verbosity));
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
-				push(new conditional(raw_instr, types, vars, tab+"\t", verbosity));
+				push(new conditional(raw_instr, vars, tab+"\t", verbosity));
 			// This sub block is a variable definition. keyword<bitwidth> name
-			else if (contains(raw_instr, types) && raw_instr.length() > 0)
-				push(expand_instantiation(raw_instr, types, vars, NULL, tab+"\t", verbosity, true));
+			else if (vars->vdef(raw_instr) && raw_instr.length() > 0)
+				push(expand_instantiation(raw_instr, vars, NULL, tab+"\t", verbosity, true));
 			else if ((k = raw_instr.find_first_of("?!@")) != raw_instr.npos && raw_instr.find(":=") == raw_instr.npos && raw_instr.length() > 0)
-				push(add_unique_variable("_fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", vars->get_type(raw_instr.substr(0, k)) + ".operator" + raw_instr[k], types, vars, tab+"\t", verbosity).second);
+				push(add_unique_variable("_fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", vars->get_type(raw_instr.substr(0, k)) + ".operator" + raw_instr[k], vars, tab+"\t", verbosity).second);
 			// This sub block is an assignment instruction.
 			else if ((raw_instr.find(":=") != raw_instr.npos || raw_instr[raw_instr.length()-1] == '+' || raw_instr[raw_instr.length()-1] == '-') && raw_instr.length() > 0)
-				push(expand_assignment(raw_instr, types, vars, tab+"\t", verbosity));
+				push(expand_assignment(raw_instr, vars, tab+"\t", verbosity));
 			else if (raw_instr.find("skip") == raw_instr.npos && raw_instr.length() > 0)
-				push(new guard(raw_instr, types, vars, tab, verbosity));
+				push(new guard(raw_instr, vars, tab, verbosity));
 
 			j = i+2;
 			sequential = false;

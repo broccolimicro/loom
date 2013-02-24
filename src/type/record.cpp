@@ -22,10 +22,12 @@ record::record()
 	_kind = "record";
 }
 
-record::record(string raw, map<string, keyword*> types, int verbosity)
+record::record(string raw, map<string, keyword*> *types, int verbosity)
 {
-	parse(raw, types, verbosity);
 	_kind = "record";
+	vars.types = types;
+
+	parse(raw, verbosity);
 }
 
 record::~record()
@@ -43,7 +45,7 @@ record &record::operator=(record r)
 	return *this;
 }
 
-void record::parse(string raw, map<string, keyword*> types, int verbosity)
+void record::parse(string raw, int verbosity)
 {
 	chp = raw;
 
@@ -72,7 +74,7 @@ void record::parse(string raw, map<string, keyword*> types, int verbosity)
 	{
 		if (*(i+1) == ';')
 		{
-			expand_instantiation(io_block.substr(j-io_block.begin(), i+1 - j), types, &vars, NULL, "\t", verbosity, false);
+			expand_instantiation(io_block.substr(j-io_block.begin(), i+1 - j), &vars, NULL, "\t", verbosity, false);
 
 			j = i+2;
 		}

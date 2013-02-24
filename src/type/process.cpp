@@ -22,10 +22,12 @@ process::process()
 	_kind = "process";
 }
 
-process::process(string raw, map<string, keyword*> types, int verbosity)
+process::process(string raw, map<string, keyword*> *types, int verbosity)
 {
-	parse(raw, types, verbosity);
 	_kind = "process";
+	vars.types = types;
+
+	parse(raw, verbosity);
 }
 
 process::~process()
@@ -44,7 +46,7 @@ process &process::operator=(process p)
 	return *this;
 }
 
-void process::parse(string raw, map<string, keyword*> types, int verbosity)
+void process::parse(string raw, int verbosity)
 {
 	chp = raw;
 
@@ -76,12 +78,12 @@ void process::parse(string raw, map<string, keyword*> types, int verbosity)
 	{
 		if (*(i+1) == ',' || i+1 == io_block.end())
 		{
-			expand_instantiation(io_block.substr(j-io_block.begin(), i+1 - j), types, &vars, &input, "\t", verbosity, false);
+			expand_instantiation(io_block.substr(j-io_block.begin(), i+1 - j), &vars, &input, "\t", verbosity, false);
 			j = i+2;
 		}
 	}
 
-	def.init(chp.substr(block_start, block_end - block_start), types, &vars, "\t", verbosity);
+	def.init(chp.substr(block_start, block_end - block_start), &vars, "\t", verbosity);
 
 	cout << vars << endl;
 	def.print_hse();

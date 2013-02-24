@@ -23,10 +23,12 @@ operate::operate()
 	_kind = "operate";
 }
 
-operate::operate(string raw, map<string, keyword*> types, int verbosity)
+operate::operate(string raw, map<string, keyword*> *types, int verbosity)
 {
-	parse(raw, types, verbosity);
 	_kind = "operate";
+	vars.types = types;
+
+	parse(raw, verbosity);
 }
 
 operate::~operate()
@@ -45,7 +47,7 @@ operate &operate::operator=(operate p)
 	return *this;
 }
 
-void operate::parse(string raw, map<string, keyword*> types, int verbosity)
+void operate::parse(string raw, int verbosity)
 {
 	chp = raw;
 
@@ -78,7 +80,7 @@ void operate::parse(string raw, map<string, keyword*> types, int verbosity)
 	{
 		if (*(i+1) == ',' || i+1 == io_block.end())
 		{
-			expand_instantiation(io_block.substr(j-io_block.begin(), i+1 - j), types, &vars, &input, "\t", verbosity, false);
+			expand_instantiation(io_block.substr(j-io_block.begin(), i+1 - j), &vars, &input, "\t", verbosity, false);
 			j = i+2;
 		}
 	}
@@ -101,7 +103,7 @@ void operate::parse(string raw, map<string, keyword*> types, int verbosity)
 
 	cout<< "MYNAMEIS " << name << endl;*/
 
-	def.init(chp.substr(block_start, block_end - block_start), types, &vars, "\t", verbosity);
+	def.init(chp.substr(block_start, block_end - block_start), &vars, "\t", verbosity);
 	cout << vars << endl;
 	def.print_hse();
 	cout << endl << endl;

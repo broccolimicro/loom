@@ -20,19 +20,19 @@ conditional::conditional()
 	type = unknown;
 }
 
-conditional::conditional(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity)
+conditional::conditional(string chp, vspace *vars, string tab, int verbosity)
 {
 	clear();
 
 	_kind = "conditional";
+	type = unknown;
 	this->chp = chp.substr(1, chp.length()-2);
 	this->tab = tab;
 	this->verbosity = verbosity;
-	type = unknown;
 	this->vars = vars;
 
 	expand_shortcuts();
-	parse(types);
+	parse();
 }
 conditional::~conditional()
 {
@@ -140,7 +140,7 @@ void conditional::expand_shortcuts()
 	chp += "->skip";
 }
 // [G -> S]
-void conditional::parse(map<string, keyword*> types)
+void conditional::parse()
 {
 	string::iterator i, j, k;
 	string guardstr, blockstr;
@@ -180,7 +180,7 @@ void conditional::parse(map<string, keyword*> types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block( blockstr, types, vars, tab+"\t", verbosity), new guard(guardstr, types, vars, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block(blockstr, vars, tab+"\t", verbosity), new guard(guardstr, vars, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 		}
@@ -198,7 +198,7 @@ void conditional::parse(map<string, keyword*> types)
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block(blockstr, types, vars, tab+"\t", verbosity), new guard(guardstr, types, vars, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block(blockstr, vars, tab+"\t", verbosity), new guard(guardstr, vars, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}

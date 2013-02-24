@@ -24,7 +24,7 @@
 struct process : keyword
 {
 	process();
-	process(string raw, map<string, keyword*> types, int verbosity);
+	process(string raw, map<string, keyword*> *types, int verbosity);
 	~process();
 
 	string					chp;	// the raw process definition
@@ -35,7 +35,7 @@ struct process : keyword
 
 	process &operator=(process p);
 
-	void parse(string raw, map<string, keyword*> types, int verbosity);
+	void parse(string raw, int verbosity);
 };
 
 #endif

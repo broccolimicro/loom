@@ -29,7 +29,7 @@
 struct channel : record
 {
 	channel();
-	channel(string chp, map<string, keyword*> types, int verbosity);
+	channel(string chp, map<string, keyword*> *types, int verbosity);
 	~channel();
 
 	operate send;
@@ -37,7 +37,7 @@ struct channel : record
 	operate probe;
 
 	channel &operator=(channel r);
-	void parse(string chp, map<string, keyword*> types, int verbosity);
+	void parse(string chp, int verbosity);
 };
 
 ostream &operator<<(ostream &os, channel s);

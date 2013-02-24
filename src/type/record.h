@@ -21,14 +21,14 @@
 struct record : keyword
 {
 	record();
-	record(string raw, map<string, keyword*> types, int verbosity);
+	record(string raw, map<string, keyword*> *types, int verbosity);
 	~record();
 
 	string					chp;
 	vspace					vars;
 
 	record &operator=(record r);
-	void parse(string raw, map<string, keyword*> types, int verbosity);
+	void parse(string raw, int verbosity);
 };
 
 ostream &operator<<(ostream &os, record s);

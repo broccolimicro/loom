@@ -24,7 +24,7 @@ enum conditional_type
 struct conditional : parallel
 {
 	conditional();
-	conditional(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity);
+	conditional(string chp, vspace *vars, string tab, int verbosity);
 	~conditional();
 
 	conditional_type type;
@@ -35,7 +35,7 @@ struct conditional : parallel
 	instruction *duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity);
 
 	void expand_shortcuts();
-	void parse(map<string, keyword*> types);
+	void parse();
 	int generate_states(state_space *space, graph *trans, int init);
 	void generate_prs();
 	void generate_statevars();

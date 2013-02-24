@@ -21,10 +21,11 @@ channel::channel()
 	_kind = "channel";
 }
 
-channel::channel(string chp, map<string, keyword*> types, int verbosity)
+channel::channel(string chp, map<string, keyword*> *types, int verbosity)
 {
-	parse(chp, types, verbosity);
 	_kind = "channel";
+	vars.types = types;
+	parse(chp, verbosity);
 }
 
 channel::~channel()
@@ -41,7 +42,7 @@ channel &channel::operator=(channel r)
 	return *this;
 }
 
-void channel::parse(string chp, map<string, keyword*> types, int verbosity)
+void channel::parse(string chp, int verbosity)
 {
 	if (verbosity >= VERB_PARSE)
 		cout << "Channel: " << chp << endl;
@@ -88,7 +89,7 @@ void channel::parse(string chp, map<string, keyword*> types, int verbosity)
 
 		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == ';')
 		{
-			expand_instantiation(io_block.substr(j-io_block.begin(), i - j), types, &vars, NULL, "\t", verbosity, false);
+			expand_instantiation(io_block.substr(j-io_block.begin(), i - j), &vars, NULL, "\t", verbosity, false);
 			j = i+1;
 		}
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == '}')
@@ -112,16 +113,13 @@ void channel::parse(string chp, map<string, keyword*> types, int verbosity)
 	 * function, allow process is false, making the io flag true.
 	 */
 
-	send.vars.global.insert(vars.global.begin(), vars.global.end());
-	send.vars.label.insert(vars.label.begin(), vars.label.end());
-	recv.vars.global.insert(vars.global.begin(), vars.global.end());
-	recv.vars.label.insert(vars.label.begin(), vars.label.end());
-	probe.vars.global.insert(vars.global.begin(), vars.global.end());
-	probe.vars.label.insert(vars.label.begin(), vars.label.end());
+	send.vars = vars;
+	recv.vars = vars;
+	probe.vars = vars;
 
-	send.parse(s, types, verbosity);
-	recv.parse(r, types, verbosity);
-	probe.parse(p, types, verbosity);
+	send.parse(s, verbosity);
+	recv.parse(r, verbosity);
+	probe.parse(p, verbosity);
 }
 
 ostream &operator<<(ostream &os, channel s)

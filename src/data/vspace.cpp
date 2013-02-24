@@ -32,6 +32,15 @@ variable *vspace::find(string name)
 	return NULL;
 }
 
+keyword	 *vspace::find_type(string name)
+{
+	map<string, keyword*>::iterator i = types->find(name);
+	if (i == types->end())
+		return NULL;
+
+	return i->second;
+}
+
 string vspace::get_name(int uid)
 {
 	map<string, variable>::iterator i;
@@ -69,6 +78,17 @@ string vspace::get_type(string name)
 		return i->second.type;
 
 	return "Error";
+}
+
+string vspace::get_kind(string name)
+{
+	string type = get_type(name);
+	map<string, keyword*>::iterator i;
+	i = types->find(type);
+	if (i == types->end())
+		return "";
+
+	return i->second->kind();
 }
 
 string vspace::get_info(string name)
@@ -116,6 +136,16 @@ string vspace::unique_name(string prefix)
 		id++;
 
 	return prefix + to_string(id);
+}
+
+bool vspace::vdef(string s)
+{
+	map<string, keyword*>::iterator i;
+	for (i = types->begin(); i != types->end(); i++)
+		if (s.find(i->first) != s.npos)
+			return true;
+
+	return false;
 }
 
 map<string, string> vspace::instantiate(string parent, bool parent_io, vspace* s, bool io)
@@ -184,20 +214,27 @@ void vspace::clear()
 
 vspace &vspace::operator=(vspace s)
 {
-	clear();
+	global.clear();
+	label.clear();
 	global.insert(s.global.begin(), s.global.end());
 	label.insert(s.label.begin(), s.label.end());
+	types = s.types;
 	return *this;
 }
 
 ostream &operator<<(ostream &os, vspace s)
 {
-	map<string, variable>::iterator i;
-	for (i = s.global.begin(); i != s.global.end(); i++)
-		os << i->second.type << " " << i->first << ": " << i->second.uid << "," << i->second.io << "\n";
+	size_t i;
+	variable *v;
+	for (i = 0; i < s.global.size(); i++)
+	{
+		v = s.find((int)i);
+		os << v->type << " " << v->name << ": " << v->uid << "," << v->io << "\n";
+	}
 
-	for (i = s.label.begin(); i != s.label.end(); i++)
-		os << i->second.type << " " << i->first << ": " << i->second.uid << "," << i->second.io << "\n";
+	map<string, variable>::iterator vi;
+	for (vi = s.label.begin(); vi != s.label.end(); vi++)
+		os << vi->second.type << " " << vi->first << "\n";
 
 	return os;
 }

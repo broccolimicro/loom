@@ -4,10 +4,12 @@
 program::program()
 {
 	type_space.insert(pair<string, keyword*>("int", new keyword("int")));
+	vars.types = &type_space;
 }
 
 program::program(string chp, int verbosity)
 {
+	vars.types = &type_space;
 	parse(chp, verbosity);
 }
 
@@ -105,25 +107,25 @@ void program::parse(string chp, int verbosity)
 				// Is this a process?
 				if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "process ") == 0)
 				{
-					p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, verbosity);
+					p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, verbosity);
 					type_space.insert(pair<string, process*>(p->name, p));
 				}
 				// Is this an operator?
 				else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "operator") == 0)
 				{
-					o = new operate(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, verbosity);
+					o = new operate(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, verbosity);
 					type_space.insert(pair<string, operate*>(o->name, o));
 				}
 				// This isn't a process, is it a record?
 				else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "record ") == 0)
 				{
-					r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, verbosity);
+					r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, verbosity);
 					type_space.insert(pair<string, record*>(r->name, r));
 				}
 				// Is it a channel definition?
 				else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "channel ") == 0)
 				{
-					c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, verbosity);
+					c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, verbosity);
 					type_space.insert(pair<string, channel*>(c->name, c));
 					type_space.insert(pair<string, operate*>(c->name + "." + c->send.name, &c->send));
 					type_space.insert(pair<string, operate*>(c->name + "." + c->recv.name, &c->recv));
@@ -142,22 +144,22 @@ void program::parse(string chp, int verbosity)
 					// Make sure we don't miss the next record or process though.
 					if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "process ") == 0)
 					{
-						p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, verbosity);
+						p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, verbosity);
 						type_space.insert(pair<string, process*>(p->name, p));
 					}
 					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "operator") == 0)
 					{
-						o = new operate(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, verbosity);
+						o = new operate(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, verbosity);
 						type_space.insert(pair<string, operate*>(o->name, o));
 					}
 					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "record ") == 0)
 					{
-						r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, verbosity);
+						r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, verbosity);
 						type_space.insert(pair<string, record*>(r->name, r));
 					}
 					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "channel ") == 0)
 					{
-						c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), type_space, verbosity);
+						c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, verbosity);
 						type_space.insert(pair<string, channel*>(c->name, c));
 						type_space.insert(pair<string, operate*>(c->name + "." + c->send.name, &c->send));
 						type_space.insert(pair<string, operate*>(c->name + "." + c->recv.name, &c->recv));
@@ -170,28 +172,29 @@ void program::parse(string chp, int verbosity)
 	}
 
 	vars.insert(variable("Reset", "int", value("0"), 1, false));
-	vars.insert(variable("Reset_", "int", value("1"), 1, false));
+	vars.insert(variable("_Reset", "int", value("1"), 1, false));
 
-	prgm = (parallel*)expand_instantiation("main _()", type_space, &vars, NULL, "", verbosity, true);
+	prgm = (parallel*)expand_instantiation("main _()", &vars, NULL, "", verbosity, true);
 
 	//At this point in the program, 'parsing' is done. Launching State Space Gen
 
-	cout << "Generating State Space" << endl;
 	state sr, s;
 	for (map<string, variable>::iterator ri = vars.global.begin(); ri != vars.global.end(); ri++)
 	{
-		if (ri->first == "Reset")
-			sr.values.push_back(value("1"));
-		else if (ri->first == "Reset_")
-			sr.values.push_back(value("0"));
+		if (ri->second.name == "Reset")
+			sr.assign(ri->second.uid, value("1"));
+		else if (ri->second.name == "_Reset")
+			sr.assign(ri->second.uid, value("0"));
 		else
-			sr.values.push_back(value("X"));
+			sr.assign(ri->second.uid, value("X"));
 
-		s.values.push_back(ri->second.reset);
+		s.assign(ri->second.uid, ri->second.reset);
 	}
 	space.states.push_back(sr);
 	space.states.push_back(s);
 	trans.insert_edge(0, 1, "Reset");
+
+	cout << "Generating State Space" << endl;
 	prgm->generate_states(&space, &trans, 1);
 
 	//Generate states is done. Launching post-state info gathering

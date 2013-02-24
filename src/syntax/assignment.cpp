@@ -17,7 +17,7 @@ assignment::assignment()
 	_kind = "assignment";
 }
 
-assignment::assignment(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity)
+assignment::assignment(string chp, vspace *vars, string tab, int verbosity)
 {
 	this->_kind		= "assignment";
 	this->chp		= chp;
@@ -26,7 +26,7 @@ assignment::assignment(string chp, map<string, keyword*> types, vspace *vars, st
 	this->vars		= vars;
 
 	expand_shortcuts();
-	parse(types);
+	parse();
 }
 
 assignment::~assignment()
@@ -154,7 +154,7 @@ void assignment::expand_shortcuts()
 		chp = chp.substr(0, chp.find("-")) + ":=0";
 }
 
-void assignment::parse(map<string, keyword*> types)
+void assignment::parse()
 {
 	size_t middle;
 	string left_raw, right_raw;
@@ -216,9 +216,13 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 			// TODO Make this search smarter
 			// Search for this channel's other variables and X them out.
 			search = ei->first.substr(0, ei->first.find_last_of("."));
-			for (vi = vars->global.begin(); vi != vars->global.end(); vi++)
-				if (vi->first.substr(0, search.length()) == search && vi->first != ei->first)
-					s.assign(vi->second.uid, value("X"));
+			if (vars->get_kind(search) == "channel")
+			{
+				cout << "LOOKHERE " << search << endl;
+				for (vi = vars->global.begin(); vi != vars->global.end(); vi++)
+					if (vi->first.substr(0, search.length()) == search && vi->first != ei->first)
+						s.assign(vi->second.uid, value("X"));
+			}
 		}
 		else
 			cout << "Error: Undefined variable " << ei->first << "." << endl;
@@ -242,10 +246,10 @@ void assignment::generate_prs()
 	print_prs();
 }
 
-instruction *expand_assignment(string chp, map<string, keyword*> types, vspace *vars, string tab, int verbosity)
+instruction *expand_assignment(string chp, vspace *vars, string tab, int verbosity)
 {
-	assignment *a = new assignment(chp, types, vars, tab, verbosity);
-	parallel *p = new parallel("", types, vars, tab, verbosity);;
+	assignment *a = new assignment(chp, vars, tab, verbosity);
+	parallel *p = new parallel("", vars, tab, verbosity);;
 	pair<string, instruction*> result;
 	list<pair<string, string> >::iterator i;
 	list<pair<string, string> > remove;
@@ -254,7 +258,7 @@ instruction *expand_assignment(string chp, map<string, keyword*> types, vspace *
 	{
 		if (i->second.find_first_of("&|~^=<>/+-*?@()") != i->second.npos)
 		{
-			result = expand_expression(i->second, types, vars, i->first, tab, verbosity);
+			result = expand_expression(i->second, vars, i->first, tab, verbosity);
 			i->second = result.first;
 			p->push(result.second);
 			remove.push_back(*i);
@@ -278,7 +282,7 @@ instruction *expand_assignment(string chp, map<string, keyword*> types, vspace *
 	return p;
 }
 
-pair<string, instruction*> expand_expression(string chp, map<string, keyword*> types, vspace *vars, string top, string tab, int verbosity)
+pair<string, instruction*> expand_expression(string chp, vspace *vars, string top, string tab, int verbosity)
 {
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Decompose: " << chp << endl;
@@ -475,7 +479,7 @@ pair<string, instruction*> expand_expression(string chp, map<string, keyword*> t
 	C = pair<string, instruction*>("", NULL);
 	if (chp[0] == '(' && chp[chp.length()-1] == ')' && op == "")
 	{
-		C = expand_expression(chp.substr(1, chp.length()-2), types, vars, top, tab+"\t", verbosity);
+		C = expand_expression(chp.substr(1, chp.length()-2), vars, top, tab+"\t", verbosity);
 		if (C.first.find_first_of("&|^=<>/+-*?!@()") != C.first.npos)
 			C.first = "(" + C.first + ")";
 		return C;
@@ -485,21 +489,19 @@ pair<string, instruction*> expand_expression(string chp, map<string, keyword*> t
 	if (op == "?")
 		type = vars->get_type(left) + "." + type;
 
-	k = types.find(type);
-	if (k == types.end())
+	proc = (operate*)vars->find_type(type);
+	if (proc == NULL)
 	{
 		cout << "Error: Undefined operator " << type << " used in " << chp << "." << endl;
 		return pair<string, instruction*>(chp, NULL);
 	}
 
-	proc = (operate*)k->second;
-
 	A = pair<string, instruction*>(left, NULL);
 	B = pair<string, instruction*>(right, NULL);
 	if (left.find_first_of("&|~^=<>/+-*?!@()") != left.npos)
-		A = expand_expression(left, types, vars, "", tab+"\t", verbosity);
+		A = expand_expression(left, vars, "", tab+"\t", verbosity);
 	if (right.find_first_of("&|~^=<>/+-*?!@()") != right.npos)
-		B = expand_expression(right, types, vars, "", tab+"\t", verbosity);
+		B = expand_expression(right, vars, "", tab+"\t", verbosity);
 
 	if (top != "" && A.first.find_first_of("&|~^=<>/+-*?!@()") != A.first.npos)
 		A.first = "(" + A.first + ")";
@@ -520,7 +522,7 @@ pair<string, instruction*> expand_expression(string chp, map<string, keyword*> t
 	{
 		if (top == "")
 		{
-			C = add_unique_variable("_op", "", proc->vars.get_type(proc->input.front()), types, vars, tab+"\t", verbosity);
+			C = add_unique_variable("_op", "", proc->vars.get_type(proc->input.front()), vars, tab+"\t", verbosity);
 			dec += C.first;
 		}
 		else
@@ -553,7 +555,7 @@ pair<string, instruction*> expand_expression(string chp, map<string, keyword*> t
 	ret->verbosity = verbosity;
 	ret->vars = vars;
 	ret->push(sub);
-	ret->push(expand_instantiation(dec, types, vars, NULL, tab, verbosity, true));
+	ret->push(expand_instantiation(dec, vars, NULL, tab, verbosity, true));
 
 	return pair<string, instruction*>(C.first, ret);
 }
