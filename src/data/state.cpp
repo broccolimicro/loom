@@ -993,6 +993,7 @@ int who_weaker(state s1, state s2)
 		if (s1[i].data != s2[i].data)
 			same = false;
 	}
+
 	//If they are the same, return -1
 	if(same)
 		return -1;
@@ -1012,6 +1013,7 @@ int who_weaker(state s1, state s2)
 				return 0;
 			result = 1;
 		}
+
 		if((s2[i].data == "X") && ((s1[i].data == "0")||(s1[i].data == "1")))
 		{
 			//x>y and x<y

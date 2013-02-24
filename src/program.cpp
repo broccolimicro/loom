@@ -253,13 +253,22 @@ void program::parse(string chp, int verbosity)
 
 	cout << "trying to minimize..." << endl << endl;
 
-	//state temp;
-	//temp = prs_up[3].implicants.front();
-	//prs_up[3].implicants.push_back(temp);
-	//prs_up = minimize_rule_vector(prs_up);
+	//Bogus test implicant
+	state temp;
+	temp = prs_up[2].implicants[0];
+	temp.values[0].data = "X";
+	cout << "Original: " << prs_up[2].implicants[0] << endl;
+	cout << "Adding: " << temp << endl;
+	prs_up[2].implicants.push_back(temp);
 
+	merge_implicants();
+	print_prs();
 
-	//print_prs();
+	prs_up = minimize_rule_vector(prs_up);
+	prs_down = minimize_rule_vector(prs_down);
+
+	merge_implicants();
+	print_prs();
 
 	cout << "Done!" << endl<< endl << endl;
 }
@@ -362,19 +371,24 @@ void program::print_space_graph_to_console()
 	cout << "}" << endl << endl;
 
 }
-
+//Merges all the implicants and puts them into the .left fields
 void program::merge_implicants()
 {
-	//Print out implicants
+	//Remove whatever might have been in there before
+	for(int i = 0; i < (int)prs_up.size(); i++)
+	{
+		prs_up[i].left.clear();
+		prs_down[i].left.clear();
+	}
+
 	map<string, variable>::iterator globali = vars.global.begin();
 	for (int i = 0; i< (int)prs_up.size(); i++, globali++)
 	{
-
+		//Print out the implicants
 		for(int j = 0; j < (int)prs_up[i].implicants.size(); j++)
-		{
-				cout << i << "+ "<<   prs_up[i].implicants[j] << endl;
-				cout << i << "- "<< prs_down[i].implicants[j] << endl;
-		}
+			cout << i << "+ "<<   prs_up[i].implicants[j] << endl;
+		for(int j = 0; j < (int)prs_down[i].implicants.size(); j++)
+			cout << i << "- "<< prs_down[i].implicants[j] << endl;
 
 		for(int upi = 0; upi<prs_up[i].implicants.size(); upi++)
 		{
@@ -460,59 +474,60 @@ void program::print_prs()
 rule remove_too_strong(rule pr)
 {
 	rule result = pr;
-/*	//Eliminate all 'unneccisarily strong' guards
+	cout << "too strong size " << result.implicants.size() << endl;
+	if (result.implicants.size() < 2)
+		return result;
+	//Eliminate all 'unneccisarily strong' guards
 	//Totally is a more efficient/logical way to do this
-	list<state>::iterator i,j;
-	while(i != result.implicants.end())
+	int i = 0;
+	int j = 0;
+	bool removed_junk;
+	removed_junk = true;
+
+	while(i != result.implicants.size()-1)
 	{
-		cout << "here" << endl;
-		bool removed_junk = false;
-		for (i = result.implicants.begin(); i != result.implicants.end(); i++)
+		removed_junk = false;
+		for (i = 0; (i < result.implicants.size()-1) && !removed_junk; i++)
 		{
-			cout << "and here!" << endl;
-			j = i;
-			j++;
-			for (; j != result.implicants.end(); j++)
+			for (j = i+1; j < result.implicants.size() && !removed_junk; j++)
 			{
-				cout << "But also here" << endl;
-				int weaker_result = who_weaker(*i,*j);
+				int weaker_result;
+				cout << i << ": " << result.implicants[i] << endl;
+				cout << j << ": " << result.implicants[j] << endl;
+				weaker_result = who_weaker(result.implicants[i], result.implicants[j]);
+				cout << "Between " << i << " and " << j <<" who_weaker = " << weaker_result << endl;
 				if(weaker_result == -1)
 				{
 					cout << "-1??" << endl;
-					state temp = *i;
-					result.implicants.remove(temp);
-					result.implicants.push_back(temp);
+					vector<state>::iterator vi = result.implicants.begin();
+					for(int counter = 0; counter < i; counter++)
+						vi++;
+					result.implicants.erase(vi);
 					removed_junk = true;
-					break;
-					//Remove all of the duplicate, and then add one back on so we don't lose it.
 				}
 				else if(weaker_result == 1)
 				{
 					cout << "1??" << endl;
-					result.implicants.remove(*j);
+					vector<state>::iterator vi = result.implicants.begin();
+					for(int counter = 0; counter < j; counter++)
+						vi++;
+					result.implicants.erase(vi);
 					removed_junk = true;
-					break;
 				}
 				else if(weaker_result == 2)
 				{
 					cout << "2??" << endl;
-					result.implicants.remove(*i);
+					vector<state>::iterator vi = result.implicants.begin();
+					for(int counter = 0; counter < i; counter++)
+						vi++;
+					result.implicants.erase(vi);
 					cout << "2." << endl;
 					removed_junk = true;
-					break;
 				}
-
 			}//inner for
-			if(removed_junk == true)
-			{
-				cout << "RAW" << endl;
-				break;	//Reiterate through the loop now. Iterators changed.
-			}
 		}//Outer for
 	} // while
-*/
 	return result;
-
 }
 
 //Given a single rule, minimize the implicants to that rule
