@@ -471,6 +471,46 @@ void program::print_prs()
 
 }
 
+//Reduce all implicants to prime
+rule reduce_to_prime(rule pr)
+{
+	rule result = pr;
+	cout << "too strong size " << result.implicants.size() << endl;
+	if (result.implicants.size() < 2)
+		return result;
+	//Reduce to prime guards
+	//Totally is a more efficient/logical way to do this
+	int i = 0;
+	int j = 0;
+	bool removed_junk;
+	removed_junk = true;
+	while(i != result.implicants.size()-1)
+	{
+		removed_junk = false;
+		for (i = 0; (i < result.implicants.size()-1) && !removed_junk; i++)
+		{
+			for (j = i+1; j < result.implicants.size() && !removed_junk; j++)
+			{
+				int unneeded_index;
+				cout << i << ": " << result.implicants[i] << endl;
+				cout << j << ": " << result.implicants[j] << endl;
+				unneeded_index = which_index_unneeded(result.implicants[i], result.implicants[j]);
+				cout << "Between " << i << " and " << j <<" Unneeded = " << unneeded_index << endl;
+
+				if(unneeded_index != -1)
+				{
+					result.implicants[i][unneeded_index].data = "X";
+					result.implicants[j][unneeded_index].data = "X";
+					removed_junk = true;
+				}
+
+
+			}//inner for
+		}//Outer for
+	} // while
+	return result;
+}
+
 rule remove_too_strong(rule pr)
 {
 	rule result = pr;
@@ -534,7 +574,9 @@ rule remove_too_strong(rule pr)
 rule minimize_rule(rule pr)
 {
 	rule result = pr;
-	result = remove_too_strong(pr);
+	result = remove_too_strong(result);
+	result = reduce_to_prime(result);
+	result = remove_too_strong(result);
 	cout << "finished " << pr.right << endl;
 	return result;
 
@@ -547,7 +589,7 @@ vector<rule> minimize_rule_vector(vector<rule> prs)
 
 	for (int i = 0; i < (int)result.size(); i++)
 	{
-		cout << "trying " << i << endl;
+		cout << "trying " << prs[i].right << " ("<< i << ")" << endl;
 		result[i] = minimize_rule(result[i]);
 	}
 	return result;

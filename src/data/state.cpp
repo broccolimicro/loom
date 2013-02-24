@@ -976,15 +976,38 @@ state diff(state s1, state s2)
 	return result;
 }
 
+
+int which_index_unneeded(state s1, state s2)
+{
+	int result = -1;
+	if (s1.size() != s2.size())
+	{
+		cout << "which_index_unneeded run on states with differing sizes. Return -1" << endl;
+		return -1;
+	}
+	int how_many_diff = 0;
+	//Count the number of indices that differ
+	for( int i = 0; i < s1.size(); i++)
+	{
+		if (s1[i].data != s2[i].data)
+		{
+			how_many_diff++;
+			result = i;
+		}
+	}
+	if (how_many_diff == 1)
+		return result;
+
+	return -1;
+}
 //Takes two states. Returns 0 if neither is weaker, 1 if s1 is weaker, 2 if s2 is weaker.
-//TODO UNTESTED
 int who_weaker(state s1, state s2)
 {
 	int result = 0;
 	bool same = true;
 	if (s1.size() != s2.size())
 	{
-		cout << "state diff run on states with differing sizes. 0" << endl;
+		cout << "who weaker run on states with differing sizes. 0" << endl;
 		return 0;
 	}
 
