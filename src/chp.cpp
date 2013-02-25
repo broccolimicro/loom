@@ -75,10 +75,11 @@
  * produced during the compilation and a list of all of the production rules
  * that result from this compilation.
  */
-
-
 int main(int argc, char **argv)
 {
+	FILE *log = fopen("log.txt", "w");
+	*stdout = *log;
+
 	//Open the top level file
 	ifstream t("main.chp");
 	string prgm((istreambuf_iterator<char>(t)),
@@ -104,4 +105,6 @@ int main(int argc, char **argv)
 	}
 
 	program p(prgm, VERB_TRACE);
+
+	fclose(log);
 }

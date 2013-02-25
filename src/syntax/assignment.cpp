@@ -61,6 +61,7 @@ instruction *assignment::duplicate(vspace *vars, map<string, string> convert, st
 	instr->expr			= this->expr;
 
 	size_t idx;
+	string rep;
 
 	map<string, string>::iterator i, j;
 	list<pair<string, string> >::iterator e;
@@ -82,14 +83,16 @@ instruction *assignment::duplicate(vspace *vars, map<string, string> convert, st
 
 		if (j != convert.end())
 		{
-			instr->chp.replace(min, j->first.length(), j->second);
-			if (instr->chp[min + j->second.length()] == '[' && instr->chp[min + j->second.length()-1] == ']')
+			rep = j->second;
+			instr->chp.replace(min, j->first.length(), rep);
+			if (instr->chp[min + rep.length()] == '[' && instr->chp[min + rep.length()-1] == ']')
 			{
-				idx = instr->chp.find_first_of("]", min + j->second.length()) + 1;
-				instr->chp.replace(min, idx - min, flatten_slice(instr->chp.substr(min, idx - min)));
+				idx = instr->chp.find_first_of("]", min + rep.length()) + 1;
+				rep = flatten_slice(instr->chp.substr(min, idx - min));
+				instr->chp.replace(min, idx - min, rep);
 			}
 
-			k = min + j->second.length();
+			k = min + rep.length();
 		}
 		else
 			k = instr->chp.npos;
@@ -115,14 +118,16 @@ instruction *assignment::duplicate(vspace *vars, map<string, string> convert, st
 
 			if (j != convert.end())
 			{
-				e->first.replace(min, j->first.length(), j->second);
-				if (e->first[min + j->second.length()] == '[' && e->first[min + j->second.length()-1] == ']')
+				rep = j->second;
+				e->first.replace(min, j->first.length(), rep);
+				if (e->first[min + rep.length()] == '[' && e->first[min + rep.length()-1] == ']')
 				{
-					idx = e->first.find_first_of("]", min + j->second.length()) + 1;
-					e->first.replace(min, idx - min, flatten_slice(e->first.substr(min, idx - min)));
+					idx = e->first.find_first_of("]", min + rep.length()) + 1;
+					rep = flatten_slice(e->first.substr(min, idx - min));
+					e->first.replace(min, idx - min, rep);
 				}
 
-				k = min + j->second.length();
+				k = min + rep.length();
 			}
 			else
 				k = e->first.npos;
@@ -146,14 +151,16 @@ instruction *assignment::duplicate(vspace *vars, map<string, string> convert, st
 
 			if (j != convert.end())
 			{
-				e->second.replace(min, j->first.length(), j->second);
-				if (e->second[min + j->second.length()] == '[' && e->second[min + j->second.length()-1] == ']')
+				rep = j->second;
+				e->second.replace(min, j->first.length(), rep);
+				if (e->second[min + rep.length()] == '[' && e->second[min + rep.length()-1] == ']')
 				{
-					idx = e->second.find_first_of("]", min + j->second.length()) + 1;
-					e->second.replace(min, idx - min, flatten_slice(e->second.substr(min, idx - min)));
+					idx = e->second.find_first_of("]", min + rep.length()) + 1;
+					rep = flatten_slice(e->second.substr(min, idx - min));
+					e->second.replace(min, idx - min, rep);
 				}
 
-				k = min + j->second.length();
+				k = min + rep.length();
 			}
 			else
 				k = e->second.npos;
