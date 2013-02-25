@@ -29,6 +29,10 @@ struct rule
 	//int index(int n);
 };
 
+rule reduce_to_prime(rule pr);
+rule remove_too_strong(rule pr);
+rule minimize_rule(rule pr);
+vector<rule> minimize_rule_vector(vector<rule> prs);
 ostream &operator<<(ostream &os, rule r);
 
 #endif

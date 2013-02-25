@@ -371,6 +371,7 @@ void program::print_space_graph_to_console()
 	}
 	cout << "}" << endl << endl;
 }
+
 //Merges all the implicants and puts them into the .left fields
 void program::merge_implicants()
 {
@@ -468,121 +469,6 @@ void program::print_prs()
 			cout << prs_down[i].left << " -> " << prs_down[i].right << endl;
 
 	}
-
-}
-
-//Reduce all implicants to prime
-rule reduce_to_prime(rule pr)
-{
-	rule result = pr;
-	if (result.implicants.size() < 2)
-		return result;
-	//Reduce to prime guards
-	//Totally is a more efficient/logical way to do this
-	int i = 0;
-	int j = 0;
-	bool removed_junk;
-	removed_junk = true;
-	while(i != result.implicants.size()-1)
-	{
-		removed_junk = false;
-		for (i = 0; (i < result.implicants.size()-1) && !removed_junk; i++)
-		{
-			for (j = i+1; j < result.implicants.size() && !removed_junk; j++)
-			{
-				int unneeded_index;
-				cout << i << ": " << result.implicants[i] << endl;
-				cout << j << ": " << result.implicants[j] << endl;
-				unneeded_index = which_index_unneeded(result.implicants[i], result.implicants[j]);
-				cout << "Between " << i << " and " << j <<" Unneeded = " << unneeded_index << endl;
-
-				if(unneeded_index != -1)
-				{
-					result.implicants[i][unneeded_index].data = "X";
-					result.implicants[j][unneeded_index].data = "X";
-					removed_junk = true;
-				}
-			}//inner for
-		}//Outer for
-	} // while
-	return result;
-}
-
-rule remove_too_strong(rule pr)
-{
-	rule result = pr;
-	if (result.implicants.size() < 2)
-		return result;
-	//Eliminate all 'unneccisarily strong' guards
-	//Totally is a more efficient/logical way to do this
-	int i = 0;
-	int j = 0;
-	bool removed_junk;
-	removed_junk = true;
-	while(i != result.implicants.size()-1)
-	{
-		removed_junk = false;
-		for (i = 0; (i < result.implicants.size()-1) && !removed_junk; i++)
-		{
-			for (j = i+1; j < result.implicants.size() && !removed_junk; j++)
-			{
-				int weaker_result;
-				cout << i << ": " << result.implicants[i] << endl;
-				cout << j << ": " << result.implicants[j] << endl;
-				weaker_result = who_weaker(result.implicants[i], result.implicants[j]);
-				cout << "Between " << i << " and " << j <<" who_weaker = " << weaker_result << endl;
-				if(weaker_result == -1)
-				{
-					vector<state>::iterator vi = result.implicants.begin();
-					for(int counter = 0; counter < i; counter++)
-						vi++;
-					result.implicants.erase(vi);
-					removed_junk = true;
-				}
-				else if(weaker_result == 1)
-				{
-					vector<state>::iterator vi = result.implicants.begin();
-					for(int counter = 0; counter < j; counter++)
-						vi++;
-					result.implicants.erase(vi);
-					removed_junk = true;
-				}
-				else if(weaker_result == 2)
-				{
-					vector<state>::iterator vi = result.implicants.begin();
-					for(int counter = 0; counter < i; counter++)
-						vi++;
-					result.implicants.erase(vi);
-					removed_junk = true;
-				}
-			}//inner for
-		}//Outer for
-	} // while
-	return result;
-}
-
-//Given a single rule, minimize the implicants to that rule
-rule minimize_rule(rule pr)
-{
-	rule result = pr;
-	result = remove_too_strong(result);
-	result = reduce_to_prime(result);
-	result = remove_too_strong(result);
-	cout << "finished " << pr.right << endl;
-	return result;
-}
-
-//Given a vector of rules, minimize every implicant in that vector
-vector<rule> minimize_rule_vector(vector<rule> prs)
-{
-	vector<rule> result = prs;
-
-	for (int i = 0; i < (int)result.size(); i++)
-	{
-		cout << "trying " << prs[i].right << " ("<< i << ")" << endl;
-		result[i] = minimize_rule(result[i]);
-	}
-	return result;
 
 }
 

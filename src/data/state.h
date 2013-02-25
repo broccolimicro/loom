@@ -6,7 +6,6 @@
  */
 
 #include "value.h"
-
 #include "../common.h"
 
 #ifndef state_h
