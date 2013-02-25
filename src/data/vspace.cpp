@@ -197,7 +197,7 @@ void vspace::insert(variable v)
 	string n;
 	int w;
 
-	if (v.type == "int")
+	if (v.type == "int" && v.width > 1)
 	{
 		v.uid = label.size();
 		label.insert(pair<string, variable>(v.name, v));
@@ -210,6 +210,11 @@ void vspace::insert(variable v)
 			v.uid = global.size();
 			global.insert(pair<string, variable>(v.name, v));
 		}
+	}
+	else if (v.type == "int" && v.width == 1)
+	{
+		v.uid = global.size();
+		global.insert(pair<string, variable>(v.name, v));
 	}
 	else
 	{

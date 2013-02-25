@@ -256,14 +256,31 @@ void conditional::generate_prs()
 
 void conditional::print_hse()
 {
+	if (instrs.size() > 1)
+		cout << "\n" << tab;
 	cout << "[";
+	if (instrs.size() > 1)
+		cout << "\t";
+
 	list<pair<block*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		if (i != instrs.begin() && type == mutex)
+		{
+			if (instrs.size() > 1)
+				cout << "\n" << tab;
 			cout << "[]";
+			if (instrs.size() > 1)
+				cout << "\t";
+		}
 		else if (i != instrs.begin() && type == choice)
+		{
+			if (instrs.size() > 1)
+				cout << "\n" << tab;
 			cout << "|";
+			if (instrs.size() > 1)
+				cout << "\t";
+		}
 		i->second->print_hse();
 		if (i->first->instrs.size() > 0)
 		{
@@ -271,5 +288,7 @@ void conditional::print_hse()
 			i->first->print_hse();
 		}
 	}
+	if (instrs.size() > 1)
+		cout << "\n" << tab;
 	cout << "]";
 }

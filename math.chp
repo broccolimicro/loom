@@ -34,3 +34,19 @@ operator~(int<2> s, int<2> a)
 	s[0],s[1] := ~a[0],~a[1];
 }
 
+operator^(int<1> s, int<1> a, int<1> b)
+{
+	s := a&~b | ~a&b;
+}
+
+operator+(int<1> s, int<1> a, int<1> b)
+{
+	s := a^b;
+}
+
+operator+(int<2> s, int<2> a, int<2> b)
+{
+	int<1> c := 0;
+	c := a[0]&b[0];
+	s[0],s[1] := a[0]+b[0],(a[1]+b[1])^c;
+}

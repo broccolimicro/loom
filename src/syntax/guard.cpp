@@ -77,7 +77,7 @@ instruction *guard::duplicate(vspace *vars, map<string, string> convert, string 
 			k = instr->chp.npos;
 	}
 
-	instr->chp = strip(demorgan(instr->chp, false));
+	instr->chp = strip(demorgan(instr->chp, -1, false));
 
 	return instr;
 }
@@ -88,7 +88,7 @@ void guard::expand_shortcuts()
 
 void guard::parse()
 {
-	chp = strip(demorgan(chp, false));
+	chp = strip(demorgan(chp, -1, false));
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Guard:\t" + chp << endl;
 }

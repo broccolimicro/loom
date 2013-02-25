@@ -222,7 +222,7 @@ void parallel::generate_prs()
 
 void parallel::print_hse()
 {
-	cout << "(";
+	cout << "\n" << tab << "(\n";
 	list<instruction*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
@@ -230,7 +230,7 @@ void parallel::print_hse()
 			cout << "||";
 		(*i)->print_hse();
 	}
-	cout << ")";
+	cout << "\n" << tab << ")";
 }
 
 void parallel::push(instruction *i)

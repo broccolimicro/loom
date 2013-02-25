@@ -316,7 +316,6 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 
 	string left, right, op = "";
 	operate *proc;
-	variable *var;
 
 	pair<string, instruction*> A, B, C;
 
@@ -515,13 +514,6 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 		B = expand_expression(right, vars, "", tab+"\t", verbosity);
 	else if (right.find_first_of("[]") != right.npos)
 		cout << "BITSLICE " << right << endl;
-
-	var = vars->find(A.first);
-	if (var != NULL && var->width == 1 && A.first.find_first_of("[]") == A.first.npos)
-		A.first += "[0]";
-	var = vars->find(B.first);
-	if (var != NULL && var->width == 1 && B.first.find_first_of("[]") == B.first.npos)
-		B.first += "[0]";
 
 	if (top != "" && A.first.find_first_of("&|~^=<>/+-*?!@()") != A.first.npos)
 		A.first = "(" + A.first + ")";

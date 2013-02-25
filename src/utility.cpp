@@ -95,55 +95,58 @@ size_t find_name(string subject, string search, size_t pos)
 }
 
 // Only | & ~ operators allowed
-string demorgan(string exp, bool invert)
+string demorgan(string exp, int depth, bool invert)
 {
 	list<string> ops, ex;
 
 	string left, right, op = "";
 	size_t p;
 
-	if (op == "")
+	if (depth != 0)
 	{
-		p = find_first_of_l0(exp, "|");
-		if (p != exp.npos)
+		if (op == "")
 		{
-			left = exp.substr(0, p);
-			right = exp.substr(p+1);
-			if (invert)
-				return demorgan(left, true) + "&" + demorgan(right, true);
-			else
-				return "(" + demorgan(left, false) + "|" + demorgan(right, false) + ")";
+			p = find_first_of_l0(exp, "|");
+			if (p != exp.npos)
+			{
+				left = exp.substr(0, p);
+				right = exp.substr(p+1);
+				if (invert)
+					return demorgan(left, depth-1, true) + "&" + demorgan(right, depth-1, true);
+				else
+					return "(" + demorgan(left, depth-1, false) + "|" + demorgan(right, depth-1, false) + ")";
+			}
 		}
-	}
 
-	if (op == "")
-	{
-		p = find_first_of_l0(exp, "&");
-		if (p != exp.npos)
+		if (op == "")
 		{
-			left = exp.substr(0, p);
-			right = exp.substr(p+1);
-			if (invert)
-				return "(" + demorgan(left, true) + "|" + demorgan(right, true) + ")";
-			else
-				return demorgan(left, false) + "&" + demorgan(right, false);
+			p = find_first_of_l0(exp, "&");
+			if (p != exp.npos)
+			{
+				left = exp.substr(0, p);
+				right = exp.substr(p+1);
+				if (invert)
+					return "(" + demorgan(left, depth-1, true) + "|" + demorgan(right, depth-1, true) + ")";
+				else
+					return demorgan(left, depth-1, false) + "&" + demorgan(right, depth-1, false);
+			}
 		}
-	}
 
-	if (op == "")
-	{
-		p = find_first_of_l0(exp, "~");
-		if (p != exp.npos)
+		if (op == "")
 		{
-			if (invert)
-				return demorgan(exp.substr(p+1), false);
-			else
-				return demorgan(exp.substr(p+1), true);
+			p = find_first_of_l0(exp, "~");
+			if (p != exp.npos)
+			{
+				if (invert)
+					return demorgan(exp.substr(p+1), depth, false);
+				else
+					return demorgan(exp.substr(p+1), depth, true);
+			}
 		}
-	}
 
-	if (exp[0] == '(' && exp[exp.length()-1] == ')' && op == "")
-		return demorgan(exp.substr(1, exp.length()-2), invert);
+		if (exp[0] == '(' && exp[exp.length()-1] == ')' && op == "")
+			return demorgan(exp.substr(1, exp.length()-2), depth, invert);
+	}
 
 	if (invert)
 		return "~" + exp;

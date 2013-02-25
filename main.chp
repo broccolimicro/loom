@@ -59,11 +59,19 @@ process main()
 	chan4p1b D;
 	mux0b2 MyMux(A, B, C, D);
 	
-	/*int<2> x := 1;
+	int<1> a := 1;
+	int<1> b := 1;
+	int<1> c := 1;
+	int<1> d := 0;
+	int<1> e;
+	
+	e := a^b | c^d;
+	
+	int<2> x := 1;
 	int<2> y := 1;
 	int<2> z := 1;
 	int<2> w := 0;
 	int<2> q;
-	q := x&y | z&w;*/
+	q := x+y | z+w;
 	
 }

@@ -283,17 +283,17 @@ void loop::generate_prs()
 
 void loop::print_hse()
 {
-	cout << "*[";
+	cout << "\n" << tab << "*[";
 	list<pair<block*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		if (i != instrs.begin() && type == mutex)
-			cout << "[]";
+			cout << "\n" << tab << "[]";
 		else if (i != instrs.begin() && type == choice)
-			cout << "|";
+			cout << "\n" << tab << "|";
 		i->second->print_hse();
-		cout << " -> ";
+		cout << " ->\t";
 		i->first->print_hse();
 	}
-	cout << "]";
+	cout << "\n" << tab << "]";
 }
