@@ -21,6 +21,10 @@ struct rule
 
 	string left, right;
 	vector<state> implicants;
+	//rule's variable uid
+	int uid;
+	//Is it an up production rule?
+	bool up;
 	//trace actual, desired;
 
 	rule &operator=(rule s);

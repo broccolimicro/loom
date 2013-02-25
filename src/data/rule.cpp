@@ -31,6 +31,8 @@ rule &rule::operator=(rule s)
 	left = s.left;
 	right = s.right;
 	implicants = s.implicants;
+	uid = s.uid;
+	up = s.up;
 	return *this;
 }
 

@@ -56,6 +56,9 @@ size_t find_last_of_l0(string subject, list<string> search, size_t pos = string:
 #define VERB_PARSE		4
 #define VERB_TRACE		5
 
+#define TOP_DOWN 0	//This should be a 1 if we are using top down PRS building, and 0 if bottom up.
+#define BUBBLELESS 1 //Whether we are doing the new fangled 'bubbleless reshuffling'
+
 //State space output customization flags
 #define STATESP_CO 1			//Output the statespace to the console
 #define STATESP_GR 0			//Output the .dot formatted graph of the statespace

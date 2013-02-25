@@ -37,7 +37,10 @@ struct program
 	void parse(string chp, int verbosity);
 	void print_space_to_console();
 	void print_space_graph_to_console();
+	int conflict_count(state impl, int fire_uid, string fire_dir);
+	void build_implicants(state_space diff_space);
 	void merge_implicants();
+	//void weaken_guard(rule pr);
 	void print_prs();
 };
 
