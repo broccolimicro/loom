@@ -256,7 +256,7 @@ void program::parse(string chp, int verbosity)
 	//Bogus test implicant
 	state temp;
 	temp = prs_up[2].implicants[0];
-	temp.values[0].data = "X";
+	temp.values[0].data = "1";
 	cout << "Original: " << prs_up[2].implicants[0] << endl;
 	cout << "Adding: " << temp << endl;
 	prs_up[2].implicants.push_back(temp);
@@ -340,6 +340,7 @@ void program::print_space_to_console()
 	//cout << "Current connections: " << endl;
 	//cout << (*trans);
 }
+
 void print_diff_space_to_console(state_space diff_space)
 {
 	//Print space (for debugging purposes)
@@ -369,7 +370,6 @@ void program::print_space_graph_to_console()
 		print_line_dot(i, &space, &trans);
 	}
 	cout << "}" << endl << endl;
-
 }
 //Merges all the implicants and puts them into the .left fields
 void program::merge_implicants()
@@ -385,10 +385,10 @@ void program::merge_implicants()
 	for (int i = 0; i< (int)prs_up.size(); i++, globali++)
 	{
 		//Print out the implicants
-		for(int j = 0; j < (int)prs_up[i].implicants.size(); j++)
-			cout << i << "+ "<<   prs_up[i].implicants[j] << endl;
-		for(int j = 0; j < (int)prs_down[i].implicants.size(); j++)
-			cout << i << "- "<< prs_down[i].implicants[j] << endl;
+		//for(int j = 0; j < (int)prs_up[i].implicants.size(); j++)
+		//	cout << i << "+ "<<   prs_up[i].implicants[j] << endl;
+		//for(int j = 0; j < (int)prs_down[i].implicants.size(); j++)
+		//	cout << i << "- "<< prs_down[i].implicants[j] << endl;
 
 		for(int upi = 0; upi<prs_up[i].implicants.size(); upi++)
 		{
@@ -475,7 +475,6 @@ void program::print_prs()
 rule reduce_to_prime(rule pr)
 {
 	rule result = pr;
-	cout << "too strong size " << result.implicants.size() << endl;
 	if (result.implicants.size() < 2)
 		return result;
 	//Reduce to prime guards
@@ -503,8 +502,6 @@ rule reduce_to_prime(rule pr)
 					result.implicants[j][unneeded_index].data = "X";
 					removed_junk = true;
 				}
-
-
 			}//inner for
 		}//Outer for
 	} // while
@@ -514,7 +511,6 @@ rule reduce_to_prime(rule pr)
 rule remove_too_strong(rule pr)
 {
 	rule result = pr;
-	cout << "too strong size " << result.implicants.size() << endl;
 	if (result.implicants.size() < 2)
 		return result;
 	//Eliminate all 'unneccisarily strong' guards
@@ -523,7 +519,6 @@ rule remove_too_strong(rule pr)
 	int j = 0;
 	bool removed_junk;
 	removed_junk = true;
-
 	while(i != result.implicants.size()-1)
 	{
 		removed_junk = false;
@@ -538,7 +533,6 @@ rule remove_too_strong(rule pr)
 				cout << "Between " << i << " and " << j <<" who_weaker = " << weaker_result << endl;
 				if(weaker_result == -1)
 				{
-					cout << "-1??" << endl;
 					vector<state>::iterator vi = result.implicants.begin();
 					for(int counter = 0; counter < i; counter++)
 						vi++;
@@ -547,7 +541,6 @@ rule remove_too_strong(rule pr)
 				}
 				else if(weaker_result == 1)
 				{
-					cout << "1??" << endl;
 					vector<state>::iterator vi = result.implicants.begin();
 					for(int counter = 0; counter < j; counter++)
 						vi++;
@@ -556,12 +549,10 @@ rule remove_too_strong(rule pr)
 				}
 				else if(weaker_result == 2)
 				{
-					cout << "2??" << endl;
 					vector<state>::iterator vi = result.implicants.begin();
 					for(int counter = 0; counter < i; counter++)
 						vi++;
 					result.implicants.erase(vi);
-					cout << "2." << endl;
 					removed_junk = true;
 				}
 			}//inner for
@@ -579,7 +570,6 @@ rule minimize_rule(rule pr)
 	result = remove_too_strong(result);
 	cout << "finished " << pr.right << endl;
 	return result;
-
 }
 
 //Given a vector of rules, minimize every implicant in that vector

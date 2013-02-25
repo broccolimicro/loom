@@ -60,7 +60,7 @@ int state::size()
 	return values.size();
 }
 
-value state::operator[](int i)
+value &state::operator[](int i)
 {
 	return values[i];
 }

@@ -31,7 +31,7 @@ struct state
 	void assign(int i, value v, value r = value("?"));
 	int size();
 
-	value operator[](int i);
+	value &operator[](int i);
 
 	state &operator=(state s);
 
