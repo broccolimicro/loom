@@ -18,7 +18,7 @@ variable::variable()
 	fixed = false;
 	reset = value("X");
 	uid = -1;
-	prs = false;
+	driven = false;
 	io = false;
 }
 
@@ -31,8 +31,18 @@ variable::variable(string name, string type, value reset, uint16_t width, bool i
 	this->reset = reset;
 	this->fixed = true;
 	this->uid = -1;
-	this->prs = ~io;
+	this->driven = false;
 	this->io = io;
+
+	if (verbosity >= VERB_PARSE)
+	{
+		cout << tab << "Variable: " << chp << endl;
+		cout << tab << "\tName:  " << name << endl;
+		cout << tab << "\tType:  " << type << endl;
+		cout << tab << "\tWidth: " << width << endl;
+		cout << tab << "\tReset: " << reset << endl;
+		cout << tab << "\tIO:    " << io << endl;
+	}
 }
 
 variable::variable(string chp, bool io, string tab, int verbosity)
@@ -42,6 +52,7 @@ variable::variable(string chp, bool io, string tab, int verbosity)
 	this->io = io;
 	this->tab = tab;
 	this->verbosity = verbosity;
+	this->driven = false;
 
 	parse(chp);
 }
@@ -64,7 +75,7 @@ variable &variable::operator=(variable v)
 	fixed = v.fixed;
 	reset = v.reset;
 	uid = v.uid;
-	prs = v.prs;
+	driven = v.driven;
 	io = v.io;
 
 	return *this;

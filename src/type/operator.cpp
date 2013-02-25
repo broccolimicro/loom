@@ -70,12 +70,6 @@ void operate::parse(string raw, int verbosity)
 	name = chp.substr(name_start, name_end - name_start);
 	io_block = chp.substr(input_start, input_end - input_start);
 
-	if (verbosity >= VERB_PARSE)
-	{
-		cout << "\tName:\t" << name << endl;
-		cout << "\tInputs:\t" << io_block << endl;
-	}
-
 	for (i = io_block.begin(), j = io_block.begin(); i != io_block.end(); i++)
 	{
 		if (*(i+1) == ',' || i+1 == io_block.end())
@@ -88,6 +82,8 @@ void operate::parse(string raw, int verbosity)
 	if (input.size() > 3)
 		cout << "Error: Operators can have at most two inputs and one output." << endl;
 
+	def.init(chp.substr(block_start, block_end - block_start), &vars, "\t", verbosity);
+
 	variable *tv;
 
 	name += "(";
@@ -98,15 +94,25 @@ void operate::parse(string raw, int verbosity)
 		if (ii != ij)
 			name += ",";
 		tv = vars.find(*ii);
-		name += tv->type;
-		if (tv->type == "int" && tv->fixed)
-			name += "<" + to_string(tv->width) + ">";
+
+		if (tv != NULL)
+		{
+			if (tv->driven)
+				cout << "Error: Input " << *ii << " driven in " << chp << endl;
+
+			name += tv->type;
+			if (tv->type == "int" && tv->fixed)
+				name += "<" + to_string(tv->width) + ">";
+		}
 	}
 	name += ")";
 
-	cout<< "MYNAMEIS " << name << endl;
+	if (verbosity >= VERB_PARSE)
+	{
+		cout << "\tName:\t" << name << endl;
+		cout << "\tInputs:\t" << io_block << endl;
+	}
 
-	def.init(chp.substr(block_start, block_end - block_start), &vars, "\t", verbosity);
 	cout << vars << endl;
 	def.print_hse();
 	cout << endl << endl;

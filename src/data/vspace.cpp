@@ -194,10 +194,22 @@ void vspace::insert(variable v)
 		return;
 	}
 
+	string n;
+	int w;
+
 	if (v.type == "int")
 	{
-		v.uid = global.size();
-		global.insert(pair<string, variable>(v.name, v));
+		v.uid = label.size();
+		label.insert(pair<string, variable>(v.name, v));
+		n = v.name;
+		w = v.width;
+		for (int i = 0; i < w; i++)
+		{
+			v.name = n + "[" + to_string(i) + "]";
+			v.width = 1;
+			v.uid = global.size();
+			global.insert(pair<string, variable>(v.name, v));
+		}
 	}
 	else
 	{

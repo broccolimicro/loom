@@ -160,6 +160,8 @@ void assignment::parse()
 	string left_raw, right_raw;
 	size_t i, j;
 	size_t k, l;
+	string left, right;
+	variable *v;
 
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Assignment:\t" + chp << endl;
@@ -173,11 +175,23 @@ void assignment::parse()
 		right_raw = chp.substr(middle+2);
 		for (i = left_raw.find_first_of(","), j = right_raw.find_first_of(","), k = 0, l = 0; i != left_raw.npos && j != right_raw.npos; i = left_raw.find_first_of(",", i+1), j = right_raw.find_first_of(",", j+1))
 		{
-			expr.push_back(pair<string, string>(left_raw.substr(k, i-k), right_raw.substr(l, j-l)));
+			left = left_raw.substr(k, i-k);
+			right = right_raw.substr(l, j-l);
+			expr.push_back(pair<string, string>(left, right));
 			k = i+1;
 			l = j+1;
+
+			v = vars->find(left);
+			if (v != NULL)
+				v->driven = true;
 		}
-		expr.push_back(pair<string, string>(left_raw.substr(k), right_raw.substr(l)));
+		left = left_raw.substr(k);
+		right = right_raw.substr(l);
+		expr.push_back(pair<string, string>(left, right));
+
+		v = vars->find(left);
+		if (v != NULL)
+			v->driven = true;
 	}
 	// If all else fails, complain to the user.
 	else
@@ -252,15 +266,21 @@ instruction *expand_assignment(string chp, vspace *vars, string tab, int verbosi
 	pair<string, instruction*> result;
 	list<pair<string, string> >::iterator i;
 	list<pair<string, string> > remove;
+	variable *v;
 
 	for (i = a->expr.begin(); i != a->expr.end(); i++)
 	{
+		v = vars->find(i->second);
 		if (i->second.find_first_of("&|~^=<>/+-*?@()") != i->second.npos)
 		{
 			result = expand_expression(i->second, vars, i->first, tab, verbosity);
 			i->second = result.first;
 			p->push(result.second);
 			remove.push_back(*i);
+		}
+		else if (v != NULL)
+		{
+			cout << "LOOKHERE " << v->name << " " << v->width << endl;
 		}
 	}
 
@@ -296,6 +316,7 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 
 	string left, right, op = "";
 	operate *proc;
+	variable *var;
 
 	pair<string, instruction*> A, B, C;
 
@@ -488,8 +509,19 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 	B = pair<string, instruction*>(right, NULL);
 	if (left.find_first_of("&|~^=<>/+-*?!@()") != left.npos)
 		A = expand_expression(left, vars, "", tab+"\t", verbosity);
+	else if (left.find_first_of("[]") != left.npos)
+		cout << "BITSLICE " << left << endl;
 	if (right.find_first_of("&|~^=<>/+-*?!@()") != right.npos)
 		B = expand_expression(right, vars, "", tab+"\t", verbosity);
+	else if (right.find_first_of("[]") != right.npos)
+		cout << "BITSLICE " << right << endl;
+
+	var = vars->find(A.first);
+	if (var != NULL && var->width == 1 && A.first.find_first_of("[]") == A.first.npos)
+		A.first += "[0]";
+	var = vars->find(B.first);
+	if (var != NULL && var->width == 1 && B.first.find_first_of("[]") == B.first.npos)
+		B.first += "[0]";
 
 	if (top != "" && A.first.find_first_of("&|~^=<>/+-*?!@()") != A.first.npos)
 		A.first = "(" + A.first + ")";
@@ -543,7 +575,7 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 	name += "(";
 	if (top == "")
 	{
-		C = add_unique_variable("_op", "", proc->vars.get_type(proc->input.front()), vars, tab+"\t", verbosity);
+		C = add_unique_variable("_op", "", proc->vars.get_info(proc->input.front()), vars, tab+"\t", verbosity);
 		name += C.first;
 	}
 	else

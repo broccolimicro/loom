@@ -32,7 +32,7 @@ struct variable
 	bool		fixed;		// is the bit width of this variable fixed or variable?
 	value		reset;
 	int			uid;
-	bool		prs;		// keep track of whether or not to generate production rules
+	bool		driven;		// keep track of whether or not this variable is driven within this process
 	bool		io;			// Is this variable an input variable into a process?
 
 

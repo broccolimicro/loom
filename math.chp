@@ -7,9 +7,7 @@ operator&(int<1> s, int<1> a, int<1> b)
 
 operator&(int<2> s, int<2> a, int<2> b)
 {
-	[    a & b -> s+
-	[] ~(a & b) -> s-
-	];
+	s[0],s[1] := a[0]&b[0],a[1]&b[1];
 }
 
 operator|(int<1> s, int<1> a, int<1> b)
@@ -19,6 +17,11 @@ operator|(int<1> s, int<1> a, int<1> b)
 	];
 }
 
+operator|(int<2> s, int<2> a, int<2> b)
+{
+	s[0],s[1] := a[0]|b[0],a[1]|b[1];
+}
+
 operator~(int<1> s, int<1> a)
 {
 	[  ~a -> s+
@@ -26,14 +29,8 @@ operator~(int<1> s, int<1> a)
 	];
 }
 
-operator^(int<1> s, int<1> a, int<1> b)
+operator~(int<2> s, int<2> a)
 {
-	s := a&~b | ~a&b;
-}
-
-operator+(int<1> s, int<1> co, int<1> a, int<1> b, int<1> ci)
-{
-	s := a^b^ci;
-	co := (a&b) | ((a&ci) | (b&ci));
+	s[0],s[1] := ~a[0],~a[1];
 }
 

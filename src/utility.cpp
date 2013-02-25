@@ -65,7 +65,18 @@ pair<string, instruction*> add_unique_variable(string prefix, string postfix, st
 {
 	string name = vars->unique_name(prefix);
 
-	return pair<string, instruction*>(name, expand_instantiation(type + " " + name + postfix, vars, NULL, tab, verbosity, true));
+	cout << "UNIQUENAME" << name << endl;
+	for (map<string, variable>::iterator i = vars->global.begin(); i != vars->global.end(); i++)
+		cout << i->first << endl;
+	for (map<string, variable>::iterator i = vars->label.begin(); i != vars->label.end(); i++)
+		cout << i->first << endl;
+
+	string dec = type;
+	if (dec[dec.length()-1] != '>')
+		dec += " ";
+	dec += name;
+
+	return pair<string, instruction*>(name, expand_instantiation(dec + postfix, vars, NULL, tab, verbosity, true));
 }
 
 size_t find_name(string subject, string search, size_t pos)
