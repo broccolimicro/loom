@@ -176,6 +176,11 @@ void program::parse(string chp, int verbosity)
 
 	prgm = (parallel*)expand_instantiation("main _()", &vars, NULL, "", verbosity, true);
 
+	cout << vars << endl;
+
+	prgm->print_hse();
+	cout << endl;
+
 	//At this point in the program, 'parsing' is done. Launching State Space Gen
 
 	state sr, s;
@@ -213,10 +218,6 @@ void program::parse(string chp, int verbosity)
 	state_space diff_space = delta_space_gen(space, trans);
 	print_diff_space_to_console(diff_space);
 
-	cout << vars << endl;
-
-	prgm->print_hse();
-	cout << endl;
 	//Create an up and down PRS for each variable  (UID indexed)
 	prs_up.resize(vars.global.size());
 	prs_down.resize(vars.global.size());

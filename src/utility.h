@@ -18,5 +18,6 @@ size_t find_name(string subject, string search, size_t pos = 0);
 string demorgan(string exp, int depth, bool invert);
 string strip(string exp);
 string distribute(string exp, string sib);
+string flatten_slice(string slices);
 
 #endif

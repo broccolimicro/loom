@@ -51,6 +51,8 @@ instruction *guard::duplicate(vspace *vars, map<string, string> convert, string 
 	instr->tab			= tab;
 	instr->verbosity	= verbosity;
 
+	size_t idx;
+
 	map<string, string>::iterator i, j;
 	size_t k = 0, min, curr;
 	while (k != instr->chp.npos)
@@ -71,6 +73,12 @@ instruction *guard::duplicate(vspace *vars, map<string, string> convert, string 
 		if (j != convert.end())
 		{
 			instr->chp.replace(min, j->first.length(), j->second);
+			if (instr->chp[min + j->second.length()] == '[' && instr->chp[min + j->second.length()-1] == ']')
+			{
+				idx = instr->chp.find_first_of("]", min + j->second.length()) + 1;
+				instr->chp.replace(min, idx - min, flatten_slice(instr->chp.substr(min, idx - min)));
+			}
+
 			k = min + j->second.length();
 		}
 		else

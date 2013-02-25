@@ -60,6 +60,8 @@ instruction *assignment::duplicate(vspace *vars, map<string, string> convert, st
 	instr->verbosity	= verbosity;
 	instr->expr			= this->expr;
 
+	size_t idx;
+
 	map<string, string>::iterator i, j;
 	list<pair<string, string> >::iterator e;
 	size_t k = 0, min, curr;
@@ -81,6 +83,12 @@ instruction *assignment::duplicate(vspace *vars, map<string, string> convert, st
 		if (j != convert.end())
 		{
 			instr->chp.replace(min, j->first.length(), j->second);
+			if (instr->chp[min + j->second.length()] == '[' && instr->chp[min + j->second.length()-1] == ']')
+			{
+				idx = instr->chp.find_first_of("]", min + j->second.length()) + 1;
+				instr->chp.replace(min, idx - min, flatten_slice(instr->chp.substr(min, idx - min)));
+			}
+
 			k = min + j->second.length();
 		}
 		else
@@ -108,6 +116,12 @@ instruction *assignment::duplicate(vspace *vars, map<string, string> convert, st
 			if (j != convert.end())
 			{
 				e->first.replace(min, j->first.length(), j->second);
+				if (e->first[min + j->second.length()] == '[' && e->first[min + j->second.length()-1] == ']')
+				{
+					idx = e->first.find_first_of("]", min + j->second.length()) + 1;
+					e->first.replace(min, idx - min, flatten_slice(e->first.substr(min, idx - min)));
+				}
+
 				k = min + j->second.length();
 			}
 			else
@@ -133,6 +147,12 @@ instruction *assignment::duplicate(vspace *vars, map<string, string> convert, st
 			if (j != convert.end())
 			{
 				e->second.replace(min, j->first.length(), j->second);
+				if (e->second[min + j->second.length()] == '[' && e->second[min + j->second.length()-1] == ']')
+				{
+					idx = e->second.find_first_of("]", min + j->second.length()) + 1;
+					e->second.replace(min, idx - min, flatten_slice(e->second.substr(min, idx - min)));
+				}
+
 				k = min + j->second.length();
 			}
 			else
@@ -508,12 +528,8 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 	B = pair<string, instruction*>(right, NULL);
 	if (left.find_first_of("&|~^=<>/+-*?!@()") != left.npos)
 		A = expand_expression(left, vars, "", tab+"\t", verbosity);
-	else if (left.find_first_of("[]") != left.npos)
-		cout << "BITSLICE " << left << endl;
 	if (right.find_first_of("&|~^=<>/+-*?!@()") != right.npos)
 		B = expand_expression(right, vars, "", tab+"\t", verbosity);
-	else if (right.find_first_of("[]") != right.npos)
-		cout << "BITSLICE " << right << endl;
 
 	if (top != "" && A.first.find_first_of("&|~^=<>/+-*?!@()") != A.first.npos)
 		A.first = "(" + A.first + ")";
@@ -539,10 +555,13 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 
 	if (B.first != "")
 	{
+		if (A.first != "")
+			type += ",";
+
 		if (B.first.find_first_of("|&~") != B.first.npos)
-			type += ",int<1>";
+			type += "int<1>";
 		else
-			type += "," + vars->get_info(B.first);
+			type += vars->get_info(B.first);
 	}
 
 	type += ")";
@@ -578,8 +597,6 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 	if (B.first != "")
 		name += "," + B.first;
 	name += ")";
-
-	cout << "LOOKHERE " << type + " " + name << endl;
 
 	parallel *sub = new parallel();
 	sub->tab = tab;

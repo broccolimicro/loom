@@ -65,12 +65,6 @@ pair<string, instruction*> add_unique_variable(string prefix, string postfix, st
 {
 	string name = vars->unique_name(prefix);
 
-	cout << "UNIQUENAME" << name << endl;
-	for (map<string, variable>::iterator i = vars->global.begin(); i != vars->global.end(); i++)
-		cout << i->first << endl;
-	for (map<string, variable>::iterator i = vars->label.begin(); i != vars->label.end(); i++)
-		cout << i->first << endl;
-
 	string dec = type;
 	if (dec[dec.length()-1] != '>')
 		dec += " ";
@@ -218,4 +212,44 @@ string distribute(string exp, string sib)
 		return exp;
 	else
 		return exp + "&" + sib;
+}
+
+string flatten_slice(string slices)
+{
+	size_t a = slices.find_first_of("["),
+		   b = slices.find_first_of("]"),
+		   c = slices.find_last_of("["),
+		   d = slices.find_last_of("]");
+
+	string left = slices.substr(a+1, b - (a+1));
+	string right = slices.substr(c+1, d - (c+1));
+
+	size_t x = left.find(".."),
+		   y = right.find("..");
+
+	int ll, rl, rh;
+
+	if (x != left.npos)
+		ll = atoi(left.substr(0, x).c_str());
+	else
+		ll = atoi(left.c_str());
+
+	if (y != right.npos)
+	{
+		rl = atoi(right.substr(0, x).c_str());
+		rh = atoi(right.substr(x+2).c_str());
+	}
+	else
+	{
+		rl = atoi(right.c_str());
+		rh = rl;
+	}
+
+	string ret = slices.substr(0, a) + "[" + to_string(ll + rl);
+
+	if (rh > rl)
+		ret += ".." + to_string(ll+rh);
+
+	ret += "]";
+	return ret;
 }

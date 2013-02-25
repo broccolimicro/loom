@@ -93,12 +93,44 @@ string vspace::get_kind(string name)
 
 string vspace::get_info(string name)
 {
+	size_t s = name.npos;
+	size_t d = name.npos;
+	string min, max;
+	int l, h;
+	if (name.find("..") != name.npos)
+	{
+		s = name.find_first_of("[]");
+		d = name.find("..");
+	}
+
+	if (s != name.npos)
+	{
+		if (d != name.npos)
+		{
+			min = name.substr(s+1, d - s - 1);
+			max = name.substr(d+2, name.length() - d - 3);
+			l = atoi(min.c_str());
+			h = atoi(max.c_str())+1;
+		}
+		else
+		{
+			min = name.substr(s+1, name.length() - s - 2);
+			max = min;
+
+			l = atoi(min.c_str());
+			h = l+1;
+		}
+		name = name.substr(0, s);
+	}
+
 	variable *v = find(name);
 	if (v == NULL)
 		return "";
 
-	if (v->type == "int")
+	if (v->type == "int" && s == name.npos)
 		return v->type + "<" + to_string(v->width) + ">";
+	else if (v->type == "int")
+		return v->type + "<" + to_string(h-l) + ">";
 
 	return v->type;
 }
