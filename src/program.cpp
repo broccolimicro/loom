@@ -224,7 +224,7 @@ void program::parse(string chp, int verbosity)
 	prs_down.resize(vars.global.size());
 
 	//Inserting info into each PRS
-	for(int i = 0; i < (int)prs_up.size(); i++)
+	for(int i = 0; i < prs_up.size(); i++)
 	{
 		prs_up[i].right = vars.get_name(i)+"+";
 		prs_up[i].uid = i;
@@ -266,11 +266,11 @@ void program::parse(string chp, int verbosity)
 void print_line(int from, graph *trans)
 {
 	int i;
-	if(from >= (int)trans->edges.size())
+	if(from >= trans->edges.size())
 		trans->edges.resize(from+1, vector<int>());
 
 	cout << from << ": ";
-	for (i = 0; i < (int)trans->edges[from].size(); i++)
+	for (i = 0; i < trans->edges[from].size(); i++)
 		cout << (trans->edges[from])[i] << " ";
 	cout << endl;
 }
@@ -278,11 +278,11 @@ void print_line(int from, graph *trans)
 void print_line_dot(int from, state_space *spaces, graph *trans) // Print a line following .dot graphvis formatting
 {
 	int i;
-	if(from >= (int)trans->edges.size())
+	if(from >= trans->edges.size())
 		trans->edges.resize(from+1, vector<int>());
 
 	//Each edge should be: 	"Node 1" -> "Node 2" [ label = "trans" ];
-	for (i = 0; i < (int)trans->edges[from].size(); i++)
+	for (i = 0; i < trans->edges[from].size(); i++)
 	{
 		//	"Node 1" -> "Node 2" [ label = "trans" ];
 		//"Node 1" ->
@@ -297,7 +297,7 @@ void print_line_dot(int from, state_space *spaces, graph *trans) // Print a line
 void print_line_with_trans(int from, graph *trans)
 {
 	int i, j;
-	if(from >= (int)trans->edges.size())
+	if(from >= trans->edges.size())
 		trans->edges.resize(from+1, vector<int>());
 
 	cout << from << ":";
@@ -386,6 +386,7 @@ int program::conflict_count(state impl, int fire_uid, string fire_dir)
 			}//edgei for
 		}//if
 	}//spaci for
+	return count;
 }
 //TODO: SOOO UNTESTED
 void program::build_implicants(state_space diff_space)
@@ -555,19 +556,19 @@ void program::build_implicants(state_space diff_space)
 void program::merge_implicants()
 {
 	//Remove whatever might have been in there before
-	for(int i = 0; i < (int)prs_up.size(); i++)
+	for(int i = 0; i < prs_up.size(); i++)
 	{
 		prs_up[i].left.clear();
 		prs_down[i].left.clear();
 	}
 
 	map<string, variable>::iterator globali = vars.global.begin();
-	for (int i = 0; i< (int)prs_up.size(); i++, globali++)
+	for (int i = 0; i< prs_up.size(); i++, globali++)
 	{
 		//Print out the implicants
-		//for(int j = 0; j < (int)prs_up[i].implicants.size(); j++)
+		//for(int j = 0; j < prs_up[i].implicants.size(); j++)
 		//	cout << i << "+ "<<   prs_up[i].implicants[j] << endl;
-		//for(int j = 0; j < (int)prs_down[i].implicants.size(); j++)
+		//for(int j = 0; j < prs_down[i].implicants.size(); j++)
 		//	cout << i << "- "<< prs_down[i].implicants[j] << endl;
 
 		// ================== PRS UP ==================
@@ -642,7 +643,7 @@ void program::print_prs()
 
 	cout << endl << endl << endl << "Production Rules: " << endl;
 
-	for (int i = 0; i< (int)prs_up.size(); i++, globali++)
+	for (int i = 0; i< prs_up.size(); i++, globali++)
 	{
 		if (prs_up[i].left != "")
 			cout << prs_up[i].left << " -> " << prs_up[i].right << endl;
@@ -694,13 +695,13 @@ state_space delta_space_gen(state_space spaces, graph trans)
 
 	for(int i = 0; i < spaces.size(); i++)
 	{
-		if(i >= (int)trans.edges.size())
+		if(i >= trans.edges.size())
 		{
 			trans.edges.resize(i+1, vector<int>());
 			cout << "Does this ever occur???" << endl;
 		}
 
-		for (int j = 0; j < (int)trans.edges[i].size(); j++)
+		for (int j = 0; j < trans.edges[i].size(); j++)
 		{
 			//Node 1
 			leaving_state = spaces[i];
