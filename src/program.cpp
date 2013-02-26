@@ -366,14 +366,14 @@ int program::conflict_count(state impl, int fire_uid, string fire_dir)
 {
 	int count = 0;
 	//Look at every state...
-	for(int spacei = 0; spacei < space.states.size(); spacei++ )
+	for(size_t spacei = 0; spacei < space.states.size(); spacei++ )
 	{
 		int weaker = who_weaker(impl, space.states[spacei]);
 		//And if the implicant fires in this state...
 		if(weaker == 0 || weaker == 1)
 		{
 			//Look at all the states this state connects to...
-			for(int edgei = 0; edgei < trans.edges[spacei].size(); edgei++)
+			for(size_t edgei = 0; edgei < trans.edges[spacei].size(); edgei++)
 			{
 				//      variable      =         [the uid of the "to" state][the variable we want to know fired].data
 				string var_after_edge = space.states[trans.edges[spacei][edgei]][fire_uid].data;
@@ -419,7 +419,7 @@ void program::build_implicants(state_space diff_space)
 	{
 
 		//====POPULATE PRS UP====
-		for(int vari = 0; vari < vars.global.size(); vari++)
+		for(size_t vari = 0; vari < vars.global.size(); vari++)
 		{
 			//Look for potential implicants
 			for(int diffi = 0; diffi < diff_space.size();diffi++)
@@ -468,6 +468,7 @@ void program::build_implicants(state_space diff_space)
 							fully_strong = true; //No one left to add
 						else
 						{
+							cout << "Best Candidate: " << best_candidate << " Best val: " << best_count << endl;
 							to_add_impl[best_candidate].data = "0"; //add a 0 to the implicant in the spot of the candidate var
 							candidates.remove(best_candidate);
 						}
@@ -483,7 +484,7 @@ void program::build_implicants(state_space diff_space)
 
 
 		//====POPULATE PRS DOWN====
-		for(int vari = 0; vari < vars.global.size(); vari++)
+		for(size_t vari = 0; vari < vars.global.size(); vari++)
 		{
 			//Look for potential implicants
 			for(int diffi = 0; diffi < diff_space.size();diffi++)
@@ -532,6 +533,7 @@ void program::build_implicants(state_space diff_space)
 							fully_strong = true; //No one left to add
 						else
 						{
+							cout << "Best Candidate: " << best_candidate << " Best val: " << best_count << endl;
 							to_add_impl[best_candidate].data = "1"; //add a 1 to the implicant in the spot of the candidate var
 							candidates.remove(best_candidate);
 						}
@@ -569,7 +571,7 @@ void program::merge_implicants()
 		//	cout << i << "- "<< prs_down[i].implicants[j] << endl;
 
 		// ================== PRS UP ==================
-		for(int upi = 0; upi<prs_up[i].implicants.size(); upi++)
+		for(size_t upi = 0; upi<prs_up[i].implicants.size(); upi++)
 		{
 			if(!is_all_x(prs_up[i].implicants[upi]))
 			{
@@ -600,7 +602,7 @@ void program::merge_implicants()
 			prs_up[i].left = prs_up[i].left.substr(0, prs_up[i].left.size() - 3);
 
 		// ================== PRS DOWN ==================
-		for(int downi = 0; downi<prs_down[i].implicants.size(); downi++)
+		for(size_t downi = 0; downi<prs_down[i].implicants.size(); downi++)
 		{
 			if(!is_all_x(prs_down[i].implicants[downi]))
 			{

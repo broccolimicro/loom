@@ -70,8 +70,8 @@ rule reduce_to_prime(rule pr)
 		return result;
 	//Reduce to prime guards
 	//Totally is a more efficient/logical way to do this
-	int i = 0;
-	int j = 0;
+	size_t i = 0;
+	size_t j = 0;
 	bool removed_junk;
 	removed_junk = true;
 	while(i != result.implicants.size()-1)
@@ -106,8 +106,8 @@ rule remove_too_strong(rule pr)
 		return result;
 	//Eliminate all 'unneccisarily strong' guards
 	//Totally is a more efficient/logical way to do this
-	int i = 0;
-	int j = 0;
+	size_t i = 0;
+	size_t j = 0;
 	bool removed_junk;
 	removed_junk = true;
 	while(i != result.implicants.size()-1)
@@ -125,7 +125,7 @@ rule remove_too_strong(rule pr)
 				if(weaker_result == -1)
 				{
 					vector<state>::iterator vi = result.implicants.begin();
-					for(int counter = 0; counter < i; counter++)
+					for(size_t counter = 0; counter < i; counter++)
 						vi++;
 					result.implicants.erase(vi);
 					removed_junk = true;
@@ -133,7 +133,7 @@ rule remove_too_strong(rule pr)
 				else if(weaker_result == 1)
 				{
 					vector<state>::iterator vi = result.implicants.begin();
-					for(int counter = 0; counter < j; counter++)
+					for(size_t counter = 0; counter < j; counter++)
 						vi++;
 					result.implicants.erase(vi);
 					removed_junk = true;
@@ -141,7 +141,7 @@ rule remove_too_strong(rule pr)
 				else if(weaker_result == 2)
 				{
 					vector<state>::iterator vi = result.implicants.begin();
-					for(int counter = 0; counter < i; counter++)
+					for(size_t counter = 0; counter < i; counter++)
 						vi++;
 					result.implicants.erase(vi);
 					removed_junk = true;
