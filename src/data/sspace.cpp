@@ -9,7 +9,7 @@
 
 #include "sspace.h"
 
-int state_space::size()
+size_t state_space::size()
 {
 	return states.size();
 }

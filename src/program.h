@@ -45,9 +45,9 @@ struct program
 };
 
 
-void print_line(int from, graph *trans);
-void print_line_dot(int from, state_space *spaces, graph *trans); // Print a line following .dot graphvis formatting
-void print_line_with_trans(int from, graph *trans);
+void print_line(size_t from, graph *trans);
+void print_line_dot(size_t from, state_space *spaces, graph *trans); // Print a line following .dot graphvis formatting
+void print_line_with_trans(size_t from, graph *trans);
 void print_diff_space_to_console(state_space diff_space);
 state_space delta_space_gen(state_space spaces,graph trans);
 

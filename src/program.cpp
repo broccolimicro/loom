@@ -224,7 +224,7 @@ void program::parse(string chp, int verbosity)
 	prs_down.resize(vars.global.size());
 
 	//Inserting info into each PRS
-	for(int i = 0; i < prs_up.size(); i++)
+	for(size_t i = 0; i < prs_up.size(); i++)
 	{
 		prs_up[i].right = vars.get_name(i)+"+";
 		prs_up[i].uid = i;
@@ -263,9 +263,9 @@ void program::parse(string chp, int verbosity)
 }
 
 
-void print_line(int from, graph *trans)
+void print_line(size_t from, graph *trans)
 {
-	int i;
+	size_t i;
 	if(from >= trans->edges.size())
 		trans->edges.resize(from+1, vector<int>());
 
@@ -275,9 +275,9 @@ void print_line(int from, graph *trans)
 	cout << endl;
 }
 
-void print_line_dot(int from, state_space *spaces, graph *trans) // Print a line following .dot graphvis formatting
+void print_line_dot(size_t from, state_space *spaces, graph *trans) // Print a line following .dot graphvis formatting
 {
-	int i;
+	size_t i;
 	if(from >= trans->edges.size())
 		trans->edges.resize(from+1, vector<int>());
 
@@ -294,14 +294,14 @@ void print_line_dot(int from, state_space *spaces, graph *trans) // Print a line
 	}
 
 }
-void print_line_with_trans(int from, graph *trans)
+void print_line_with_trans(size_t from, graph *trans)
 {
 	int i, j;
 	if(from >= trans->edges.size())
 		trans->edges.resize(from+1, vector<int>());
 
 	cout << from << ":";
-	for (i = 0; i < 4 - (int)log10((double)max(from, 1)); i++)
+	for (i = 0; i < 4 - (int)log10((double)max((int)from, 1)); i++)
 		cout << " ";
 	j = 0;
 	for (i = 0; i < (int)trans->edges[from].size(); i++)
@@ -311,7 +311,7 @@ void print_line_with_trans(int from, graph *trans)
 	}
 	for (i = 0; i < 10 - j; i++)
 		cout << " ";
-	for (i = 0; from < (int)trans->transitions.size() && i < (int)trans->transitions[from].size(); i++)
+	for (i = 0; from < trans->transitions.size() && i < (int)trans->transitions[from].size(); i++)
 		cout << (trans->transitions[from])[i] << " ";
 
 	cout << endl;
@@ -320,7 +320,7 @@ void program::print_space_to_console()
 {
 	//Print space (for debugging purposes)
 	cout << endl << endl << "\tState space:" << endl;
-	for(int i = 0; i < space.size(); i++)
+	for(size_t i = 0; i < space.size(); i++)
 	{
 		cout << "\t "<< space[i] << "  ";
 		print_line_with_trans(i, &trans);
@@ -334,7 +334,7 @@ void print_diff_space_to_console(state_space diff_space)
 {
 	//Print space (for debugging purposes)
 	cout << endl << endl << "\tDiff state space:" << endl;
-	for(int i = 0; i < diff_space.size(); i++)
+	for(size_t i = 0; i < diff_space.size(); i++)
 	{
 		cout << "\t "<< diff_space[i] << "  ";
 		cout << diff_space[i].tag << endl;
@@ -353,7 +353,7 @@ void program::print_space_graph_to_console()
 		cout <<"\trankdir=LR;"<<endl;
 	cout <<"\tnode [shape = ellipse];"<<endl;
 	cout <<"\tgraph [ dpi =" << GRAPH_DPI << " ];" << endl;
-	for(int i = 0; i < space.size(); i++)
+	for(size_t i = 0; i < space.size(); i++)
 	{
 		//cout << "\t "<< space[i] << "  ";
 		print_line_dot(i, &space, &trans);
@@ -396,7 +396,7 @@ void program::build_implicants(state_space diff_space)
 	{
 
 
-		for(int i = 0; i < diff_space.size();i++)
+		for(size_t i = 0; i < diff_space.size();i++)
 		{
 			for(int j = 0; j< diff_space[i].size(); j++)
 			{
@@ -423,7 +423,7 @@ void program::build_implicants(state_space diff_space)
 		for(size_t vari = 0; vari < vars.global.size(); vari++)
 		{
 			//Look for potential implicants
-			for(int diffi = 0; diffi < diff_space.size();diffi++)
+			for(size_t diffi = 0; diffi < diff_space.size();diffi++)
 			{
 				//This will turn into an implicant
 				if(diff_space[diffi][vari].data == "1")
@@ -488,7 +488,7 @@ void program::build_implicants(state_space diff_space)
 		for(size_t vari = 0; vari < vars.global.size(); vari++)
 		{
 			//Look for potential implicants
-			for(int diffi = 0; diffi < diff_space.size();diffi++)
+			for(size_t diffi = 0; diffi < diff_space.size();diffi++)
 			{
 				//This will turn into an implicant
 				if(diff_space[diffi][vari].data == "0")
@@ -556,14 +556,14 @@ void program::build_implicants(state_space diff_space)
 void program::merge_implicants()
 {
 	//Remove whatever might have been in there before
-	for(int i = 0; i < prs_up.size(); i++)
+	for(size_t i = 0; i < prs_up.size(); i++)
 	{
 		prs_up[i].left.clear();
 		prs_down[i].left.clear();
 	}
 
 	map<string, variable>::iterator globali = vars.global.begin();
-	for (int i = 0; i< prs_up.size(); i++, globali++)
+	for (size_t i = 0; i< prs_up.size(); i++, globali++)
 	{
 		//Print out the implicants
 		//for(int j = 0; j < prs_up[i].implicants.size(); j++)
@@ -643,7 +643,7 @@ void program::print_prs()
 
 	cout << endl << endl << endl << "Production Rules: " << endl;
 
-	for (int i = 0; i< prs_up.size(); i++, globali++)
+	for (size_t i = 0; i< prs_up.size(); i++, globali++)
 	{
 		if (prs_up[i].left != "")
 			cout << prs_up[i].left << " -> " << prs_up[i].right << endl;
@@ -693,7 +693,7 @@ state_space delta_space_gen(state_space spaces, graph trans)
 	state leaving_state, incoming_state, result_state;
 
 
-	for(int i = 0; i < spaces.size(); i++)
+	for(size_t i = 0; i < spaces.size(); i++)
 	{
 		if(i >= trans.edges.size())
 		{
@@ -701,7 +701,7 @@ state_space delta_space_gen(state_space spaces, graph trans)
 			cout << "Does this ever occur???" << endl;
 		}
 
-		for (int j = 0; j < trans.edges[i].size(); j++)
+		for (size_t j = 0; j < trans.edges[i].size(); j++)
 		{
 			//Node 1
 			leaving_state = spaces[i];
