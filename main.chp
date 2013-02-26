@@ -73,5 +73,5 @@ process main()
 	int<2> w := 0;
 	int<2> q;
 	q := x[1..2]+y | z+w;
-	
+
 }
