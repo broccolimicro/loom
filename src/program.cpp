@@ -418,15 +418,12 @@ void program::build_implicants(state_space diff_space)
 	else
 	{
 
-		cout << "Populating up PRS" << endl;
 		//====POPULATE PRS UP====
 		for(int vari = 0; vari < vars.global.size(); vari++)
 		{
-			cout << "Outer For" << endl;
 			//Look for potential implicants
 			for(int diffi = 0; diffi < diff_space.size();diffi++)
 			{
-				cout << "Inner For" << endl;
 				//This will turn into an implicant
 				if(diff_space[diffi][vari].data == "1")
 				{
@@ -450,13 +447,11 @@ void program::build_implicants(state_space diff_space)
 					bool fully_strong = false;
 					while(!fully_strong)
 					{
-						cout << "While Not Fully Strong" << endl;
 						int best_candidate = -1;
 						int best_count = 999999; //TODO: Make this better
 
 						for(list<int>::iterator candi = candidates.begin(); candi != candidates.end(); candi++)
 						{
-							cout << "Candi For" << endl;
 							state proposed_impl = to_add_impl;
 							proposed_impl[*candi] = "0";
 							int curr_count = conflict_count(proposed_impl, vari, "1");
@@ -486,7 +481,6 @@ void program::build_implicants(state_space diff_space)
 			}//diffi for
 		}//vari for
 
-		cout << "Populating down PRS" << endl;
 
 		//====POPULATE PRS DOWN====
 		for(int vari = 0; vari < vars.global.size(); vari++)
@@ -551,7 +545,6 @@ void program::build_implicants(state_space diff_space)
 			}//diffi for
 		}//vari for
 
-		cout << "Done Bottom Up" << endl;
 
 	}//BOTTOM UP
 }
