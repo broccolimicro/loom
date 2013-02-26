@@ -77,8 +77,8 @@
  */
 int main(int argc, char **argv)
 {
-	FILE *log = fopen("log.txt", "w");
-	*stdout = *log;
+	//FILE *log = fopen("log.txt", "w");
+	//*stdout = *log;
 
 	//Open the top level file
 	ifstream t("main.chp");
@@ -106,5 +106,5 @@ int main(int argc, char **argv)
 
 	program p(prgm, VERB_TRACE);
 
-	fclose(log);
+	//fclose(log);
 }
