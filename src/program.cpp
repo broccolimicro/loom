@@ -11,6 +11,8 @@ program::program(string chp, int verbosity)
 {
 	vars.types = &type_space;
 	parse(chp, verbosity);
+	generate_states();
+	generate_prs();
 }
 
 program::~program()
@@ -181,8 +183,13 @@ void program::parse(string chp, int verbosity)
 	prgm->print_hse();
 	cout << endl;
 
-	//At this point in the program, 'parsing' is done. Launching State Space Gen
 
+	//At this point in the program, 'parsing' is done. Return to launching State Space Gen
+
+}
+
+void program::generate_states()
+{
 	state sr, s;
 	for (map<string, variable>::iterator ri = vars.global.begin(); ri != vars.global.end(); ri++)
 	{
@@ -215,10 +222,14 @@ void program::parse(string chp, int verbosity)
 		print_space_graph_to_console();
 	}
 	//Generate+print diff_space
-	state_space diff_space = delta_space_gen(space, trans);
+	diff_space = delta_space_gen(space, trans);
 	print_diff_space_to_console(diff_space);
 
+	//At this point, the state spaces have been generated. Return to generate production rules.
+}
 
+void program::generate_prs()
+{
 	//Create an up and down PRS for each variable  (UID indexed)
 	prs_up.resize(vars.global.size());
 	prs_down.resize(vars.global.size());
@@ -260,8 +271,8 @@ void program::parse(string chp, int verbosity)
 	print_prs();
 
 	cout << "Done!" << endl<< endl << endl;
-}
 
+}
 
 void print_line(size_t from, graph *trans)
 {

@@ -27,6 +27,7 @@ struct program
 	list<string>			errors;
 	vspace					vars;
 	state_space				space;
+	state_space 			diff_space;
 	graph					trans;
 	parallel				*prgm;
 
@@ -35,6 +36,9 @@ struct program
 
 
 	void parse(string chp, int verbosity);
+	void generate_states();
+	void generate_prs();
+
 	void print_space_to_console();
 	void print_space_graph_to_console();
 	int conflict_count(state impl, int fire_uid, string fire_dir);
