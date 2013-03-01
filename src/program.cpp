@@ -429,9 +429,7 @@ void program::build_implicants(state_space diff_space)
 				if(diff_space[diffi][vari].data == "1")
 				{
 					//This is the state that will be added as an implicant
-					value v;
-					v.data = "X";
-					state to_add_impl(v,vars.global.size());
+					state to_add_impl(value("X"),vars.global.size());
 
 					//List of variables by UID
 					list<int> candidates, needed;
@@ -440,7 +438,7 @@ void program::build_implicants(state_space diff_space)
 					//Populate list of candidates
 					for(int impi = 0; impi < implier.size();impi++)
 					{
-						if(implier[impi].data == "0")//TODO: BUBBLE? || (!BUBBLELESS && implier[impi].data == "0"))
+						if(implier[impi].data == "0")//TODO: BUBBLE? || (!BUBBLELESS && implier[impi].data == "1"))
 							candidates.push_back(impi);
 					}
 
@@ -469,7 +467,6 @@ void program::build_implicants(state_space diff_space)
 							fully_strong = true; //No one left to add
 						else
 						{
-							cout << "Best Candidate: " << best_candidate << " Best val: " << best_count << endl;
 							to_add_impl[best_candidate].data = "0"; //add a 0 to the implicant in the spot of the candidate var
 							candidates.remove(best_candidate);
 						}
