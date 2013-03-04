@@ -620,8 +620,6 @@ value operator&&(value s1, value s2)
 			result.data = "0" + result.data;
 		else if ((a == "X" && (b == "X" || b == "?")) || (b == "X" && (a == "X" || a == "?")))
 			result.data = "X" + result.data;
-		else
-			result.data = "FUCK(" + a + "," + b + ")" + result.data;
 	}
 
 	return result;

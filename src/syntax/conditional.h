@@ -36,7 +36,7 @@ struct conditional : parallel
 
 	void expand_shortcuts();
 	void parse();
-	int generate_states(state_space *space, graph *trans, int init);
+	int generate_states(graph *trans, int init);
 	void generate_prs();
 	void generate_statevars();
 	// void handshaking_reshuffle();

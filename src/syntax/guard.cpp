@@ -104,17 +104,17 @@ void guard::parse()
 		cout << tab << "Guard:\t" + chp << endl;
 }
 
-int guard::generate_states(state_space *space, graph *trans, int init)
+int guard::generate_states(graph *trans, int init)
 {
 	cout << tab << "Guard " << chp << endl;
 
 	map<string, variable>::iterator vi;
 	state s;
 
-	uid = space->size();
-	s = (*space)[init];
+	uid = trans->states.size();
+	s = trans->states[init];
 	s = s && solve(chp, vars, tab, verbosity);
-	space->push_back(s);
+	trans->push_back(s);
 	if (CHP_EDGE)
 		trans->insert_edge(init, uid, chp+"->");
 	else

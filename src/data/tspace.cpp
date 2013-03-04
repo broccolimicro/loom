@@ -19,7 +19,32 @@ void trace_space::assign(int i, trace t)
 	traces[i] = t;
 }
 
+void trace_space::push_back(trace t)
+{
+	traces.push_back(t);
+}
+
+vector<trace>::iterator trace_space::begin()
+{
+	return traces.begin();
+}
+
+vector<trace>::iterator trace_space::end()
+{
+	return traces.end();
+}
+
 trace trace_space::operator[](int i)
 {
 	return traces[i];
+}
+
+state trace_space::operator()(int i)
+{
+	state s;
+
+	for (vector<trace>::iterator j = traces.begin(); j != traces.end(); j++)
+		s.values.push_back((*j)[i]);
+
+	return s;
 }

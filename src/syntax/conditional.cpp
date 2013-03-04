@@ -218,7 +218,7 @@ void conditional::parse()
 	}
 }
 
-int conditional::generate_states(state_space *space, graph *trans, int init)
+int conditional::generate_states(graph *trans, int init)
 {
 	cout << tab << "Conditional " << chp << endl;
 
@@ -231,20 +231,20 @@ int conditional::generate_states(state_space *space, graph *trans, int init)
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
-		guard_result = instr_iter->second->generate_states(space, trans, init);
+		guard_result = instr_iter->second->generate_states(trans, init);
 
-		state_catcher.push_back(instr_iter->first->generate_states(space, trans, guard_result));
+		state_catcher.push_back(instr_iter->first->generate_states(trans, guard_result));
 		if (first)
 		{
-			s = (*space)[state_catcher.back()];
+			s = trans->states[state_catcher.back()];
 			first = false;
 		}
 		else
-			s = s || (*space)[state_catcher.back()];
+			s = s || trans->states[state_catcher.back()];
 	}
 
-	uid = space->size();
-	space->push_back(s);
+	uid = trans->states.size();
+	trans->push_back(s);
 
 	int i = 0;
 	for (i = 0, instr_iter = instrs.begin(); i < (int)state_catcher.size() && instr_iter != instrs.end(); i++, instr_iter++)

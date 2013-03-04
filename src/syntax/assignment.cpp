@@ -225,7 +225,7 @@ void assignment::parse()
 		cout << "Error: Instruction not handled: " << chp << endl;
 }
 
-int assignment::generate_states(state_space *space, graph *trans, int init)
+int assignment::generate_states(graph *trans, int init)
 {
 	cout << tab << "Assignment " << chp << endl;
 
@@ -235,10 +235,10 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 	string search;
 	state s;
 
-	uid = space->size();
+	uid = trans->states.size();
 
 	// Set up the initial state
-	s = (*space)[init];
+	s = trans->states[init];
 	s.prs = true;
 	/*for(ei = expr.begin(); ei != expr.end(); ei++)
 	{
@@ -270,7 +270,8 @@ int assignment::generate_states(state_space *space, graph *trans, int init)
 
 	cout << tab << s << endl;
 
-	space->push_back(s);
+	trans->push_back(s);
+
 	if (CHP_EDGE)
 		trans->insert_edge(init, uid, chp);
 	else

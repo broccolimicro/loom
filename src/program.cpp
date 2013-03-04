@@ -202,12 +202,12 @@ void program::generate_states()
 
 		s.assign(ri->second.uid, ri->second.reset);
 	}
-	space.states.push_back(sr);
-	space.states.push_back(s);
+	trans.push_back(sr);
+	trans.push_back(s);
 	trans.insert_edge(0, 1, "Reset");
 
 	cout << "Generating State Space" << endl;
-	prgm->generate_states(&space, &trans, 1);
+	prgm->generate_states(&trans, 1);
 
 	//Generate states is done. Launching post-state info gathering
 
@@ -222,7 +222,7 @@ void program::generate_states()
 		print_space_graph_to_console();
 	}
 	//Generate+print diff_space
-	diff_space = delta_space_gen(space, trans);
+	diff_space = delta_space_gen(trans.states, trans);
 	print_diff_space_to_console(diff_space);
 
 	//At this point, the state spaces have been generated. Return to generate production rules.
@@ -331,9 +331,9 @@ void program::print_space_to_console()
 {
 	//Print space (for debugging purposes)
 	cout << endl << endl << "\tState space:" << endl;
-	for(size_t i = 0; i < space.size(); i++)
+	for(size_t i = 0; i < trans.states.size(); i++)
 	{
-		cout << "\t "<< space[i] << "  ";
+		cout << "\t "<< trans.states[i] << "  ";
 		print_line_with_trans(i, &trans);
 	}
 	cout << endl << endl;
@@ -364,10 +364,10 @@ void program::print_space_graph_to_console()
 		cout <<"\trankdir=LR;"<<endl;
 	cout <<"\tnode [shape = ellipse];"<<endl;
 	cout <<"\tgraph [ dpi =" << GRAPH_DPI << " ];" << endl;
-	for(size_t i = 0; i < space.size(); i++)
+	for(size_t i = 0; i < trans.states.size(); i++)
 	{
-		//cout << "\t "<< space[i] << "  ";
-		print_line_dot(i, &space, &trans);
+		//cout << "\t "<< trans.states[i] << "  ";
+		print_line_dot(i, &trans.states, &trans);
 	}
 	cout << "}" << endl << endl;
 }
@@ -377,9 +377,9 @@ int program::conflict_count(state impl, int fire_uid, string fire_dir)
 {
 	int count = 0;
 	//Look at every state...
-	for(size_t spacei = 0; spacei < space.states.size(); spacei++ )
+	for(size_t spacei = 0; spacei < trans.states.states.size(); spacei++ )
 	{
-		int weaker = who_weaker(impl, space.states[spacei]);
+		int weaker = who_weaker(impl, trans.states.states[spacei]);
 		//And if the implicant fires in this state...
 		if(weaker == 0 || weaker == 1)
 		{
@@ -387,7 +387,7 @@ int program::conflict_count(state impl, int fire_uid, string fire_dir)
 			for(size_t edgei = 0; edgei < trans.edges[spacei].size(); edgei++)
 			{
 				//      variable      =         [the uid of the "to" state][the variable we want to know fired].data
-				string var_after_edge = space.states[trans.edges[spacei][edgei]][fire_uid].data;
+				string var_after_edge = trans.states.states[trans.edges[spacei][edgei]][fire_uid].data;
 				//And if it isn't an dont care or a desired firing...
 				if(var_after_edge != "X" && var_after_edge != fire_dir)
 				{
@@ -402,6 +402,16 @@ int program::conflict_count(state impl, int fire_uid, string fire_dir)
 //TODO: SOOO UNTESTED
 void program::build_implicants(state_space diff_space)
 {
+	list<int> candidates, needed;
+	state implier;
+	bool fully_strong;
+	state to_add_impl;
+	int best_candidate;
+	int best_count;
+	state proposed_impl;
+	int curr_count;
+	map<string, variable>::iterator vi;
+
 	//  ================== TOP DOWN ==================
 	if(TOP_DOWN)
 	{
@@ -414,12 +424,12 @@ void program::build_implicants(state_space diff_space)
 				if((diff_space[i])[j].data == "1")
 				{
 					if(diff_space[i].tag!=-1)	//Output variable needs to fire high
-						prs_up[j].implicants.push_back(space[diff_space[i].tag]);
+						prs_up[j].implicants.push_back(trans.states[diff_space[i].tag]);
 				}
 				if((diff_space[i])[j].data == "0")
 				{
 					if(diff_space[i].tag!=-1)	//Output variable needs to fire low
-						prs_down[j].implicants.push_back(space[diff_space[i].tag]);
+						prs_down[j].implicants.push_back(trans.states[diff_space[i].tag]);
 				}
 			}
 		}
@@ -431,40 +441,39 @@ void program::build_implicants(state_space diff_space)
 	{
 
 		//====POPULATE PRS UP====
-		for(size_t vari = 0; vari < vars.global.size(); vari++)
+		for(vi = vars.global.begin(); vi != vars.global.end(); vi++)
 		{
 			//Look for potential implicants
 			for(size_t diffi = 0; diffi < diff_space.size();diffi++)
 			{
 				//This will turn into an implicant
-				if(diff_space[diffi][vari].data == "1")
+				if(diff_space[diffi][vi->second.uid].data == "1")
 				{
 					//This is the state that will be added as an implicant
-					state to_add_impl(value("X"),vars.global.size());
+					to_add_impl = state(value("X"),vars.global.size());
 
 					//List of variables by UID
-					list<int> candidates, needed;
-					state implier = space[diff_space[diffi].tag];
+					candidates.clear();
+					needed.clear();
+					implier = trans.states[diff_space[diffi].tag];
 
 					//Populate list of candidates
 					for(int impi = 0; impi < implier.size();impi++)
-					{
 						if(implier[impi].data == "0")//TODO: BUBBLE? || (!BUBBLELESS && implier[impi].data == "1"))
 							candidates.push_back(impi);
-					}
 
 					//We now  have a list of candidate variables to potentially add to the implicant for the firing of diff_space[diffi][vari]
-					bool fully_strong = false;
+					fully_strong = false;
 					while(!fully_strong)
 					{
-						int best_candidate = -1;
-						int best_count = 999999; //TODO: Make this better
+						best_candidate = -1;
+						best_count = 999999; //TODO: Make this better
 
 						for(list<int>::iterator candi = candidates.begin(); candi != candidates.end(); candi++)
 						{
-							state proposed_impl = to_add_impl;
+							proposed_impl = to_add_impl;
 							proposed_impl[*candi] = "0";
-							int curr_count = conflict_count(proposed_impl, vari, "1");
+							curr_count = conflict_count(proposed_impl, vi->second.uid, "1");
 							if(curr_count < best_count)
 							{
 								best_count = curr_count;
@@ -486,7 +495,7 @@ void program::build_implicants(state_space diff_space)
 
 					}//fully_strong while
 					//The implicant that we just spent a while making? Add that.
-					prs_up[vari].implicants.push_back(to_add_impl);
+					prs_up[vi->second.uid].implicants.push_back(to_add_impl);
 				}//if
 			}//diffi for
 		}//vari for
@@ -502,33 +511,30 @@ void program::build_implicants(state_space diff_space)
 				if(diff_space[diffi][vari].data == "0")
 				{
 					//This is the state that will be added as an implicant
-					value v;
-					v.data = "X";
-					state to_add_impl(v,vars.global.size());
+					to_add_impl = state(value("X"),vars.global.size());
 
 					//List of variables by UID
-					list<int> candidates, needed;
-					state implier = space[diff_space[diffi].tag];
+					candidates.clear();
+					needed.clear();
+					implier = trans.states[diff_space[diffi].tag];
 
 					//Populate list of candidates
 					for(int impi = 0; impi < implier.size();impi++)
-					{
 						if(implier[impi].data == "1")//TODO: BUBBLE? || (!BUBBLELESS && implier[impi].data == "0"))
 							candidates.push_back(impi);
-					}
 
 					//We now  have a list of candidate variables to potentially add to the implicant for the firing of diff_space[diffi][vari]
-					bool fully_strong = false;
+					fully_strong = false;
 					while(!fully_strong)
 					{
-						int best_candidate = -1;
-						int best_count = 999999; //TODO: Make this better
+						best_candidate = -1;
+						best_count = 999999; //TODO: Make this better
 
 						for(list<int>::iterator candi = candidates.begin(); candi != candidates.end(); candi++)
 						{
-							state proposed_impl = to_add_impl;
+							proposed_impl = to_add_impl;
 							proposed_impl[*candi] = "1";
-							int curr_count = conflict_count(proposed_impl, vari, "0");
+							curr_count = conflict_count(proposed_impl, vari, "0");
 							if(curr_count < best_count)
 							{
 								best_count = curr_count;
@@ -542,7 +548,6 @@ void program::build_implicants(state_space diff_space)
 							fully_strong = true; //No one left to add
 						else
 						{
-							cout << "Best Candidate: " << best_candidate << " Best val: " << best_count << endl;
 							to_add_impl[best_candidate].data = "1"; //add a 1 to the implicant in the spot of the candidate var
 							candidates.remove(best_candidate);
 						}

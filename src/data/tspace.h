@@ -10,6 +10,7 @@
 
 #include "../common.h"
 #include "trace.h"
+#include "state.h"
 
 struct trace_space
 {
@@ -18,8 +19,13 @@ struct trace_space
 
 	int size();
 	void assign(int i, trace t);
+	void push_back(trace t);
+
+	vector<trace>::iterator begin();
+	vector<trace>::iterator end();
 
 	trace operator[](int i);
+	state operator()(int i);
 };
 
 #endif

@@ -204,7 +204,7 @@ void loop::parse()
 	}
 }
 
-int loop::generate_states(state_space *space, graph *trans, int init)
+int loop::generate_states(graph *trans, int init)
 {
 	cout << tab << "Loop " << chp << endl;
 
@@ -222,26 +222,26 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 
 	while (!done && count++ < 5)
 	{
-		cout << tab << "Loop Iteration " << count << ": " << (*space)[next] << endl;
+		cout << tab << "Loop Iteration " << count << ": " << trans->states[next] << endl;
 
 		first = true;
 		for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 		{
-			guardresult = instr_iter->second->generate_states(space, trans, next);
-			state_catcher.push_back(instr_iter->first->generate_states(space, trans, guardresult));
+			guardresult = instr_iter->second->generate_states(trans, next);
+			state_catcher.push_back(instr_iter->first->generate_states(trans, guardresult));
 			if (first)
 			{
-				s = (*space)[state_catcher.back()];
+				s = trans->states[state_catcher.back()];
 				first = false;
 			}
 			else
-				s = s || (*space)[state_catcher.back()];
+				s = s || trans->states[state_catcher.back()];
 		}
 
 		cout << tab << "Result " << s << endl;
-		uid.push_back(space->size());
+		uid.push_back(trans->states.size());
 
-		space->push_back(s);
+		trans->push_back(s);
 
 		next = uid.back();
 
@@ -249,23 +249,23 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 			trans->insert_edge(state_catcher[i], next, instr_iter->second->chp + "->Block");
 		state_catcher.clear();
 
-		done = subset((*space)[init], (*space)[next]);
+		done = subset(trans->states[init], trans->states[next]);
 
 		if (done)
 			trans->insert_edge(next, init,"Loop");
 		for (int i = 0; i < (int)uid.size()-1; i++)
 		{
-			sub = subset((*space)[uid[i]], (*space)[next]);
+			sub = subset(trans->states[uid[i]], trans->states[next]);
 			done = done || sub;
 			if (sub && uid[i] != next)
 				trans->insert_edge(next, uid[i], "Loop");
 		}
 	}
 
-	s = (*space)[init];
+	s = trans->states[init];
 
 	for (int i = 0; i < (int)uid.size(); i++)
-		s = s || (*space)[uid[i]];
+		s = s || trans->states[uid[i]];
 
 	state temp;
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
@@ -277,8 +277,8 @@ int loop::generate_states(state_space *space, graph *trans, int init)
 	}
 	cout << tab << "Final Result " << s << endl;
 
-	uid.push_back(space->size());
-	space->push_back(s);
+	uid.push_back(trans->states.size());
+	trans->push_back(s);
 	trans->insert_edge(next, uid.back(), "Loop");
 
 	next = uid.back();

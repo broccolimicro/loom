@@ -4,12 +4,17 @@
  */
 
 #include "../common.h"
+#include "tspace.h"
+#include "sspace.h"
 
 #ifndef graph_h
 #define graph_h
 
 struct graph
 {
+	state_space states;
+	trace_space traces;
+
 	// From				  , To
 	// Instruction indexed, Instruction indexed
 	vector<vector<int> > edges;
@@ -18,6 +23,12 @@ struct graph
 	graph();
 
 	void insert_edge(int from, int to, string chp);
+	void push_back(state s);
+	void push_back(trace t);
+
+	int size();
+	int width();
+
 	/*
 	void print_line(int from, graph *trans);
 	void print_line_dot(int from, state_space *spaces, graph *trans);

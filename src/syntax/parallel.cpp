@@ -185,7 +185,7 @@ void parallel::parse()
 	}
 }
 
-int parallel::generate_states(state_space *space, graph *trans, int init)
+int parallel::generate_states(graph *trans, int init)
 {
 	cout << tab << "Parallel " << chp << endl;
 
@@ -200,18 +200,18 @@ int parallel::generate_states(state_space *space, graph *trans, int init)
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
-		state_catcher.push_back(instr->generate_states(space, trans, init));
+		state_catcher.push_back(instr->generate_states(trans, init));
 		if (first)
 		{
-			s = (*space)[state_catcher.back()];
+			s = trans->states[state_catcher.back()];
 			first = false;
 		}
 		else
-			s = s || (*space)[state_catcher.back()];
+			s = s || trans->states[state_catcher.back()];
 	}
-	uid = space->size();
+	uid = trans->states.size();
 
-	space->push_back(s);
+	trans->push_back(s);
 
 	int i = 0;
 	for (i = 0, instr_iter = instrs.begin(); i < (int)state_catcher.size() && instr_iter != instrs.end(); i++, instr_iter++)
