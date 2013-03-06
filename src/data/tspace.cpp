@@ -48,3 +48,12 @@ state trace_space::operator()(int i)
 
 	return s;
 }
+
+ostream &operator<<(ostream &os, trace_space t)
+{
+	vector<trace>::iterator i;
+	for (i = t.begin(); i != t.end(); i++)
+		os << *i << endl;
+
+	return os;
+}

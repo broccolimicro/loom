@@ -202,12 +202,12 @@ void program::generate_states()
 
 		s.assign(ri->second.uid, ri->second.reset);
 	}
-	trans.push_back(sr);
-	trans.push_back(s);
-	trans.insert_edge(0, 1, "Reset");
+	space.push_back(sr);
+	space.push_back(s);
+	space.insert_edge(0, 1, "Reset");
 
 	cout << "Generating State Space" << endl;
-	prgm->generate_states(&trans, 1);
+	prgm->generate_states(&space, 1);
 
 	//Generate states is done. Launching post-state info gathering
 
@@ -215,14 +215,17 @@ void program::generate_states()
 
 	if(STATESP_CO)
 	{
-		print_space_to_console();
+		//print_space_to_console();
+		//print_traces_to_console();
+		cout << space << endl << endl;
+		cout >> space << endl << endl;
 	}
 	if(STATESP_GR)
 	{
-		print_space_graph_to_console();
+		space.print_dot();
 	}
 	//Generate+print diff_space
-	diff_space = delta_space_gen(trans.states, trans);
+	diff_space = delta_space_gen(space.states, space);
 	print_diff_space_to_console(diff_space);
 
 	//At this point, the state spaces have been generated. Return to generate production rules.
@@ -274,73 +277,6 @@ void program::generate_prs()
 
 }
 
-void print_line(size_t from, graph *trans)
-{
-	size_t i;
-	if(from >= trans->edges.size())
-		trans->edges.resize(from+1, vector<int>());
-
-	cout << from << ": ";
-	for (i = 0; i < trans->edges[from].size(); i++)
-		cout << (trans->edges[from])[i] << " ";
-	cout << endl;
-}
-
-void print_line_dot(size_t from, state_space *spaces, graph *trans) // Print a line following .dot graphvis formatting
-{
-	size_t i;
-	if(from >= trans->edges.size())
-		trans->edges.resize(from+1, vector<int>());
-
-	//Each edge should be: 	"Node 1" -> "Node 2" [ label = "trans" ];
-	for (i = 0; i < trans->edges[from].size(); i++)
-	{
-		//	"Node 1" -> "Node 2" [ label = "trans" ];
-		//"Node 1" ->
-		cout << "\t\"" << from << ":" << (*spaces)[from] << "\"" << " -> ";
-		//"Node 2
-		cout << "\"" << trans->edges[from][i] << ":" << (*spaces)[trans->edges[from][i]];
-		//" [ label = "trans" ];
-		cout << "\" [ label = \"" << (trans->transitions[from])[i] << "\" ];" << endl;
-	}
-
-}
-void print_line_with_trans(size_t from, graph *trans)
-{
-	int i, j;
-	if(from >= trans->edges.size())
-		trans->edges.resize(from+1, vector<int>());
-
-	cout << from << ":";
-	for (i = 0; i < 4 - (int)log10((double)max((int)from, 1)); i++)
-		cout << " ";
-	j = 0;
-	for (i = 0; i < (int)trans->edges[from].size(); i++)
-	{
-		cout << trans->edges[from][i] << " ";
-		j += (int)log10((double)max(trans->edges[from][i], 1)) + 2;
-	}
-	for (i = 0; i < 10 - j; i++)
-		cout << " ";
-	for (i = 0; from < trans->transitions.size() && i < (int)trans->transitions[from].size(); i++)
-		cout << (trans->transitions[from])[i] << " ";
-
-	cout << endl;
-}
-void program::print_space_to_console()
-{
-	//Print space (for debugging purposes)
-	cout << endl << endl << "\tState space:" << endl;
-	for(size_t i = 0; i < trans.states.size(); i++)
-	{
-		cout << "\t "<< trans.states[i] << "  ";
-		print_line_with_trans(i, &trans);
-	}
-	cout << endl << endl;
-	//cout << "Current connections: " << endl;
-	//cout << (*trans);
-}
-
 void print_diff_space_to_console(state_space diff_space)
 {
 	//Print space (for debugging purposes)
@@ -352,24 +288,7 @@ void print_diff_space_to_console(state_space diff_space)
 	}
 	cout << endl << endl;
 	//cout << "Current connections: " << endl;
-	//cout << (*trans);
-}
-
-void program::print_space_graph_to_console()
-{
-	//Print space (for debugging purposes)
-	cout << endl << endl << "\t.dot formatted graph:" << endl;
-	cout << "digraph finite_state_machine {"<< endl << "\tgraph [ label = \"\\n\\nState space graph!\" ];" << endl;
-	if (!GRAPH_VERT)
-		cout <<"\trankdir=LR;"<<endl;
-	cout <<"\tnode [shape = ellipse];"<<endl;
-	cout <<"\tgraph [ dpi =" << GRAPH_DPI << " ];" << endl;
-	for(size_t i = 0; i < trans.states.size(); i++)
-	{
-		//cout << "\t "<< trans.states[i] << "  ";
-		print_line_dot(i, &trans.states, &trans);
-	}
-	cout << "}" << endl << endl;
+	//cout << (*space);
 }
 
 // Counts the number of illegal firings for a certain variable given an implicant
@@ -377,17 +296,17 @@ int program::conflict_count(state impl, int fire_uid, string fire_dir)
 {
 	int count = 0;
 	//Look at every state...
-	for(size_t spacei = 0; spacei < trans.states.states.size(); spacei++ )
+	for(size_t spacei = 0; spacei < space.states.states.size(); spacei++ )
 	{
-		int weaker = who_weaker(impl, trans.states.states[spacei]);
+		int weaker = who_weaker(impl, space.states.states[spacei]);
 		//And if the implicant fires in this state...
 		if(weaker == 0 || weaker == 1)
 		{
 			//Look at all the states this state connects to...
-			for(size_t edgei = 0; edgei < trans.edges[spacei].size(); edgei++)
+			for(size_t edgei = 0; edgei < space.edges[spacei].size(); edgei++)
 			{
 				//      variable      =         [the uid of the "to" state][the variable we want to know fired].data
-				string var_after_edge = trans.states.states[trans.edges[spacei][edgei]][fire_uid].data;
+				string var_after_edge = space.states.states[space.edges[spacei][edgei]][fire_uid].data;
 				//And if it isn't an dont care or a desired firing...
 				if(var_after_edge != "X" && var_after_edge != fire_dir)
 				{
@@ -424,12 +343,12 @@ void program::build_implicants(state_space diff_space)
 				if((diff_space[i])[j].data == "1")
 				{
 					if(diff_space[i].tag!=-1)	//Output variable needs to fire high
-						prs_up[j].implicants.push_back(trans.states[diff_space[i].tag]);
+						prs_up[j].implicants.push_back(space.states[diff_space[i].tag]);
 				}
 				if((diff_space[i])[j].data == "0")
 				{
 					if(diff_space[i].tag!=-1)	//Output variable needs to fire low
-						prs_down[j].implicants.push_back(trans.states[diff_space[i].tag]);
+						prs_down[j].implicants.push_back(space.states[diff_space[i].tag]);
 				}
 			}
 		}
@@ -455,7 +374,7 @@ void program::build_implicants(state_space diff_space)
 					//List of variables by UID
 					candidates.clear();
 					needed.clear();
-					implier = trans.states[diff_space[diffi].tag];
+					implier = space.states[diff_space[diffi].tag];
 
 					//Populate list of candidates
 					for(int impi = 0; impi < implier.size();impi++)
@@ -516,7 +435,7 @@ void program::build_implicants(state_space diff_space)
 					//List of variables by UID
 					candidates.clear();
 					needed.clear();
-					implier = trans.states[diff_space[diffi].tag];
+					implier = space.states[diff_space[diffi].tag];
 
 					//Populate list of candidates
 					for(int impi = 0; impi < implier.size();impi++)
@@ -700,7 +619,7 @@ void program::weaken_guard(rule pr)
 }
 */
 
-state_space delta_space_gen(state_space spaces, graph trans)
+state_space delta_space_gen(state_space spaces, graph space)
 {
 	state_space delta_space;
 	state leaving_state, incoming_state, result_state;
@@ -708,18 +627,18 @@ state_space delta_space_gen(state_space spaces, graph trans)
 
 	for(size_t i = 0; i < spaces.size(); i++)
 	{
-		if(i >= trans.edges.size())
+		if(i >= space.edges.size())
 		{
-			trans.edges.resize(i+1, vector<int>());
+			space.edges.resize(i+1, vector<int>());
 			cout << "Does this ever occur???" << endl;
 		}
 
-		for (size_t j = 0; j < trans.edges[i].size(); j++)
+		for (size_t j = 0; j < space.edges[i].size(); j++)
 		{
 			//Node 1
 			leaving_state = spaces[i];
 			//Node 2
-			incoming_state = spaces[trans.edges[i][j]];
+			incoming_state = spaces[space.edges[i][j]];
 			result_state = diff(leaving_state,incoming_state);
 			if(incoming_state.prs)
 				result_state.tag = i;

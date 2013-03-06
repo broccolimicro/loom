@@ -17,20 +17,6 @@ void graph::insert_edge(int from, int to, string chp)
 	//cout << *this;
 }
 
-ostream &operator<<(ostream &os, graph g)
-{
-	int i, j;
-	cout << "Connections:" << endl;
-    for (i = 0; i < (int)g.edges.size(); i++)
-    {
-    	cout << i << ": ";
-    	for (j = 0; j < (int)g.edges[i].size(); j++)
-    		os << (g.edges[i])[j] << " ";
-    	os << endl;
-    }
-    return os;
-}
-
 void graph::push_back(state s)
 {
 	states.push_back(s);
@@ -81,4 +67,66 @@ int graph::size()
 int graph::width()
 {
 	return traces.size();
+}
+
+void graph::print_dot()
+{
+	size_t i, j;
+
+	//Print space (for debugging purposes)
+	cout << "\n\n\t.dot formatted graph:" << endl;
+	cout << "digraph finite_state_machine {\n\tgraph [ label = \"\\n\\nState space graph!\" ];" << endl;
+	if (!GRAPH_VERT)
+		cout << "\trankdir=LR;" << endl;
+	cout << "\tnode [shape = ellipse];" << endl;
+	cout << "\tgraph [ dpi =" << GRAPH_DPI << " ];" << endl;
+	for(i = 0; i < states.size(); i++)
+	{
+		if(i >= edges.size())
+			edges.resize(i+1, vector<int>());
+
+		// "Node 1" -> "Node 2" [ label = "trans" ];
+		for (j = 0; j < edges[i].size(); j++)
+		{
+			cout << "\t\"" << i << ":" << states[i] << "\"" << " -> ";
+			cout << "\"" << edges[i][j] << ":" << states[edges[i][j]];
+			cout << "\" [ label = \"" << (transitions[i])[j] << "\" ];" << endl;
+		}
+	}
+	cout << "}\n\n";
+}
+
+ostream &operator<<(ostream &os, graph g)
+{
+	size_t j;
+	vector<state>::iterator i;
+	vector<int>::iterator m;
+	vector<string>::iterator q;
+
+	os << "State Space:" << endl;
+	for (i = g.states.begin(), j = 0; i != g.states.end(); i++, j++)
+	{
+		os << *i << "\t" << j << " -> { ";
+
+		if (j < g.edges.size())
+			for (m = g.edges[j].begin(); m != g.edges[j].end(); m++)
+				os << *m << " ";
+
+		os << "}\t";
+		if (j < g.transitions.size())
+			for (q = g.transitions[j].begin(); q != g.transitions[j].end(); q++)
+				os << *q << " ";
+
+		os << endl;
+	}
+
+    return os;
+}
+
+ostream &operator>>(ostream &os, graph g)
+{
+	os << "Trace Space:" << endl;
+	os << g.traces;
+
+	return os;
 }

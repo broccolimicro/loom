@@ -30,4 +30,6 @@ struct state_space
 
 };
 
+ostream &operator<<(ostream &os, state_space s);
+
 #endif

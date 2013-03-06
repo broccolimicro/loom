@@ -44,3 +44,11 @@ trace state_space::operator()(int i)
 
 	return ret;
 }
+
+ostream &operator<<(ostream &os, state_space s)
+{
+	vector<state>::iterator i;
+	for (i = s.begin(); i != s.end(); i++)
+		os << *i << endl;
+	return os;
+}

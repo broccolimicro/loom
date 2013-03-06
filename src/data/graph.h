@@ -14,6 +14,8 @@ struct graph
 {
 	state_space states;
 	trace_space traces;
+	trace_space up;
+	trace_space down;
 
 	// From				  , To
 	// Instruction indexed, Instruction indexed
@@ -29,6 +31,8 @@ struct graph
 	int size();
 	int width();
 
+	void print_dot();
+
 	/*
 	void print_line(int from, graph *trans);
 	void print_line_dot(int from, state_space *spaces, graph *trans);
@@ -37,5 +41,6 @@ struct graph
 };
 
 ostream &operator<<(ostream &os, graph g);
+ostream &operator>>(ostream &os, graph g);
 
 #endif

@@ -28,4 +28,6 @@ struct trace_space
 	state operator()(int i);
 };
 
+ostream &operator<<(ostream &os, trace_space t);
+
 #endif
