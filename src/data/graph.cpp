@@ -5,6 +5,42 @@ graph::graph()
 
 }
 
+graph::~graph()
+{
+	edges.clear();
+	transitions.clear();
+}
+
+void graph::insert(state s, vector<int> from, vector<string> chp)
+{
+	vector<int>::iterator i;
+	vector<string>::iterator j;
+	int uid = states.size();
+	push_back(s);
+
+	for (i = from.begin(), j = chp.begin(); i != from.end() && j != chp.end(); i++, j++)
+	{
+		if (CHP_EDGE)
+			insert_edge(*i, uid, *j);
+		else
+			insert_edge(*i, uid, "Merge");
+	}
+}
+
+void graph::insert(state s, int from, string chp)
+{
+	int to = states.size();
+	push_back(s);
+
+	if (from != -1)
+	{
+		if (CHP_EDGE)
+			insert_edge(from, to, chp);
+		else
+			insert_edge(from, to, "");
+	}
+}
+
 void graph::insert_edge(int from, int to, string chp)
 {
 	if(from >= (int)edges.size())
@@ -13,8 +49,6 @@ void graph::insert_edge(int from, int to, string chp)
 	if(from >= (int)transitions.size())
 		transitions.resize(from+1, vector<string>());
 	transitions[from].push_back(chp);
-	//cout << "Connecting " << from << " and " << to << endl;
-	//cout << *this;
 }
 
 void graph::push_back(state s)

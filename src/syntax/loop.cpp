@@ -212,6 +212,7 @@ int loop::generate_states(graph *trans, int init)
 	map<string, variable>::iterator vi;
 	int guardresult = -1;
 	vector<int> state_catcher;
+	vector<string> chp_catcher;
 	int next = init;
 	bool done = false;
 	bool sub = false;
@@ -229,6 +230,7 @@ int loop::generate_states(graph *trans, int init)
 		{
 			guardresult = instr_iter->second->generate_states(trans, next);
 			state_catcher.push_back(instr_iter->first->generate_states(trans, guardresult));
+			chp_catcher.push_back(instr_iter->second->chp+"->Block");
 			if (first)
 			{
 				s = trans->states[state_catcher.back()];
@@ -241,19 +243,18 @@ int loop::generate_states(graph *trans, int init)
 		cout << tab << "Result " << s << endl;
 		uid.push_back(trans->states.size());
 
-		trans->push_back(s);
+		trans->insert(s, state_catcher, chp_catcher);
 
 		next = uid.back();
 
-		for (i = 0, instr_iter = instrs.begin(); i < (int)state_catcher.size() && instr_iter != instrs.end(); i++, instr_iter++)
-			trans->insert_edge(state_catcher[i], next, instr_iter->second->chp + "->Block");
 		state_catcher.clear();
+		chp_catcher.clear();
 
 		done = subset(trans->states[init], trans->states[next]);
 
 		if (done)
-			trans->insert_edge(next, init,"Loop");
-		for (int i = 0; i < (int)uid.size()-1; i++)
+			trans->insert_edge(next, init, "Loop");
+		for (i = 0; i < (int)uid.size()-1; i++)
 		{
 			sub = subset(trans->states[uid[i]], trans->states[next]);
 			done = done || sub;
@@ -264,7 +265,7 @@ int loop::generate_states(graph *trans, int init)
 
 	s = trans->states[init];
 
-	for (int i = 0; i < (int)uid.size(); i++)
+	for (i = 0; i < (int)uid.size(); i++)
 		s = s || trans->states[uid[i]];
 
 	state temp;
@@ -278,12 +279,9 @@ int loop::generate_states(graph *trans, int init)
 	cout << tab << "Final Result " << s << endl;
 
 	uid.push_back(trans->states.size());
-	trans->push_back(s);
-	trans->insert_edge(next, uid.back(), "Loop");
+	trans->insert(s, next, "Loop");
 
-	next = uid.back();
-
-	return next;
+	return uid.back();
 }
 
 void loop::generate_prs()

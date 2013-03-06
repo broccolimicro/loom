@@ -114,11 +114,8 @@ int guard::generate_states(graph *trans, int init)
 	uid = trans->states.size();
 	s = trans->states[init];
 	s = s && solve(chp, vars, tab, verbosity);
-	trans->push_back(s);
-	if (CHP_EDGE)
-		trans->insert_edge(init, uid, chp+"->");
-	else
-		trans->insert_edge(init, uid, "Guard");
+	trans->insert(s, init, chp + "->");
+
 	return uid;
 }
 

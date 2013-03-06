@@ -193,6 +193,7 @@ int parallel::generate_states(graph *trans, int init)
 	instruction *instr;
 	map<string, variable>::iterator vi;
 	vector<int> state_catcher;
+	vector<string> chp_catcher;
 	state s;
 	bool first = true;
 
@@ -201,6 +202,7 @@ int parallel::generate_states(graph *trans, int init)
 	{
 		instr = *instr_iter;
 		state_catcher.push_back(instr->generate_states(trans, init));
+		chp_catcher.push_back(instr->chp);
 		if (first)
 		{
 			s = trans->states[state_catcher.back()];
@@ -211,16 +213,7 @@ int parallel::generate_states(graph *trans, int init)
 	}
 	uid = trans->states.size();
 
-	trans->push_back(s);
-
-	int i = 0;
-	for (i = 0, instr_iter = instrs.begin(); i < (int)state_catcher.size() && instr_iter != instrs.end(); i++, instr_iter++)
-	{
-		if (CHP_EDGE)
-			trans->insert_edge(state_catcher[i], uid, (*instr_iter)->chp);
-		else
-			trans->insert_edge(state_catcher[i], uid, "Parallel merge");
-	}
+	trans->insert(s, state_catcher, chp_catcher);
 
 	return uid;
 }

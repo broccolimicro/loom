@@ -226,6 +226,7 @@ int conditional::generate_states(graph *trans, int init)
 	map<string, variable>::iterator vi;
 	int guard_result = init;
 	vector<int> state_catcher;
+	vector<string> chp_catcher;
 	state s;
 	bool first = true;
 
@@ -234,6 +235,7 @@ int conditional::generate_states(graph *trans, int init)
 		guard_result = instr_iter->second->generate_states(trans, init);
 
 		state_catcher.push_back(instr_iter->first->generate_states(trans, guard_result));
+		chp_catcher.push_back(instr_iter->first->chp);
 		if (first)
 		{
 			s = trans->states[state_catcher.back()];
@@ -244,16 +246,7 @@ int conditional::generate_states(graph *trans, int init)
 	}
 
 	uid = trans->states.size();
-	trans->push_back(s);
-
-	int i = 0;
-	for (i = 0, instr_iter = instrs.begin(); i < (int)state_catcher.size() && instr_iter != instrs.end(); i++, instr_iter++)
-	{
-		if (CHP_EDGE)
-			trans->insert_edge(state_catcher[i], uid, instr_iter->first->chp);
-		else
-			trans->insert_edge(state_catcher[i], uid, "Cond. Merge");
-	}
+	trans->insert(s, state_catcher, chp_catcher);
 
 	return uid;
 }

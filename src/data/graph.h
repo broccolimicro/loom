@@ -12,6 +12,9 @@
 
 struct graph
 {
+	graph();
+	~graph();
+
 	state_space states;
 	trace_space traces;
 	trace_space up;
@@ -22,8 +25,9 @@ struct graph
 	vector<vector<int> > edges;
 	// Strings that caused given transition
 	vector<vector<string> > transitions;
-	graph();
 
+	void insert(state s, vector<int> from, vector<string> chp = vector<string>());
+	void insert(state s, int from = -1, string chp = "");
 	void insert_edge(int from, int to, string chp);
 	void push_back(state s);
 	void push_back(trace t);
@@ -32,12 +36,6 @@ struct graph
 	int width();
 
 	void print_dot();
-
-	/*
-	void print_line(int from, graph *trans);
-	void print_line_dot(int from, state_space *spaces, graph *trans);
-	void print_line_with_trans(int from, graph *trans);
-	*/
 };
 
 ostream &operator<<(ostream &os, graph g);

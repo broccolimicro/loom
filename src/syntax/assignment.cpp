@@ -270,12 +270,7 @@ int assignment::generate_states(graph *trans, int init)
 
 	cout << tab << s << endl;
 
-	trans->push_back(s);
-
-	if (CHP_EDGE)
-		trans->insert_edge(init, uid, chp);
-	else
-		trans->insert_edge(init, uid, "Assign");
+	trans->insert(s, init, chp);
 
 	return uid;
 }
