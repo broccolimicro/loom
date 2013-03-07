@@ -393,6 +393,7 @@ int program::conflict_count(state impl, int fire_uid, string fire_dir)
 				//      variable      =         [the uid of the "to" state][the variable we want to know fired].data
 				string var_after_edge = space.states.states[space.edges[spacei][edgei]][fire_uid].data;
 				//And if it isn't an dont care or a desired firing...
+				cout << "var_after_edge " << var_after_edge << endl;
 				if(var_after_edge != "X" && var_after_edge != fire_dir)
 				{
 					count++; //Count it as a conflict!
