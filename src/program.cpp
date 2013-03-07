@@ -226,9 +226,6 @@ void program::generate_states()
 	{
 		space.print_dot();
 	}
-	//Generate+print diff_space
-	diff_space = delta_space_gen(space.states, space);
-	print_diff_space_to_console(diff_space);
 
 	//At this point, the state spaces have been generated. Return to generate production rules.
 }
@@ -251,7 +248,7 @@ void program::generate_prs()
 	}
 
 	//Find the implicants of the diff space
-	build_implicants(diff_space);
+	build_implicants(space.delta);
 
 	merge_implicants();
 	print_prs();
@@ -675,55 +672,6 @@ void program::print_prs()
 
 	}
 
-}
-
-state_space delta_space_gen(state_space spaces, graph space)
-{
-	state_space delta_space;
-	state leaving_state, incoming_state, result_state;
-
-
-	for (size_t i = 0; i < spaces.size(); i++)
-	{
-		if (i >= space.edges.size())
-		{
-			space.edges.resize(i+1, vector<int>());
-			cout << "Does this ever occur???" << endl;
-		}
-
-		for (size_t j = 0; j < space.edges[i].size(); j++)
-		{
-			//Node 1
-			leaving_state = spaces[i];
-			//Node 2
-			incoming_state = spaces[space.edges[i][j]];
-			result_state = diff(leaving_state,incoming_state);
-			if(incoming_state.prs)
-				result_state.tag = i;
-			else
-				result_state.tag = -1;
-
-			if(incoming_state.prs || SHOW_ALL_DIFF_STATES)
-				delta_space.states.push_back(result_state);
-		}
-	}
-	//TODO: return a graph, too, so that the states mean something mathematically?
-	return delta_space;
-
-}
-
-void print_diff_space_to_console(state_space diff_space)
-{
-	//Print space (for debugging purposes)
-	cout << endl << endl << "\tDiff state space:" << endl;
-	for(size_t i = 0; i < diff_space.size(); i++)
-	{
-		cout << "\t "<< diff_space[i] << "  ";
-		cout << diff_space[i].tag << endl;
-	}
-	cout << endl << endl;
-	//cout << "Current connections: " << endl;
-	//cout << (*trans);
 }
 
 /*
