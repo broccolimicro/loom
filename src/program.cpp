@@ -377,27 +377,31 @@ void program::insert_state_vars()
 int program::conflict_count(state impl, int fire_uid, string fire_dir)
 {
 	int count = 0;
+	string var_after_edge;
 	//Look at every state...
 	for(size_t spacei = 0; spacei < space.states.states.size(); spacei++ )
 	{
 		cout << "spacifor" << endl;
 		int weaker = who_weaker(impl, space.states.states[spacei]);
+		cout << "weaker " << weaker << endl;
 		//And if the implicant fires in this state...
 		if(weaker == 0 || weaker == 1)
 		{
 			//Look at all the states this state connects to...
-			for(size_t edgei = 0; edgei < space.edges[spacei].size(); edgei++)
+			var_after_edge = "X";
+			for(size_t edgei = 0; edgei < space.edges[spacei].size() && (var_after_edge == "X" || var_after_edge == fire_dir); edgei++)
 			{
 				cout << "edgifor" << endl;
 				cout << "spacei: " << spacei << " edgei: " << edgei << " fire_uid " << fire_uid << " space.edges size " << space.edges.size() << " space.states.states " << space.states.states.size() << " space.edges[spacei][edgei] " << space.edges[spacei][edgei] << endl;
 				//      variable      =         [the uid of the "to" state][the variable we want to know fired].data
-				string var_after_edge = space.states.states[space.edges[spacei][edgei]][fire_uid].data;
+				var_after_edge = space.states.states[space.edges[spacei][edgei]][fire_uid].data;
 				//And if it isn't an dont care or a desired firing...
 				cout << "var_after_edge " << var_after_edge << endl;
+				cout << "fire_dir " << fire_dir << endl;
 				if(var_after_edge != "X" && var_after_edge != fire_dir)
 				{
 					count++; //Count it as a conflict!
-					break;
+					//break;
 				}//if
 			}//edgei for
 		}//if
