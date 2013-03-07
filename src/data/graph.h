@@ -17,6 +17,7 @@ struct graph
 
 	state_space states;
 	trace_space traces;
+	state_space delta;
 	trace_space up;
 	trace_space down;
 
@@ -36,6 +37,7 @@ struct graph
 	int width();
 
 	void print_dot();
+	void print_delta();
 };
 
 ostream &operator<<(ostream &os, graph g);

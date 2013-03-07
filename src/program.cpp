@@ -220,6 +220,7 @@ void program::generate_states()
 		//print_traces_to_console();
 		cout << space << endl << endl;
 		cout >> space << endl << endl;
+		space.print_delta();
 	}
 	if(STATESP_GR)
 	{
@@ -682,9 +683,9 @@ state_space delta_space_gen(state_space spaces, graph space)
 	state leaving_state, incoming_state, result_state;
 
 
-	for(size_t i = 0; i < spaces.size(); i++)
+	for (size_t i = 0; i < spaces.size(); i++)
 	{
-		if(i >= space.edges.size())
+		if (i >= space.edges.size())
 		{
 			space.edges.resize(i+1, vector<int>());
 			cout << "Does this ever occur???" << endl;

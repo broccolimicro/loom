@@ -43,10 +43,22 @@ void graph::insert(state s, int from, string chp)
 
 void graph::insert_edge(int from, int to, string chp)
 {
-	if(from >= (int)edges.size())
+	state from_state = states[from];
+	state to_state = states[to];
+	state result_state = diff(from_state,to_state);
+	if(to_state.prs)
+		result_state.tag = from;
+	else
+		result_state.tag = -1;
+
+	if(to_state.prs || SHOW_ALL_DIFF_STATES)
+		delta.states.push_back(result_state);
+
+	if (from >= (int)edges.size())
 		edges.resize(from+1, vector<int>());
 	edges[from].push_back(to);
-	if(from >= (int)transitions.size())
+
+	if (from >= (int)transitions.size())
 		transitions.resize(from+1, vector<string>());
 	transitions[from].push_back(chp);
 }
@@ -128,6 +140,18 @@ void graph::print_dot()
 		}
 	}
 	cout << "}\n\n";
+}
+
+void graph::print_delta()
+{
+	size_t j;
+	vector<state>::iterator i;
+	vector<int>::iterator m;
+	vector<string>::iterator q;
+
+	cout << "Delta Space:" << endl;
+	for (i = delta.begin(), j = 0; i != delta.end(); i++, j++)
+		cout << *i << "\t" << i->tag << endl;
 }
 
 ostream &operator<<(ostream &os, graph g)
