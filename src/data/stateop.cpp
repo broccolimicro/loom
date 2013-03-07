@@ -9,6 +9,7 @@ state &state::operator=(state s)
 {
 	values = s.values;
 	prs = s.prs;
+	tag = s.tag;
 	return *this;
 }
 

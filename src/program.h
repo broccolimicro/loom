@@ -37,7 +37,7 @@ struct program
 	void parse(string chp, int verbosity);
 	void generate_states();
 	void generate_prs();
-
+	void insert_state_vars();
 	int conflict_count(state impl, int fire_uid, string fire_dir);
 	void build_implicants(state_space diff_space);
 	void merge_implicants();

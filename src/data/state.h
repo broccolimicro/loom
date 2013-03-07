@@ -20,7 +20,8 @@ struct state
 	// Variable indexed using uid
 	vector<value> values;
 	//Optional tag field to 'label' states.
-	//(Currently only used to mark from states in diff spaces)
+	//In diff spaces, the tag marks the 'from' state.
+	//In an implicants list (see rule) it is the state that must cause a fire.
 	int tag;
 	//Should this state be used to generate state variables from?
 	bool prs;

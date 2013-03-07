@@ -13,6 +13,7 @@ program::program(string chp, int verbosity)
 	parse(chp, verbosity);
 	generate_states();
 	generate_prs();
+	insert_state_vars();
 }
 
 program::~program()
@@ -274,21 +275,100 @@ void program::generate_prs()
 	print_prs();
 
 	cout << "Done!" << endl<< endl << endl;
-
 }
 
-void print_diff_space_to_console(state_space diff_space)
+void program::insert_state_vars()
 {
-	//Print space (for debugging purposes)
-	cout << endl << endl << "\tDiff state space:" << endl;
-	for(size_t i = 0; i < diff_space.size(); i++)
+	//The below, or a totally crazy idea:
+	//Make a datastructure containing 'indistinguishable from's for each state
+	//Somehow shrink these lists so they don't matter anymore or something. Magic.
+	//Other thoughts: Would it be dumb to iterate through once with all implicants instead?
+
+	//Set up data structures
+	vector<trace> up_conflicts;
+	vector<trace> down_conflicts;
+
+	up_conflicts.resize(prs_up.size());
+	down_conflicts.resize(prs_down.size());
+	for(size_t i = 0; i < prs_up.size(); i ++)
 	{
-		cout << "\t "<< diff_space[i] << "  ";
-		cout << diff_space[i].tag << endl;
+		up_conflicts[i].values.resize(space.size());
+		down_conflicts[i].values.resize(space.size());
 	}
-	cout << endl << endl;
-	//cout << "Current connections: " << endl;
-	//cout << (*space);
+
+	//===== SEARCH FOR NEEDED UP UP ======
+	// === iterate through every rule's implicants
+	for(size_t rulei = 0; rulei < prs_up.size(); rulei++)
+	{
+		// === For each implicant...
+		for(size_t impi = 0; prs_up[rulei].implicants.size(); impi++)
+		{
+			//...iterate once through the state space.
+			for(size_t statei = 0; statei < space.size(); statei++)
+			{
+				//Write down if the state is an okay firing, conflict firing, or mandatory firing (vector<trace>?)
+				int weaker = who_weaker(prs_up[rulei].implicants[impi], space.states[statei]);
+				//It is supposed to fire here!
+				if((prs_up[rulei].implicants[impi].tag))
+					up_conflicts[rulei][statei].data = "!";
+				//It doesn't fire here.
+				else if(weaker == 0 || weaker == 2)
+					up_conflicts[rulei][statei].data = "_";
+				//It fires here. Should it?
+				else if(weaker == -1 || weaker == 1)
+				{
+					//TODO! Figure out if it may fire here.
+					//(space[statei][prs_up[rulei].uid]=="0"))
+					up_conflicts[rulei][statei].data = "C";
+				}
+			} //statei for
+		}//impi for
+	}//rulei for
+
+	cout << "Up conflict traces:" << endl;
+	for (size_t i = 0; i < prs_up.size(); i++)
+		cout<< prs_up[i].right << " " << up_conflicts[i] << endl;
+
+	// === Chose indices in state space to insert state variables
+	// === Insert these into the CHP and reparse? Is better way?
+
+
+
+
+	//===== SEARCH FOR NEEDED DOWN SV ======
+	// === iterate through every rule's implicants
+	for(size_t rulei = 0; rulei < prs_down.size(); rulei++)
+	{
+		// === For each implicant...
+		for(size_t impi = 0; prs_down[rulei].implicants.size(); impi++)
+		{
+			//...iterate once through the state space.
+			for(size_t statei = 0; statei < space.size(); statei++)
+			{
+				//Write down if the state is an okay firing, conflict firing, or mandatory firing (vector<trace>?)
+				int weaker = who_weaker(prs_down[rulei].implicants[impi], space.states[statei]);
+				//It is supposed to fire here!
+				if((prs_down[rulei].implicants[impi].tag))
+					up_conflicts[rulei][statei].data = "!";
+				//It doesn't fire here.
+				else if(weaker == 0 || weaker == 2)
+					up_conflicts[rulei][statei].data = "_";
+				//It fires here. Should it?
+				else if(weaker == -1 || weaker == 1)
+				{
+					//TODO! Figure out if it may fire here.
+					//(space[statei][prs_up[rulei].uid]=="0"))
+					up_conflicts[rulei][statei].data = "C";
+				}
+			} //statei for
+		}//impi for
+	}//rulei for
+
+	// === Chose indices in state space to insert state variables
+	// === Insert these into the CHP and reparse? Is better way?
+	cout << "Down conflict traces:" << endl;
+	for (size_t i = 0; i < prs_up.size(); i++)
+		cout<< prs_down[i].right << " " << down_conflicts[i] << endl;
 }
 
 // Counts the number of illegal firings for a certain variable given an implicant
@@ -414,6 +494,7 @@ void program::build_implicants(state_space diff_space)
 
 					}//fully_strong while
 					//The implicant that we just spent a while making? Add that.
+					to_add_impl.tag = diff_space[diffi].tag;
 					prs_up[vi->second.uid].implicants.push_back(to_add_impl);
 				}//if
 			}//diffi for
@@ -475,6 +556,7 @@ void program::build_implicants(state_space diff_space)
 
 					}//fully_strong while
 					//The implicant that we just spent a while making? Add that.
+					to_add_impl.tag = diff_space[diffi].tag;
 					prs_down[vari].implicants.push_back(to_add_impl);
 				}//if
 			}//diffi for
@@ -578,46 +660,21 @@ void program::print_prs()
 	for (size_t i = 0; i< prs_up.size(); i++, globali++)
 	{
 		if (prs_up[i].left != "")
-			cout << prs_up[i].left << " -> " << prs_up[i].right << endl;
+		{
+			cout << prs_up[i].left << " -> " << prs_up[i].right << " ";
+			print_implicant_tags(prs_up[i].implicants);
+			cout<< endl;
+		}
 		if (prs_down[i].left != "")
-			cout << prs_down[i].left << " -> " << prs_down[i].right << endl;
+		{
+			cout << prs_down[i].left << " -> " << prs_down[i].right  << " ";
+			print_implicant_tags(prs_down[i].implicants);
+			cout<< endl;
+		}
 
 	}
 
 }
-
-/*
-//TODO: Test test!!
-void program::weaken_guard(rule pr)
-{
-	//Go through every implicant of the rule
-	for(int impi = 0; impi < pr.implicants.size(); impi++)
-	{
-		//Go through every variable of the given implicant
-		for(int vari = 0; vari < pr.implicants[impi].size(); vari++)
-		{
-			//proposal will be the given implicant missing the vari-th variable
-			state proposal = pr.implicants[impi];
-			proposal[vari].data = "X";
-			//Compare this proposal to the whole state space
-			bool not_needed = true;
-			for(int spacei = 0; spacei < space.states.size(); spacei++)
-			{
-				int weaker = who_weaker(proposal,space.states[spacei]);
-				//If the current state is weaker than our proposal, or they are the same...
-				if(weaker == 0 || weaker == 2)
-				{
-					//Check if it is not allowed to fire here
-					if((space.states[spacei][pr.uid] == "1"&& pr.up == false) || (space.states[spacei][pr.uid] == "0"&& pr.up == true))
-						not_needed = false;
-				}//if
-
-			}//spaci for
-
-		}//vari for
-	}//impi for
-}
-*/
 
 state_space delta_space_gen(state_space spaces, graph space)
 {
@@ -653,3 +710,54 @@ state_space delta_space_gen(state_space spaces, graph space)
 	return delta_space;
 
 }
+
+void print_diff_space_to_console(state_space diff_space)
+{
+	//Print space (for debugging purposes)
+	cout << endl << endl << "\tDiff state space:" << endl;
+	for(size_t i = 0; i < diff_space.size(); i++)
+	{
+		cout << "\t "<< diff_space[i] << "  ";
+		cout << diff_space[i].tag << endl;
+	}
+	cout << endl << endl;
+	//cout << "Current connections: " << endl;
+	//cout << (*trans);
+}
+
+/*
+//TODO: Test test!!
+ * Do not delete without Nicholas' consent!! He has not proven that the construction method
+ * used during bottom up will yield the same results! In fact, he thinks there is a defininte
+ * region of the design space where this is not the case.
+void program::weaken_guard(rule pr)
+{
+	//Go through every implicant of the rule
+	for(int impi = 0; impi < pr.implicants.size(); impi++)
+	{
+		//Go through every variable of the given implicant
+		for(int vari = 0; vari < pr.implicants[impi].size(); vari++)
+		{
+			//proposal will be the given implicant missing the vari-th variable
+			state proposal = pr.implicants[impi];
+			proposal[vari].data = "X";
+			//Compare this proposal to the whole state space
+			bool not_needed = true;
+			for(int spacei = 0; spacei < space.states.size(); spacei++)
+			{
+				int weaker = who_weaker(proposal,space.states[spacei]);
+				//If the current state is weaker than our proposal, or they are the same...
+				if(weaker == 0 || weaker == 2)
+				{
+					//Check if it is not allowed to fire here
+					if((space.states[spacei][pr.uid] == "1"&& pr.up == false) || (space.states[spacei][pr.uid] == "0"&& pr.up == true))
+						not_needed = false;
+				}//if
+
+			}//spaci for
+
+		}//vari for
+	}//impi for
+}
+*/
+

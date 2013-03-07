@@ -177,6 +177,17 @@ vector<rule> minimize_rule_vector(vector<rule> prs)
 
 }
 
+void print_implicant_tags(vector<state> implicants)
+{
+	int size = implicants.size();
+	for(int i = 0; i < size; i++){
+		if(i != 0)
+			cout << ", ";
+		cout << implicants[i].tag;
+	}
+
+}
+
 ostream &operator<<(ostream &os, rule r)
 {
 	list<state>::iterator i;
