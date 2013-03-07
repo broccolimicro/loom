@@ -184,10 +184,6 @@ void program::parse(string chp, int verbosity)
 
 	prgm->print_hse();
 	cout << endl;
-
-
-	//At this point in the program, 'parsing' is done. Return to launching State Space Gen
-
 }
 
 void program::generate_states()
@@ -211,10 +207,6 @@ void program::generate_states()
 	cout << "Generating State Space" << endl;
 	prgm->generate_states(&space, 1);
 
-	//Generate states is done. Launching post-state info gathering
-
-	//The whole program has states now!
-
 	if(STATESP_CO)
 	{
 		//print_space_to_console();
@@ -222,13 +214,12 @@ void program::generate_states()
 		cout << space << endl << endl;
 		cout >> space << endl << endl;
 		space.print_delta();
+		space.print_up();
 	}
 	if(STATESP_GR)
 	{
 		space.print_dot();
 	}
-
-	//At this point, the state spaces have been generated. Return to generate production rules.
 }
 
 void program::generate_prs()

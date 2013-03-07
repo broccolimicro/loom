@@ -45,6 +45,8 @@ void graph::insert_edge(int from, int to, string chp)
 {
 	state from_state = states[from];
 	state to_state = states[to];
+
+	// Delta State Insertion
 	state result_state = diff(from_state,to_state);
 	if(to_state.prs)
 		result_state.tag = from;
@@ -54,6 +56,42 @@ void graph::insert_edge(int from, int to, string chp)
 	if(to_state.prs || SHOW_ALL_DIFF_STATES)
 		delta.states.push_back(result_state);
 
+	// Up State Insertion
+	vector<value>::iterator i, j;
+	string::iterator si, sj;
+	string str;
+	int k;
+
+	if (from_state.size() > up.size())
+		up.traces.resize(from_state.size(), trace());
+
+	k = 0;
+	for (i = from_state.begin(), j = to_state.begin(); i != from_state.end() && j != to_state.end(); i++, j++)
+	{
+		str = "";
+		for (si = i->begin(), sj = j->begin(); si != i->end() && sj != j->end(); si++, sj++)
+		{
+			if (*sj == '1' && *si != '1')
+				str = str + "1";
+			else if (*sj == '1' && *si == '1')
+				str = str + "X";
+			else
+				str = str + "0";
+		}
+
+		up[k++].push_back(value(str));
+	}
+
+	// Down State Insertion
+	/*if (*sj == '0' && *si != '0' && j->prs)
+		str = str + "1";
+	else if (*sj == '0' && *si == '0')
+		str = str + "X";
+	else
+		str = str + "0";*/
+
+
+	// Edge Insertion
 	if (from >= (int)edges.size())
 		edges.resize(from+1, vector<int>());
 	edges[from].push_back(to);
@@ -113,6 +151,18 @@ int graph::size()
 int graph::width()
 {
 	return traces.size();
+}
+
+void graph::print_up()
+{
+	cout << "Up Production Rule Firing" << endl;
+	cout << up << endl;
+}
+
+void graph::print_down()
+{
+	cout << "Down Production Rule Firing" << endl;
+	cout << down << endl;
 }
 
 void graph::print_dot()

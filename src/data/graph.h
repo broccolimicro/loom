@@ -36,6 +36,8 @@ struct graph
 	int size();
 	int width();
 
+	void print_up();
+	void print_down();
 	void print_dot();
 	void print_delta();
 };

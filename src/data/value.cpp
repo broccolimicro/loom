@@ -24,6 +24,16 @@ value::~value()
 	data = "";
 }
 
+string::iterator value::begin()
+{
+	return data.begin();
+}
+
+string::iterator value::end()
+{
+	return data.end();
+}
+
 value &value::operator=(value s)
 {
 	data = s.data;

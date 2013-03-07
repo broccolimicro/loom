@@ -24,6 +24,9 @@ struct value
 
 	string data;
 
+	string::iterator begin();
+	string::iterator end();
+
 	value &operator=(value s);
 	value &operator=(string s);
 
