@@ -20,6 +20,8 @@ struct graph
 	state_space delta;
 	trace_space up;
 	trace_space down;
+	vector<vector<int> > up_firing;
+	vector<vector<int> > down_firing;
 
 	// From				  , To
 	// Instruction indexed, Instruction indexed

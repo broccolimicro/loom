@@ -176,7 +176,7 @@ trace &trace::operator>>=(int n)
 }
 
 
-value trace::operator[](int i)
+value &trace::operator[](int i)
 {
 	return values[i];
 }

@@ -63,7 +63,7 @@ struct trace
 	trace &operator>>=(int n);
 
 	trace operator()(int i);
-	value operator[](int i);
+	value &operator[](int i);
 };
 
 ostream &operator<<(ostream &os, trace s);

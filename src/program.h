@@ -44,8 +44,4 @@ struct program
 	void print_prs();
 };
 
-void print_diff_space_to_console(state_space diff_space);
-state_space delta_space_gen(state_space spaces,graph trans);
-
-
 #endif

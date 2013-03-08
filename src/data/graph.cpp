@@ -64,12 +64,15 @@ void graph::insert_edge(int from, int to, string chp)
 	if (from_state.size() > up.size())
 		up.traces.resize(from_state.size(), trace());
 
+	if (from_state.size() > up_firing.size())
+		up_firing.resize(from_state.size(), vector<int>());
+
 	for (i = from_state.begin(), j = to_state.begin(), k = 0; i != from_state.end() && j != to_state.end(); i++, j++, k++)
 	{
 		str = "";
 		for (si = i->begin(), sj = j->begin(); si != i->end() && sj != j->end(); si++, sj++)
 		{
-			if (*sj == '1' && *si == '0')
+			if (*sj == '1' && (*si == '0' || (*si != '1' && from == 0)))
 				str = str + "1";
 			else if (*sj == '1' && *si == '1')
 				str = str + "X";
@@ -84,12 +87,15 @@ void graph::insert_edge(int from, int to, string chp)
 	if (from_state.size() > down.size())
 		down.traces.resize(from_state.size(), trace());
 
+	if (from_state.size() > down_firing.size())
+		down_firing.resize(from_state.size(), vector<int>());
+
 	for (i = from_state.begin(), j = to_state.begin(), k = 0; i != from_state.end() && j != to_state.end(); i++, j++, k++)
 	{
 		str = "";
 		for (si = i->begin(), sj = j->begin(); si != i->end() && sj != j->end(); si++, sj++)
 		{
-			if (*sj == '0' && *si == '1')
+			if (*sj == '0' && (*si == '1' || (*si != '0' && from == 0)))
 				str = str + "1";
 			else if (*sj == '0' && *si == '0')
 				str = str + "X";
@@ -104,7 +110,6 @@ void graph::insert_edge(int from, int to, string chp)
 	if (from >= (int)edges.size())
 		edges.resize(from+1, vector<int>());
 	edges[from].push_back(to);
-	cout << "LOOKYLOOKY " << edges.size() << endl;
 
 	if (from >= (int)transitions.size())
 		transitions.resize(from+1, vector<string>());
