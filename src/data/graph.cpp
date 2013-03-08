@@ -64,7 +64,7 @@ void graph::insert_edge(int from, int to, string chp)
 	if (from_state.size() > up.size())
 		up.traces.resize(from_state.size(), trace());
 
-	if (from_state.size() > up_firing.size())
+	if (from_state.size() > (int)up_firing.size())
 		up_firing.resize(from_state.size(), vector<int>());
 
 	for (i = from_state.begin(), j = to_state.begin(), k = 0; i != from_state.end() && j != to_state.end(); i++, j++, k++)
@@ -87,7 +87,7 @@ void graph::insert_edge(int from, int to, string chp)
 	if (from_state.size() > down.size())
 		down.traces.resize(from_state.size(), trace());
 
-	if (from_state.size() > down_firing.size())
+	if (from_state.size() > (int)down_firing.size())
 		down_firing.resize(from_state.size(), vector<int>());
 
 	for (i = from_state.begin(), j = to_state.begin(), k = 0; i != from_state.end() && j != to_state.end(); i++, j++, k++)
