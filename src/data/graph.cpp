@@ -60,6 +60,10 @@ void graph::insert_edge(int from, int to, string chp)
 	if(to_state.prs || SHOW_ALL_DIFF_STATES)
 		delta.states.push_back(result_state);
 
+	/* TODO Input variables should not be driven at reset
+	 * TODO Input variables might not want to have a slew of X's when they actually get a value.
+	 */
+
 	// Up State Insertion
 	if (from_state.size() > up.size())
 		up.traces.resize(from_state.size(), trace());
@@ -72,8 +76,11 @@ void graph::insert_edge(int from, int to, string chp)
 		str = "";
 		for (si = i->begin(), sj = j->begin(); si != i->end() && sj != j->end(); si++, sj++)
 		{
-			if (*sj == '1' && (*si == '0' || (*si != '1' && from == 0)))
+			if (*sj == '1' && *si != '1' && to_state.prs)
+			{
 				str = str + "1";
+				up_firing[k].push_back(from);
+			}
 			else if (*sj == '1' && *si == '1')
 				str = str + "X";
 			else
@@ -95,8 +102,11 @@ void graph::insert_edge(int from, int to, string chp)
 		str = "";
 		for (si = i->begin(), sj = j->begin(); si != i->end() && sj != j->end(); si++, sj++)
 		{
-			if (*sj == '0' && (*si == '1' || (*si != '0' && from == 0)))
+			if (*sj == '0' && *si != '0' && to_state.prs)
+			{
 				str = str + "1";
+				down_firing[k].push_back(from);
+			}
 			else if (*sj == '0' && *si == '0')
 				str = str + "X";
 			else
@@ -184,12 +194,30 @@ void graph::print_up()
 {
 	cout << "Up Production Rule Firing" << endl;
 	cout << up << endl;
+
+	vector<vector<int> >::iterator i;
+	vector<int>::iterator j;
+	for (i = up_firing.begin(); i != up_firing.end(); i++)
+	{
+		for (j = i->begin(); j != i->end(); j++)
+			cout << *j << " ";
+		cout << endl;
+	}
 }
 
 void graph::print_down()
 {
 	cout << "Down Production Rule Firing" << endl;
 	cout << down << endl;
+
+	vector<vector<int> >::iterator i;
+	vector<int>::iterator j;
+	for (i = down_firing.begin(); i != down_firing.end(); i++)
+	{
+		for (j = i->begin(); j != i->end(); j++)
+			cout << *j << " ";
+		cout << endl;
+	}
 }
 
 void graph::print_dot()

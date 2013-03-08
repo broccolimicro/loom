@@ -200,6 +200,7 @@ void program::generate_states()
 
 		s.assign(ri->second.uid, ri->second.reset);
 	}
+	s.prs = true;
 	space.push_back(sr);
 	space.push_back(s);
 	space.insert_edge(0, 1, "Reset");

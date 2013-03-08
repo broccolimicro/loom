@@ -23,8 +23,6 @@ struct state_space
 	vector<state>::iterator begin();
 	vector<state>::iterator end();
 
-//	state_space delta_space_gen(state_space spaces, graph trans);
-
 	state operator[](int i);
 	trace operator()(int i);
 

@@ -1114,33 +1114,33 @@ trace down(trace s, int idx)
  * C is conflict if no value variable
  * ! is necessary fire
  */
-string conflicts(trace left, trace right)
+trace conflicts(trace left, trace right)
 {
 	vector<value>::iterator i,j;
-	string conflict = "";
+	trace conflict;
 
 	//Loop through all of the production rule values (left) and the corresponding desired functionality (right)
 	for (i = left.values.begin(),j = right.values.begin() ; i != left.values.end() && j != right.values.end(); i++, j++)
 	{
-		if(i->data == "0" && j->data == "0" )
-			conflict += ".";		// Doesn't fire, shouldn't fire. Good.
-		else if(i->data == "0" && j->data == "1" )
+		if (i->data == "0" && j->data == "0")
+			conflict.push_back(value("."));		// Doesn't fire, shouldn't fire. Good.
+		else if (i->data == "0" && j->data == "1")
 		{
 			cout << "Error: Production rule missing necessary firing." << endl;
-			conflict += "E";		// Error fire! Our PRS aren't good enough.
+			conflict.push_back(value("E"));		// Error fire! Our PRS aren't good enough.
 		}
-		else if(i->data == "1" && j->data == "0" )
-			conflict += "C";		// Illegal fire (fires when it shouldn't)
-		else if(i->data == "1" && j->data == "1" )
-			conflict += "!";		// This fires, and it must keep firing after we after we add a value var
-		else if(j->data == "X" )
-			conflict += ".";		// Don't really care if it fires or not. Ambivalence.
-		else if(i->data == "X" && j->data == "0")
+		else if (i->data == "1" && j->data == "0")
+			conflict.push_back(value("C"));		// Illegal fire (fires when it shouldn't)
+		else if (i->data == "1" && j->data == "1")
+			conflict.push_back(value("!"));		// This fires, and it must keep firing after we after we add a value var
+		else if (j->data == "X" )
+			conflict.push_back(value("."));		// Don't really care if it fires or not. Ambivalence.
+		else if (i->data == "X" && j->data == "0")
 			conflict += "C";
 		else
 		{
 			cout << "Error: The value variable generation algorithm is very confused right now." << endl;
-			conflict += "E";		// Error fire! Not quite sure how you got here...
+			conflict.push_back(value("E"));		// Error fire! Not quite sure how you got here...
 		}
 	}
 
