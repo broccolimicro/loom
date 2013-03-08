@@ -45,6 +45,10 @@ void graph::insert_edge(int from, int to, string chp)
 {
 	state from_state = states[from];
 	state to_state = states[to];
+	vector<value>::iterator i, j;
+	string::iterator si, sj;
+	string str;
+	int k;
 
 	// Delta State Insertion
 	state result_state = diff(from_state,to_state);
@@ -57,21 +61,15 @@ void graph::insert_edge(int from, int to, string chp)
 		delta.states.push_back(result_state);
 
 	// Up State Insertion
-	vector<value>::iterator i, j;
-	string::iterator si, sj;
-	string str;
-	int k;
-
 	if (from_state.size() > up.size())
 		up.traces.resize(from_state.size(), trace());
 
-	k = 0;
-	for (i = from_state.begin(), j = to_state.begin(); i != from_state.end() && j != to_state.end(); i++, j++)
+	for (i = from_state.begin(), j = to_state.begin(), k = 0; i != from_state.end() && j != to_state.end(); i++, j++, k++)
 	{
 		str = "";
 		for (si = i->begin(), sj = j->begin(); si != i->end() && sj != j->end(); si++, sj++)
 		{
-			if (*sj == '1' && *si != '1')
+			if (*sj == '1' && *si == '0')
 				str = str + "1";
 			else if (*sj == '1' && *si == '1')
 				str = str + "X";
@@ -79,17 +77,28 @@ void graph::insert_edge(int from, int to, string chp)
 				str = str + "0";
 		}
 
-		up[k++].push_back(value(str));
+		up[k].push_back(value(str));
 	}
 
 	// Down State Insertion
-	/*if (*sj == '0' && *si != '0' && j->prs)
-		str = str + "1";
-	else if (*sj == '0' && *si == '0')
-		str = str + "X";
-	else
-		str = str + "0";*/
+	if (from_state.size() > down.size())
+		down.traces.resize(from_state.size(), trace());
 
+	for (i = from_state.begin(), j = to_state.begin(), k = 0; i != from_state.end() && j != to_state.end(); i++, j++, k++)
+	{
+		str = "";
+		for (si = i->begin(), sj = j->begin(); si != i->end() && sj != j->end(); si++, sj++)
+		{
+			if (*sj == '0' && *si == '1')
+				str = str + "1";
+			else if (*sj == '0' && *si == '0')
+				str = str + "X";
+			else
+				str = str + "0";
+		}
+
+		down[k].push_back(value(str));
+	}
 
 	// Edge Insertion
 	if (from >= (int)edges.size())
@@ -120,6 +129,12 @@ void graph::push_back(state s)
 		t.assign(states.size()-1, *v);
 		traces.push_back(t);
 	}
+
+	if (edges.size() < states.size())
+		edges.resize(states.size(), vector<int>());
+
+	if (transitions.size() < states.size())
+		transitions.resize(states.size(), vector<string>());
 }
 
 void graph::push_back(trace t)
@@ -141,6 +156,12 @@ void graph::push_back(trace t)
 		s.assign(traces.size()-1, *v);
 		states.push_back(s);
 	}
+
+	if (edges.size() < states.size())
+		edges.resize(states.size(), vector<int>());
+
+	if (transitions.size() < states.size())
+		transitions.resize(states.size(), vector<string>());
 }
 
 int graph::size()
@@ -202,6 +223,7 @@ void graph::print_delta()
 	cout << "Delta Space:" << endl;
 	for (i = delta.begin(), j = 0; i != delta.end(); i++, j++)
 		cout << *i << "\t" << i->tag << endl;
+	cout << endl;
 }
 
 ostream &operator<<(ostream &os, graph g)

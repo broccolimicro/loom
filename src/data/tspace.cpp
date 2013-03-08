@@ -34,7 +34,7 @@ vector<trace>::iterator trace_space::end()
 	return traces.end();
 }
 
-trace trace_space::operator[](int i)
+trace &trace_space::operator[](int i)
 {
 	return traces[i];
 }

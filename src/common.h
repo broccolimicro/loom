@@ -65,6 +65,6 @@ size_t find_last_of_l0(string subject, list<string> search, size_t pos = string:
 #define CHP_EDGE 1				// If 1, output CHP on graph edges. If 0, output functional labels (loop, conditional, etc)
 #define GRAPH_VERT 1			//If 1, the graph will be high to low. Else, it will be left to right
 #define GRAPH_DPI 300			//DPI of the output graph
-#define SHOW_ALL_DIFF_STATES 0 	// If 0, only the 'effective' edges of the diff graph are shown.
+#define SHOW_ALL_DIFF_STATES 1 	// If 0, only the 'effective' edges of the diff graph are shown.
 
 #endif

@@ -24,7 +24,7 @@ struct trace_space
 	vector<trace>::iterator begin();
 	vector<trace>::iterator end();
 
-	trace operator[](int i);
+	trace &operator[](int i);
 	state operator()(int i);
 };
 

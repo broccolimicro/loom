@@ -72,7 +72,4 @@ process main()
 	e := a^b | c^d;
 	*/
 	mux0b2 MyMux(A, B, C, D);
-	
-	
-
 }

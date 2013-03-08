@@ -211,10 +211,12 @@ void program::generate_states()
 	{
 		//print_space_to_console();
 		//print_traces_to_console();
+		cout << vars << endl;
 		cout << space << endl << endl;
 		cout >> space << endl << endl;
 		space.print_delta();
 		space.print_up();
+		space.print_down();
 	}
 	if(STATESP_GR)
 	{
@@ -387,6 +389,7 @@ int program::conflict_count(state impl, int fire_uid, string fire_dir)
 		//And if the implicant fires in this state...
 		if(weaker == 0 || weaker == 1)
 		{
+			cout << "What? " << spacei << " " << space.edges[spacei].size() << endl;
 			//Look at all the states this state connects to...
 			var_after_edge = "X";
 			for(size_t edgei = 0; edgei < space.edges[spacei].size() && (var_after_edge == "X" || var_after_edge == fire_dir); edgei++)
