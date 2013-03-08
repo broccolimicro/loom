@@ -107,4 +107,5 @@ int main(int argc, char **argv)
 	program p(prgm, VERB_TRACE);
 
 	fclose(log);
+
 }
