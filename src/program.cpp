@@ -276,7 +276,6 @@ void program::insert_state_vars()
 	//Somehow shrink these lists so they don't matter anymore or something. Magic.
 	//Other thoughts: Would it be dumb to iterate through once with all implicants instead?
 
-	cout << "Statring sv insert" << endl;
 	//Set up data structures
 	vector<trace> up_conflicts;
 	vector<trace> down_conflicts;
@@ -288,13 +287,11 @@ void program::insert_state_vars()
 		up_conflicts[i].values.resize(space.size());
 		down_conflicts[i].values.resize(space.size());
 	}
-	cout << "Conflicty resized" << endl;
 
 	//===== SEARCH FOR NEEDED UP UP ======
 	// === iterate through every rule's implicants
 	for(size_t rulei = 0; rulei < prs_up.size(); rulei++)
 	{
-		cout << "Rule loop" << endl;
 		// === For each implicant...
 		for(size_t impi = 0; prs_up[rulei].implicants.size(); impi++)
 		{
@@ -302,7 +299,6 @@ void program::insert_state_vars()
 			//...iterate once through the state space.
 			for(size_t statei = 0; statei < space.size(); statei++)
 			{
-				cout << "stati loop" << endl;
 				//Write down if the state is an okay firing, conflict firing, or mandatory firing (vector<trace>?)
 				int weaker = who_weaker(prs_up[rulei].implicants[impi], space.states[statei]);
 				//It is supposed to fire here!
@@ -322,7 +318,6 @@ void program::insert_state_vars()
 		}//impi for
 	}//rulei for
 
-	cout << "Done nested loops!" << endl;
 	cout << "Up conflict traces:" << endl;
 	for (size_t i = 0; i < prs_up.size(); i++)
 		cout<< prs_up[i].right << " " << up_conflicts[i] << endl;
@@ -332,7 +327,6 @@ void program::insert_state_vars()
 
 
 
-	cout << "Down state var start" << endl;
 
 	//===== SEARCH FOR NEEDED DOWN SV ======
 	// === iterate through every rule's implicants
@@ -383,21 +377,17 @@ int program::conflict_count(state impl, int fire_uid, string fire_dir)
 	//Look at every state...
 	for(size_t spacei = 0; spacei < space.states.states.size(); spacei++ )
 	{
-		cout << "spacifor" << endl;
 		int weaker = who_weaker(impl, space.states.states[spacei]);
-		cout << "weaker " << weaker << endl;
 		//And if the implicant fires in this state...
 		if(weaker == 0 || weaker == 1)
 		{
 			var_after_edge = "X";
-			cout << "space.edges[spacei].size() " << space.edges[spacei].size() << endl;
 			//THE ABOVE IS INDEX OUT OF BOUNDS AT 42. TODO TODO TODO TODO .
-			cout << "What? " << spacei << " " << space.edges[spacei].size() << endl;
+
 			//Look at all the states this state connects to...
 			for(size_t edgei = 0; edgei < space.edges[spacei].size() && (var_after_edge == "X" || var_after_edge == fire_dir); edgei++)
 			{
-				cout << "edgifor" << endl;
-				cout << "spacei = " << spacei << " space.edges.size() = " << space.edges.size() << endl;
+
 				//      variable      =         [the uid of the "to" state][the variable we want to know fired].data
 				var_after_edge = space.states.states[space.edges[spacei][edgei]][fire_uid].data;
 				//And if it isn't an dont care or a desired firing...
@@ -410,7 +400,6 @@ int program::conflict_count(state impl, int fire_uid, string fire_dir)
 			}//edgei for
 		}//if
 	}//spaci for
-	cout << "Done conflict" << endl;
 	return count;
 }
 //TODO: SOOO UNTESTED
@@ -457,11 +446,9 @@ void program::build_implicants(state_space diff_space)
 		//====POPULATE PRS UP====
 		for(vi = vars.global.begin(); vi != vars.global.end(); vi++)
 		{
-			cout << "vi loop" << endl;
 			//Look for potential implicants
 			for(size_t diffi = 0; diffi < diff_space.size();diffi++)
 			{
-				cout << "diffi loop" << endl;
 				//This will turn into an implicant
 				if(diff_space[diffi][vi->second.uid].data == "1")
 				{
@@ -482,19 +469,14 @@ void program::build_implicants(state_space diff_space)
 					fully_strong = false;
 					while(!fully_strong)
 					{
-						cout << "fully strong" << endl;
 						best_candidate = -1;
 						best_count = 999999; //TODO: Make this better
 
 						for(list<int>::iterator candi = candidates.begin(); candi != candidates.end(); candi++)
 						{
-							cout << "fuck" << endl;
 							proposed_impl = to_add_impl;
-							cout << "fuck1" << endl;
 							proposed_impl[*candi] = "0";
-							cout << "fuck2" << endl;
 							curr_count = conflict_count(proposed_impl, vi->second.uid, "1");
-							cout << "fuck3" << endl;
 							if(curr_count < best_count)
 							{
 								best_count = curr_count;
@@ -502,7 +484,6 @@ void program::build_implicants(state_space diff_space)
 							}
 						}//candi for
 
-						cout << "Got here" << endl;
 						//At this point, we should have selected the var that causes the fewest conflict states.
 						//Add it to our implicant!
 						if(best_candidate == -1)
