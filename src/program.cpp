@@ -272,6 +272,8 @@ void program::generate_prs()
 
 void program::insert_state_vars()
 {
+	//Indistinguishable states before PRS?
+
 	//The below, or a totally crazy idea:
 	//Make a datastructure containing 'indistinguishable from's for each state
 	//Somehow shrink these lists so they don't matter anymore or something. Magic.
@@ -289,21 +291,26 @@ void program::insert_state_vars()
 		down_conflicts[i].values.resize(space.size());
 	}
 
+	cout << " SV up start " << endl;
 	//===== SEARCH FOR NEEDED UP UP ======
 	// === iterate through every rule's implicants
 	for(size_t rulei = 0; rulei < prs_up.size(); rulei++)
 	{
+		cout << " rulei " << endl;
 		// === For each implicant...
-		for(size_t impi = 0; prs_up[rulei].implicants.size(); impi++)
+		for(size_t impi = 0; impi < prs_up[rulei].implicants.size(); impi++)
 		{
-			cout << "impi loop" << endl;
+			cout << " impi " << endl;
 			//...iterate once through the state space.
 			for(size_t statei = 0; statei < space.size(); statei++)
 			{
-				//Write down if the state is an okay firing, conflict firing, or mandatory firing (vector<trace>?)
+				cout << " statei " << statei<< endl;
+				//Write down if the state is an okay firing, conflict firing, or mandatory firing (vector<trace>)
 				int weaker = who_weaker(prs_up[rulei].implicants[impi], space.states[statei]);
+				//cout << "prs_up[rulei].implicants[impi]" << prs_up[rulei].implicants[impi] << " space.states[statei] " << space.states[statei] << endl;
 				//It is supposed to fire here!
-				if((prs_up[rulei].implicants[impi].tag))
+				cout << " who weaker: " << weaker << " prs_up[rulei].implicants[impi].tag " << prs_up[rulei].implicants[impi].tag << endl;
+				if(statei == (prs_up[rulei].implicants[impi].tag))
 					up_conflicts[rulei][statei].data = "!";
 				//It doesn't fire here.
 				else if(weaker == 0 || weaker == 2)
@@ -315,6 +322,9 @@ void program::insert_state_vars()
 					//(space[statei][prs_up[rulei].uid]=="0"))
 					up_conflicts[rulei][statei].data = "C";
 				}
+				else
+					up_conflicts[rulei][statei].data = "?";
+				cout << "bottom of loop " << endl;
 			} //statei for
 		}//impi for
 	}//rulei for
@@ -328,45 +338,9 @@ void program::insert_state_vars()
 
 
 
-
 	//===== SEARCH FOR NEEDED DOWN SV ======
 	// === iterate through every rule's implicants
-	for(size_t rulei = 0; rulei < prs_down.size(); rulei++)
-	{
-		cout << "Rulei loop" << endl;
-		// === For each implicant...
-		for(size_t impi = 0; prs_down[rulei].implicants.size(); impi++)
-		{
-			cout << "impi loop" << endl;
-			//...iterate once through the state space.
-			for(size_t statei = 0; statei < space.size(); statei++)
-			{
-				cout << "statei loop" << endl;
-				//Write down if the state is an okay firing, conflict firing, or mandatory firing (vector<trace>?)
-				int weaker = who_weaker(prs_down[rulei].implicants[impi], space.states[statei]);
-				//It is supposed to fire here!
-				if((prs_down[rulei].implicants[impi].tag))
-					up_conflicts[rulei][statei].data = "!";
-				//It doesn't fire here.
-				else if(weaker == 0 || weaker == 2)
-					up_conflicts[rulei][statei].data = "_";
-				//It fires here. Should it?
-				else if(weaker == -1 || weaker == 1)
-				{
-					//TODO! Figure out if it may fire here.
-					//(space[statei][prs_up[rulei].uid]=="0"))
-					up_conflicts[rulei][statei].data = "C";
-				}
-			} //statei for
-		}//impi for
-	}//rulei for
 
-	cout << "Done down loops" << endl;
-	// === Chose indices in state space to insert state variables
-	// === Insert these into the CHP and reparse? Is better way?
-	cout << "Down conflict traces:" << endl;
-	for (size_t i = 0; i < prs_up.size(); i++)
-		cout<< prs_down[i].right << " " << down_conflicts[i] << endl;
 	cout << "Done state var insert" << endl;
 }
 

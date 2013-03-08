@@ -235,7 +235,10 @@ int conditional::generate_states(graph *trans, int init)
 		guard_result = instr_iter->second->generate_states(trans, init);
 
 		state_catcher.push_back(instr_iter->first->generate_states(trans, guard_result));
-		chp_catcher.push_back(instr_iter->first->chp);
+		if (CHP_EDGE)
+			chp_catcher.push_back(instr_iter->first->chp);
+		else
+			chp_catcher.push_back("Conditional Merge");
 		if (first)
 		{
 			s = trans->states[state_catcher.back()];
@@ -246,6 +249,7 @@ int conditional::generate_states(graph *trans, int init)
 	}
 
 	uid = trans->states.size();
+
 	trans->insert(s, state_catcher, chp_catcher);
 
 	return uid;

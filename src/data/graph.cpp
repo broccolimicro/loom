@@ -19,12 +19,7 @@ void graph::insert(state s, vector<int> from, vector<string> chp)
 	push_back(s);
 
 	for (i = from.begin(), j = chp.begin(); i != from.end() && j != chp.end(); i++, j++)
-	{
-		if (CHP_EDGE)
-			insert_edge(*i, uid, *j);
-		else
-			insert_edge(*i, uid, "Merge");
-	}
+		insert_edge(*i, uid, *j);
 }
 
 void graph::insert(state s, int from, string chp)
@@ -33,12 +28,7 @@ void graph::insert(state s, int from, string chp)
 	push_back(s);
 
 	if (from != -1)
-	{
-		if (CHP_EDGE)
-			insert_edge(from, to, chp);
-		else
-			insert_edge(from, to, "");
-	}
+		insert_edge(from, to, chp);
 }
 
 void graph::insert_edge(int from, int to, string chp)
@@ -239,8 +229,13 @@ void graph::print_dot()
 		// "Node 1" -> "Node 2" [ label = "trans" ];
 		for (j = 0; j < edges[i].size(); j++)
 		{
-			cout << "\t\"" << i << ":" << states[i] << "\"" << " -> ";
-			cout << "\"" << edges[i][j] << ":" << states[edges[i][j]];
+			cout << "\t\"" << i << ":";
+			if(STATE_LONG_NAME)
+				cout << states[i];
+			cout << "\"" << " -> ";
+			cout << "\"" << edges[i][j] << ":";
+			if(STATE_LONG_NAME)
+				cout << states[edges[i][j]];
 			cout << "\" [ label = \"" << (transitions[i])[j] << "\" ];" << endl;
 		}
 	}

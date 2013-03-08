@@ -202,7 +202,10 @@ int parallel::generate_states(graph *trans, int init)
 	{
 		instr = *instr_iter;
 		state_catcher.push_back(instr->generate_states(trans, init));
-		chp_catcher.push_back(instr->chp);
+		if(CHP_EDGE)
+			chp_catcher.push_back(instr->chp);
+		else
+			chp_catcher.push_back("Parallel");
 		if (first)
 		{
 			s = trans->states[state_catcher.back()];

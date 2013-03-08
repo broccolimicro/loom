@@ -230,7 +230,10 @@ int loop::generate_states(graph *trans, int init)
 		{
 			guardresult = instr_iter->second->generate_states(trans, next);
 			state_catcher.push_back(instr_iter->first->generate_states(trans, guardresult));
-			chp_catcher.push_back(instr_iter->second->chp+"->Block");
+			if(CHP_EDGE)
+				chp_catcher.push_back(instr_iter->second->chp+"->Block");
+			else
+				chp_catcher.push_back("Loop merge");
 			if (first)
 			{
 				s = trans->states[state_catcher.back()];
