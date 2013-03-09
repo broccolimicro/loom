@@ -935,29 +935,12 @@ int strict_count(trace s)
 	return result;
 }
 
-/*int delta_count(trace s)
-{
-	vector<value>::iterator i;
-	string last = "";
-	int cnt = 0;
-
-	for (i = s.values.begin(); i != s.values.end(); i++)
-	{
-		if (i->data == "1" && last != "1" && i->prs)
-			cnt++;
-		last = i->data;
-	}
-
-	return cnt;
-}
-
-trace up(trace s)
+/*trace up(trace s)
 {
 	vector<value>::iterator i, j;
 	trace result;
 	string str;
 	string::iterator si, sj;
-	result.var = s.var + "+";
 
 	j = s.values.begin();
 
@@ -983,7 +966,39 @@ trace up(trace s)
 	return result;
 }
 
-trace up(trace s, int idx)
+trace down(trace s)
+{
+	vector<value>::iterator i, j;
+	trace result;
+	string str;
+	string::iterator si, sj;
+	result.var = s.var + "-";
+
+	j = s.values.begin();
+
+	j++;
+
+	for (i = s.values.begin(); j != s.values.end(); i++, j++)
+	{
+		str = "";
+		for (si = i->data.begin(), sj = j->data.begin(); si != i->data.end() && sj != j->data.end(); si++, sj++)
+		{
+			if (*sj == '0' && *si != '0' && j->prs)
+				str = str + "1";
+			else if (*sj == '0' && *si == '0')
+				str = str + "X";
+			else
+				str = str + "0";
+		}
+		result.values.push_back(value(str, j->prs));
+	}
+
+	result.values.push_back(value("X", false));
+
+	return result;
+}*/
+
+/*trace up(trace s, int idx)
 {
 	vector<value>::iterator i, j;
 	trace result;
@@ -1029,37 +1044,7 @@ trace up(trace s, int idx)
 	return result;
 }
 
-trace down(trace s)
-{
-	vector<value>::iterator i, j;
-	trace result;
-	string str;
-	string::iterator si, sj;
-	result.var = s.var + "-";
 
-	j = s.values.begin();
-
-	j++;
-
-	for (i = s.values.begin(); j != s.values.end(); i++, j++)
-	{
-		str = "";
-		for (si = i->data.begin(), sj = j->data.begin(); si != i->data.end() && sj != j->data.end(); si++, sj++)
-		{
-			if (*sj == '0' && *si != '0' && j->prs)
-				str = str + "1";
-			else if (*sj == '0' && *si == '0')
-				str = str + "X";
-			else
-				str = str + "0";
-		}
-		result.values.push_back(value(str, j->prs));
-	}
-
-	result.values.push_back(value("X", false));
-
-	return result;
-}
 
 trace down(trace s, int idx)
 {

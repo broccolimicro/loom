@@ -391,7 +391,7 @@ int conflict(trace proposed, trace desired)
 //TODO: SOOO UNTESTED
 void program::build_implicants(state_space diff_space)
 {
-	list<int> candidates, needed;
+	list<int> candidates;
 	state implier;
 	bool fully_strong;
 	state implicant;
@@ -437,16 +437,15 @@ void program::build_implicants(state_space diff_space)
 		{
 			for (ii = 0; ii < space.up_firings[vi].size(); ii++)
 			{
-				//cout << "\ndesired " << space.up[vi] << endl;
+				cout << "\ndesired " << space.up[vi] << endl;
 				//This is the state that will be added as an implicant
 				implicant = state(value("_"), space.up_firings.size());
-				implicant_output = trace(value("_"), space.size());
+				implicant_output = trace(value("_"), space.up[vi].size());
 				implier = space.states[space.up_firings[vi][ii]];
-				//cout << "started " << implicant_output << endl;
+				cout << "started " << implicant_output << endl;
 
 				//List of variables by UID
 				candidates.clear();
-				needed.clear();
 
 				//Populate list of candidates
 				for (vj = 0; vj < implier.size(); vj++)
@@ -454,10 +453,10 @@ void program::build_implicants(state_space diff_space)
 						candidates.push_back(vj);
 
 				//We now  have a list of candidate variables to potentially add to the implicant for the firing of diff_space[diffi][vari]
-				best_count = 999999; //TODO: Make this better
 				fully_strong = false;
 				while (!fully_strong)
 				{
+					best_count = 999999; //TODO: Make this better
 					best_candidate = -1;
 
 					for (candi = candidates.begin(); candi != candidates.end(); candi++)
@@ -466,7 +465,7 @@ void program::build_implicants(state_space diff_space)
 						proposal_output = implicant_output;
 
 						proposal[*candi] = "0";
-						proposal_output = proposal_output & ~space.traces[*candi];
+						proposal_output = proposal_output & ~space.up[*candi];
 
 						curr_count = conflict(proposal_output, space.up[vi]);
 						if (curr_count < best_count)
@@ -483,8 +482,8 @@ void program::build_implicants(state_space diff_space)
 					else
 					{
 						implicant[best_candidate].data = "0"; //add a 0 to the implicant in the spot of the candidate var
-						implicant_output = implicant_output & ~space.traces[best_candidate];
-						//cout << "descent " << implicant_output << endl;
+						implicant_output = implicant_output & ~space.up[best_candidate];
+						cout << "descent " << implicant_output << endl;
 						candidates.remove(best_candidate);
 					}
 				}//fully_strong while
@@ -500,16 +499,15 @@ void program::build_implicants(state_space diff_space)
 		{
 			for (ii = 0; ii < space.down_firings[vi].size(); ii++)
 			{
-				//cout << "\ndesired " << space.up[vi] << endl;
+				cout << "\ndesired " << space.up[vi] << endl;
 				//This is the state that will be added as an implicant
 				implicant = state(value("_"), vars.global.size());
-				implicant_output = trace(value("_"), space.size());
+				implicant_output = trace(value("_"), space.down[vi].size());
 				implier = space.states[space.down_firings[vi][ii]];
-				//cout << "started " << implicant_output << endl;
+				cout << "started " << implicant_output << endl;
 
 				//List of variables by UID
 				candidates.clear();
-				needed.clear();
 
 				//Populate list of candidates
 				for (vj = 0; vj < implier.size(); vj++)
@@ -517,10 +515,10 @@ void program::build_implicants(state_space diff_space)
 						candidates.push_back(vj);
 
 				//We now  have a list of candidate variables to potentially add to the implicant for the firing of diff_space[diffi][vari]
-				best_count = 999999; //TODO: Make this better
 				fully_strong = false;
 				while(!fully_strong)
 				{
+					best_count = 999999; //TODO: Make this better
 					best_candidate = -1;
 
 					for (candi = candidates.begin(); candi != candidates.end(); candi++)
@@ -529,7 +527,7 @@ void program::build_implicants(state_space diff_space)
 						proposal_output = implicant_output;
 
 						proposal[*candi] = "1";
-						proposal_output = proposal_output & space.traces[*candi];
+						proposal_output = proposal_output & space.down[*candi];
 
 						curr_count = conflict(proposal_output, space.up[vi]);
 						if (curr_count < best_count)
@@ -546,8 +544,8 @@ void program::build_implicants(state_space diff_space)
 					else
 					{
 						implicant[best_candidate].data = "1"; //add a 1 to the implicant in the spot of the candidate var
-						implicant_output = implicant_output & space.traces[best_candidate];
-						//cout << "descent " << implicant_output << endl;
+						implicant_output = implicant_output & space.down[best_candidate];
+						cout << "descent " << implicant_output << endl;
 						candidates.remove(best_candidate);
 					}
 				}//fully_strong while
