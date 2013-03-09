@@ -20,10 +20,10 @@ struct graph
 	state_space delta;
 	trace_space up;
 	trace_space down;
-	vector<vector<int> > up_firing;
-	vector<vector<int> > down_firing;
-	map<int, vector<int> > up_conflict;
-	map<int, vector<int> > down_conflict;
+	vector<vector<int> > up_firings;
+	vector<vector<int> > down_firings;
+	map<int, vector<int> > up_conflicts;
+	map<int, vector<int> > down_conflicts;
 
 	// From				  , To
 	// Instruction indexed, Instruction indexed

@@ -57,12 +57,12 @@ void graph::insert_edge(int from, int to, string chp)
 
 	if (to_state.size() > up.size())
 		up.traces.resize(to_state.size(), trace());
-	if (to_state.size() > (int)up_firing.size())
-		up_firing.resize(to_state.size(), vector<int>());
+	if (to_state.size() > (int)up_firings.size())
+		up_firings.resize(to_state.size(), vector<int>());
 	if (to_state.size() > down.size())
 		down.traces.resize(to_state.size(), trace());
-	if (to_state.size() > (int)down_firing.size())
-		down_firing.resize(to_state.size(), vector<int>());
+	if (to_state.size() > (int)down_firings.size())
+		down_firings.resize(to_state.size(), vector<int>());
 
 	for (i = states[from].begin(), j = to_state.begin(), k = 0; i != states[from].end() && j != to_state.end(); i++, j++, k++)
 	{
@@ -73,7 +73,7 @@ void graph::insert_edge(int from, int to, string chp)
 			if (*sj == '1' && *si != '1' && to_state.prs)
 			{
 				upstr = upstr + "1";
-				up_firing[k].push_back(from);
+				up_firings[k].push_back(from);
 			}
 			else if (*sj == '1' && *si == '1')
 				upstr = upstr + "X";
@@ -83,7 +83,7 @@ void graph::insert_edge(int from, int to, string chp)
 			if (*sj == '0' && *si != '0' && to_state.prs)
 			{
 				downstr = downstr + "1";
-				down_firing[k].push_back(from);
+				down_firings[k].push_back(from);
 			}
 			else if (*sj == '0' && *si == '0')
 				downstr = downstr + "X";
@@ -171,47 +171,47 @@ void graph::close()
 
 	for (i = 0; i < width(); i++)
 	{
-		for (j = 0; j < (int)up_firing[i].size(); j++)
+		for (j = 0; j < (int)up_firings[i].size(); j++)
 		{
-			if (up_conflict.find(up_firing[i][j]) == up_conflict.end())
+			if (up_conflicts.find(up_firings[i][j]) == up_conflicts.end())
 			{
-				up_conflict.insert(pair<int, vector<int> >(up_firing[i][j], vector<int>()));
+				up_conflicts.insert(pair<int, vector<int> >(up_firings[i][j], vector<int>()));
 
 				for (k = 0; k < size(); k++)
 				{
-					if (k != up_firing[i][j])
+					if (k != up_firings[i][j])
 					{
 						if (BUBBLELESS)
 						{
-							if (up_subset(states[up_firing[i][j]], states[k]))
-								up_conflict.find(up_firing[i][j])->second.push_back(k);
+							if (up_conflict(states[up_firings[i][j]], states[k]))
+								up_conflicts.find(up_firings[i][j])->second.push_back(k);
 						}
 						else
-							if (subset(states[up_firing[i][j]], states[k]))
-								up_conflict.find(up_firing[i][j])->second.push_back(k);
+							if (conflict(states[up_firings[i][j]], states[k]))
+								up_conflicts.find(up_firings[i][j])->second.push_back(k);
 					}
 				}
 			}
 		}
 
-		for (j = 0; j < (int)down_firing[i].size(); j++)
+		for (j = 0; j < (int)down_firings[i].size(); j++)
 		{
-			if (down_conflict.find(down_firing[i][j]) == down_conflict.end())
+			if (down_conflicts.find(down_firings[i][j]) == down_conflicts.end())
 			{
-				down_conflict.insert(pair<int, vector<int> >(down_firing[i][j], vector<int>()));
+				down_conflicts.insert(pair<int, vector<int> >(down_firings[i][j], vector<int>()));
 
 				for (k = 0; k < size(); k++)
 				{
-					if (k != down_firing[i][j])
+					if (k != down_firings[i][j])
 					{
 						if (BUBBLELESS)
 						{
-							if (down_subset(states[down_firing[i][j]], states[k]))
-								down_conflict.find(down_firing[i][j])->second.push_back(k);
+							if (down_conflict(states[down_firings[i][j]], states[k]))
+								down_conflicts.find(down_firings[i][j])->second.push_back(k);
 						}
 						else
-							if (subset(states[down_firing[i][j]], states[k]))
-								down_conflict.find(down_firing[i][j])->second.push_back(k);
+							if (conflict(states[down_firings[i][j]], states[k]))
+								down_conflicts.find(down_firings[i][j])->second.push_back(k);
 					}
 				}
 			}
@@ -239,7 +239,7 @@ void graph::print_up()
 	cout << up << endl;
 
 	cout << "Up Production Rule Firings" << endl;
-	for (i = up_firing.begin(); i != up_firing.end(); i++)
+	for (i = up_firings.begin(); i != up_firings.end(); i++)
 	{
 		for (j = i->begin(); j != i->end(); j++)
 			cout << *j << " ";
@@ -247,7 +247,7 @@ void graph::print_up()
 	}
 
 	cout << "Up Production Rule Conflicts" << endl;
-	for (k = up_conflict.begin(); k != up_conflict.end(); k++)
+	for (k = up_conflicts.begin(); k != up_conflicts.end(); k++)
 	{
 		cout << k->first << ": ";
 		for (j = k->second.begin(); j != k->second.end(); j++)
@@ -266,7 +266,7 @@ void graph::print_down()
 	cout << down << endl;
 
 	cout << "Down Production Rule Firings" << endl;
-	for (i = down_firing.begin(); i != down_firing.end(); i++)
+	for (i = down_firings.begin(); i != down_firings.end(); i++)
 	{
 		for (j = i->begin(); j != i->end(); j++)
 			cout << *j << " ";
@@ -274,7 +274,7 @@ void graph::print_down()
 	}
 
 	cout << "Down Production Rule Conflicts" << endl;
-	for (k = down_conflict.begin(); k != down_conflict.end(); k++)
+	for (k = down_conflicts.begin(); k != down_conflicts.end(); k++)
 	{
 		cout << k->first << ": ";
 		for (j = k->second.begin(); j != k->second.end(); j++)

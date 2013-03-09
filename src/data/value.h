@@ -48,8 +48,9 @@ struct value
 };
 
 bool subset(value s1, value s2);
-bool up_subset(value s1, value s2);
-bool down_subset(value s1, value s2);
+bool conflict(value s1, value s2);
+bool up_conflict(value s1, value s2);
+bool down_conflict(value s1, value s2);
 
 ostream &operator<<(ostream &os, value s);
 

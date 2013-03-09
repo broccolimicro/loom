@@ -93,7 +93,7 @@ bool subset(state s1, state s2)
 	return true;
 }
 
-bool up_subset(state s1, state s2)
+bool conflict(state s1, state s2)
 {
 	vector<value>::iterator j, k;
 	value a, b;
@@ -105,14 +105,14 @@ bool up_subset(state s1, state s2)
 		a = j != s1.values.end() ? *j++ : value("X");
 		b = k != s2.values.end() ? *k++ : value("X");
 
-		if (!up_subset(a, b))
+		if (!conflict(a, b))
 			return false;
 	}
 
 	return true;
 }
 
-bool down_subset(state s1, state s2)
+bool up_conflict(state s1, state s2)
 {
 	vector<value>::iterator j, k;
 	value a, b;
@@ -124,7 +124,26 @@ bool down_subset(state s1, state s2)
 		a = j != s1.values.end() ? *j++ : value("X");
 		b = k != s2.values.end() ? *k++ : value("X");
 
-		if (!down_subset(a, b))
+		if (!up_conflict(a, b))
+			return false;
+	}
+
+	return true;
+}
+
+bool down_conflict(state s1, state s2)
+{
+	vector<value>::iterator j, k;
+	value a, b;
+
+	//result.var = s1.var + "==" + s2.var;
+
+	for (j = s1.values.begin(), k = s2.values.begin(); j != s1.values.end() || k != s2.values.end();)
+	{
+		a = j != s1.values.end() ? *j++ : value("X");
+		b = k != s2.values.end() ? *k++ : value("X");
+
+		if (!down_conflict(a, b))
 			return false;
 	}
 

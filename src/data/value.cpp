@@ -138,7 +138,7 @@ bool subset(value s1, value s2)
 	return true;
 }
 
-bool up_subset(value s1, value s2)
+bool conflict(value s1, value s2)
 {
 	string::reverse_iterator j, k;
 	char a, b;
@@ -148,14 +148,14 @@ bool up_subset(value s1, value s2)
 		a = j != s1.data.rend() ? *j++ : '0';
 		b = k != s2.data.rend() ? *k++ : '0';
 
-		if ((a == '0' && !(b == '0' || b == '_')) || (a == '_' && b != '_'))
+		if ((a == '1' && b == '0') || (a == '0' && b == '1'))
 			return false;
 	}
 
 	return true;
 }
 
-bool down_subset(value s1, value s2)
+bool up_conflict(value s1, value s2)
 {
 	string::reverse_iterator j, k;
 	char a, b;
@@ -165,7 +165,24 @@ bool down_subset(value s1, value s2)
 		a = j != s1.data.rend() ? *j++ : '0';
 		b = k != s2.data.rend() ? *k++ : '0';
 
-		if ((a == '1' && !(b == '1' || b == '_')) || (a == '_' && b != '_'))
+		if (a == '0' && b == '1')
+			return false;
+	}
+
+	return true;
+}
+
+bool down_conflict(value s1, value s2)
+{
+	string::reverse_iterator j, k;
+	char a, b;
+
+	for (j = s1.data.rbegin(), k = s2.data.rbegin(); j != s1.data.rend() || k != s2.data.rend();)
+	{
+		a = j != s1.data.rend() ? *j++ : '0';
+		b = k != s2.data.rend() ? *k++ : '0';
+
+		if (a == '1' && b == '0')
 			return false;
 	}
 

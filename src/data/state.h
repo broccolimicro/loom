@@ -64,8 +64,9 @@ struct state
 bool is_all_x(state s1);
 
 bool subset(state s1, state s2);
-bool up_subset(state s1, state s2);
-bool down_subset(state s1, state s2);
+bool conflict(state s1, state s2);
+bool up_conflict(state s1, state s2);
+bool down_conflict(state s1, state s2);
 
 int which_index_unneeded(state s1, state s2);
 int who_weaker(state s1, state s2);
