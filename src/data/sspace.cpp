@@ -29,7 +29,7 @@ vector<state>::iterator state_space::end()
 	return states.end();
 }
 
-state state_space::operator[](int i)
+state &state_space::operator[](int i)
 {
 	return states[i];
 }

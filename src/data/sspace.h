@@ -23,7 +23,7 @@ struct state_space
 	vector<state>::iterator begin();
 	vector<state>::iterator end();
 
-	state operator[](int i);
+	state &operator[](int i);
 	trace operator()(int i);
 
 };

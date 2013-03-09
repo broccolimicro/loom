@@ -48,6 +48,9 @@ struct value
 };
 
 bool subset(value s1, value s2);
+bool up_subset(value s1, value s2);
+bool down_subset(value s1, value s2);
+
 ostream &operator<<(ostream &os, value s);
 
 value operator+(value s1, value s2);

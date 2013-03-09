@@ -21,6 +21,7 @@
 struct trace
 {
 	trace();
+	trace(value v, int s);
 	trace(vector<value> v);
 	trace(string s);
 	~trace();

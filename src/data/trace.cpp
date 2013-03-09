@@ -15,6 +15,12 @@ trace::trace()
 {
 }
 
+trace::trace(value v, int s)
+{
+	for (int i = 0; i < s; i++)
+		values.push_back(v);
+}
+
 trace::trace(vector<value> v)
 {
 	values = v;
@@ -912,10 +918,8 @@ int count(trace s)
 	int result = 0;
 	vector<value>::iterator i;
 	for (i = s.values.begin(); i != s.values.end(); i++)
-	{
 		if (i->data == "1" || i->data == "X")
 			result++;
-	}
 
 	return result;
 }
@@ -925,10 +929,8 @@ int strict_count(trace s)
 	int result = 0;
 	vector<value>::iterator i;
 	for (i = s.values.begin(); i != s.values.end(); i++)
-	{
 		if (i->data == "1")
 			result++;
-	}
 
 	return result;
 }
@@ -1136,7 +1138,7 @@ trace conflicts(trace left, trace right)
 		else if (j->data == "X" )
 			conflict.push_back(value("."));		// Don't really care if it fires or not. Ambivalence.
 		else if (i->data == "X" && j->data == "0")
-			conflict += "C";
+			conflict.push_back(value("C"));
 		else
 		{
 			cout << "Error: The value variable generation algorithm is very confused right now." << endl;

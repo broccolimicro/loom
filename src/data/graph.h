@@ -22,6 +22,8 @@ struct graph
 	trace_space down;
 	vector<vector<int> > up_firing;
 	vector<vector<int> > down_firing;
+	map<int, vector<int> > up_conflict;
+	map<int, vector<int> > down_conflict;
 
 	// From				  , To
 	// Instruction indexed, Instruction indexed
@@ -34,6 +36,7 @@ struct graph
 	void insert_edge(int from, int to, string chp);
 	void push_back(state s);
 	void push_back(trace t);
+	void close();
 
 	int size();
 	int width();
