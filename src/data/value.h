@@ -84,5 +84,6 @@ value operator&&(value s1, value s2);
 value operator!(value s);
 
 value diff(value a, value b);
+int diff_count(value v1, value v2);
 
 #endif

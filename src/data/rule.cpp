@@ -12,39 +12,243 @@
 
 rule::rule()
 {
-	//actual.clear();
-	left = "";
-	//desired.clear();
-	right = "";
+	this->uid = -1;
+	this->up = "";
+	this->down = "";
+	this->up_implicants.clear();
+	this->down_implicants.clear();
+}
+
+rule::rule(int uid)
+{
+	this->uid = uid;
+	this->up = "";
+	this->down = "";
+	this->up_implicants.clear();
+	this->down_implicants.clear();
+}
+
+rule::rule(int uid, graph *g, vspace *v)
+{
+	this->uid = uid;
+	this->up = "";
+	this->down = "";
+	this->up_implicants.clear();
+	this->down_implicants.clear();
+
+	gen_minterms(g);
+	gen_primes();
+	gen_essentials();
+	gen_output(v);
 }
 
 rule::~rule()
 {
-	//actual.clear();
-	left = "";
-	//desired.clear();
-	right = "";
+	this->uid = -1;
+	this->up = "";
+	this->down = "";
+	this->up_implicants.clear();
+	this->down_implicants.clear();
 }
 
-rule &rule::operator=(rule s)
+rule &rule::operator=(rule r)
 {
-	left = s.left;
-	right = s.right;
-	implicants = s.implicants;
-	uid = s.uid;
-	up = s.up;
+	uid = r.uid;
+	up = r.up;
+	down = r.down;
+	up_implicants = r.up_implicants;
+	down_implicants = r.down_implicants;
 	return *this;
 }
 
-void rule::clear(int n)
+void rule::gen_minterms(graph *g)
 {
-	//actual.clear();
-	//for (int i = 0; i < n; i++)
-	//	actual.push_back(value("1"));
-	left = "";
-	//desired.clear();
-	right = "";
-	implicants.clear();
+	list<int> invars;
+	list<int>::iterator vk;
+
+	state implier;
+	state implicant;
+	trace implicant_output;
+	trace proposal_output;
+
+	int vj, ii;
+	int count, mcount, var;
+
+	for (ii = 0; ii < (int)g->up_firings[uid].size(); ii++)
+	{
+		implier			 = g->states[g->up_firings[uid][ii]];
+		implicant		 = state(value("X"), g->width());
+		implicant_output = trace(value("1"), g->size());
+
+		invars.clear();
+		for (vj = 0; vj < g->width(); vj++)
+			if (((BUBBLELESS && implier[vj].data == "0") || !BUBBLELESS) && vj != uid)
+				invars.push_back(vj);
+
+		mcount = 9999999;
+		var = 0;
+		while (invars.size() > 0 && var != -1)
+		{
+			var = -1;
+			for (vk = invars.begin(); vk != invars.end(); vk++)
+			{
+				proposal_output = implicant_output & ~g->delta[*vk];
+
+				count = conflict_count(proposal_output, g->up[uid]);
+				if (count < mcount)
+				{
+					mcount = count;
+					var = *vk;
+				}
+			}
+
+			if (var != -1)
+			{
+				implicant[var] = value("0");
+				implicant_output = implicant_output & ~g->delta[var];
+				invars.remove(var);
+			}
+		}
+
+		implicant.tag = g->up_firings[uid][ii];
+		up_implicants.push_back(implicant);
+	}
+
+	for (ii = 0; ii < (int)g->down_firings[uid].size(); ii++)
+	{
+		implier			 = g->states[g->down_firings[uid][ii]];
+		implicant		 = state(value("X"), g->width());
+		implicant_output = trace(value("1"), g->size());
+
+		invars.clear();
+		for (vj = 0; vj < g->width(); vj++)
+			if (((BUBBLELESS && implier[vj].data == "1") || !BUBBLELESS) && vj != uid)
+				invars.push_back(vj);
+
+		mcount = 9999999;
+		var = 0;
+		while (invars.size() > 0 && var != -1)
+		{
+			var = -1;
+			for (vk = invars.begin(); vk != invars.end(); vk++)
+			{
+				proposal_output = implicant_output & g->delta[*vk];
+
+				count = conflict_count(proposal_output, g->down[uid]);
+				if (count < mcount)
+				{
+					mcount = count;
+					var = *vk;
+				}
+			}
+
+			if (var != -1)
+			{
+				implicant[var] = value("1");
+				implicant_output = implicant_output & g->delta[var];
+				invars.remove(var);
+			}
+		}
+
+		implicant.tag = g->down_firings[uid][ii];
+		down_implicants.push_back(implicant);
+	}
+}
+
+void rule::gen_primes()
+{
+	size_t i, j;
+	vector<state> primes;
+	vector<state> temp;
+
+	for (i = 0; i < up_implicants.size(); i++)
+	{
+
+		for (j = i+1; j < up_implicants.size(); j++)
+		{
+
+		}
+	}
+}
+
+void rule::gen_essentials()
+{
+
+}
+
+void rule::gen_output(vspace *v)
+{
+	vector<state>::iterator i;
+	int j;
+	bool first;
+
+	up = "";
+	down = "";
+	for (i = up_implicants.begin(); i != up_implicants.end(); i++)
+	{
+		if (i != up_implicants.begin())
+			up += " | ";
+
+		first = true;
+		for (j = 0; j < i->size(); j++)
+		{
+			if (i->values[j].data == "0")
+			{
+				if (!first)
+					up += "&";
+				up += "~" + v->get_name(j);
+				first = false;
+			}
+			else if (i->values[j].data == "1")
+			{
+				if (!first)
+					up += "&";
+				up += v->get_name(j);
+				first = false;
+			}
+		}
+	}
+	if (up == "")
+		up += "0";
+
+	up += " -> " + v->get_name(uid) + "+";
+
+	for (i = down_implicants.begin(); i != down_implicants.end(); i++)
+	{
+		if (i != down_implicants.begin())
+			down += " | ";
+
+		first = true;
+		for (j = 0; j < i->size(); j++)
+		{
+			if (i->values[j].data == "0")
+			{
+				if (!first)
+					down += "&";
+				down += "~" + v->get_name(j);
+				first = false;
+			}
+			else if (i->values[j].data == "1")
+			{
+				if (!first)
+					down += "&";
+				down += v->get_name(j);
+				first = false;
+			}
+		}
+	}
+	if (down == "")
+		down += "0";
+
+	down += " -> " + v->get_name(uid) + "-";
+}
+
+void rule::clear()
+{
+	up = "";
+	down = "";
+	up_implicants.clear();
+	down_implicants.clear();
 }
 
 /* This function returns the nth necessary firing of a production rule.
@@ -62,7 +266,7 @@ void rule::clear(int n)
 }*/
 
 
-//Reduce all implicants to prime
+/*//Reduce all implicants to prime
 rule reduce_to_prime(rule pr)
 {
 	rule result = pr;
@@ -175,7 +379,7 @@ vector<rule> minimize_rule_vector(vector<rule> prs)
 	}
 	return result;
 
-}
+}*/
 
 void print_implicant_tags(vector<state> implicants)
 {
@@ -192,7 +396,7 @@ ostream &operator<<(ostream &os, rule r)
 {
 	list<state>::iterator i;
 
-    os << r.left << " -> " << r.right;
+    os << r.up << endl << r.down << endl;
 
     return os;
 }

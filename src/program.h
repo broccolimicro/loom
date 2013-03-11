@@ -22,8 +22,7 @@ struct program
 	~program();
 
 	map<string, keyword*>	type_space;
-	vector<rule>			prs_up;
-	vector<rule>			prs_down;
+	vector<rule>			prs;
 	list<string>			errors;
 	vspace					vars;
 	graph					space;
@@ -35,11 +34,8 @@ struct program
 
 	void parse(string chp, int verbosity);
 	void generate_states();
-	void generate_prs();
 	void insert_state_vars();
-	int conflict_count(state impl, int fire_uid, string fire_dir);
-	void build_implicants();
-	void merge_implicants();
+	void generate_prs();
 	//void weaken_guard(rule pr);
 	void print_prs();
 };

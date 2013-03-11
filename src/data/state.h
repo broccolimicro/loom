@@ -143,4 +143,6 @@ state operator>(value s1, state s2);
 
 
 state diff(state s1, state s2);
+int diff_count(state s1, state s2);
+
 #endif

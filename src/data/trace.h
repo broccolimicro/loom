@@ -137,11 +137,10 @@ trace operator>(value s1, trace s2);
 
 int count(trace s);
 int strict_count(trace s);
-int delta_count(trace s);
-/*trace up(trace s);
-trace up(trace s, int idx);
+trace up(trace s);
 trace down(trace s);
-trace down(trace s, int idx);*/
+trace delta(trace s);
 trace conflicts(trace left, trace right);
+int conflict_count(trace proposed, trace desired);
 
 #endif

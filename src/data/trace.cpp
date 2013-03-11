@@ -935,9 +935,9 @@ int strict_count(trace s)
 	return result;
 }
 
-/*trace up(trace s)
+trace up(trace s, vector<vector<int> > *e)
 {
-	vector<value>::iterator i, j;
+	/*vector<value>::iterator i, j;
 	trace result;
 	string str;
 	string::iterator si, sj;
@@ -958,17 +958,17 @@ int strict_count(trace s)
 			else
 				str = str + "0";
 		}
-		result.values.push_back(value(str, j->prs));
+		result.values.push_back(value(str));
 	}
 
 	result.values.push_back(value("X", false));
 
-	return result;
+	return result;*/
 }
 
-trace down(trace s)
+trace down(trace s, vector<vector<int> > *e)
 {
-	vector<value>::iterator i, j;
+	/*vector<value>::iterator i, j;
 	trace result;
 	string str;
 	string::iterator si, sj;
@@ -995,101 +995,12 @@ trace down(trace s)
 
 	result.values.push_back(value("X", false));
 
-	return result;
-}*/
-
-/*trace up(trace s, int idx)
-{
-	vector<value>::iterator i, j;
-	trace result;
-	string str;
-	string::iterator si, sj;
-	int cnt = 0;
-	bool one = false;
-
-	result.var = s.var + "+";
-
-	j = s.values.begin();
-
-	j++;
-
-	for (i = s.values.begin(); j != s.values.end(); i++, j++)
-	{
-		str = "";
-		for (si = i->data.begin(), sj = j->data.begin(); si != i->data.end() && sj != j->data.end(); si++, sj++)
-		{
-			if (*sj == '1' && *si != '1' && j->prs && cnt == idx)
-				str = str + "1";
-			else if (*sj == '1' && *si != '1' && j->prs && cnt != idx)
-				str = str + "X";
-			else if (*sj == '1' && *si == '1')
-				str = str + "X";
-			else
-				str = str + "0";
-
-			if (*sj == '1' && j->prs)
-				one = true;
-
-			if (*sj == '0' && one)
-			{
-				cnt++;
-				one = false;
-			}
-		}
-		result.values.push_back(value(str, j->prs));
-	}
-
-	result.values.push_back(value("X", false));
-
-	return result;
+	return result;*/
 }
 
-
-
-trace down(trace s, int idx)
+trace delta(trace s, vector<vector<int> > *e)
 {
-	vector<value>::iterator i, j;
-	trace result;
-	string str;
-	string::iterator si, sj;
-	int cnt = 0;
-	bool zero = false;
-	result.var = s.var + "-";
-
-	j = s.values.begin();
-
-	j++;
-
-	for (i = s.values.begin(); j != s.values.end(); i++, j++)
-	{
-		str = "";
-		for (si = i->data.begin(), sj = j->data.begin(); si != i->data.end() && sj != j->data.end(); si++, sj++)
-		{
-			if (*sj == '0' && *si != '0' && j->prs && cnt == idx)
-				str = str + "1";
-			else if (*sj == '0' && *si != '0' && j->prs && cnt != idx)
-				str = str + "X";
-			else if (*sj == '0' && *si == '0')
-				str = str + "X";
-			else
-				str = str + "0";
-
-			if (*sj == '0' && j->prs)
-				zero = true;
-
-			if (*sj == '1' && zero)
-			{
-				cnt++;
-				zero = false;
-			}
-		}
-		result.values.push_back(value(str, j->prs));
-	}
-
-	result.values.push_back(value("X", false));
-
-	return result;
-}*/
+}
 
 /* This function compares the left trace to the right trace. The right
  * trace is what we desire for this production rule, and the left trace
@@ -1132,4 +1043,15 @@ trace conflicts(trace left, trace right)
 	}
 
 	return conflict;
+}
+
+int conflict_count(trace proposed, trace desired)
+{
+	int c = 0;
+	vector<value>::iterator i, j;
+	for (i = proposed.begin(), j = desired.begin(); i != proposed.end() && j != desired.end(); i++, j++)
+		if (i->data != "0" && j->data == "0")
+			c++;
+
+	return c;
 }

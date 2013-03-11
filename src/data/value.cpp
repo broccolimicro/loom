@@ -734,3 +734,15 @@ value diff(value a, value b)
 		result.data = "_";			//TODO: Conceptual check this?
 	return result;
 }
+
+int diff_count(value v1, value v2)
+{
+	string::iterator i, j;
+	int count = 0;
+
+	for (i = v1.data.begin(), j = v2.data.begin(); i != v1.data.end() && j != v2.data.end(); i++, j++)
+		if (*i != *j)
+			count++;
+
+	return count;
+}

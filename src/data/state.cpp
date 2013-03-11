@@ -247,75 +247,14 @@ int who_weaker(state s1, state s2)
 	return result;
 }
 
-/*
-int count(state s)
+int diff_count(state s1, state s2)
 {
-	int result = 0;
-	vector<value>::iterator i;
-	for (i = s.values.begin(); i != s.values.end(); i++)
-	{
-		if (i->data == "1" || i->data == "X")
-			result++;
-	}
+	vector<value>::iterator i, j;
+	int count = 0;
 
-	return result;
+	for (i = s1.begin(), j = s2.begin(); i != s1.end() && j != s2.end(); i++, j++)
+		count += diff_count(*i, *j);
+
+	return count;
 }
-
-int strict_count(state s)
-{
-	int result = 0;
-	vector<value>::iterator i;
-	for (i = s.values.begin(); i != s.values.end(); i++)
-	{
-		if (i->data == "1")
-			result++;
-	}
-
-	return result;
-}*/
-
-/* This function compares the left state to the right state. The right
- * state is what we desire for this production rule, and the left state
- * is what we have managed to generate.
- *
- * Format for conflicts string:
- * . is 'allowable',
- * E is error,
- * C is conflict if no value variable
- * ! is necessary fire
- */
-/*
-string conflicts(state left, state right)
-{
-	vector<value>::iterator i,j;
-	string conflict = "";
-
-	//Loop through all of the production rule values (left) and the corresponding desired functionality (right)
-	for (i = left.values.begin(),j = right.values.begin() ; i != left.values.end() && j != right.values.end(); i++, j++)
-	{
-		if(i->data == "0" && j->data == "0" )
-			conflict += ".";		// Doesn't fire, shouldn't fire. Good.
-		else if(i->data == "0" && j->data == "1" )
-		{
-			cout << "Error: Production rule missing necessary firing." << endl;
-			conflict += "E";		// Error fire! Our PRS aren't good enough.
-		}
-		else if(i->data == "1" && j->data == "0" )
-			conflict += "C";		// Illegal fire (fires when it shouldn't)
-		else if(i->data == "1" && j->data == "1" )
-			conflict += "!";		// This fires, and it must keep firing after we after we add a value var
-		else if(j->data == "X" )
-			conflict += ".";		// Don't really care if it fires or not. Ambivalence.
-		else if(i->data == "X" && j->data == "0")
-			conflict += "C";
-		else
-		{
-			cout << "Error: The value variable generation algorithm is very confused right now." << endl;
-			conflict += "E";		// Error fire! Not quite sure how you got here...
-		}
-	}
-
-	return conflict;
-}
-*/
 

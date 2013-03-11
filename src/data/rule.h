@@ -8,6 +8,8 @@
  */
 
 #include "../common.h"
+#include "graph.h"
+#include "vspace.h"
 #include "trace.h"
 #include "state.h"
 
@@ -17,27 +19,29 @@
 struct rule
 {
 	rule();
+	rule(int uid);
+	rule(int uid, graph *g, vspace *v);
 	~rule();
 
-	string left, right;
-	vector<state> implicants;
-
-	//rule's variable uid
 	int uid;
-	//Is it an up production rule?
-	bool up;
-	trace output;
+	string up, down;
+	vector<state> up_implicants;
+	vector<state> down_implicants;
 
-	rule &operator=(rule s);
+	rule &operator=(rule r);
 
-	void clear(int n);
-	//int index(int n);
+	void gen_minterms(graph *g);
+	void gen_primes();
+	void gen_essentials();
+	void gen_output(vspace *v);
+
+	void clear();
 };
 
-rule reduce_to_prime(rule pr);
+/*rule reduce_to_prime(rule pr);
 rule remove_too_strong(rule pr);
 rule minimize_rule(rule pr);
-vector<rule> minimize_rule_vector(vector<rule> prs);
+vector<rule> minimize_rule_vector(vector<rule> prs);*/
 
 void print_implicant_tags(vector<state> implicants);
 ostream &operator<<(ostream &os, rule r);
