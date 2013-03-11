@@ -276,14 +276,15 @@ void graph::print_down()
 void graph::print_dot()
 {
 	size_t i, j;
-
+	ofstream outputGraph;
+	outputGraph.open("graph.dot");
 	//Print space (for debugging purposes)
-	cout << "\n\n\t.dot formatted graph:" << endl;
-	cout << "digraph finite_state_machine {\n\tgraph [ label = \"\\n\\nState space graph!\" ];" << endl;
+	//outputGraph << "\n\n\t.dot formatted graph:" << endl;
+	outputGraph << "digraph finite_state_machine {\n\tgraph [ label = \"\\n\\nState space graph!\" ];" << endl;
 	if (!GRAPH_VERT)
 		cout << "\trankdir=LR;" << endl;
-	cout << "\tnode [shape = ellipse];" << endl;
-	cout << "\tgraph [ dpi =" << GRAPH_DPI << " ];" << endl;
+	outputGraph << "\tnode [shape = ellipse];" << endl;
+	outputGraph << "\tgraph [ dpi =" << GRAPH_DPI << " ];" << endl;
 	for(i = 0; i < states.size(); i++)
 	{
 		if(i >= edges.size())
@@ -292,17 +293,18 @@ void graph::print_dot()
 		// "Node 1" -> "Node 2" [ label = "trans" ];
 		for (j = 0; j < edges[i].size(); j++)
 		{
-			cout << "\t\"" << i << ":";
+			outputGraph << "\t\"" << i << ":";
 			if(STATE_LONG_NAME)
-				cout << states[i];
-			cout << "\"" << " -> ";
-			cout << "\"" << edges[i][j] << ":";
+				outputGraph << states[i];
+			outputGraph << "\"" << " -> ";
+			outputGraph << "\"" << edges[i][j] << ":";
 			if(STATE_LONG_NAME)
-				cout << states[edges[i][j]];
-			cout << "\" [ label = \"" << (transitions[i])[j] << "\" ];" << endl;
+				outputGraph << states[edges[i][j]];
+			outputGraph << "\" [ label = \"" << (transitions[i])[j] << "\" ];" << endl;
 		}
 	}
-	cout << "}\n\n";
+	outputGraph << "}\n\n";
+	outputGraph.close();
 }
 
 void graph::print_delta()

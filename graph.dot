@@ -1,0 +1,14 @@
+digraph finite_state_machine {
+	graph [ label = "\n\nState space graph!" ];
+	node [shape = ellipse];
+	graph [ dpi =300 ];
+	"0:1 0 X X X X " -> "1:0 1 X X X X " [ label = "Reset" ];
+	"1:0 1 X X X X " -> "2:0 1 1 X X X " [ label = "Guard" ];
+	"2:0 1 1 X X X " -> "3:0 1 1 X X X " [ label = "Conditional Merge" ];
+	"3:0 1 1 X X X " -> "4:0 1 1 X X 1 " [ label = "Assign" ];
+	"4:0 1 1 X X 1 " -> "5:0 1 1 X 1 1 " [ label = "Guard" ];
+	"5:0 1 1 X 1 1 " -> "6:0 1 1 X 1 1 " [ label = "Conditional Merge" ];
+	"6:0 1 1 X 1 1 " -> "7:0 1 X 1 1 1 " [ label = "Assign" ];
+	"7:0 1 X 1 1 1 " -> "8:0 1 X 1 1 1 " [ label = "Parallel" ];
+}
+
