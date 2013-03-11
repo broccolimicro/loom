@@ -26,7 +26,12 @@ struct rule
 	int uid;
 	string up, down;
 	vector<state> up_implicants;
+	vector<state> up_primes;
+	vector<vector<state> > up_essential;
+
 	vector<state> down_implicants;
+	vector<state> down_primes;
+	vector<vector<state> > down_essential;
 
 	rule &operator=(rule r);
 

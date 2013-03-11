@@ -347,6 +347,7 @@ void program::generate_prs()
 	r.up_implicants[7].assign(3, value("0"));
 
 	r.gen_primes();
+	r.gen_essentials();
 }
 
 void program::print_prs()

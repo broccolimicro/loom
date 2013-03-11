@@ -63,6 +63,7 @@ rule &rule::operator=(rule r)
 
 void rule::gen_minterms(graph *g)
 {
+	cout << "Generating Minterms for " << uid << endl;
 	list<int> invars;
 	list<int>::iterator vk;
 
@@ -153,25 +154,26 @@ void rule::gen_minterms(graph *g)
 		implicant.tag = g->down_firings[uid][ii];
 		down_implicants.push_back(implicant);
 	}
+	cout << endl;
 }
 
 void rule::gen_primes()
 {
 	vector<state> t[2];
-	vector<state> p;
 	state implicant;
 	size_t i, j;
 
 	vector<int> count;
 	int count_sum;
 
-	cout << "Generating Primes for " << uid << endl;
+	cout << "Generating Prime Implicants for " << uid << endl;
 
 	// Up Implicants
-	cout << "Up Minterms" << endl;
+	cout << "Up Minterms\t";
 	t[1] = up_implicants;
 	for (i = 0; i < t[1].size(); i++)
-		cout << t[1][i] << endl;
+		cout << "[" << t[1][i] << "] ";
+	cout << endl;
 
 	count_sum = t[1].size();
 	while (count_sum > 0)
@@ -198,30 +200,28 @@ void rule::gen_primes()
 		{
 			count_sum += count[i];
 			if (count[i] == 0)
-				p.push_back(t[1][i]);
+				up_primes.push_back(t[1][i]);
 		}
 
 		t[1] = t[0];
 	}
 
-	cout << "Up Primes" << endl;
-	for (i = 0; i < p.size(); i++)
-		cout << p[i] << endl;
-
-	up_implicants.clear();
-	up_implicants = p;
+	cout << "Up Primes\t";
+	for (i = 0; i < up_primes.size(); i++)
+		cout << "[" << up_primes[i] << "] ";
+	cout << endl;
 
 	// Cleanup
-	p.clear();
 	t[0].clear();
 	t[1].clear();
 	count.clear();
 
 	// Down Implicants
-	cout << "Down Minterms" << endl;
+	cout << "Down Minterms\t";
 	t[1] = down_implicants;
 	for (i = 0; i < t[1].size(); i++)
-		cout << t[1][i] << endl;
+		cout << "[" << t[1][i] << "] ";
+	cout << endl;
 
 	count_sum = t[1].size();
 	while (count_sum > 0)
@@ -248,24 +248,52 @@ void rule::gen_primes()
 		{
 			count_sum += count[i];
 			if (count[i] == 0)
-				p.push_back(t[1][i]);
+				down_primes.push_back(t[1][i]);
 		}
 
 		t[1] = t[0];
 	}
 
-	cout << "Down Primes" << endl;
-	for (i = 0; i < p.size(); i++)
-		cout << p[i] << endl;
-	cout << endl;
-
-	down_implicants.clear();
-	down_implicants = p;
+	cout << "Down Primes\t";
+	for (i = 0; i < down_primes.size(); i++)
+		cout << "[" << down_primes[i] << "] ";
+	cout << endl << endl;
 }
 
 void rule::gen_essentials()
 {
+	cout << "Generating Essential Prime Implicants for " << uid << endl;
+	size_t i, j;
 
+	cout << "Up Essentials" << endl;
+	up_essential.resize(up_implicants.size(), vector<state>());
+	for (j = 0; j < up_implicants.size(); j++)
+	{
+		cout << up_implicants[j] << " is covered by ";
+		for (i = 0; i < up_primes.size(); i++)
+			if (subset(up_primes[i], up_implicants[j]))
+			{
+				cout << "[" << up_primes[i] << "] ";
+				up_essential[j].push_back(up_primes[i]);
+			}
+		cout << endl;
+	}
+
+	cout << "Down Essentials" << endl;
+	down_essential.resize(down_implicants.size(), vector<state>());
+	for (j = 0; j < down_implicants.size(); j++)
+	{
+		cout << down_implicants[j] << " is covered by ";
+		for (i = 0; i < down_primes.size(); i++)
+			if (subset(down_primes[i], down_implicants[j]))
+			{
+				cout << "[" << down_primes[i] << "] ";
+				down_essential[j].push_back(down_primes[i]);
+			}
+		cout << endl;
+	}
+
+	cout << endl;
 }
 
 void rule::gen_output(vspace *v)
@@ -273,6 +301,8 @@ void rule::gen_output(vspace *v)
 	vector<state>::iterator i;
 	int j;
 	bool first;
+
+	cout << "Combining Essential Prime Implicants for " << uid << endl;
 
 	up = "";
 	down = "";
@@ -305,6 +335,8 @@ void rule::gen_output(vspace *v)
 
 	up += " -> " + v->get_name(uid) + "+";
 
+	cout << up << endl;
+
 	for (i = down_implicants.begin(); i != down_implicants.end(); i++)
 	{
 		if (i != down_implicants.begin())
@@ -333,6 +365,10 @@ void rule::gen_output(vspace *v)
 		down += "0";
 
 	down += " -> " + v->get_name(uid) + "-";
+
+	cout << down << endl;
+
+	cout << endl << endl << endl << endl;
 }
 
 void rule::clear()
@@ -342,21 +378,6 @@ void rule::clear()
 	up_implicants.clear();
 	down_implicants.clear();
 }
-
-/* This function returns the nth necessary firing of a production rule.
- *
- */
-/*int rule::index(int n)
-{
-	vector<value>::iterator i;
-	int j;
-	for (i = desired.begin(), j = 0; i != desired.end() && n > 0; i++, j++)
-		if (i->data == "1")
-			n--;
-
-	return j;
-}*/
-
 
 /*//Reduce all implicants to prime
 rule reduce_to_prime(rule pr)
