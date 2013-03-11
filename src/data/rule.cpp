@@ -157,18 +157,110 @@ void rule::gen_minterms(graph *g)
 
 void rule::gen_primes()
 {
+	vector<state> t[2];
+	vector<state> p;
+	state implicant;
 	size_t i, j;
-	vector<state> primes;
-	vector<state> temp;
 
-	for (i = 0; i < up_implicants.size(); i++)
+	vector<int> count;
+	int count_sum;
+
+	cout << "Generating Primes for " << uid << endl;
+
+	// Up Implicants
+	cout << "Up Minterms" << endl;
+	t[1] = up_implicants;
+	for (i = 0; i < t[1].size(); i++)
+		cout << t[1][i] << endl;
+
+	count_sum = t[1].size();
+	while (count_sum > 0)
 	{
-
-		for (j = i+1; j < up_implicants.size(); j++)
+		t[0].clear();
+		count.clear();
+		count.resize(t[1].size(), 0);
+		for (i = 0; i < t[1].size(); i++)
 		{
-
+			for (j = i+1; j < t[1].size(); j++)
+			{
+				if (diff_count(t[1][i], t[1][j]) == 1)
+				{
+					implicant = t[1][i] || t[1][j];
+					count[i]++;
+					count[j]++;
+					if (find(t[0].begin(), t[0].end(), implicant) == t[0].end())
+						t[0].push_back(implicant);
+				}
+			}
 		}
+		count_sum = 0;
+		for (i = 0; i < t[1].size(); i++)
+		{
+			count_sum += count[i];
+			if (count[i] == 0)
+				p.push_back(t[1][i]);
+		}
+
+		t[1] = t[0];
 	}
+
+	cout << "Up Primes" << endl;
+	for (i = 0; i < p.size(); i++)
+		cout << p[i] << endl;
+
+	up_implicants.clear();
+	up_implicants = p;
+
+	// Cleanup
+	p.clear();
+	t[0].clear();
+	t[1].clear();
+	count.clear();
+
+	// Down Implicants
+	cout << "Down Minterms" << endl;
+	t[1] = down_implicants;
+	for (i = 0; i < t[1].size(); i++)
+		cout << t[1][i] << endl;
+
+	count_sum = t[1].size();
+	while (count_sum > 0)
+	{
+		t[0].clear();
+		count.clear();
+		count.resize(t[1].size(), 0);
+		for (i = 0; i < t[1].size(); i++)
+		{
+			for (j = i+1; j < t[1].size(); j++)
+			{
+				if (diff_count(t[1][i], t[1][j]) == 1)
+				{
+					implicant = t[1][i] || t[1][j];
+					count[i]++;
+					count[j]++;
+					if (find(t[0].begin(), t[0].end(), implicant) == t[0].end())
+						t[0].push_back(implicant);
+				}
+			}
+		}
+		count_sum = 0;
+		for (i = 0; i < t[1].size(); i++)
+		{
+			count_sum += count[i];
+			if (count[i] == 0)
+				p.push_back(t[1][i]);
+		}
+
+		t[1] = t[0];
+	}
+
+	cout << "Down Primes" << endl;
+	for (i = 0; i < p.size(); i++)
+		cout << p[i] << endl;
+	cout << endl;
+
+	down_implicants.clear();
+	down_implicants = p;
 }
 
 void rule::gen_essentials()

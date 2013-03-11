@@ -41,20 +41,7 @@ void graph::insert_edge(int from, int to, string chp)
 	string upstr, downstr;
 	int k;
 
-	// Delta State Insertion
-	/*state result_state = diff(from_state,to_state);
-	if(to_state.prs)
-		result_state.tag = from;
-	else
-		result_state.tag = -1;
-
-	if(to_state.prs || SHOW_ALL_DIFF_STATES)
-		delta.states.push_back(result_state);*/
-
-	/* TODO Input variables should not be driven at reset
-	 * TODO Input variables might not want to have a slew of X's when they actually get a value.
-	 */
-
+	// Delta Calculations (Up, Down, Delta)
 	if (to_state.size() > up.size())
 		up.traces.resize(to_state.size(), trace());
 	if (to_state.size() > (int)up_firings.size())

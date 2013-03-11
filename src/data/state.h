@@ -35,30 +35,11 @@ struct state
 
 	state &operator=(state s);
 
-	state &operator+=(state s);
-	state &operator-=(state s);
-	state &operator*=(state s);
-	state &operator/=(state s);
-
 	state &operator&=(state s);
 	state &operator|=(state s);
 
-	state &operator<<=(state s);
-	state &operator>>=(state s);
-
-	state &operator+=(value s);
-	state &operator-=(value s);
-	state &operator*=(value s);
-	state &operator/=(value s);
-
 	state &operator&=(value s);
 	state &operator|=(value s);
-
-	state &operator<<=(value s);
-	state &operator>>=(value s);
-
-	state &operator<<=(int n);
-	state &operator>>=(int n);
 };
 
 bool is_all_x(state s1);
@@ -73,23 +54,6 @@ int who_weaker(state s1, state s2);
 
 ostream &operator<<(ostream &os, state s);
 
-state operator+(state s1, state s2);
-state operator-(state s1, state s2);
-state operator*(state s1, state s2);
-state operator/(state s1, state s2);
-
-state operator+(state s1, value s2);
-state operator-(state s1, value s2);
-state operator*(state s1, value s2);
-state operator/(state s1, value s2);
-
-state operator+(value s1, state s2);
-state operator-(value s1, state s2);
-state operator*(value s1, state s2);
-state operator/(value s1, state s2);
-
-state operator-(state s);
-
 state operator&(state s1, state s2);
 state operator|(state s1, state s2);
 
@@ -101,45 +65,12 @@ state operator|(value s1, state s2);
 
 state operator~(state s);
 
-state operator<<(state s1, state s2);
-state operator>>(state s1, state s2);
-
-state operator<<(state s1, value s2);
-state operator>>(state s1, value s2);
-
-state operator<<(value s1, state s2);
-state operator>>(value s1, state s2);
-
-state operator<<(state s, int n);
-state operator>>(state s, int n);
-
-/*state operator<(state s1, int n);
-state operator>(state s1, int n);*/
-
 bool operator==(state s1, state s2);
 bool operator!=(state s1, state s2);
-state operator<=(state s1, state s2);
-state operator>=(state s1, state s2);
-state operator<(state s1, state s2);
-state operator>(state s1, state s2);
 
 state operator||(state s1, state s2);
 state operator&&(state s1, state s2);
 state operator!(state s);
-
-state operator==(state s1, value s2);
-state operator!=(state s1, value s2);
-state operator<=(state s1, value s2);
-state operator>=(state s1, value s2);
-state operator<(state s1, value s2);
-state operator>(state s1, value s2);
-
-state operator==(value s1, state s2);
-state operator!=(value s1, state s2);
-state operator<=(value s1, state s2);
-state operator>=(value s1, state s2);
-state operator<(value s1, state s2);
-state operator>(value s1, state s2);
 
 
 state diff(state s1, state s2);
