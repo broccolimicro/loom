@@ -17,9 +17,13 @@ struct graph
 
 	state_space states;
 	trace_space traces;
-	state_space delta;
+	//state_space delta;
+
+	trace_space delta;
 	trace_space up;
 	trace_space down;
+
+
 	vector<vector<int> > up_firings;
 	vector<vector<int> > down_firings;
 	map<int, vector<int> > up_conflicts;

@@ -31,7 +31,7 @@ struct trace
 
 	void clear();
 	int size();
-	void assign(int i, value v);
+	void assign(int i, value v, value r = value("X"));
 	vector<value>::iterator begin();
 	vector<value>::iterator end();
 	void push_back(value v);

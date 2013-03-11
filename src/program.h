@@ -38,7 +38,7 @@ struct program
 	void generate_prs();
 	void insert_state_vars();
 	int conflict_count(state impl, int fire_uid, string fire_dir);
-	void build_implicants(state_space diff_space);
+	void build_implicants();
 	void merge_implicants();
 	//void weaken_guard(rule pr);
 	void print_prs();

@@ -45,10 +45,10 @@ int trace::size()
 	return values.size();
 }
 
-void trace::assign(int i, value v)
+void trace::assign(int i, value v, value r)
 {
 	if (i >= (int)values.size())
-		values.resize(i+1, value("X"));
+		values.resize(i+1, r);
 	values[i] = v;
 }
 

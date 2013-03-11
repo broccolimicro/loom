@@ -242,7 +242,7 @@ void program::generate_prs()
 	}
 
 	//Find the implicants of the diff space
-	build_implicants(space.delta);
+	build_implicants();
 
 	merge_implicants();
 	print_prs();
@@ -301,7 +301,7 @@ void program::insert_state_vars()
 		{
 			cout << " impi " << endl;
 			//...iterate once through the state space.
-			for(size_t statei = 0; statei < space.size(); statei++)
+			for(int statei = 0; statei < space.size(); statei++)
 			{
 				cout << " statei " << statei<< endl;
 				//Write down if the state is an okay firing, conflict firing, or mandatory firing (vector<trace>)
@@ -389,28 +389,31 @@ int conflict(trace proposed, trace desired)
 }
 
 //TODO: SOOO UNTESTED
-void program::build_implicants(state_space diff_space)
+void program::build_implicants()
 {
 	list<int> candidates;
 	state implier;
 	bool fully_strong;
-	state implicant;
-	state proposal;
+
 	int best_candidate;
 	int best_count;
 	int curr_count;
-	size_t vi, vj, ii, ij;
-
-	trace implicant_output;
+	int vi, vj, ii;
 	trace proposal_output;
 	list<int>::iterator candi;
+
+	list<int> invars;
+	list<int>::iterator vk;
+	state implicant;
+	trace implicant_output;
+	int count, mcount, var;
 
 	//  ================== TOP DOWN ==================
 	if(TOP_DOWN)
 	{
 		cout << "Doing top down. I'm not sure that is a good idea. Hasn't been tested recently. " << endl;
 
-		for(size_t i = 0; i < diff_space.size();i++)
+		/*for(size_t i = 0; i < diff_space.size();i++)
 		{
 			for(int j = 0; j< diff_space[i].size(); j++)
 			{
@@ -425,136 +428,101 @@ void program::build_implicants(state_space diff_space)
 						prs_down[j].implicants.push_back(space.states[diff_space[i].tag]);
 				}
 			}
-		}
+		}*/
 
 
 	}// TOP DOWN
 	//  ================== BOTTOM UP ==================
 	else
 	{
-		//====POPULATE PRS UP====
-		for (vi = 0; vi < space.up_firings.size(); vi++)
+		// Up Production Rules
+		for (vi = 0; vi < (int)space.up_firings.size(); vi++)
 		{
-			for (ii = 0; ii < space.up_firings[vi].size(); ii++)
+			for (ii = 0; ii < (int)space.up_firings[vi].size(); ii++)
 			{
-				cout << "\ndesired " << space.up[vi] << endl;
-				//This is the state that will be added as an implicant
-				implicant = state(value("_"), space.up_firings.size());
-				implicant_output = trace(value("_"), space.up[vi].size());
-				implier = space.states[space.up_firings[vi][ii]];
-				cout << "started " << implicant_output << endl;
+				implier			 = space.states[space.up_firings[vi][ii]];
+				implicant		 = state(value("X"), space.width());
+				implicant_output = trace(value("1"), space.size());
 
-				//List of variables by UID
-				candidates.clear();
+				invars.clear();
+				for (vj = 0; vj < space.width(); vj++)
+					if (((BUBBLELESS && implier[vj].data == "0") || !BUBBLELESS) && vj != vi)
+						invars.push_back(vj);
 
-				//Populate list of candidates
-				for (vj = 0; vj < implier.size(); vj++)
-					if (implier[vj].data == "0" && vj != vi)//TODO: BUBBLE? || (!BUBBLELESS && implier[impi].data == "1"))
-						candidates.push_back(vj);
-
-				//We now  have a list of candidate variables to potentially add to the implicant for the firing of diff_space[diffi][vari]
-				fully_strong = false;
-				while (!fully_strong)
+				mcount = 9999999;
+				var = 0;
+				while (invars.size() > 0 && var != -1)
 				{
-					best_count = 999999; //TODO: Make this better
-					best_candidate = -1;
-
-					for (candi = candidates.begin(); candi != candidates.end(); candi++)
+					var = -1;
+					for (vk = invars.begin(); vk != invars.end(); vk++)
 					{
-						proposal = implicant;
-						proposal_output = implicant_output;
+						proposal_output = implicant_output & ~space.delta[*vk];
 
-						proposal[*candi] = "0";
-						proposal_output = proposal_output & ~space.up[*candi];
-
-						curr_count = conflict(proposal_output, space.up[vi]);
-						if (curr_count < best_count)
+						count = conflict(proposal_output, space.up[vi]);
+						if (count < mcount)
 						{
-							best_count = curr_count;
-							best_candidate = *candi;
+							mcount = count;
+							var = *vk;
 						}
-					}//candi for
-
-					//At this point, we should have selected the var that causes the fewest conflict states.
-					//Add it to our implicant!
-					if (best_candidate == -1 || best_count == 0)
-						fully_strong = true; //No one left to add or we had no conflicts. Avoid strengthening
-					else
-					{
-						implicant[best_candidate].data = "0"; //add a 0 to the implicant in the spot of the candidate var
-						implicant_output = implicant_output & ~space.up[best_candidate];
-						cout << "descent " << implicant_output << endl;
-						candidates.remove(best_candidate);
 					}
-				}//fully_strong while
-				//The implicant that we just spent a while making? Add that.
+
+					if (var != -1)
+					{
+						implicant[var] = value("0");
+						implicant_output = implicant_output & ~space.delta[var];
+						invars.remove(var);
+					}
+				}
+
 				implicant.tag = space.up_firings[vi][ii];
 				prs_up[vi].implicants.push_back(implicant);
 			}
-		}//vari for
+		}
 
-		cout << "Done Up" << endl;
-		//====POPULATE PRS DOWN====
-		for (vi = 0; vi < space.down_firings.size(); vi++)
+		// Down Production Rules
+		for (vi = 0; vi < (int)space.down_firings.size(); vi++)
 		{
-			for (ii = 0; ii < space.down_firings[vi].size(); ii++)
+			for (ii = 0; ii < (int)space.down_firings[vi].size(); ii++)
 			{
-				cout << "\ndesired " << space.up[vi] << endl;
-				//This is the state that will be added as an implicant
-				implicant = state(value("_"), vars.global.size());
-				implicant_output = trace(value("_"), space.down[vi].size());
-				implier = space.states[space.down_firings[vi][ii]];
-				cout << "started " << implicant_output << endl;
+				implier			 = space.states[space.down_firings[vi][ii]];
+				implicant		 = state(value("X"), space.width());
+				implicant_output = trace(value("1"), space.size());
 
-				//List of variables by UID
-				candidates.clear();
+				invars.clear();
+				for (vj = 0; vj < space.width(); vj++)
+					if (((BUBBLELESS && implier[vj].data == "1") || !BUBBLELESS) && vj != vi)
+						invars.push_back(vj);
 
-				//Populate list of candidates
-				for (vj = 0; vj < implier.size(); vj++)
-					if (implier[vj].data == "1" && vj != vi)//TODO: BUBBLE? || (!BUBBLELESS && implier[impi].data == "0"))
-						candidates.push_back(vj);
-
-				//We now  have a list of candidate variables to potentially add to the implicant for the firing of diff_space[diffi][vari]
-				fully_strong = false;
-				while(!fully_strong)
+				mcount = 9999999;
+				var = 0;
+				while (invars.size() > 0 && var != -1)
 				{
-					best_count = 999999; //TODO: Make this better
-					best_candidate = -1;
-
-					for (candi = candidates.begin(); candi != candidates.end(); candi++)
+					var = -1;
+					for (vk = invars.begin(); vk != invars.end(); vk++)
 					{
-						proposal = implicant;
-						proposal_output = implicant_output;
+						proposal_output = implicant_output & space.delta[*vk];
 
-						proposal[*candi] = "1";
-						proposal_output = proposal_output & space.down[*candi];
-
-						curr_count = conflict(proposal_output, space.up[vi]);
-						if (curr_count < best_count)
+						count = conflict(proposal_output, space.down[vi]);
+						if (count < mcount)
 						{
-							best_count = curr_count;
-							best_candidate = *candi;
+							mcount = count;
+							var = *vk;
 						}
-					}//candi for
-
-					//At this point, we should have selected the var that causes the fewest conflict states.
-					//Add it to our implicant!
-					if (best_candidate == -1 || best_count == 0)
-						fully_strong = true; //No one left to add or we had no conflicts. Avoid strengthening
-					else
-					{
-						implicant[best_candidate].data = "1"; //add a 1 to the implicant in the spot of the candidate var
-						implicant_output = implicant_output & space.down[best_candidate];
-						cout << "descent " << implicant_output << endl;
-						candidates.remove(best_candidate);
 					}
-				}//fully_strong while
-				//The implicant that we just spent a while making? Add that.
+
+					if (var != -1)
+					{
+						implicant[var] = value("1");
+						implicant_output = implicant_output & space.delta[var];
+						invars.remove(var);
+					}
+				}
+
 				implicant.tag = space.down_firings[vi][ii];
 				prs_down[vi].implicants.push_back(implicant);
 			}
 		}
-	}//BOTTOM UP
+	}
 }
 
 //Merges all the implicants and puts them into the .left fields

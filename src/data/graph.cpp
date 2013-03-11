@@ -42,14 +42,14 @@ void graph::insert_edge(int from, int to, string chp)
 	int k;
 
 	// Delta State Insertion
-	state result_state = diff(from_state,to_state);
+	/*state result_state = diff(from_state,to_state);
 	if(to_state.prs)
 		result_state.tag = from;
 	else
 		result_state.tag = -1;
 
 	if(to_state.prs || SHOW_ALL_DIFF_STATES)
-		delta.states.push_back(result_state);
+		delta.states.push_back(result_state);*/
 
 	/* TODO Input variables should not be driven at reset
 	 * TODO Input variables might not want to have a slew of X's when they actually get a value.
@@ -63,6 +63,8 @@ void graph::insert_edge(int from, int to, string chp)
 		down.traces.resize(to_state.size(), trace());
 	if (to_state.size() > (int)down_firings.size())
 		down_firings.resize(to_state.size(), vector<int>());
+	if (to_state.size() > delta.size())
+		delta.traces.resize(to_state.size(), trace());
 
 	for (i = states[from].begin(), j = to_state.begin(), k = 0; i != states[from].end() && j != to_state.end(); i++, j++, k++)
 	{
@@ -91,8 +93,9 @@ void graph::insert_edge(int from, int to, string chp)
 				downstr = downstr + "0";
 		}
 
-		up[k].assign(to, value(upstr));
-		down[k].assign(to, value(downstr));
+		delta[k].push_back(to_state[k]);
+		up[k].push_back(value(upstr));
+		down[k].push_back(value(downstr));
 	}
 
 	// Edge Insertion
@@ -317,7 +320,14 @@ void graph::print_dot()
 
 void graph::print_delta()
 {
-	size_t j;
+	vector<vector<int> >::iterator i;
+	vector<int>::iterator j;
+	map<int, vector<int> >::iterator k;
+
+	cout << "Delta Space" << endl;
+	cout << delta << endl;
+
+	/*size_t j;
 	vector<state>::iterator i;
 	vector<int>::iterator m;
 	vector<string>::iterator q;
@@ -325,7 +335,7 @@ void graph::print_delta()
 	cout << "Delta Space:" << endl;
 	for (i = delta.begin(), j = 0; i != delta.end(); i++, j++)
 		cout << *i << "\t" << i->tag << endl;
-	cout << endl;
+	cout << endl;*/
 }
 
 ostream &operator<<(ostream &os, graph g)

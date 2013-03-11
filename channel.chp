@@ -6,8 +6,8 @@ record dualrail
 
 channel chan4p0b
 {
-	int<1> r := 0;
-	int<1> a := 0;
+	int<1> r;
+	int<1> a;
 	
 	operator!()
 	{
