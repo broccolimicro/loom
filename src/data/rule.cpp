@@ -77,7 +77,7 @@ void rule::gen_minterms(graph *g)
 	int count, mcount, var;
 
 	cout << "Up Minterms" << endl;
-	final_output = trace(value("1"), g->up[uid].size());
+	final_output = trace(value("0"), g->up[uid].size());
 	for (ii = 0; ii < (int)g->up_firings[uid].size(); ii++)
 	{
 		implier			 = g->states[g->up_firings[uid][ii]];
@@ -96,8 +96,10 @@ void rule::gen_minterms(graph *g)
 			var = -1;
 			for (vk = invars.begin(); vk != invars.end(); vk++)
 			{
-				proposal_output = implicant_output & ~g->delta[*vk];
-
+				if (implier[*vk].data == "0")
+					proposal_output = implicant_output & ~g->delta[*vk];
+				else if (implier[*vk].data == "1")
+					proposal_output = implicant_output & g->delta[*vk];
 				count = conflict_count(proposal_output, g->up[uid]);
 				if (count < mcount)
 				{
@@ -108,8 +110,11 @@ void rule::gen_minterms(graph *g)
 
 			if (var != -1)
 			{
-				implicant[var] = value("0");
-				implicant_output = implicant_output & ~g->delta[var];
+				implicant[var] = implier[var];
+				if (implier[var].data == "0")
+					implicant_output = implicant_output & ~g->delta[var];
+				else if (implier[var].data == "1")
+					implicant_output = implicant_output & g->delta[var];
 				invars.remove(var);
 			}
 		}
@@ -124,7 +129,7 @@ void rule::gen_minterms(graph *g)
 	cout << "Obtained: " << final_output << endl;
 
 	cout << "Down Minterms" << endl;
-	final_output = trace(value("1"), g->up[uid].size());
+	final_output = trace(value("0"), g->up[uid].size());
 	for (ii = 0; ii < (int)g->down_firings[uid].size(); ii++)
 	{
 		implier			 = g->states[g->down_firings[uid][ii]];
@@ -143,8 +148,10 @@ void rule::gen_minterms(graph *g)
 			var = -1;
 			for (vk = invars.begin(); vk != invars.end(); vk++)
 			{
-				proposal_output = implicant_output & g->delta[*vk];
-
+				if (implier[*vk].data == "0")
+					proposal_output = implicant_output & ~g->delta[*vk];
+				else if (implier[*vk].data == "1")
+					proposal_output = implicant_output & g->delta[*vk];
 				count = conflict_count(proposal_output, g->down[uid]);
 				if (count < mcount)
 				{
@@ -155,8 +162,11 @@ void rule::gen_minterms(graph *g)
 
 			if (var != -1)
 			{
-				implicant[var] = value("1");
-				implicant_output = implicant_output & g->delta[var];
+				implicant[var] = implier[var];
+				if (implier[var].data == "0")
+					implicant_output = implicant_output & ~g->delta[var];
+				else if (implier[var].data == "1")
+					implicant_output = implicant_output & g->delta[var];
 				invars.remove(var);
 			}
 		}
@@ -200,7 +210,7 @@ void rule::gen_primes()
 		{
 			for (j = i+1; j < t[1].size(); j++)
 			{
-				if (diff_count(t[1][i], t[1][j]) == 1)
+				if (diff_count(t[1][i], t[1][j]) <= 1)
 				{
 					implicant = t[1][i] || t[1][j];
 					count[i]++;
@@ -248,7 +258,7 @@ void rule::gen_primes()
 		{
 			for (j = i+1; j < t[1].size(); j++)
 			{
-				if (diff_count(t[1][i], t[1][j]) == 1)
+				if (diff_count(t[1][i], t[1][j]) <= 1)
 				{
 					implicant = t[1][i] || t[1][j];
 					count[i]++;
@@ -299,7 +309,7 @@ void rule::gen_essentials()
 				cov[j].push_back(i);
 			}
 
-		if (cov[j].size() == 1)
+		if (cov[j].size() == 1 && find(up_essentials.begin(), up_essentials.end(), cov[j].front()) == up_essentials.end())
 			up_essentials.push_back(cov[j].front());
 
 		cout << endl;
@@ -388,7 +398,7 @@ void rule::gen_essentials()
 				cov[j].push_back(i);
 			}
 
-		if (cov[j].size() == 1)
+		if (cov[j].size() == 1 && find(down_essentials.begin(), down_essentials.end(), cov[j].front()) == down_essentials.end())
 			down_essentials.push_back(cov[j].front());
 
 		cout << endl;

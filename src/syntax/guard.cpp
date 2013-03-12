@@ -116,7 +116,7 @@ int guard::generate_states(graph *trans, int init)
 	s = trans->states[init];
 	s = s && solve(chp, vars, tab, verbosity);
 
-	trans->states[init] = trans->states[init] && solve(("~" + chp), vars, tab, verbosity);
+	trans->states[init] = trans->states[init] && solve("~(" + chp + ")", vars, tab, verbosity);
 
 	if(CHP_EDGE)
 		trans->insert(s, init, chp + "->");
