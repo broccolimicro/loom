@@ -32,9 +32,9 @@ struct channel : record
 	channel(string chp, map<string, keyword*> *types, int verbosity);
 	~channel();
 
-	operate send;
-	operate recv;
-	operate probe;
+	operate *send;
+	operate *recv;
+	operate *probe;
 
 	channel &operator=(channel r);
 	void parse(string chp, int verbosity);

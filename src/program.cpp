@@ -12,16 +12,20 @@ program::program(string chp, int verbosity)
 	vars.types = &type_space;
 	parse(chp, verbosity);
 	generate_states();
-	generate_prs();
-	cout << "Did I get here?" << endl;
 	//insert_state_vars();
+	generate_prs();
 }
 
 program::~program()
 {
 	map<string, keyword*>::iterator i;
 	for (i = type_space.begin(); i != type_space.end(); i++)
-		delete i->second;
+	{
+		cout << i->first << endl;
+		if (i->second != NULL)
+			delete i->second;
+		i->second = NULL;
+	}
 
 	type_space.clear();
 }
@@ -130,9 +134,9 @@ void program::parse(string chp, int verbosity)
 				{
 					c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, verbosity);
 					type_space.insert(pair<string, channel*>(c->name, c));
-					type_space.insert(pair<string, operate*>(c->name + "." + c->send.name, &c->send));
-					type_space.insert(pair<string, operate*>(c->name + "." + c->recv.name, &c->recv));
-					type_space.insert(pair<string, operate*>(c->name + "." + c->probe.name, &c->probe));
+					type_space.insert(pair<string, operate*>(c->name + "." + c->send->name, c->send));
+					type_space.insert(pair<string, operate*>(c->name + "." + c->recv->name, c->recv));
+					type_space.insert(pair<string, operate*>(c->name + "." + c->probe->name, c->probe));
 				}
 				// This isn't either a process or a record, this is an error.
 				else
@@ -164,9 +168,9 @@ void program::parse(string chp, int verbosity)
 					{
 						c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, verbosity);
 						type_space.insert(pair<string, channel*>(c->name, c));
-						type_space.insert(pair<string, operate*>(c->name + "." + c->send.name, &c->send));
-						type_space.insert(pair<string, operate*>(c->name + "." + c->recv.name, &c->recv));
-						type_space.insert(pair<string, operate*>(c->name + "." + c->probe.name, &c->probe));
+						type_space.insert(pair<string, operate*>(c->name + "." + c->send->name, c->send));
+						type_space.insert(pair<string, operate*>(c->name + "." + c->recv->name, c->recv));
+						type_space.insert(pair<string, operate*>(c->name + "." + c->probe->name, c->probe));
 					}
 				}
 			}
@@ -240,81 +244,142 @@ void program::generate_states()
  */
 void program::insert_state_vars()
 {
-	//Indistinguishable states before PRS?
-
-	//The below, or a totally crazy idea:
-	//Make a datastructure containing 'indistinguishable from's for each state
-	//Somehow shrink these lists so they don't matter anymore or something. Magic.
-	//Other thoughts: Would it be dumb to iterate through once with all implicants instead?
-
-	//Set up data structures
-	vector<trace> up_conflicts;
-	vector<trace> down_conflicts;
-
-	up_conflicts.resize(vars.global.size());
-	down_conflicts.resize(vars.global.size());
-	for(size_t i = 0; i < vars.global.size(); i ++)
+	map<int, vector<int> >::iterator confli;
+	int sv_from, sv_to;
+	bool sv_up;
+	//Up
+	//Go through the list of conflicts
+	for(confli = space.up_conflicts.begin(); confli!= space.up_conflicts.end(); confli++)
 	{
-		up_conflicts[i].values.resize(space.size());
-		down_conflicts[i].values.resize(space.size());
-	}
-
-	cout << " SV up start " << endl;
-	//===== SEARCH FOR NEEDED UP UP ======
-	// === iterate through every rule's implicants
-	for(size_t rulei = 0; rulei < vars.global.size(); rulei++)
-	{
-		cout << " rulei " << endl;
-		// === For each implicant...
-		for(size_t impi = 0; impi < prs[rulei].up_implicants.size(); impi++)
+		//If the list of states confli conflicts with is not zero,
+		if(confli->second.size() > 0)
 		{
-			cout << " impi " << endl;
-			//...iterate once through the state space.
-			for(int statei = 0; statei < space.size(); statei++)
+			//Chose the first one arbitrarily.
+			//Select an edge
+			if(confli->second[0] > confli->first)
 			{
-				cout << " statei " << statei<< endl;
-				//Write down if the state is an okay firing, conflict firing, or mandatory firing (vector<trace>)
-				int weaker = who_weaker(prs[rulei].up_implicants[impi], space.states[statei]);
-				//cout << "prs_up[rulei].implicants[impi]" << prs_up[rulei].implicants[impi] << " space.states[statei] " << space.states[statei] << endl;
-				//It is supposed to fire here!
-				cout << " who weaker: " << weaker << " prs_up[rulei].implicants[impi].tag " << prs[rulei].up_implicants[impi].tag << endl;
-				if(statei == (prs[rulei].up_implicants[impi].tag))
-					up_conflicts[rulei][statei].data = "!";
-				//It doesn't fire here.
-				else if(weaker == 0 || weaker == 2)
-					up_conflicts[rulei][statei].data = "_";
-				//It fires here. Should it?
-				else if(weaker == -1 || weaker == 1)
-				{
-					//TODO! Figure out if it may fire here.
-					//(space[statei][prs_up[rulei].uid]=="0"))
-					up_conflicts[rulei][statei].data = "C";
-				}
-				else
-					up_conflicts[rulei][statei].data = "?";
-				cout << "bottom of loop " << endl;
-			} //statei for
-		}//impi for
-	}//rulei for
-
-	cout << "Up conflict traces:" << endl;
-	for (size_t i = 0; i < vars.global.size(); i++)
-		cout<< prs[i].up << " " << up_conflicts[i] << endl;
-
-	// === Chose indices in state space to insert state variables
-	// === Insert these into the CHP and reparse? Is better way?
+				cout << "I am inserting a state variable after " << confli->first << " and before " << confli->second[0] << endl;
+				//I commondeered an edge.
+				sv_from = 4;
+				sv_to = 5;
+				sv_up = false; // ?
+				break;
+			}
+			else
+			{
+				cout << "I am inserting a state variable before " << confli->first << " and after " << confli->second[0] << endl;
+				sv_from = 5;
+				sv_to = 4;
+				sv_up = true; // ?
+				break;
+			}
+		}
+	}//Confli
+	//If we didn't find anything, do the same search for down.
 
 
 
-	//===== SEARCH FOR NEEDED DOWN SV ======
-	// === iterate through every rule's implicants
+	//We have now selected an edge to commondeer.
+	//Add a new variable to our globals list
+	//pair<string, instruction*> add_unique_variable(string prefix, string postfix, string type, vspace *vars, string tab, int verbosity)
+	add_unique_variable("sv", "", "int<1>", &vars, "", -1);
+	//Create a new state for SV go high (probably based off of the from of the commondeered edge)
 
-	cout << "Done state var insert" << endl;
+	//Remove the edge between them.
+
+	//Add the edge from sv_from to our new state
+
+	//Add the edge from our new state to sv_to
+
+	//Add the values into state space
+
+	//Add an additional variable to the trace
+
+	//Add the values into trace space
+
+	//Recalculate diff space
+
+	//Recalculate conflicts
+
+	//Iterate until complete
 }
+//Fuck this code
+/*
+//Indistinguishable states before PRS?
+
+//The below, or a totally crazy idea:
+//Make a datastructure containing 'indistinguishable from's for each state
+//Somehow shrink these lists so they don't matter anymore or something. Magic.
+//Other thoughts: Would it be dumb to iterate through once with all implicants instead?
+
+//Set up data structures
+vector<trace> up_conflicts;
+vector<trace> down_conflicts;
+
+up_conflicts.resize(vars.global.size());
+down_conflicts.resize(vars.global.size());
+for(size_t i = 0; i < vars.global.size(); i ++)
+{
+	up_conflicts[i].values.resize(space.size());
+	down_conflicts[i].values.resize(space.size());
+}
+
+cout << " SV up start " << endl;
+//===== SEARCH FOR NEEDED UP UP ======
+// === iterate through every rule's implicants
+for(size_t rulei = 0; rulei < vars.global.size(); rulei++)
+{
+	cout << " rulei " << endl;
+	// === For each implicant...
+	for(size_t impi = 0; impi < prs[rulei].up_implicants.size(); impi++)
+	{
+		cout << " impi " << endl;
+		//...iterate once through the state space.
+		for(int statei = 0; statei < space.size(); statei++)
+		{
+			cout << " statei " << statei<< endl;
+			//Write down if the state is an okay firing, conflict firing, or mandatory firing (vector<trace>)
+			int weaker = who_weaker(prs[rulei].up_implicants[impi], space.states[statei]);
+			//cout << "prs_up[rulei].implicants[impi]" << prs_up[rulei].implicants[impi] << " space.states[statei] " << space.states[statei] << endl;
+			//It is supposed to fire here!
+			cout << " who weaker: " << weaker << " prs_up[rulei].implicants[impi].tag " << prs[rulei].up_implicants[impi].tag << endl;
+			if(statei == (prs[rulei].up_implicants[impi].tag))
+				up_conflicts[rulei][statei].data = "!";
+			//It doesn't fire here.
+			else if(weaker == 0 || weaker == 2)
+				up_conflicts[rulei][statei].data = "_";
+			//It fires here. Should it?
+			else if(weaker == -1 || weaker == 1)
+			{
+				//TODO! Figure out if it may fire here.
+				//(space[statei][prs_up[rulei].uid]=="0"))
+				up_conflicts[rulei][statei].data = "C";
+			}
+			else
+				up_conflicts[rulei][statei].data = "?";
+			cout << "bottom of loop " << endl;
+		} //statei for
+	}//impi for
+}//rulei for
+
+cout << "Up conflict traces:" << endl;
+for (size_t i = 0; i < vars.global.size(); i++)
+	cout<< prs[i].up << " " << up_conflicts[i] << endl;
+
+// === Chose indices in state space to insert state variables
+// === Insert these into the CHP and reparse? Is better way?
+
+
+
+//===== SEARCH FOR NEEDED DOWN SV ======
+// === iterate through every rule's implicants
+
+cout << "Done state var insert" << endl;*/
 
 void program::generate_prs()
 {
 	for (int vi = 0; vi < space.width(); vi++)
+		if (vars.get_name(vi).find_first_of("|&~") == string::npos)
 		prs.push_back(rule(vi, &space, &vars));
 
 	print_prs();

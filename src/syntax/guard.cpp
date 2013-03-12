@@ -111,7 +111,7 @@ int guard::generate_states(graph *g, int init)
 	cout << tab << "Guard " << chp << endl;
 
 	map<string, variable>::iterator vi;
-	state s;
+	state s, temp;
 
 
 	uid = g->states.size();

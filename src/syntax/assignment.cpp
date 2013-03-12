@@ -594,6 +594,7 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 	if (top == "")
 	{
 		C = add_unique_variable("_op", "", proc->vars.get_info(proc->input.front()), vars, tab+"\t", verbosity);
+		//cout << "YO DUERFEW EWFFEW EFWEFEWF " << proc->vars.get_info(proc->input.front()) << endl;
 		name += C.first;
 	}
 	else

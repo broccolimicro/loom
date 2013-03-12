@@ -57,9 +57,9 @@ void graph::gen_conflicts()
 			if (ci == up_conflicts.end())
 				ci = up_conflicts.insert(pair<int, vector<int> >(up_firings[i][j], vector<int>())).first;
 
-			for (k = 0; k < up[i].size(); k++)
+			for (k = 0; k < states[i].size(); k++)
 			{
-				if (k != up_firings[i][j] && up[i][k].data == "0" && find(ci->second.begin(), ci->second.end(), k) == ci->second.end())
+				if (k != up_firings[i][j] && states[i][k].data == "0" && find(ci->second.begin(), ci->second.end(), k) == ci->second.end())
 				{
 					if (BUBBLELESS)
 					{
@@ -80,9 +80,9 @@ void graph::gen_conflicts()
 			if (ci == down_conflicts.end())
 				ci = down_conflicts.insert(pair<int, vector<int> >(down_firings[i][j], vector<int>())).first;
 
-			for (k = 0; k < down[i].size(); k++)
+			for (k = 0; k < states[i].size(); k++)
 			{
-				if (k != down_firings[i][j] && down[i][k].data == "0" && find(ci->second.begin(), ci->second.end(), k) == ci->second.end())
+				if (k != down_firings[i][j] && states[i][k].data == "0" && find(ci->second.begin(), ci->second.end(), k) == ci->second.end())
 				{
 					if (BUBBLELESS)
 					{

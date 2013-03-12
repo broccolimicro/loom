@@ -19,12 +19,18 @@ channel::channel()
 {
 	name = "";
 	_kind = "channel";
+	send = NULL;
+	recv = NULL;
+	probe = NULL;
 }
 
 channel::channel(string chp, map<string, keyword*> *types, int verbosity)
 {
 	_kind = "channel";
 	vars.types = types;
+	send = NULL;
+	recv = NULL;
+	probe = NULL;
 	parse(chp, verbosity);
 }
 
@@ -113,13 +119,17 @@ void channel::parse(string chp, int verbosity)
 	 * function, allow process is false, making the io flag true.
 	 */
 
-	send.vars = vars;
-	recv.vars = vars;
-	probe.vars = vars;
+	send = new operate();
+	recv = new operate();
+	probe = new operate();
 
-	send.parse(s, verbosity);
-	recv.parse(r, verbosity);
-	probe.parse(p, verbosity);
+	send->vars = vars;
+	recv->vars = vars;
+	probe->vars = vars;
+
+	send->parse(s, verbosity);
+	recv->parse(r, verbosity);
+	probe->parse(p, verbosity);
 }
 
 ostream &operator<<(ostream &os, channel s)
