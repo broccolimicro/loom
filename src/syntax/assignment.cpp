@@ -39,7 +39,6 @@ assignment &assignment::operator=(assignment a)
 	this->uid		= a.uid;
 	this->expr		= a.expr;
 	this->chp		= a.chp;
-	this->rules		= a.rules;
 	this->vars		= a.vars;
 	this->tab		= a.tab;
 	this->verbosity	= a.verbosity;
@@ -225,8 +224,10 @@ void assignment::parse()
 		cout << "Error: Instruction not handled: " << chp << endl;
 }
 
-int assignment::generate_states(graph *trans, int init)
+int assignment::generate_states(graph *g, int init)
 {
+	space = g;
+	from = init;
 	cout << tab << "Assignment " << chp << endl;
 
 	variable *v;
@@ -235,10 +236,10 @@ int assignment::generate_states(graph *trans, int init)
 	string search;
 	state s;
 
-	uid = trans->states.size();
+	uid = g->states.size();
 
 	// Set up the initial state
-	s = trans->states[init];
+	s = g->states[init];
 	s.prs = true;
 	/*for(ei = expr.begin(); ei != expr.end(); ei++)
 	{
@@ -271,18 +272,16 @@ int assignment::generate_states(graph *trans, int init)
 	cout << tab << s << endl;
 
 	if(CHP_EDGE)
-		trans->insert(s, init, chp);
+		g->insert(s, init, chp);
 	else
-		trans->insert(s, init, "Assign");
+		g->insert(s, init, "Assign");
 
 	return uid;
 }
 
-void assignment::generate_prs()
+void assignment::generate_scribes()
 {
 
-
-	print_prs();
 }
 
 instruction *expand_assignment(string chp, vspace *vars, string tab, int verbosity)

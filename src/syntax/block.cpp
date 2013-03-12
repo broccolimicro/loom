@@ -57,7 +57,6 @@ block &block::operator=(block b)
 {
 	this->chp		= b.chp;
 	this->instrs	= b.instrs;
-	this->rules		= b.rules;
 	this->vars		= b.vars;
 	this->tab		= b.tab;
 	this->verbosity	= b.verbosity;
@@ -212,8 +211,10 @@ void block::parse()
 	}
 }
 
-int block::generate_states(graph *trans, int init)
+int block::generate_states(graph *g, int init)
 {
+	space = g;
+	from = init;
 	cout << tab << "Block " << chp << endl;
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
@@ -221,21 +222,17 @@ int block::generate_states(graph *trans, int init)
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
-		init = instr->generate_states(trans, init);
+		init = instr->generate_states(g, init);
 	}
 
 	return init;
 }
 
-void block::generate_prs()
+void block::generate_scribes()
 {
-
-}
-
-void block::generate_statevars()
-{
-	//TODO: Remember "factoring" idea
-
+	list<instruction*>::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+		(*i)->generate_scribes();
 }
 
 /* This function cleans up all of the memory allocated
@@ -255,7 +252,6 @@ void block::clear()
 	}
 
 	instrs.clear();
-	rules.clear();
 }
 
 void block::print_hse()

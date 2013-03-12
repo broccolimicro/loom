@@ -220,12 +220,12 @@ map<string, string> vspace::instantiate(string parent, bool parent_io, vspace* s
 	return rename;
 }
 
-void vspace::insert(variable v)
+int vspace::insert(variable v)
 {
 	if (global.find(v.name) != global.end() || label.find(v.name) != label.end())
 	{
 		cout << "Error: Variable " + v.name + " redefined." << endl;
-		return;
+		return -1;
 	}
 
 	string n;
@@ -258,6 +258,8 @@ void vspace::insert(variable v)
 		v.uid = label.size();
 		label.insert(pair<string, variable>(v.name, v));
 	}
+
+	return v.uid;
 }
 
 void vspace::clear()

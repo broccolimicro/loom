@@ -28,13 +28,12 @@ public:
 
 
 	// The raw CHP of this instruction.
+	int from;
 	string chp;
-
-	// This is the list of production rules that defines this instruction
-	list<rule> rules;
 
 	// Some pointers for good use
 	vspace *vars;
+	graph  *space;
 
 	// For outputting debugging messages
 	string tab;
@@ -42,14 +41,12 @@ public:
 
 	string kind();
 
-	void print_prs();
-
 	virtual instruction *duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity) = 0;
 
 	virtual void expand_shortcuts() = 0;
 	virtual void parse() = 0;
-	virtual int generate_states(graph *trans, int init) = 0;
-	virtual void generate_prs() = 0;
+	virtual int  generate_states(graph *trans, int init) = 0;
+	virtual void generate_scribes() = 0;
 
 	virtual void print_hse() = 0;
 };

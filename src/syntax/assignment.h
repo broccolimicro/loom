@@ -26,7 +26,7 @@ struct assignment : instruction
 	void expand_shortcuts();
 	void parse();
 	int generate_states(graph *trans, int init);
-	void generate_prs();
+	void generate_scribes();
 
 	void print_hse();
 };

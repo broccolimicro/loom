@@ -206,6 +206,7 @@ void program::generate_states()
 	cout << "Generating State Space" << endl;
 	prgm->generate_states(&space, 1);
 	space.gen_traces();
+	prgm->generate_scribes();
 	space.gen_deltas();
 	space.gen_conflicts();
 
@@ -224,6 +225,19 @@ void program::generate_states()
 	}
 }
 
+/* Hey Nick, I found this in block's statevar gen function
+ * which has now been removed.
+ *
+ * TODO: Remember "factoring" idea
+ *
+ * I'm really not sure what the "factoring" idea is...
+ *
+ * Also:
+ *
+ * TODO Create a state variable per guarded block whose production rule is the guard.
+ * TODO A possible optimization would be to check to make sure that we need one first. If we don't, then we must already have one that works, add the guard to it's condition.
+ * TODO Condition all production rules of the guarded blocks on their designated state variable.
+ */
 void program::insert_state_vars()
 {
 	//Indistinguishable states before PRS?

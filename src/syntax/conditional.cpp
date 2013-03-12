@@ -59,7 +59,6 @@ conditional &conditional::operator=(conditional c)
 	this->uid		= c.uid;
 	this->chp		= c.chp;
 	this->instrs	= c.instrs;
-	this->rules		= c.rules;
 	this->vars		= c.vars;
 	this->tab		= c.tab;
 	this->verbosity	= c.verbosity;
@@ -218,8 +217,10 @@ void conditional::parse()
 	}
 }
 
-int conditional::generate_states(graph *trans, int init)
+int conditional::generate_states(graph *g, int init)
 {
+	space = g;
+	from = init;
 	cout << tab << "Conditional " << chp << endl;
 
 	list<pair<block*, guard*> >::iterator instr_iter;
@@ -232,26 +233,26 @@ int conditional::generate_states(graph *trans, int init)
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
-		guard_result = instr_iter->second->generate_states(trans, init);
+		guard_result = instr_iter->second->generate_states(g, init);
 
-		state_catcher.push_back(instr_iter->first->generate_states(trans, guard_result));
+		state_catcher.push_back(instr_iter->first->generate_states(g, guard_result));
 		if (CHP_EDGE)
 			chp_catcher.push_back(instr_iter->first->chp);
 		else
 			chp_catcher.push_back("Conditional Merge");
 		if (first)
 		{
-			s = trans->states[state_catcher.back()];
+			s = g->states[state_catcher.back()];
 			first = false;
 		}
 		else
-			s = s || trans->states[state_catcher.back()];
+			s = s || g->states[state_catcher.back()];
 	}
 
 	if (state_catcher.size() > 1)
 	{
-		uid = trans->states.size();
-		trans->insert(s, state_catcher, chp_catcher);
+		uid = g->states.size();
+		g->insert(s, state_catcher, chp_catcher);
 	}
 	else
 		uid = state_catcher.back();
@@ -259,11 +260,14 @@ int conditional::generate_states(graph *trans, int init)
 	return uid;
 }
 
-void conditional::generate_prs()
+void conditional::generate_scribes()
 {
-	// TODO Create a state variable per guarded block whose production rule is the guard.
-	// TODO A possible optimization would be to check to make sure that we need one first. If we don't, then we must already have one that works, add the guard to it's condition.
-	// TODO Condition all production rules of the guarded blocks on their designated state variable.
+	list<pair<block*, guard*> >::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		i->second->generate_scribes();
+		i->first->generate_scribes();
+	}
 }
 
 void conditional::print_hse()

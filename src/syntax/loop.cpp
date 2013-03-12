@@ -47,7 +47,6 @@ loop &loop::operator=(loop l)
 	this->uid		= l.uid;
 	this->chp		= l.chp;
 	this->instrs	= l.instrs;
-	this->rules		= l.rules;
 	this->vars		= l.vars;
 	this->tab		= l.tab;
 	this->verbosity	= l.verbosity;
@@ -204,8 +203,10 @@ void loop::parse()
 	}
 }
 
-int loop::generate_states(graph *trans, int init)
+int loop::generate_states(graph *g, int init)
 {
+	space = g;
+	from = init;
 	cout << tab << "Loop " << chp << endl;
 
 	list<pair<block*, guard*> >::iterator instr_iter;
@@ -223,53 +224,53 @@ int loop::generate_states(graph *trans, int init)
 
 	while (!done && count++ < 5)
 	{
-		cout << tab << "Loop Iteration " << count << ": " << trans->states[next] << endl;
+		cout << tab << "Loop Iteration " << count << ": " << g->states[next] << endl;
 
 		first = true;
 		for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 		{
-			guardresult = instr_iter->second->generate_states(trans, next);
-			state_catcher.push_back(instr_iter->first->generate_states(trans, guardresult));
+			guardresult = instr_iter->second->generate_states(g, next);
+			state_catcher.push_back(instr_iter->first->generate_states(g, guardresult));
 			if(CHP_EDGE)
 				chp_catcher.push_back(instr_iter->second->chp+"->Block");
 			else
 				chp_catcher.push_back("Loop merge");
 			if (first)
 			{
-				s = trans->states[state_catcher.back()];
+				s = g->states[state_catcher.back()];
 				first = false;
 			}
 			else
-				s = s || trans->states[state_catcher.back()];
+				s = s || g->states[state_catcher.back()];
 		}
 
 		cout << tab << "Result " << s << endl;
-		uid.push_back(trans->states.size());
+		uid.push_back(g->states.size());
 
-		trans->insert(s, state_catcher, chp_catcher);
+		g->insert(s, state_catcher, chp_catcher);
 
 		next = uid.back();
 
 		state_catcher.clear();
 		chp_catcher.clear();
 
-		done = subset(trans->states[init], trans->states[next]);
+		done = subset(g->states[init], g->states[next]);
 
 		if (done)
-			trans->insert_edge(next, init, "Loop");
+			g->insert_edge(next, init, "Loop");
 		for (i = 0; i < (int)uid.size()-1; i++)
 		{
-			sub = subset(trans->states[uid[i]], trans->states[next]);
+			sub = subset(g->states[uid[i]], g->states[next]);
 			done = done || sub;
 			if (sub && uid[i] != next)
-				trans->insert_edge(next, uid[i], "Loop");
+				g->insert_edge(next, uid[i], "Loop");
 		}
 	}
 
-	s = trans->states[init];
+	s = g->states[init];
 
 	for (i = 0; i < (int)uid.size(); i++)
-		s = s || trans->states[uid[i]];
+		s = s || g->states[uid[i]];
 
 	state temp;
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
@@ -281,16 +282,20 @@ int loop::generate_states(graph *trans, int init)
 	}
 	cout << tab << "Final Result " << s << endl;
 
-	uid.push_back(trans->states.size());
-	trans->insert(s, next, "Loop");
+	uid.push_back(g->states.size());
+	g->insert(s, next, "Loop");
 
 	return uid.back();
 }
 
-void loop::generate_prs()
+void loop::generate_scribes()
 {
-
-
+	list<pair<block*, guard*> >::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		i->second->generate_scribes();
+		i->first->generate_scribes();
+	}
 }
 
 void loop::print_hse()

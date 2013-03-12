@@ -4,6 +4,7 @@
 #include "../data.h"
 
 #include "guard.h"
+#include "assignment.h"
 
 guard::guard()
 {
@@ -31,7 +32,6 @@ guard &guard::operator=(guard g)
 {
 	this->uid		= g.uid;
 	this->chp		= g.chp;
-	this->rules		= g.rules;
 	this->vars		= g.vars;
 	this->tab		= g.tab;
 	this->verbosity	= g.verbosity;
@@ -104,37 +104,54 @@ void guard::parse()
 		cout << tab << "Guard:\t" + chp << endl;
 }
 
-int guard::generate_states(graph *trans, int init)
+int guard::generate_states(graph *g, int init)
 {
+	space = g;
+	from = init;
 	cout << tab << "Guard " << chp << endl;
 
 	map<string, variable>::iterator vi;
 	state s;
 
 
-	uid = trans->states.size();
-	s = trans->states[init];
+	uid = g->states.size();
+	s = g->states[init];
 	s = s && solve(chp, vars, tab, verbosity);
 
-	bool prs = trans->states[init].prs;
-	int tag = trans->states[init].tag;
-	trans->states[init] = trans->states[init] && solve("~(" + chp + ")", vars, tab, verbosity);
-	trans->states[init].prs = prs;
-	trans->states[init].tag = tag;
+	// TODO This breaks in the case of [a | b];[a];
+	// The fix would be to merge those two conditionals [a | b];[a]; -> [(a | b)&a]; -> [a];
+	bool prs = g->states[init].prs;
+	int tag = g->states[init].tag;
+	g->states[init] = g->states[init] && solve(demorgan("~(" + chp + ")", -1, false), vars, tab, verbosity);
+	g->states[init].prs = prs;
+	g->states[init].tag = tag;
 
 	if(CHP_EDGE)
-		trans->insert(s, init, chp + "->");
+		g->insert(s, init, chp + "->");
 	else
-		trans->insert(s, init, "Guard");
+		g->insert(s, init, "Guard");
 
 	return uid;
 }
 
-void guard::generate_prs()
+void guard::generate_scribes()
 {
+	if (chp.find_first_of("|") != chp.npos)
+	{
+		int vi = vars->insert(variable("("+chp+")", "int", value("X"), 1, false));
 
+		if (vi != -1)
+			space->traces.push_back(evaluate(chp, vars, space->traces.traces, tab, verbosity));
+		else
+			vi = vars->get_uid("("+chp+")");
 
-	print_prs();
+		space->traces[vi][uid] = value("1");
+		if (from != -1)
+			space->traces[vi][from] = value("0");
+
+		for (int i = 0; i < space->traces[vi].size(); i++)
+			space->states[i].assign(vi, space->traces[vi][i], value("X"));
+	}
 }
 
 state solve(string raw, vspace *vars, string tab, int verbosity)

@@ -47,7 +47,6 @@ parallel &parallel::operator=(parallel p)
 	this->uid		= p.uid;
 	this->chp		= p.chp;
 	this->instrs	= p.instrs;
-	this->rules		= p.rules;
 	this->vars		= p.vars;
 	this->tab		= p.tab;
 	this->verbosity	= p.verbosity;
@@ -185,8 +184,10 @@ void parallel::parse()
 	}
 }
 
-int parallel::generate_states(graph *trans, int init)
+int parallel::generate_states(graph *g, int init)
 {
+	space = g;
+	from = init;
 	cout << tab << "Parallel " << chp << endl;
 
 	list<instruction*>::iterator instr_iter;
@@ -201,30 +202,31 @@ int parallel::generate_states(graph *trans, int init)
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
-		state_catcher.push_back(instr->generate_states(trans, init));
+		state_catcher.push_back(instr->generate_states(g, init));
 		if(CHP_EDGE)
 			chp_catcher.push_back(instr->chp);
 		else
 			chp_catcher.push_back("Parallel");
 		if (first)
 		{
-			s = trans->states[state_catcher.back()];
+			s = g->states[state_catcher.back()];
 			first = false;
 		}
 		else
-			s = s || trans->states[state_catcher.back()];
+			s = s || g->states[state_catcher.back()];
 	}
-	uid = trans->states.size();
+	uid = g->states.size();
 
-	trans->insert(s, state_catcher, chp_catcher);
+	g->insert(s, state_catcher, chp_catcher);
 
 	return uid;
 }
 
-void parallel::generate_prs()
+void parallel::generate_scribes()
 {
-
-
+	list<instruction*>::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+		(*i)->generate_scribes();
 }
 
 void parallel::print_hse()
