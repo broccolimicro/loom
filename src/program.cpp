@@ -205,7 +205,9 @@ void program::generate_states()
 
 	cout << "Generating State Space" << endl;
 	prgm->generate_states(&space, 1);
-	space.close();
+	space.gen_traces();
+	space.gen_deltas();
+	space.gen_conflicts();
 
 	if(STATESP_CO)
 	{

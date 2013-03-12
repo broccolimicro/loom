@@ -76,6 +76,7 @@ void rule::gen_minterms(graph *g)
 	int vj, ii;
 	int count, mcount, var;
 
+	// Up Production Rule Minterms (Duplicate Code)
 	cout << "Up Minterms" << endl;
 	final_output = trace(value("0"), g->up[uid].size());
 	for (ii = 0; ii < (int)g->up_firings[uid].size(); ii++)
@@ -84,11 +85,21 @@ void rule::gen_minterms(graph *g)
 		implicant		 = state(value("X"), g->width());
 		implicant_output = trace(value("1"), g->up[uid].size());
 
+		/* There are two ways we can do this. The first is to do the normal
+		 * production rule generation algorithm where we are allowed to use
+		 * any variable that is known in the implier. The second is to disallow
+		 * the use of bubbles in the production rules, then let the state variable
+		 * insertion algorithm handle bubble reshuffling.
+		 */
 		invars.clear();
 		for (vj = 0; vj < g->width(); vj++)
 			if (((BUBBLELESS && implier[vj].data == "0") || !BUBBLELESS) && vj != uid)
 				invars.push_back(vj);
 
+		/* Set the maximum possible conflict count to be the number of zeros
+		 * in the desired trace so that we don't accidentally add an unnecessary
+		 * variable to our implicant
+		 */
 		mcount = conflict_count(implicant_output, g->up[uid]);
 		var = 0;
 		while (invars.size() > 0 && var != -1)
@@ -128,6 +139,7 @@ void rule::gen_minterms(graph *g)
 	cout << "Desired:  " << g->up[uid] << endl;
 	cout << "Obtained: " << final_output << endl;
 
+	// Down Production Rule Minterms (Duplicate Code)
 	cout << "Down Minterms" << endl;
 	final_output = trace(value("0"), g->up[uid].size());
 	for (ii = 0; ii < (int)g->down_firings[uid].size(); ii++)

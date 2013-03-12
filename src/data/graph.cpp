@@ -17,7 +17,7 @@ void graph::insert(state s, vector<int> from, vector<string> chp)
 	vector<string>::iterator b;
 	int to = states.size();
 
-	push_back(s);
+	states.push_back(s);
 	for (a = from.begin(), b = chp.begin(); a != from.end() && b != chp.end(); a++, b++)
 		insert_edge(*a, to, *b);
 }
@@ -25,7 +25,7 @@ void graph::insert(state s, vector<int> from, vector<string> chp)
 void graph::insert(state s, int from, string chp)
 {
 	int to = states.size();
-	push_back(s);
+	states.push_back(s);
 
 	if (from != -1)
 		insert_edge(from, to, chp);
@@ -33,59 +33,6 @@ void graph::insert(state s, int from, string chp)
 
 void graph::insert_edge(int from, int to, string chp)
 {
-	state from_state = states[from];
-	state to_state = states[to];
-
-	vector<value>::iterator i, j;
-	string::iterator si, sj;
-	string upstr, downstr;
-	int k;
-
-	// Delta Calculations (Up, Down, Delta)
-	if (to_state.size() > up.size())
-		up.traces.resize(to_state.size(), trace());
-	if (to_state.size() > (int)up_firings.size())
-		up_firings.resize(to_state.size(), vector<int>());
-	if (to_state.size() > down.size())
-		down.traces.resize(to_state.size(), trace());
-	if (to_state.size() > (int)down_firings.size())
-		down_firings.resize(to_state.size(), vector<int>());
-	if (to_state.size() > delta.size())
-		delta.traces.resize(to_state.size(), trace());
-
-	for (i = states[from].begin(), j = to_state.begin(), k = 0; i != states[from].end() && j != to_state.end(); i++, j++, k++)
-	{
-		upstr = "";
-		downstr = "";
-		for (si = i->begin(), sj = j->begin(); si != i->end() && sj != j->end(); si++, sj++)
-		{
-			if (*sj == '1' && *si != '1' && to_state.prs)
-			{
-				upstr = upstr + "1";
-				up_firings[k].push_back(from);
-			}
-			else if (*sj == '1' && *si == '1')
-				upstr = upstr + "X";
-			else
-				upstr = upstr + "0";
-
-			if (*sj == '0' && *si != '0' && to_state.prs)
-			{
-				downstr = downstr + "1";
-				down_firings[k].push_back(from);
-			}
-			else if (*sj == '0' && *si == '0')
-				downstr = downstr + "X";
-			else
-				downstr = downstr + "0";
-		}
-
-		delta[k].push_back(to_state[k]);
-		up[k].push_back(value(upstr));
-		down[k].push_back(value(downstr));
-	}
-
-	// Edge Insertion
 	if (from >= (int)edges.size())
 		edges.resize(from+1, vector<int>());
 	edges[from].push_back(to);
@@ -95,61 +42,7 @@ void graph::insert_edge(int from, int to, string chp)
 	transitions[from].push_back(chp);
 }
 
-void graph::push_back(state s)
-{
-	states.push_back(s);
-
-	vector<trace>::iterator i;
-	vector<value>::iterator v;
-	trace t;
-
-	for (i = traces.begin(), v = s.begin(); i != traces.end() && v != s.end(); i++, v++)
-		i->values.push_back(*v);
-
-	for (; i != traces.end(); i++)
-		i->push_back(value("X"));
-
-	for (; v != s.end(); v++)
-	{
-		t.assign(states.size()-1, *v);
-		traces.push_back(t);
-	}
-
-	if (edges.size() < states.size())
-		edges.resize(states.size(), vector<int>());
-
-	if (transitions.size() < states.size())
-		transitions.resize(states.size(), vector<string>());
-}
-
-void graph::push_back(trace t)
-{
-	traces.push_back(t);
-
-	vector<state>::iterator i;
-	vector<value>::iterator v;
-	state s;
-
-	for (i = states.begin(), v = t.begin(); i != states.end() && v != t.end(); i++, v++)
-		i->values.push_back(*v);
-
-	for (; i != states.end(); i++)
-		i->values.push_back(value("X"));
-
-	for (; v != t.end(); v++)
-	{
-		s.assign(traces.size()-1, *v);
-		states.push_back(s);
-	}
-
-	if (edges.size() < states.size())
-		edges.resize(states.size(), vector<int>());
-
-	if (transitions.size() < states.size())
-		transitions.resize(states.size(), vector<string>());
-}
-
-void graph::close()
+void graph::gen_conflicts()
 {
 	int i, j, k;
 	map<int, vector<int> >::iterator ci;
@@ -203,6 +96,72 @@ void graph::close()
 			}
 		}
 	}
+}
+
+void graph::gen_traces()
+{
+	for (size_t i = 0; i < states.width(); i++)
+		traces.push_back(states(i));
+}
+
+void graph::gen_deltas()
+{
+	size_t from, to, x;
+
+	// Delta Calculations (Up, Down, Delta)
+	up.traces.resize(states.width(), trace());
+	up_firings.resize(states.width(), vector<int>());
+	down.traces.resize(states.width(), trace());
+	down_firings.resize(states.width(), vector<int>());
+	delta.traces.resize(states.width(), trace());
+
+	for (from = 0; from < edges.size(); from++)
+		for (x = 0; x < edges[from].size(); x++)
+		{
+			vector<value>::iterator i, j;
+			string::iterator si, sj;
+			string upstr, downstr;
+			int k;
+
+			state from_state;
+			state to_state;
+
+			to = edges[from][x];
+			from_state = states[from];
+			to_state = states[to];
+
+			for (i = from_state.begin(), j = to_state.begin(), k = 0; i != from_state.end() && j != to_state.end(); i++, j++, k++)
+			{
+				upstr = "";
+				downstr = "";
+				for (si = i->begin(), sj = j->begin(); si != i->end() && sj != j->end(); si++, sj++)
+				{
+					if (*sj == '1' && *si != '1' && to_state.prs)
+					{
+						upstr = upstr + "1";
+						up_firings[k].push_back(from);
+					}
+					else if (*sj == '1' && *si == '1')
+						upstr = upstr + "X";
+					else
+						upstr = upstr + "0";
+
+					if (*sj == '0' && *si != '0' && to_state.prs)
+					{
+						downstr = downstr + "1";
+						down_firings[k].push_back(from);
+					}
+					else if (*sj == '0' && *si == '0')
+						downstr = downstr + "X";
+					else
+						downstr = downstr + "0";
+				}
+
+				delta[k].push_back(to_state[k]);
+				up[k].push_back(value(upstr));
+				down[k].push_back(value(downstr));
+			}
+		}
 }
 
 int graph::size()

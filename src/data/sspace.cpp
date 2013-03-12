@@ -14,6 +14,13 @@ size_t state_space::size()
 	return states.size();
 }
 
+size_t state_space::width()
+{
+	if (states.size() > 0)
+		return states[0].size();
+	return 0;
+}
+
 void state_space::push_back(state s)
 {
 	states.push_back(s);

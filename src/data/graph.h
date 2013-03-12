@@ -17,7 +17,6 @@ struct graph
 
 	state_space states;
 	trace_space traces;
-	//state_space delta;
 
 	trace_space delta;
 	trace_space up;
@@ -38,9 +37,10 @@ struct graph
 	void insert(state s, vector<int> from, vector<string> chp = vector<string>());
 	void insert(state s, int from = -1, string chp = "");
 	void insert_edge(int from, int to, string chp);
-	void push_back(state s);
-	void push_back(trace t);
-	void close();
+
+	void gen_conflicts();
+	void gen_traces();
+	void gen_deltas();
 
 	int size();
 	int width();

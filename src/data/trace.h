@@ -137,9 +137,6 @@ trace operator>(value s1, trace s2);
 
 int count(trace s);
 int strict_count(trace s);
-trace up(trace s);
-trace down(trace s);
-trace delta(trace s);
 trace conflicts(trace left, trace right);
 int conflict_count(trace proposed, trace desired);
 

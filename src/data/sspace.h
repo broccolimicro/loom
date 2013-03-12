@@ -18,6 +18,7 @@ struct state_space
 	vector<state> states;
 
 	size_t size();
+	size_t width();
 	void push_back(state s);
 
 	vector<state>::iterator begin();
