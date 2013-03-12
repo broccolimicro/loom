@@ -27,11 +27,11 @@ struct rule
 	string up, down;
 	vector<state> up_implicants;
 	vector<state> up_primes;
-	vector<vector<state> > up_essential;
+	vector<state> up_essential;
 
 	vector<state> down_implicants;
 	vector<state> down_primes;
-	vector<vector<state> > down_essential;
+	vector<state> down_essential;
 
 	rule &operator=(rule r);
 
@@ -42,11 +42,6 @@ struct rule
 
 	void clear();
 };
-
-/*rule reduce_to_prime(rule pr);
-rule remove_too_strong(rule pr);
-rule minimize_rule(rule pr);
-vector<rule> minimize_rule_vector(vector<rule> prs);*/
 
 void print_implicant_tags(vector<state> implicants);
 ostream &operator<<(ostream &os, rule r);

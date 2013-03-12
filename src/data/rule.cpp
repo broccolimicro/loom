@@ -70,23 +70,26 @@ void rule::gen_minterms(graph *g)
 	state implier;
 	state implicant;
 	trace implicant_output;
+	trace final_output;
 	trace proposal_output;
 
 	int vj, ii;
 	int count, mcount, var;
 
+	cout << "Up Minterms" << endl;
+	final_output = trace(value("1"), g->up[uid].size());
 	for (ii = 0; ii < (int)g->up_firings[uid].size(); ii++)
 	{
 		implier			 = g->states[g->up_firings[uid][ii]];
 		implicant		 = state(value("X"), g->width());
-		implicant_output = trace(value("1"), g->size());
+		implicant_output = trace(value("1"), g->up[uid].size());
 
 		invars.clear();
 		for (vj = 0; vj < g->width(); vj++)
 			if (((BUBBLELESS && implier[vj].data == "0") || !BUBBLELESS) && vj != uid)
 				invars.push_back(vj);
 
-		mcount = 9999999;
+		mcount = conflict_count(implicant_output, g->up[uid]);
 		var = 0;
 		while (invars.size() > 0 && var != -1)
 		{
@@ -111,22 +114,29 @@ void rule::gen_minterms(graph *g)
 			}
 		}
 
+		cout << implicant << "\t" << implicant_output << endl;
+		final_output = final_output | implicant_output;
 		implicant.tag = g->up_firings[uid][ii];
 		up_implicants.push_back(implicant);
 	}
+	cout << endl;
+	cout << "Desired:  " << g->up[uid] << endl;
+	cout << "Obtained: " << final_output << endl;
 
+	cout << "Down Minterms" << endl;
+	final_output = trace(value("1"), g->up[uid].size());
 	for (ii = 0; ii < (int)g->down_firings[uid].size(); ii++)
 	{
 		implier			 = g->states[g->down_firings[uid][ii]];
 		implicant		 = state(value("X"), g->width());
-		implicant_output = trace(value("1"), g->size());
+		implicant_output = trace(value("1"), g->up[uid].size());
 
 		invars.clear();
 		for (vj = 0; vj < g->width(); vj++)
 			if (((BUBBLELESS && implier[vj].data == "1") || !BUBBLELESS) && vj != uid)
 				invars.push_back(vj);
 
-		mcount = 9999999;
+		mcount = conflict_count(implicant_output, g->down[uid]);
 		var = 0;
 		while (invars.size() > 0 && var != -1)
 		{
@@ -151,9 +161,14 @@ void rule::gen_minterms(graph *g)
 			}
 		}
 
+		cout << implicant << "\t" << implicant_output << endl;
+		final_output = final_output | implicant_output;
 		implicant.tag = g->down_firings[uid][ii];
 		down_implicants.push_back(implicant);
 	}
+	cout << endl;
+	cout << "Desired:  " << g->down[uid] << endl;
+	cout << "Obtained: " << final_output << endl;
 	cout << endl;
 }
 
@@ -263,10 +278,13 @@ void rule::gen_primes()
 void rule::gen_essentials()
 {
 	cout << "Generating Essential Prime Implicants for " << uid << endl;
-	size_t i, j;
+	vector<vector<state> > cov, Tcov;
+	vector<state>::iterator ci;
+	size_t i, j, k;
 
 	cout << "Up Essentials" << endl;
-	up_essential.resize(up_implicants.size(), vector<state>());
+	cov.resize(up_implicants.size(), vector<state>());
+	Tcov.resize(up_primes.size(), vector<state>());
 	for (j = 0; j < up_implicants.size(); j++)
 	{
 		cout << up_implicants[j] << " is covered by ";
@@ -274,13 +292,48 @@ void rule::gen_essentials()
 			if (subset(up_primes[i], up_implicants[j]))
 			{
 				cout << "[" << up_primes[i] << "] ";
-				up_essential[j].push_back(up_primes[i]);
+				cov[j].push_back(up_primes[i]);
+				Tcov[i].push_back(up_implicants[j]);
 			}
+
+		if (cov[j].size() == 1)
+			up_essential.push_back(cov[j][0]);
+
 		cout << endl;
 	}
 
+	cout << "Essential:\t";
+	for (i = 0; i < up_essential.size(); i++)
+	{
+		cout << "[" << up_essential[i] << "] ";
+		for (j = 0; j < cov.size(); j++)
+		{
+			ci = find(cov[j].begin(), cov[j].end(), up_essential[i]);
+			if (ci == cov[j].end())
+			{
+				cout << "{";
+				for (k = 0; k < cov[j].size(); k++)
+					cout << "[" << cov[j][k] << "] ";
+				cout << "} ";
+			}
+		}
+	}
+	cout << endl;
+
+	/*cout << "TCOV TABLE" << endl;
+	for (i = 0; i = Tcov.size(); i++)
+	{
+		for (j = 0; j < Tcov[i].size(); j++)
+			cout <<
+		cout << endl;
+	}*/
+
+	cov.clear();
+	Tcov.clear();
+
 	cout << "Down Essentials" << endl;
-	down_essential.resize(down_implicants.size(), vector<state>());
+	cov.resize(down_implicants.size(), vector<state>());
+	Tcov.resize(down_primes.size(), vector<state>());
 	for (j = 0; j < down_implicants.size(); j++)
 	{
 		cout << down_implicants[j] << " is covered by ";
@@ -288,8 +341,13 @@ void rule::gen_essentials()
 			if (subset(down_primes[i], down_implicants[j]))
 			{
 				cout << "[" << down_primes[i] << "] ";
-				down_essential[j].push_back(down_primes[i]);
+				cov[j].push_back(down_primes[i]);
+				Tcov[i].push_back(down_implicants[j]);
 			}
+
+		if (cov[j].size() == 1)
+			down_essential.push_back(cov[j][0]);
+
 		cout << endl;
 	}
 
@@ -329,6 +387,8 @@ void rule::gen_output(vspace *v)
 				first = false;
 			}
 		}
+		if (first)
+			up += "1";
 	}
 	if (up == "")
 		up += "0";
@@ -360,6 +420,8 @@ void rule::gen_output(vspace *v)
 				first = false;
 			}
 		}
+		if (first)
+			down += "1";
 	}
 	if (down == "")
 		down += "0";

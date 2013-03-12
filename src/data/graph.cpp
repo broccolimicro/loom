@@ -154,12 +154,6 @@ void graph::close()
 	int i, j, k;
 	map<int, vector<int> >::iterator ci;
 
-	/*for (k = 0; k < width(); k++)
-	{
-		up[k].push_back(value("0"));
-		down[k].push_back(value("0"));
-	}*/
-
 	for (i = 0; i < width(); i++)
 	{
 		for (j = 0; j < (int)up_firings[i].size(); j++)

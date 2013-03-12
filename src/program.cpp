@@ -214,7 +214,6 @@ void program::generate_states()
 		cout >> space << endl << endl;
 		space.print_up();
 		space.print_down();
-
 		space.print_delta();
 	}
 	if(STATESP_GR)
@@ -347,6 +346,39 @@ void program::generate_prs()
 	r.up_implicants[7].assign(3, value("0"));
 
 	r.gen_primes();
+
+	r.up_implicants.clear();
+	r.up_implicants.resize(6, state());
+	r.up_implicants[0].assign(0, value("0"));
+	r.up_implicants[0].assign(1, value("1"));
+	r.up_implicants[0].assign(2, value("0"));
+	r.up_implicants[0].assign(3, value("0"));
+
+	r.up_implicants[1].assign(0, value("1"));
+	r.up_implicants[1].assign(1, value("0"));
+	r.up_implicants[1].assign(2, value("0"));
+	r.up_implicants[1].assign(3, value("0"));
+
+	r.up_implicants[2].assign(0, value("1"));
+	r.up_implicants[2].assign(1, value("0"));
+	r.up_implicants[2].assign(2, value("1"));
+	r.up_implicants[2].assign(3, value("0"));
+
+	r.up_implicants[3].assign(0, value("1"));
+	r.up_implicants[3].assign(1, value("0"));
+	r.up_implicants[3].assign(2, value("1"));
+	r.up_implicants[3].assign(3, value("1"));
+
+	r.up_implicants[4].assign(0, value("1"));
+	r.up_implicants[4].assign(1, value("1"));
+	r.up_implicants[4].assign(2, value("0"));
+	r.up_implicants[4].assign(3, value("0"));
+
+	r.up_implicants[5].assign(0, value("1"));
+	r.up_implicants[5].assign(1, value("1"));
+	r.up_implicants[5].assign(2, value("1"));
+	r.up_implicants[5].assign(3, value("1"));
+
 	r.gen_essentials();
 }
 

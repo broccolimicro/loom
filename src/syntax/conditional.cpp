@@ -248,9 +248,13 @@ int conditional::generate_states(graph *trans, int init)
 			s = s || trans->states[state_catcher.back()];
 	}
 
-	uid = trans->states.size();
-
-	trans->insert(s, state_catcher, chp_catcher);
+	if (state_catcher.size() > 1)
+	{
+		uid = trans->states.size();
+		trans->insert(s, state_catcher, chp_catcher);
+	}
+	else
+		uid = state_catcher[0];
 
 	return uid;
 }
