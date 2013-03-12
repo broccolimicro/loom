@@ -154,8 +154,10 @@ void graph::close()
 	int i, j, k;
 	map<int, vector<int> >::iterator ci;
 
+	//iterating through width
 	for (i = 0; i < width(); i++)
 	{
+		//iterating through up implicants
 		for (j = 0; j < (int)up_firings[i].size(); j++)
 		{
 			ci = up_conflicts.find(up_firings[i][j]);
@@ -178,6 +180,7 @@ void graph::close()
 			}
 		}
 
+		//iterating through down implicants
 		for (j = 0; j < (int)down_firings[i].size(); j++)
 		{
 			ci = down_conflicts.find(down_firings[i][j]);
