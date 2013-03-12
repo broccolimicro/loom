@@ -254,10 +254,8 @@ int conditional::generate_states(graph *trans, int init)
 		trans->insert(s, state_catcher, chp_catcher);
 	}
 	else
-	{
 		uid = state_catcher.back();
-		cout << "LOOK " << uid << endl;
-	}
+
 	return uid;
 }
 

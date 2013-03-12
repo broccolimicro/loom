@@ -278,13 +278,17 @@ void rule::gen_primes()
 void rule::gen_essentials()
 {
 	cout << "Generating Essential Prime Implicants for " << uid << endl;
-	vector<vector<state> > cov, Tcov;
-	vector<state>::iterator ci;
+	map<size_t, vector<size_t> > cov, Tcov;
+	vector<size_t>::iterator ci;
 	size_t i, j, k;
+	size_t max_count = up_implicants.size();
+	size_t choice;
 
-	cout << "Up Essentials" << endl;
-	cov.resize(up_implicants.size(), vector<state>());
-	Tcov.resize(up_primes.size(), vector<state>());
+	// Up Implicants
+	cout << "Up Prime Implicant Chart" << endl;
+	cov.clear();
+	for (j = 0; j < up_implicants.size(); j++)
+		cov.insert(pair<size_t, vector<size_t> >(j, vector<size_t>()));
 	for (j = 0; j < up_implicants.size(); j++)
 	{
 		cout << up_implicants[j] << " is covered by ";
@@ -292,48 +296,88 @@ void rule::gen_essentials()
 			if (subset(up_primes[i], up_implicants[j]))
 			{
 				cout << "[" << up_primes[i] << "] ";
-				cov[j].push_back(up_primes[i]);
-				Tcov[i].push_back(up_implicants[j]);
+				cov[j].push_back(i);
 			}
 
 		if (cov[j].size() == 1)
-			up_essential.push_back(cov[j][0]);
+			up_essentials.push_back(cov[j].front());
 
 		cout << endl;
 	}
 
-	cout << "Essential:\t";
-	for (i = 0; i < up_essential.size(); i++)
+	cout << endl;
+
+	cout << "Up Essential Prime Implicants" << endl;
+	for (j = 0; j < up_essentials.size(); j++)
+		cout << "[" << up_primes[up_essentials[j]] << "]" << endl;
+	cout << endl;
+
+	Tcov.clear();
+	for (j = 0; j < up_primes.size(); j++)
+		Tcov.insert(pair<size_t, vector<size_t> >(j, vector<size_t>()));
+	for (j = 0; j < cov.size(); j++)
 	{
-		cout << "[" << up_essential[i] << "] ";
-		for (j = 0; j < cov.size(); j++)
+		for (i = 0; i < up_essentials.size(); i++)
+			if (find(cov[j].begin(), cov[j].end(), up_essentials[i]) != cov[j].end())
+				break;
+
+		for (k = 0; i == up_essentials.size() && k < cov[j].size(); k++)
+			Tcov[cov[j][k]].push_back(j);
+	}
+
+	cout << "Up Leftover Non-Essential Prime Implicants" << endl;
+	for (i = 0; i < up_primes.size(); i++)
+	{
+		if (Tcov[i].size() > 0)
 		{
-			ci = find(cov[j].begin(), cov[j].end(), up_essential[i]);
-			if (ci == cov[j].end())
-			{
-				cout << "{";
-				for (k = 0; k < cov[j].size(); k++)
-					cout << "[" << cov[j][k] << "] ";
-				cout << "} ";
-			}
+			cout << up_primes[i] << " covers ";
+			for (j = 0; j < Tcov[i].size(); j++)
+				cout << "[" << up_implicants[Tcov[i][j]] << "] ";
+			cout << endl;
 		}
 	}
 	cout << endl;
 
-	/*cout << "TCOV TABLE" << endl;
-	for (i = 0; i = Tcov.size(); i++)
+	max_count = up_implicants.size();
+	while (max_count > 0)
 	{
-		for (j = 0; j < Tcov[i].size(); j++)
-			cout <<
-		cout << endl;
-	}*/
+		max_count = 0;
+		for (i = 0; i < up_primes.size(); i++)
+		{
+			if (Tcov[i].size() > max_count)
+			{
+				max_count = Tcov.size();
+				choice = i;
+			}
+		}
 
+		if (max_count > 0)
+		{
+			up_essentials.push_back(choice);
+
+			for (i = 0; i < up_primes.size(); i++)
+				for (j = 0; i != choice && j < Tcov[choice].size(); j++)
+				{
+					ci = find(Tcov[i].begin(), Tcov[i].end(), Tcov[choice][j]);
+					if (ci != Tcov[i].end())
+						Tcov[i].erase(ci);
+				}
+
+			Tcov[choice].clear();
+		}
+	}
+
+	cout << "Up Best Essential Prime Implicants" << endl;
+	for (j = 0; j < up_essentials.size(); j++)
+		cout << "[" << up_primes[up_essentials[j]] << "]" << endl;
+	cout << endl;
+
+
+	// Down Implicants
+	cout << "Down Prime Implicant Chart" << endl;
 	cov.clear();
-	Tcov.clear();
-
-	cout << "Down Essentials" << endl;
-	cov.resize(down_implicants.size(), vector<state>());
-	Tcov.resize(down_primes.size(), vector<state>());
+	for (j = 0; j < down_implicants.size(); j++)
+		cov.insert(pair<size_t, vector<size_t> >(j, vector<size_t>()));
 	for (j = 0; j < down_implicants.size(); j++)
 	{
 		cout << down_implicants[j] << " is covered by ";
@@ -341,22 +385,88 @@ void rule::gen_essentials()
 			if (subset(down_primes[i], down_implicants[j]))
 			{
 				cout << "[" << down_primes[i] << "] ";
-				cov[j].push_back(down_primes[i]);
-				Tcov[i].push_back(down_implicants[j]);
+				cov[j].push_back(i);
 			}
 
 		if (cov[j].size() == 1)
-			down_essential.push_back(cov[j][0]);
+			down_essentials.push_back(cov[j].front());
 
 		cout << endl;
 	}
+
+	cout << endl;
+
+	cout << "Down Essential Prime Implicants" << endl;
+	for (j = 0; j < down_essentials.size(); j++)
+		cout << "[" << down_primes[down_essentials[j]] << "]" << endl;
+	cout << endl;
+
+	Tcov.clear();
+	for (j = 0; j < down_primes.size(); j++)
+		Tcov.insert(pair<size_t, vector<size_t> >(j, vector<size_t>()));
+	for (j = 0; j < cov.size(); j++)
+	{
+		for (i = 0; i < down_essentials.size(); i++)
+			if (find(cov[j].begin(), cov[j].end(), down_essentials[i]) != cov[j].end())
+				break;
+
+		for (k = 0; i == down_essentials.size() && k < cov[j].size(); k++)
+			Tcov[cov[j][k]].push_back(j);
+	}
+
+	cout << "Down Leftover Non-Essential Prime Implicants" << endl;
+	for (i = 0; i < down_primes.size(); i++)
+	{
+		if (Tcov[i].size() > 0)
+		{
+			cout << down_primes[i] << " covers ";
+			for (j = 0; j < Tcov[i].size(); j++)
+				cout << "[" << down_implicants[Tcov[i][j]] << "] ";
+			cout << endl;
+		}
+	}
+	cout << endl;
+
+	max_count = down_implicants.size();
+	while (max_count > 0)
+	{
+		max_count = 0;
+		for (i = 0; i < down_primes.size(); i++)
+		{
+			if (Tcov[i].size() > max_count)
+			{
+				max_count = Tcov.size();
+				choice = i;
+			}
+		}
+
+		if (max_count > 0)
+		{
+			down_essentials.push_back(choice);
+
+			for (i = 0; i < down_primes.size(); i++)
+				for (j = 0; i != choice && j < Tcov[choice].size(); j++)
+				{
+					ci = find(Tcov[i].begin(), Tcov[i].end(), Tcov[choice][j]);
+					if (ci != Tcov[i].end())
+						Tcov[i].erase(ci);
+				}
+
+			Tcov[choice].clear();
+		}
+	}
+
+	cout << "Down Best Essential Prime Implicants" << endl;
+	for (j = 0; j < down_essentials.size(); j++)
+		cout << "[" << down_primes[down_essentials[j]] << "]" << endl;
+	cout << endl;
 
 	cout << endl;
 }
 
 void rule::gen_output(vspace *v)
 {
-	vector<state>::iterator i;
+	vector<size_t>::iterator i;
 	int j;
 	bool first;
 
@@ -364,22 +474,22 @@ void rule::gen_output(vspace *v)
 
 	up = "";
 	down = "";
-	for (i = up_implicants.begin(); i != up_implicants.end(); i++)
+	for (i = up_essentials.begin(); i != up_essentials.end(); i++)
 	{
-		if (i != up_implicants.begin())
+		if (i != up_essentials.begin())
 			up += " | ";
 
 		first = true;
-		for (j = 0; j < i->size(); j++)
+		for (j = 0; j < up_primes[*i].size(); j++)
 		{
-			if (i->values[j].data == "0")
+			if (up_primes[*i].values[j].data == "0")
 			{
 				if (!first)
 					up += "&";
 				up += "~" + v->get_name(j);
 				first = false;
 			}
-			else if (i->values[j].data == "1")
+			else if (up_primes[*i].values[j].data == "1")
 			{
 				if (!first)
 					up += "&";
@@ -397,22 +507,22 @@ void rule::gen_output(vspace *v)
 
 	cout << up << endl;
 
-	for (i = down_implicants.begin(); i != down_implicants.end(); i++)
+	for (i = down_essentials.begin(); i != down_essentials.end(); i++)
 	{
-		if (i != down_implicants.begin())
+		if (i != down_essentials.begin())
 			down += " | ";
 
 		first = true;
-		for (j = 0; j < i->size(); j++)
+		for (j = 0; j < down_primes[*i].size(); j++)
 		{
-			if (i->values[j].data == "0")
+			if (down_primes[*i].values[j].data == "0")
 			{
 				if (!first)
 					down += "&";
 				down += "~" + v->get_name(j);
 				first = false;
 			}
-			else if (i->values[j].data == "1")
+			else if (down_primes[*i].values[j].data == "1")
 			{
 				if (!first)
 					down += "&";

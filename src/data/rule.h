@@ -27,11 +27,11 @@ struct rule
 	string up, down;
 	vector<state> up_implicants;
 	vector<state> up_primes;
-	vector<state> up_essential;
+	vector<size_t> up_essentials;
 
 	vector<state> down_implicants;
 	vector<state> down_primes;
-	vector<state> down_essential;
+	vector<size_t> down_essentials;
 
 	rule &operator=(rule r);
 
