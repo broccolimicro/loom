@@ -53,7 +53,7 @@ process slimmux0b2(chan4p0b i, chan4p0b o1, chan4p0b o2, chan4p1b s)
 
 process nickPlay(chan4p0b a, chan4p0b b)
 {
-	[a.a];b.r+;[b.a];a.r+;
+	[a.a];b.r+;[b.a];a.r+;[~a.a];b.r-;[~b.a];a.r-;
 }
 process main()
 {
