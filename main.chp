@@ -57,15 +57,15 @@ process nickPlay(chan4p0b a, chan4p0b b)
 }
 process main()
 {
-	/*
+	
 	chan4p0b A;
 	chan4p0b B;
 	chan4p0b C;
 	chan4p1b D;
-	*/
-	chan4p0b E;
-	chan4p0b F;
-	nickPlay test(E, F);
+	
+	//chan4p0b E;
+	//chan4p0b F;
+	//nickPlay test(E, F);
 	
 	/*int<1> a := 1;
 	int<1> b := 1;
@@ -80,5 +80,5 @@ process main()
 	q := x[1..2]+y | z+w;
 	e := a^b | c^d;*/
 	
-	//mux0b2 MyMux(A, B, C, D);
+	mux0b2 MyMux(A, B, C, D);
 }
