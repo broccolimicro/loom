@@ -294,7 +294,6 @@ instruction *expand_assignment(string chp, vspace *vars, string tab, int verbosi
 	list<pair<string, string> > remove;
 	variable *v;
 
-	cout << "BLAARG " << endl;
 	p->print_hse();
 
 	for (i = a->expr.begin(); i != a->expr.end(); i++)
@@ -302,7 +301,6 @@ instruction *expand_assignment(string chp, vspace *vars, string tab, int verbosi
 		v = vars->find(i->second);
 		if (i->second.find_first_of("&|~^=<>/+-*?@()") != i->second.npos)
 		{
-			cout << "BLARRG " << i->first << " " << i->second << endl;
 			result = expand_expression(i->second, vars, i->first, tab, verbosity);
 			i->second = result.first;
 			p->push(result.second);
@@ -322,8 +320,6 @@ instruction *expand_assignment(string chp, vspace *vars, string tab, int verbosi
 		delete p;
 		return a;
 	}
-
-	cout << "AHHHHH! " << a->expr.size() << endl;
 
 	if (a->expr.size() > 0)
 		p->push(a);
