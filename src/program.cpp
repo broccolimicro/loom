@@ -380,7 +380,7 @@ void program::generate_prs()
 {
 	for (int vi = 0; vi < space.width(); vi++)
 		if (vars.get_name(vi).find_first_of("|&~") == string::npos)
-		prs.push_back(rule(vi, &space, &vars));
+			prs.push_back(rule(vi, &space, &vars));
 
 	print_prs();
 }

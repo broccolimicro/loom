@@ -120,11 +120,11 @@ int guard::generate_states(graph *g, int init)
 
 	// TODO This breaks in the case of [a | b];[a];
 	// The fix would be to merge those two conditionals [a | b];[a]; -> [(a | b)&a]; -> [a];
-	bool prs = g->states[init].prs;
+	/*bool prs = g->states[init].prs;
 	int tag = g->states[init].tag;
 	g->states[init] = g->states[init] && solve(demorgan("~(" + chp + ")", -1, false), vars, tab, verbosity);
 	g->states[init].prs = prs;
-	g->states[init].tag = tag;
+	g->states[init].tag = tag;*/
 
 	if(CHP_EDGE)
 		g->insert(s, init, chp + "->");
