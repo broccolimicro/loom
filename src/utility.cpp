@@ -7,6 +7,7 @@
 
 #include "utility.h"
 #include "common.h"
+
 instruction *expand_instantiation(string chp, vspace *vars, list<string> *input, string tab, int verbosity, bool allow_process)
 {
 	keyword* type;
