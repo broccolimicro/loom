@@ -14,6 +14,8 @@ program::program(string chp, int verbosity)
 	generate_states();
 	//insert_state_vars();
 	generate_prs();
+	cout << endl << endl<< "Done!" << endl;
+
 }
 
 program::~program()
@@ -21,7 +23,6 @@ program::~program()
 	map<string, keyword*>::iterator i;
 	for (i = type_space.begin(); i != type_space.end(); i++)
 	{
-		cout << i->first << endl;
 		if (i->second != NULL)
 			delete i->second;
 		i->second = NULL;
