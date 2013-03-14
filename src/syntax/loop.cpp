@@ -247,7 +247,7 @@ int loop::generate_states(graph *g, int init)
 		cout << tab << "Result " << s << endl;
 		uid.push_back(g->states.size());
 
-		g->insert(s, state_catcher, chp_catcher);
+		g->append_state(s, state_catcher, chp_catcher);
 
 		next = uid.back();
 
@@ -283,7 +283,7 @@ int loop::generate_states(graph *g, int init)
 	cout << tab << "Final Result " << s << endl;
 
 	uid.push_back(g->states.size());
-	g->insert(s, next, "Loop");
+	g->append_state(s, next, "Loop");
 
 	return uid.back();
 }

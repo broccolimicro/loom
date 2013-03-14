@@ -12,7 +12,7 @@ program::program(string chp, int verbosity)
 	vars.types = &type_space;
 	parse(chp, verbosity);
 	generate_states();
-	//insert_state_vars();
+	insert_state_vars();
 	generate_prs();
 	cout << endl << endl<< "Done!" << endl;
 
@@ -205,8 +205,8 @@ void program::generate_states()
 		s.assign(ri->second.uid, ri->second.reset);
 	}
 	s.prs = true;
-	space.insert(sr, -1, "Power On");
-	space.insert(s, 0, "Reset");
+	space.append_state(sr, -1, "Power On");
+	space.append_state(s, 0, "Reset");
 
 	cout << "Generating State Space" << endl;
 	prgm->generate_states(&space, 1);
@@ -245,6 +245,42 @@ void program::generate_states()
  */
 void program::insert_state_vars()
 {
+	map<int, vector<int> >::iterator i;
+	vector<int>::iterator j;
+	path_space paths(space.size());
+
+	cout << "UP CONFLICTS" << endl;
+	for (i = space.up_conflicts.begin(); i != space.up_conflicts.end(); i++)
+	{
+		for (j = i->second.begin(); j != i->second.end(); j++)
+		{
+			cout << i->first << " " << *j << endl;
+			paths.merge(space.get_paths(i->first, *j, path(space.size())));
+			paths.merge(space.get_paths(*j, i->first, path(space.size())));
+		}
+	}
+
+	cout << "DOWN CONFLICTS" << endl;
+	for (i = space.down_conflicts.begin(); i != space.down_conflicts.end(); i++)
+	{
+		for (j = i->second.begin(); j != i->second.end(); j++)
+		{
+			cout << i->first << " " << *j << endl;
+			paths.merge(space.get_paths(i->first, *j, path(space.size())));
+			paths.merge(space.get_paths(*j, i->first, path(space.size())));
+		}
+	}
+
+	cout << "All paths as follows" << endl << paths << endl;
+
+	int m = paths.coverage_max();
+
+	cout << "AND THE BEST SPLIT CHOICE IS... " << m << endl;
+	cout << paths.total << endl;
+
+	cout << "With Covered Paths: " << paths.coverage(m).size() << endl;
+	cout << "And Remaining Paths: " << paths.remainder(m).size() << endl;
+
 	map<int, vector<int> >::iterator confli;
 	int sv_from, sv_to;
 	bool sv_up;

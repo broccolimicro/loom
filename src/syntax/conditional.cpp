@@ -302,7 +302,7 @@ int conditional::generate_states(graph *g, int init)
 	if (state_catcher.size() > 1)
 	{
 		uid = g->states.size();
-		g->insert(s, state_catcher, chp_catcher);
+		g->append_state(s, state_catcher, chp_catcher);
 	}
 	else
 		uid = state_catcher.back();

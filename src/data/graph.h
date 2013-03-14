@@ -6,6 +6,7 @@
 #include "../common.h"
 #include "tspace.h"
 #include "sspace.h"
+#include "pspace.h"
 
 #ifndef graph_h
 #define graph_h
@@ -34,9 +35,11 @@ struct graph
 	// Strings that caused given transition
 	vector<vector<string> > transitions;
 
-	void insert(state s, vector<int> from, vector<string> chp = vector<string>());
-	void insert(state s, int from = -1, string chp = "");
+	void append_state(state s, vector<int> from, vector<string> chp = vector<string>());
+	void append_state(state s, int from = -1, string chp = "");
+	void insert_state(state s, int from, int to);
 	void insert_edge(int from, int to, string chp);
+	path_space get_paths(int from, int to, path p);
 
 	void gen_conflicts();
 	void gen_traces();

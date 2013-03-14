@@ -236,7 +236,7 @@ void block::simplify()
 					k->second->chp = "(" + ic->instrs.front().second->chp + ")&(" + k->second->chp + ")";
 				}
 				instrs.remove(*i);
-				delete (conditional*)(*i);
+				//delete (conditional*)(*i);
 			}
 		}
 		else if ((*i)->kind() == "assignment" && (*j)->kind() == "assignment")

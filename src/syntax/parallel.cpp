@@ -217,7 +217,7 @@ int parallel::generate_states(graph *g, int init)
 	}
 	uid = g->states.size();
 
-	g->insert(s, state_catcher, chp_catcher);
+	g->append_state(s, state_catcher, chp_catcher);
 
 	return uid;
 }

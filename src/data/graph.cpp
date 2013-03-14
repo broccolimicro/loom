@@ -11,7 +11,7 @@ graph::~graph()
 	transitions.clear();
 }
 
-void graph::insert(state s, vector<int> from, vector<string> chp)
+void graph::append_state(state s, vector<int> from, vector<string> chp)
 {
 	vector<int>::iterator a;
 	vector<string>::iterator b;
@@ -22,13 +22,25 @@ void graph::insert(state s, vector<int> from, vector<string> chp)
 		insert_edge(*a, to, *b);
 }
 
-void graph::insert(state s, int from, string chp)
+void graph::append_state(state s, int from, string chp)
 {
 	int to = states.size();
 	states.push_back(s);
 
 	if (from != -1)
 		insert_edge(from, to, chp);
+}
+
+void graph::insert_state(state s, int from, int to)
+{
+	int id = states.size();
+	states.push_back(s);
+	for (int i = 0; i < traces.size() && i < s.size(); i++)
+		traces[i].push_back(s[i]);
+
+	replace(edges[from].begin(), edges[from].end(), to, id);
+	edges.push_back(vector<int>());
+	edges[id].push_back(to);
 }
 
 void graph::insert_edge(int from, int to, string chp)
@@ -42,24 +54,51 @@ void graph::insert_edge(int from, int to, string chp)
 	transitions[from].push_back(chp);
 }
 
+path_space graph::get_paths(int from, int to, path p)
+{
+	path_space result(size()), temp(size());
+
+	if (p[from] > 0)
+	{
+		p.clear();
+		return result;
+	}
+
+	if (from == to)
+	{
+		result.push_back(p);
+		return result;
+	}
+
+	p.set(from);
+
+	for (size_t i = 0; i < edges[from].size(); i++)
+		result.merge(get_paths(edges[from][i], to, p));
+
+	return result;
+}
+
 void graph::gen_conflicts()
 {
+	up_conflicts.clear();
+	down_conflicts.clear();
 	int i, j, k;
 	map<int, vector<int> >::iterator ci;
 
-	//iterating through width
+	// Iterate through all of the variables
 	for (i = 0; i < width(); i++)
 	{
-		//iterating through up implicants
+		// Iterate through up production rule firings
 		for (j = 0; j < (int)up_firings[i].size(); j++)
 		{
 			ci = up_conflicts.find(up_firings[i][j]);
 			if (ci == up_conflicts.end())
 				ci = up_conflicts.insert(pair<int, vector<int> >(up_firings[i][j], vector<int>())).first;
 
-			for (k = 0; k < states[i].size(); k++)
+			// Iterate through all of the states
+			for (k = 0; k < size(); k++)
 			{
-				if (k != up_firings[i][j] && states[i][k].data == "0" && find(ci->second.begin(), ci->second.end(), k) == ci->second.end())
+				if (k != up_firings[i][j] && states[k][i].data != "1" && find(ci->second.begin(), ci->second.end(), k) == ci->second.end())
 				{
 					if (BUBBLELESS)
 					{
@@ -70,6 +109,8 @@ void graph::gen_conflicts()
 						if (conflict(states[up_firings[i][j]], states[k]))
 							ci->second.push_back(k);
 				}
+				else
+					cout << "Rejected " << up_firings[i][j] << " " << k << " Data:" << states[k][i].data << endl;
 			}
 		}
 
@@ -80,9 +121,9 @@ void graph::gen_conflicts()
 			if (ci == down_conflicts.end())
 				ci = down_conflicts.insert(pair<int, vector<int> >(down_firings[i][j], vector<int>())).first;
 
-			for (k = 0; k < states[i].size(); k++)
+			for (k = 0; k < size(); k++)
 			{
-				if (k != down_firings[i][j] && states[i][k].data == "0" && find(ci->second.begin(), ci->second.end(), k) == ci->second.end())
+				if (k != down_firings[i][j] && states[k][i].data != "1" && find(ci->second.begin(), ci->second.end(), k) == ci->second.end())
 				{
 					if (BUBBLELESS)
 					{
@@ -100,6 +141,7 @@ void graph::gen_conflicts()
 
 void graph::gen_traces()
 {
+	traces.traces.clear();
 	for (size_t i = 0; i < states.width(); i++)
 		traces.push_back(states(i));
 }
@@ -107,6 +149,12 @@ void graph::gen_traces()
 void graph::gen_deltas()
 {
 	size_t from, to, x;
+
+	up.traces.clear();
+	down.traces.clear();
+	up_firings.clear();
+	down_firings.clear();
+	delta.traces.clear();
 
 	// Delta Calculations (Up, Down, Delta)
 	up.traces.resize(states.width(), trace());

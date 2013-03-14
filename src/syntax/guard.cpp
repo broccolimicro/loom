@@ -125,9 +125,9 @@ int guard::generate_states(graph *g, int init)
 	g->states[init].tag = tag;
 
 	if(CHP_EDGE)
-		g->insert(s, init, chp + "->");
+		g->append_state(s, init, chp + "->");
 	else
-		g->insert(s, init, "Guard");
+		g->append_state(s, init, "Guard");
 
 	return uid;
 }
