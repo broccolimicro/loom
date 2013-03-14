@@ -35,6 +35,7 @@ block::block(string chp, vspace *vars, string tab, int verbosity)
 
 	expand_shortcuts();
 	parse();
+	simplify();
 }
 
 block::~block()
@@ -75,6 +76,7 @@ void block::init(string chp, vspace *vars, string tab, int verbosity)
 
 	expand_shortcuts();
 	parse();
+	simplify();
 }
 
 /* This copies a guard to another process and replaces
@@ -208,6 +210,51 @@ void block::parse()
 		// the middle of a parallel sub block.
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) == '|') || i == chp.end()))
 			para = true;
+	}
+}
+
+void block::simplify()
+{
+	list<instruction*>::iterator i, j;
+	list<pair<block*, guard*> >::iterator k;
+	i = instrs.begin();
+	j = instrs.begin();
+	conditional *ic, *jc;
+	assignment *ia, *ja;
+
+	for (j++; j != instrs.end(); j++)
+	{
+		if ((*i)->kind() == "conditional" && (*j)->kind() == "conditional")
+		{
+			ic = (conditional*)*i;
+			jc = (conditional*)*j;
+
+			if (ic->instrs.size() == 1 && ic->instrs.front().first->instrs.size() == 0)
+			{
+				for (k = jc->instrs.begin(); k != jc->instrs.end(); k++)
+				{
+					k->second->chp = "(" + ic->instrs.front().second->chp + ")&(" + k->second->chp + ")";
+				}
+				instrs.remove(*i);
+				delete (conditional*)(*i);
+			}
+		}
+		else if ((*i)->kind() == "assignment" && (*j)->kind() == "assignment")
+		{
+			ia = (assignment*)*i;
+			ja = (assignment*)*j;
+
+			/*if (ic->instrs.size() == 1 && ic->instrs.front().first->instrs.size() == 0)
+			{
+				for (k = jc->instrs.begin(); k != jc->instrs.end(); k++)
+				{
+					k->second->chp = "(" + ic->instrs.front().second->chp + ")&(" + k->second->chp + ")";
+				}
+				instrs.remove(*i);
+				delete (conditional*)(*i);
+			}*/
+		}
+		i = j;
 	}
 }
 

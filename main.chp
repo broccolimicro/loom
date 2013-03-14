@@ -2,7 +2,7 @@
 #include "math.chp"
 #include "fifo.chp"
 
-/*process full_adder(chan4p1b a, chan4p1b b, chan4p1b ci, chan4p1b s, chan4p1b co)
+process full_adder(chan4p1b a, chan4p1b b, chan4p1b ci, chan4p1b s, chan4p1b co)
 {
 	(int<1> A||
 	int<1> B||
@@ -15,7 +15,7 @@
 	(((a?A || b?B); AaB, AxB := A & B,(A & ~B) | (~A & B)) || ci?C);
 	AxBxC, CC := AxB & ~C | ~AxB & C, AaB | (C & AxB);
 	s!AxBxC || co!CC;
-}*/
+}
 
 process mux0b2(chan4p0b i, chan4p0b o1, chan4p0b o2, chan4p1b s)
 {
@@ -55,9 +55,9 @@ process nickPlay(chan4p0b a, chan4p0b b)
 {
 	[a.a];b.r+;[b.a];a.r+;[~a.a];b.r-;[~b.a];a.r-;
 }
+
 process main()
 {
-	
 	chan4p0b A;
 	chan4p0b B;
 	chan4p0b C;
@@ -66,8 +66,8 @@ process main()
 	//chan4p0b E;
 	//chan4p0b F;
 	//nickPlay test(E, F);
-	/*
-	int<1> a := 1;
+	
+	/*int<1> a := 1;
 	int<1> b := 1;
 	int<1> c := 1;
 	int<1> d := 0;
@@ -78,8 +78,8 @@ process main()
 	int<2> w := 0;
 	int<2> q;
 	q := x[1..2]+y | z+w;
-	e := a^b | c^d;
-	*/
+	e := a^b | c^d;*/
+		
 	
 	mux0b2 MyMux(A, B, C, D);
 }

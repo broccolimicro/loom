@@ -33,6 +33,7 @@ conditional::conditional(string chp, vspace *vars, string tab, int verbosity)
 
 	expand_shortcuts();
 	parse();
+	simplify();
 }
 conditional::~conditional()
 {
@@ -215,6 +216,55 @@ void conditional::parse()
 		else if (depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '-' && *(i+1) == '>') || i == chp.end()))
 			guarded = false;
 	}
+}
+
+void conditional::simplify()
+{
+	list<pair<block*, guard*> >::iterator i, j;
+	list<instruction*>::iterator ii;
+	block *copy;
+	block *nblock;
+	guard *nguard;
+	conditional *front;
+	list<pair<block*, guard*> > add;
+
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		if (i->first->instrs.size() > 0 && i->first->instrs.front()->kind() == "conditional")
+		{
+			cout << "Simplifying" << endl;
+			front = (conditional*)i->first->instrs.front();
+			i->first->instrs.pop_front();
+
+			j = front->instrs.begin();
+			for (j++; j != front->instrs.end(); j++)
+			{
+				nblock = j->first;
+				copy = (block*)i->first->duplicate(vars, map<string, string>(), tab, verbosity);
+				for (ii = copy->instrs.begin(); ii != copy->instrs.end(); ii++)
+					nblock->instrs.push_back(*ii);
+				copy->instrs.clear();
+				delete copy;
+				nguard = j->second;
+				nguard->chp = "(" + i->second->chp + ")&(" + nguard->chp + ")";
+				add.push_back(pair<block*, guard*>(nblock, nguard));
+			}
+			j = front->instrs.begin();
+
+			i->second->chp = "(" + i->second->chp + ")&(" + j->second->chp + ")";
+			for (ii = j->first->instrs.begin(); ii != j->first->instrs.end(); ii++)
+				i->first->instrs.push_front(*ii);
+			j->first->instrs.clear();
+			delete j->first;
+			delete j->second;
+			front->instrs.clear();
+			delete front;
+		}
+	}
+
+	for (i = add.begin(); i != add.end(); i++)
+		instrs.push_back(*i);
+	add.clear();
 }
 
 int conditional::generate_states(graph *g, int init)
