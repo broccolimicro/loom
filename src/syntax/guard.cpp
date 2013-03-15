@@ -88,7 +88,7 @@ instruction *guard::duplicate(vspace *vars, map<string, string> convert, string 
 			k = instr->chp.npos;
 	}
 
-	instr->chp = strip(demorgan(instr->chp, -1, false));
+	instr->chp = instr->chp;
 
 	return instr;
 }
@@ -99,7 +99,7 @@ void guard::expand_shortcuts()
 
 void guard::parse()
 {
-	chp = strip(demorgan(chp, -1, false));
+	chp = expression(chp).simple;
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Guard:\t" + chp << endl;
 }
@@ -118,11 +118,11 @@ int guard::generate_states(graph *g, int init)
 	s = g->states[init];
 	s = s && solve(chp, vars, tab, verbosity);
 
-	bool prs = g->states[init].prs;
+	/*bool prs = g->states[init].prs;
 	int tag = g->states[init].tag;
-	g->states[init] = g->states[init] && solve(demorgan("~(" + chp + ")", -1, false), vars, tab, verbosity);
+	g->states[init] = g->states[init] && solve("~(" + chp + ")", vars, tab, verbosity);
 	g->states[init].prs = prs;
-	g->states[init].tag = tag;
+	g->states[init].tag = tag;*/
 
 	if(CHP_EDGE)
 		g->append_state(s, init, chp + "->");
@@ -139,7 +139,7 @@ void guard::generate_scribes()
 		int vi = vars->insert(variable("("+chp+")", "int", value("X"), 1, false));
 
 		if (vi != -1)
-			space->traces.push_back(evaluate(chp, vars, space->traces.traces, tab, verbosity));
+			space->traces.push_back(evaluate(chp, vars, space->traces.traces));
 		else
 			vi = vars->get_uid("("+chp+")");
 

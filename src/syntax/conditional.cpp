@@ -246,12 +246,12 @@ void conditional::simplify()
 				copy->instrs.clear();
 				delete copy;
 				nguard = j->second;
-				nguard->chp = "(" + i->second->chp + ")&(" + nguard->chp + ")";
+				nguard->chp = expression("(" + i->second->chp + ")&(" + nguard->chp + ")").simple;
 				add.push_back(pair<block*, guard*>(nblock, nguard));
 			}
 			j = front->instrs.begin();
 
-			i->second->chp = "(" + i->second->chp + ")&(" + j->second->chp + ")";
+			i->second->chp = expression("(" + i->second->chp + ")&(" + j->second->chp + ")").simple;
 			for (ii = j->first->instrs.begin(); ii != j->first->instrs.end(); ii++)
 				i->first->instrs.push_front(*ii);
 			j->first->instrs.clear();

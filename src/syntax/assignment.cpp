@@ -253,7 +253,7 @@ int assignment::generate_states(graph *g, int init)
 
 		if (v != NULL)
 		{
-			s.assign(v->uid, evaluate(ei->second, vars, s.values, tab, verbosity), value("?"));
+			s.assign(v->uid, evaluate(ei->second, vars, s.values), value("?"));
 
 			// TODO Make this search smarter
 			// Search for this channel's other variables and X them out.

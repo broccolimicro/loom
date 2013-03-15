@@ -34,7 +34,7 @@ variable::variable(string name, string type, value reset, uint16_t width, bool i
 	this->driven = false;
 	this->io = io;
 
-	if (verbosity >= VERB_PARSE)
+	/*if (verbosity >= VERB_PARSE)
 	{
 		cout << tab << "Variable: " << chp << endl;
 		cout << tab << "\tName:  " << name << endl;
@@ -42,7 +42,7 @@ variable::variable(string name, string type, value reset, uint16_t width, bool i
 		cout << tab << "\tWidth: " << width << endl;
 		cout << tab << "\tReset: " << reset << endl;
 		cout << tab << "\tIO:    " << io << endl;
-	}
+	}*/
 }
 
 variable::variable(string chp, bool io, string tab, int verbosity)

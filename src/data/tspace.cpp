@@ -7,6 +7,20 @@
 
 #include "tspace.h"
 
+trace_space::trace_space()
+{
+}
+
+trace_space::trace_space(int s)
+{
+	traces.resize(s);
+}
+
+trace_space::~trace_space()
+{
+	traces.clear();
+}
+
 int trace_space::size()
 {
 	return traces.size();

@@ -26,8 +26,8 @@ struct graph
 
 	vector<vector<int> > up_firings;
 	vector<vector<int> > down_firings;
-	map<int, vector<int> > up_conflicts;
-	map<int, vector<int> > down_conflicts;
+	vector<vector<int> > up_conflicts;
+	vector<vector<int> > down_conflicts;
 
 	// From				  , To
 	// Instruction indexed, Instruction indexed

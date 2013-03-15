@@ -217,10 +217,12 @@ void block::simplify()
 {
 	list<instruction*>::iterator i, j;
 	list<pair<block*, guard*> >::iterator k;
+	list<pair<string, string> >::iterator m, n;
 	i = instrs.begin();
 	j = instrs.begin();
 	conditional *ic, *jc;
 	assignment *ia, *ja;
+	int conflict_count;
 
 	for (j++; j != instrs.end(); j++)
 	{
@@ -233,7 +235,7 @@ void block::simplify()
 			{
 				for (k = jc->instrs.begin(); k != jc->instrs.end(); k++)
 				{
-					k->second->chp = "(" + ic->instrs.front().second->chp + ")&(" + k->second->chp + ")";
+					k->second->chp = expression("(" + ic->instrs.front().second->chp + ")&(" + k->second->chp + ")").simple;
 				}
 				instrs.remove(*i);
 				//delete (conditional*)(*i);
@@ -244,15 +246,16 @@ void block::simplify()
 			ia = (assignment*)*i;
 			ja = (assignment*)*j;
 
-			/*if (ic->instrs.size() == 1 && ic->instrs.front().first->instrs.size() == 0)
-			{
-				for (k = jc->instrs.begin(); k != jc->instrs.end(); k++)
-				{
-					k->second->chp = "(" + ic->instrs.front().second->chp + ")&(" + k->second->chp + ")";
-				}
-				instrs.remove(*i);
-				delete (conditional*)(*i);
-			}*/
+			conflict_count = 0;
+			for (m = ia->expr.begin(); m != ia->expr.end(); m++)
+				for (n = ja->expr.begin(); n != ja->expr.end(); n++)
+					if (m->second.find(n->first) != m->second.npos || n->second.find(m->first) != n->second.npos)
+						conflict_count++;
+
+			if (conflict_count == 0)
+				ja->expr.merge(ia->expr);
+			instrs.remove(*i);
+			//delete (assignment*)*i;
 		}
 		i = j;
 	}

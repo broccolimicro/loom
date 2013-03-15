@@ -14,6 +14,10 @@
 
 struct trace_space
 {
+	trace_space();
+	trace_space(int s);
+	~trace_space();
+
 	// Variable indexed using uid
 	vector<trace> traces;
 

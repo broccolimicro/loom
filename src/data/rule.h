@@ -12,6 +12,7 @@
 #include "vspace.h"
 #include "trace.h"
 #include "state.h"
+#include "expression.h"
 
 #ifndef rule_h
 #define rule_h
@@ -24,14 +25,8 @@ struct rule
 	~rule();
 
 	int uid;
-	string up, down;
-	vector<state> up_implicants;
-	vector<state> up_primes;
-	vector<size_t> up_essentials;
-
-	vector<state> down_implicants;
-	vector<state> down_primes;
-	vector<size_t> down_essentials;
+	string name;
+	expression up, down;
 
 	rule &operator=(rule r);
 
@@ -39,8 +34,6 @@ struct rule
 	void gen_primes();
 	void gen_essentials();
 	void gen_output(vspace *v);
-
-	void clear();
 };
 
 void print_implicant_tags(vector<state> implicants);

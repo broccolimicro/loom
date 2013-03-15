@@ -56,6 +56,12 @@ void graph::insert_edge(int from, int to, string chp)
 
 path_space graph::get_paths(int from, int to, path p)
 {
+	if (p.from == -1 && p.to == -1)
+	{
+		p.from = from;
+		p.to = to;
+	}
+
 	path_space result(size()), temp(size());
 
 	if (p[from] > 0)
@@ -82,57 +88,29 @@ void graph::gen_conflicts()
 {
 	up_conflicts.clear();
 	down_conflicts.clear();
+
+	up_conflicts.resize(size());
+	down_conflicts.resize(size());
 	int i, j, k;
-	map<int, vector<int> >::iterator ci;
 
-	// Iterate through all of the variables
-	for (i = 0; i < width(); i++)
+	// Compare every state in both directions
+	for (j = 0; j < size(); j++)
 	{
-		// Iterate through up production rule firings
-		for (j = 0; j < (int)up_firings[i].size(); j++)
+		for (k = j; k < size(); k++)
 		{
-			ci = up_conflicts.find(up_firings[i][j]);
-			if (ci == up_conflicts.end())
-				ci = up_conflicts.insert(pair<int, vector<int> >(up_firings[i][j], vector<int>())).first;
-
-			// Iterate through all of the states
-			for (k = 0; k < size(); k++)
+			if (k != j)
 			{
-				if (k != up_firings[i][j] && states[k][i].data != "1" && find(ci->second.begin(), ci->second.end(), k) == ci->second.end())
+				if (BUBBLELESS)
 				{
-					if (BUBBLELESS)
-					{
-						if (up_conflict(states[up_firings[i][j]], states[k]))
-							ci->second.push_back(k);
-					}
-					else
-						if (conflict(states[up_firings[i][j]], states[k]))
-							ci->second.push_back(k);
+					if (up_conflict(states[j], states[k]))
+						up_conflicts[j].push_back(k);
+					if (down_conflict(states[j], states[k]))
+						down_conflicts[j].push_back(k);
 				}
-				else
-					cout << "Rejected " << up_firings[i][j] << " " << k << " Data:" << states[k][i].data << endl;
-			}
-		}
-
-		//iterating through down implicants
-		for (j = 0; j < (int)down_firings[i].size(); j++)
-		{
-			ci = down_conflicts.find(down_firings[i][j]);
-			if (ci == down_conflicts.end())
-				ci = down_conflicts.insert(pair<int, vector<int> >(down_firings[i][j], vector<int>())).first;
-
-			for (k = 0; k < size(); k++)
-			{
-				if (k != down_firings[i][j] && states[k][i].data != "1" && find(ci->second.begin(), ci->second.end(), k) == ci->second.end())
+				else if (conflict(states[j], states[k]))
 				{
-					if (BUBBLELESS)
-					{
-						if (down_conflict(states[down_firings[i][j]], states[k]))
-							ci->second.push_back(k);
-					}
-					else
-						if (conflict(states[down_firings[i][j]], states[k]))
-							ci->second.push_back(k);
+					up_conflicts[j].push_back(k);
+					down_conflicts[j].push_back(k);
 				}
 			}
 		}
@@ -224,55 +202,50 @@ int graph::width()
 
 void graph::print_up()
 {
-	vector<vector<int> >::iterator i;
-	vector<int>::iterator j;
-	map<int, vector<int> >::iterator k;
+	size_t i, j;
 
 	cout << "Up Production Rule Space" << endl;
 	cout << up << endl;
 
 	cout << "Up Production Rule Firings" << endl;
-	for (i = up_firings.begin(); i != up_firings.end(); i++)
+	for (i = 0; i < up_firings.size(); i++)
 	{
-		for (j = i->begin(); j != i->end(); j++)
-			cout << *j << " ";
+		for (j = 0; j < up_firings[i].size(); j++)
+			cout << up_firings[i][j] << " ";
 		cout << endl;
 	}
 
 	cout << "Up Production Rule Conflicts" << endl;
-	for (k = up_conflicts.begin(); k != up_conflicts.end(); k++)
+	for (i = 0; i < up_conflicts.size(); i++)
 	{
-		cout << k->first << ": ";
-		for (j = k->second.begin(); j != k->second.end(); j++)
-			cout << *j << " ";
+		cout << i << ": ";
+		for (j = 0; j != up_conflicts[i].size(); j++)
+			cout << up_conflicts[i][j] << " ";
 		cout << endl;
 	}
 }
 
 void graph::print_down()
 {
-	vector<vector<int> >::iterator i;
-	vector<int>::iterator j;
-	vector<int>::iterator l;
-	map<int, vector<int> >::iterator k;
+	size_t i, j;
 
 	cout << "Down Production Rule Space" << endl;
 	cout << down << endl;
 
 	cout << "Down Production Rule Firings" << endl;
-	for (i = down_firings.begin(); i != down_firings.end(); i++)
+	for (i = 0; i < down_firings.size(); i++)
 	{
-		for (j = i->begin(); j != i->end(); j++)
-			cout << *j << " ";
+		for (j = 0; j < down_firings[i].size(); j++)
+			cout << down_firings[i][j] << " ";
 		cout << endl;
 	}
 
 	cout << "Down Production Rule Conflicts" << endl;
-	for (k = down_conflicts.begin(); k != down_conflicts.end(); k++)
+	for (i = 0; i < down_conflicts.size(); i++)
 	{
-		cout << k->first << ": ";
-		for (l = k->second.begin(); l != k->second.end(); l++)
-			cout << *l << " ";
+		cout << i << ": ";
+		for (j = 0; j != down_conflicts[i].size(); j++)
+			cout << down_conflicts[i][j] << " ";
 		cout << endl;
 	}
 }

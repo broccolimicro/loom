@@ -245,31 +245,42 @@ void program::generate_states()
  */
 void program::insert_state_vars()
 {
-	map<int, vector<int> >::iterator i;
-	vector<int>::iterator j;
+	size_t i, j, k;
+	list<path>::iterator lp;
 	path_space paths(space.size());
+	path_space cov;
 
 	cout << "UP CONFLICTS" << endl;
-	for (i = space.up_conflicts.begin(); i != space.up_conflicts.end(); i++)
+	for (i = 0; i < space.up_firings.size(); i++)
 	{
-		for (j = i->second.begin(); j != i->second.end(); j++)
+		for (j = 0; j < space.up_firings[i].size(); j++)
 		{
-			cout << i->first << " " << *j << endl;
-			paths.merge(space.get_paths(i->first, *j, path(space.size())));
-			paths.merge(space.get_paths(*j, i->first, path(space.size())));
+			for (k = 0; k < space.up_conflicts[space.up_firings[i][j]].size(); k++)
+			{
+				if (space.traces[i][space.up_conflicts[space.up_firings[i][j]][k]].data != "1")
+				{
+					//cout << i->first << " " << *j << endl;
+					paths.merge(space.get_paths(space.up_firings[i][j], space.up_conflicts[space.up_firings[i][j]][k], path(space.size())));
+					paths.merge(space.get_paths(space.up_conflicts[space.up_firings[i][j]][k], space.up_firings[i][j], path(space.size())));
+				}
+			}
 		}
 	}
 
-	cout << "DOWN CONFLICTS" << endl;
-	for (i = space.down_conflicts.begin(); i != space.down_conflicts.end(); i++)
+	/*cout << "DOWN CONFLICTS" << endl;
+	for (i = 0; i < space.down_conflicts.size(); i++)
 	{
-		for (j = i->second.begin(); j != i->second.end(); j++)
+		for (j = 0; j != space.down_conflicts[i].size(); j++)
 		{
-			cout << i->first << " " << *j << endl;
-			paths.merge(space.get_paths(i->first, *j, path(space.size())));
-			paths.merge(space.get_paths(*j, i->first, path(space.size())));
+			//cout << i->first << " " << *j << endl;
+			paths.merge(space.get_paths(i, space.down_conflicts[i][j], path(space.size())));
+			paths.merge(space.get_paths(space.down_conflicts[i][j], i, path(space.size())));
 		}
-	}
+	}*/
+
+	for (i = 0; i < space.up_conflicts.size(); i++)
+		if (space.up_conflicts[i].size() > 0)
+			paths.total[i] = 0;
 
 	cout << "All paths as follows" << endl << paths << endl;
 
@@ -278,10 +289,79 @@ void program::insert_state_vars()
 	cout << "AND THE BEST SPLIT CHOICE IS... " << m << endl;
 	cout << paths.total << endl;
 
-	cout << "With Covered Paths: " << paths.coverage(m).size() << endl;
-	cout << "And Remaining Paths: " << paths.remainder(m).size() << endl;
+	cov = paths.coverage(m);
+	cout << "With Covered Paths: " << cov.size() << endl;
+	cout << cov << endl << endl;
+	paths = paths.remainder(m);
 
-	map<int, vector<int> >::iterator confli;
+
+	// TODO Need a better way to update the conflict list
+	vector<int>::iterator ci;
+	for (lp = cov.begin(); lp != cov.end(); lp++)
+	{
+		ci = find(space.up_conflicts[lp->from].begin(), space.up_conflicts[lp->from].end(), lp->to);
+		if (ci != space.up_conflicts[lp->from].end())
+		{
+			cout << "Removing conflict " << lp->from << " " << lp->to << endl;
+			space.up_conflicts[lp->from].erase(ci);
+		}
+	}
+
+	cout << "Up Production Rule Conflicts" << endl;
+	for (i = 0; i < space.up_conflicts.size(); i++)
+	{
+		cout << i << ": ";
+		for (j = 0; j != space.up_conflicts[i].size(); j++)
+			cout << space.up_conflicts[i][j] << " ";
+		cout << endl;
+	}
+
+	for (k = 0; k < 3; k++)
+	{
+		for (i = 0; i < space.up_conflicts.size(); i++)
+			if (space.up_conflicts[i].size() > 0)
+				paths.total[i] = 0;
+
+		m = paths.coverage_max();
+
+		cout << "AND THE BEST SPLIT CHOICE IS... " << m << endl;
+		cout << paths.total << endl;
+
+		cov = paths.coverage(m);
+		cout << "With Covered Paths: " << cov.size() << endl;
+		cout << cov << endl << endl;
+		paths = paths.remainder(m);
+
+		vector<int>::iterator ci;
+		for (lp = cov.begin(); lp != cov.end(); lp++)
+		{
+			ci = find(space.up_conflicts[lp->from].begin(), space.up_conflicts[lp->from].end(), lp->to);
+			if (ci != space.up_conflicts[lp->from].end())
+			{
+				cout << "Removing conflict " << lp->from << " " << lp->to << endl;
+				space.up_conflicts[lp->from].erase(ci);
+			}
+		}
+
+		cout << "Up Production Rule Conflicts" << endl;
+		for (i = 0; i < space.up_conflicts.size(); i++)
+		{
+			cout << i << ": ";
+			for (j = 0; j != space.up_conflicts[i].size(); j++)
+				cout << space.up_conflicts[i][j] << " ";
+			cout << endl;
+		}
+	}
+
+	cout << "And Remaining Paths: " << paths.remainder(m).size() << endl;
+	cout << paths.remainder(m) << endl << endl;
+
+
+
+
+
+
+	/*vector<vector<int> >::iterator confli;
 	int sv_from, sv_to;
 	bool sv_up;
 	//Up
@@ -319,7 +399,7 @@ void program::insert_state_vars()
 	//We have now selected an edge to commondeer.
 	//Add a new variable to our globals list
 	//pair<string, instruction*> add_unique_variable(string prefix, string postfix, string type, vspace *vars, string tab, int verbosity)
-	add_unique_variable("sv", "", "int<1>", &vars, "", -1);
+	add_unique_variable("sv", "", "int<1>", &vars, "", -1);*/
 	//Create a new state for SV go high (probably based off of the from of the commondeered edge)
 
 	//Remove the edge between them.
@@ -416,7 +496,7 @@ cout << "Done state var insert" << endl;*/
 void program::generate_prs()
 {
 	for (int vi = 0; vi < space.width(); vi++)
-		if (vars.get_name(vi).find_first_of("|&~") == string::npos)
+		if (vars.get_name(vi).find_first_of("|&~") == string::npos && vars.get_name(vi).find("Reset") == string::npos)
 			prs.push_back(rule(vi, &space, &vars));
 
 	print_prs();
