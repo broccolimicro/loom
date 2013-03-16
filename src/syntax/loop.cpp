@@ -19,7 +19,7 @@ loop::loop()
 	_kind = "loop";
 }
 
-loop::loop(string chp, vspace *vars, string tab, int verbosity)
+loop::loop(instruction *parent, string chp, vspace *vars, string tab, int verbosity)
 {
 	clear();
 
@@ -29,6 +29,7 @@ loop::loop(string chp, vspace *vars, string tab, int verbosity)
 	this->verbosity = verbosity;
 	this->type = unknown;
 	this->vars = vars;
+	this->parent = parent;
 
 	expand_shortcuts();
 	parse();
@@ -48,15 +49,17 @@ loop &loop::operator=(loop l)
 	this->chp		= l.chp;
 	this->instrs	= l.instrs;
 	this->vars		= l.vars;
+	this->space		= l.space;
 	this->tab		= l.tab;
 	this->verbosity	= l.verbosity;
+	this->parent	= l.parent;
 	return *this;
 }
 
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *loop::duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity)
+instruction *loop::duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity)
 {
 	loop *instr;
 
@@ -66,6 +69,7 @@ instruction *loop::duplicate(vspace *vars, map<string, string> convert, string t
 	instr->tab			= tab;
 	instr->verbosity	= verbosity;
 	instr->type			= this->type;
+	instr->parent		= parent;
 
 	size_t idx;
 	string rep;
@@ -106,7 +110,7 @@ instruction *loop::duplicate(vspace *vars, map<string, string> convert, string t
 
 	list<pair<block*, guard*> >::iterator l;
 	for (l = instrs.begin(); l != instrs.end(); l++)
-		instr->instrs.push_back(pair<block*, guard*>((block*)l->first->duplicate(vars, convert, tab+"\t", verbosity), (guard*)l->second->duplicate(vars, convert, tab+"\t", verbosity)));
+		instr->instrs.push_back(pair<block*, guard*>((block*)l->first->duplicate(instr, vars, convert, tab+"\t", verbosity), (guard*)l->second->duplicate(instr, vars, convert, tab+"\t", verbosity)));
 
 	return instr;
 }
@@ -176,7 +180,7 @@ void loop::parse()
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block(blockstr, vars, tab+"\t", verbosity), new guard(guardstr, vars, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block(this, blockstr, vars, tab+"\t", verbosity), new guard(this, guardstr, vars, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 		}
@@ -194,7 +198,7 @@ void loop::parse()
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block(blockstr, vars, tab+"\t", verbosity), new guard(guardstr, vars, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block(this, blockstr, vars, tab+"\t", verbosity), new guard(this, guardstr, vars, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}

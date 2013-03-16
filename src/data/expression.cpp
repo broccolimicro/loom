@@ -374,3 +374,102 @@ expression &expression::operator()(vector<state> t, vspace *v)
 
 	return *this;
 }
+
+state solve(string raw, vspace *vars, string tab, int verbosity)
+{
+	int id;
+	state outcomes;
+	string::iterator i, j;
+	int depth;
+
+	if (vars->global.size() != 0)
+		outcomes.assign(vars->global.size()-1, value("?"), value("?"));
+
+	if (verbosity >= VERB_PARSE)
+		cout << tab << "Solve: " << raw << endl;
+
+	depth = 0;
+	for (i = raw.begin(), j = raw.begin(); i != raw.end()+1; i++)
+	{
+		if (*i == '(')
+			depth++;
+		else if (*i == ')')
+			depth--;
+
+		if (depth == 0 && *i == '|')
+		{
+			outcomes = (solve(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity) ||
+						solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity));
+
+			if (verbosity >= VERB_PARSE)
+				cout << tab << outcomes << endl;
+
+			return outcomes;
+		}
+	}
+
+	depth = 0;
+	for (i = raw.begin(), j = raw.begin(); i != raw.end()+1; i++)
+	{
+		if (*i == '(')
+			depth++;
+		else if (*i == ')')
+			depth--;
+
+		if (depth == 0 && *i == '&')
+		{
+			outcomes = (solve(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity) &&
+						solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity));
+
+			if (verbosity >= VERB_PARSE)
+				cout << tab << outcomes << endl;
+
+			return outcomes;
+		}
+	}
+
+	depth = 0;
+	for (i = raw.begin(), j = raw.begin(); i != raw.end()+1; i++)
+	{
+		if (*i == '(')
+			depth++;
+		else if (*i == ')')
+			depth--;
+
+		if (depth == 0 && *i == '~')
+		{
+			outcomes = ~solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
+
+			if (verbosity >= VERB_PARSE)
+				cout << tab << outcomes << endl;
+
+			return outcomes;
+		}
+	}
+
+	unsigned long s = raw.find_first_of("(");
+	unsigned long e = raw.find_last_of(")");
+	if (s != raw.npos && e != raw.npos)
+	{
+		outcomes = solve(raw.substr(s+1, e-s-1), vars, tab+"\t", verbosity);
+
+		if (verbosity >= VERB_PARSE)
+			cout << tab << outcomes << endl;
+
+		return outcomes;
+	}
+
+	id = vars->get_uid(raw);
+	if (id != -1)
+		outcomes.assign(id, value("1"), value("?"));
+	else if (raw == "1")
+		for (map<string, variable>::iterator vi = vars->global.begin(); vi != vars->global.end(); vi++)
+			outcomes.assign(vi->second.uid, value("X"), value("?"));
+	else
+		cout << "Error: Undefined variable " << raw << "." << endl;
+
+	if (verbosity >= VERB_PARSE)
+		cout << tab << outcomes << endl;
+
+	return outcomes;
+}

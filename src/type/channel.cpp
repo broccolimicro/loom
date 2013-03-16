@@ -48,6 +48,7 @@ channel &channel::operator=(channel r)
 	return *this;
 }
 
+// TODO don't allow reset values for channels
 void channel::parse(string chp, int verbosity)
 {
 	if (verbosity >= VERB_PARSE)
@@ -95,12 +96,11 @@ void channel::parse(string chp, int verbosity)
 
 		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == ';')
 		{
-			expand_instantiation(io_block.substr(j-io_block.begin(), i - j), &vars, NULL, "\t", verbosity, false);
+			expand_instantiation(NULL, io_block.substr(j-io_block.begin(), i - j), &vars, NULL, "\t", verbosity, false);
 			j = i+1;
 		}
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == '}')
 		{
-			// TODO Do we need to reparse afterword and use the results of the first parsing as the init?
 			raw = io_block.substr(j-io_block.begin(), i - j + 1);
 			if (raw.find("operator!") != raw.npos)
 				s = raw;

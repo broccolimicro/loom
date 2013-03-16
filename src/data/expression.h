@@ -75,4 +75,6 @@ t evaluate(string raw, vspace *vars, vector<t> values)
 		return t(dec_to_bin(raw));
 }
 
+state solve(string raw, vspace *vars, string tab, int verbosity);
+
 #endif

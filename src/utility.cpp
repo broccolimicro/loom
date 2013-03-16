@@ -8,7 +8,7 @@
 #include "utility.h"
 #include "common.h"
 
-instruction *expand_instantiation(string chp, vspace *vars, list<string> *input, string tab, int verbosity, bool allow_process)
+instruction *expand_instantiation(instruction *parent, string chp, vspace *vars, list<string> *input, string tab, int verbosity, bool allow_process)
 {
 	keyword* type;
 	map<string, variable>::iterator mem_var;
@@ -50,7 +50,7 @@ instruction *expand_instantiation(string chp, vspace *vars, list<string> *input,
 				for (i = v.inputs.begin(), j = ((process*)type)->input.begin(); i != v.inputs.end() && j != ((process*)type)->input.end(); i++, j++)
 					rename.insert(pair<string, string>(*j, *i));
 
-				return ((process*)type)->def.duplicate(vars, rename, tab, verbosity);
+				return ((process*)type)->def.duplicate(parent, vars, rename, tab, verbosity);
 			}
 			else
 				cout << "Error: Invalid use of type " << type->kind() << " in record definition." << endl;
@@ -62,7 +62,7 @@ instruction *expand_instantiation(string chp, vspace *vars, list<string> *input,
 	return NULL;
 }
 
-pair<string, instruction*> add_unique_variable(string prefix, string postfix, string type, vspace *vars, string tab, int verbosity)
+pair<string, instruction*> add_unique_variable(instruction *parent, string prefix, string postfix, string type, vspace *vars, string tab, int verbosity)
 {
 	string name = vars->unique_name(prefix);
 
@@ -71,7 +71,7 @@ pair<string, instruction*> add_unique_variable(string prefix, string postfix, st
 		dec += " ";
 	dec += name;
 
-	return pair<string, instruction*>(name, expand_instantiation(dec + postfix, vars, NULL, tab, verbosity, true));
+	return pair<string, instruction*>(name, expand_instantiation(parent, dec + postfix, vars, NULL, tab, verbosity, true));
 }
 
 size_t find_name(string subject, string search, size_t pos)

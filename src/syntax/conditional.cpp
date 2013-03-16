@@ -20,7 +20,7 @@ conditional::conditional()
 	type = unknown;
 }
 
-conditional::conditional(string chp, vspace *vars, string tab, int verbosity)
+conditional::conditional(instruction *parent, string chp, vspace *vars, string tab, int verbosity)
 {
 	clear();
 
@@ -30,6 +30,7 @@ conditional::conditional(string chp, vspace *vars, string tab, int verbosity)
 	this->tab = tab;
 	this->verbosity = verbosity;
 	this->vars = vars;
+	this->parent = parent;
 
 	expand_shortcuts();
 	parse();
@@ -61,15 +62,17 @@ conditional &conditional::operator=(conditional c)
 	this->chp		= c.chp;
 	this->instrs	= c.instrs;
 	this->vars		= c.vars;
+	this->space		= c.space;
 	this->tab		= c.tab;
 	this->verbosity	= c.verbosity;
+	this->parent	= c.parent;
 	return *this;
 }
 
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *conditional::duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity)
+instruction *conditional::duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity)
 {
 	conditional *instr;
 
@@ -79,6 +82,7 @@ instruction *conditional::duplicate(vspace *vars, map<string, string> convert, s
 	instr->tab			= tab;
 	instr->verbosity	= verbosity;
 	instr->type			= this->type;
+	instr->parent		= parent;
 
 	size_t idx;
 	string rep;
@@ -119,7 +123,7 @@ instruction *conditional::duplicate(vspace *vars, map<string, string> convert, s
 
 	list<pair<block*, guard*> >::iterator l;
 	for (l = instrs.begin(); l != instrs.end(); l++)
-		instr->instrs.push_back(pair<block*, guard*>((block*)l->first->duplicate(vars, convert, tab+"\t", verbosity), (guard*)l->second->duplicate(vars, convert, tab+"\t", verbosity)));
+		instr->instrs.push_back(pair<block*, guard*>((block*)l->first->duplicate(instr, vars, convert, tab+"\t", verbosity), (guard*)l->second->duplicate(instr, vars, convert, tab+"\t", verbosity)));
 
 	return instr;
 }
@@ -191,7 +195,7 @@ void conditional::parse()
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block(blockstr, vars, tab+"\t", verbosity), new guard(guardstr, vars, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block(this, blockstr, vars, tab+"\t", verbosity), new guard(this, guardstr, vars, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 		}
@@ -209,7 +213,7 @@ void conditional::parse()
 			guardstr = blockstr.substr(0, k-blockstr.begin());
 			blockstr = blockstr.substr(k-blockstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block(blockstr, vars, tab+"\t", verbosity), new guard(guardstr, vars, tab+"\t", verbosity)));
+			instrs.push_back(pair<block*, guard*>(new block(this, blockstr, vars, tab+"\t", verbosity), new guard(this, guardstr, vars, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}
@@ -240,7 +244,7 @@ void conditional::simplify()
 			for (j++; j != front->instrs.end(); j++)
 			{
 				nblock = j->first;
-				copy = (block*)i->first->duplicate(vars, map<string, string>(), tab, verbosity);
+				copy = (block*)i->first->duplicate(this, vars, map<string, string>(), tab, verbosity);
 				for (ii = copy->instrs.begin(); ii != copy->instrs.end(); ii++)
 					nblock->instrs.push_back(*ii);
 				copy->instrs.clear();

@@ -17,13 +17,14 @@ assignment::assignment()
 	_kind = "assignment";
 }
 
-assignment::assignment(string chp, vspace *vars, string tab, int verbosity)
+assignment::assignment(instruction *parent, string chp, vspace *vars, string tab, int verbosity)
 {
 	this->_kind		= "assignment";
 	this->chp		= chp;
 	this->tab		= tab;
 	this->verbosity = verbosity;
 	this->vars		= vars;
+	this->parent	= parent;
 
 	expand_shortcuts();
 	parse();
@@ -40,15 +41,17 @@ assignment &assignment::operator=(assignment a)
 	this->expr		= a.expr;
 	this->chp		= a.chp;
 	this->vars		= a.vars;
+	this->space		= a.space;
 	this->tab		= a.tab;
 	this->verbosity	= a.verbosity;
+	this->parent	= a.parent;
 	return *this;
 }
 
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *assignment::duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity)
+instruction *assignment::duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity)
 {
 	assignment *instr;
 
@@ -58,6 +61,7 @@ instruction *assignment::duplicate(vspace *vars, map<string, string> convert, st
 	instr->tab			= tab;
 	instr->verbosity	= verbosity;
 	instr->expr			= this->expr;
+	instr->parent		= parent;
 
 	size_t idx;
 	string rep;
@@ -284,10 +288,10 @@ void assignment::generate_scribes()
 
 }
 
-instruction *expand_assignment(string chp, vspace *vars, string tab, int verbosity)
+instruction *expand_assignment(instruction *parent, string chp, vspace *vars, string tab, int verbosity)
 {
-	assignment *a = new assignment(chp, vars, tab, verbosity);
-	parallel *p = new parallel("", vars, tab, verbosity);
+	parallel *p = new parallel(parent, "", vars, tab, verbosity);
+	assignment *a = new assignment(p, chp, vars, tab, verbosity);
 	pair<string, instruction*> result;
 	list<pair<string, string> >::iterator i;
 	list<pair<string, string> > remove;
@@ -302,6 +306,7 @@ instruction *expand_assignment(string chp, vspace *vars, string tab, int verbosi
 		{
 			result = expand_expression(i->second, vars, i->first, tab, verbosity);
 			i->second = result.first;
+			result.second->parent = p;
 			p->push(result.second);
 			remove.push_back(*i);
 		}
@@ -586,6 +591,9 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 		return pair<string, instruction*>(chp, NULL);
 	}
 
+	block* ret = new block();
+	parallel *sub = new parallel();
+
 	string name = vars->unique_name("_fn");
 	if (op == "?")
 		name = A.first + "." + name;
@@ -593,7 +601,7 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 	name += "(";
 	if (top == "")
 	{
-		C = add_unique_variable("_op", "", proc->vars.get_info(proc->input.front()), vars, tab+"\t", verbosity);
+		C = add_unique_variable(ret, "_op", "", proc->vars.get_info(proc->input.front()), vars, tab+"\t", verbosity);
 		//cout << "YO DUERFEW EWFFEW EFWEFEWF " << proc->vars.get_info(proc->input.front()) << endl;
 		name += C.first;
 	}
@@ -606,19 +614,22 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 		name += "," + B.first;
 	name += ")";
 
-	parallel *sub = new parallel();
 	sub->tab = tab;
 	sub->verbosity = verbosity;
 	sub->vars = vars;
+	if (A.second != NULL)
+		A.second->parent = sub;
+	if (B.second != NULL)
+		B.second->parent = sub;
 	sub->push(A.second);
 	sub->push(B.second);
 
-	block* ret = new block();
+
 	ret->tab = tab;
 	ret->verbosity = verbosity;
 	ret->vars = vars;
 	ret->push(sub);
-	ret->push(expand_instantiation(type + " " + name, vars, NULL, tab, verbosity, true));
+	ret->push(expand_instantiation(ret, type + " " + name, vars, NULL, tab, verbosity, true));
 
 	return pair<string, instruction*>(C.first, ret);
 }

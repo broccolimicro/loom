@@ -13,7 +13,7 @@
 struct assignment : instruction
 {
 	assignment();
-	assignment(string chp, vspace *vars, string tab, int verbosity);
+	assignment(instruction *parent, string chp, vspace *vars, string tab, int verbosity);
 	~assignment();
 
 	int uid;					// indexes into the state in the state space
@@ -21,7 +21,7 @@ struct assignment : instruction
 
 	assignment &operator=(assignment a);
 
-	instruction *duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity);
+	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
 
 	void expand_shortcuts();
 	void parse();
@@ -31,7 +31,7 @@ struct assignment : instruction
 	void print_hse();
 };
 
-instruction *expand_assignment(string chp, vspace *vars, string tab, int verbosity);
+instruction *expand_assignment(instruction *parent, string chp, vspace *vars, string tab, int verbosity);
 pair<string, instruction*> expand_expression(string chp, vspace *vars, string top, string tab, int verbosity);
 
 #endif

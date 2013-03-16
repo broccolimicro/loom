@@ -30,13 +30,11 @@ struct program
 
 	program &operator=(program p);
 
-
-
 	void parse(string chp, int verbosity);
 	void generate_states();
 	void insert_state_vars();
 	void generate_prs();
-	//void weaken_guard(rule pr);
+	void factor_prs();
 	void print_prs();
 };
 

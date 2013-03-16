@@ -24,7 +24,7 @@ enum conditional_type
 struct conditional : parallel
 {
 	conditional();
-	conditional(string chp, vspace *vars, string tab, int verbosity);
+	conditional(instruction *parent, string chp, vspace *vars, string tab, int verbosity);
 	~conditional();
 
 	conditional_type type;
@@ -32,7 +32,7 @@ struct conditional : parallel
 
 	conditional &operator=(conditional c);
 
-	instruction *duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity);
+	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
 
 	void expand_shortcuts();
 	void parse();

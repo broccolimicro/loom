@@ -21,7 +21,7 @@ parallel::parallel()
 	chp = "";
 	_kind = "parallel";
 }
-parallel::parallel(string chp, vspace *vars, string tab, int verbosity)
+parallel::parallel(instruction *parent, string chp, vspace *vars, string tab, int verbosity)
 {
 	clear();
 
@@ -30,6 +30,7 @@ parallel::parallel(string chp, vspace *vars, string tab, int verbosity)
 	this->tab = tab;
 	this->verbosity = verbosity;
 	this->vars = vars;
+	this->parent = parent;
 
 	expand_shortcuts();
 	parse();
@@ -48,15 +49,17 @@ parallel &parallel::operator=(parallel p)
 	this->chp		= p.chp;
 	this->instrs	= p.instrs;
 	this->vars		= p.vars;
+	this->space		= p.space;
 	this->tab		= p.tab;
 	this->verbosity	= p.verbosity;
+	this->parent	= p.parent;
 	return *this;
 }
 
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *parallel::duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity)
+instruction *parallel::duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity)
 {
 	parallel *instr;
 
@@ -65,6 +68,7 @@ instruction *parallel::duplicate(vspace *vars, map<string, string> convert, stri
 	instr->vars			= vars;
 	instr->tab			= tab;
 	instr->verbosity	= verbosity;
+	instr->parent		= parent;
 
 	size_t idx;
 	string rep;
@@ -105,7 +109,7 @@ instruction *parallel::duplicate(vspace *vars, map<string, string> convert, stri
 
 	list<instruction*>::iterator l;
 	for (l = instrs.begin(); l != instrs.end(); l++)
-		instr->instrs.push_back((*l)->duplicate(vars, convert, tab+"\t", verbosity));
+		instr->instrs.push_back((*l)->duplicate(instr, vars, convert, tab+"\t", verbosity));
 
 	return instr;
 }
@@ -152,26 +156,26 @@ void parallel::parse()
 
 			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
 			if (sequential && raw_instr.length() > 0)
-				push(new block(raw_instr, vars, tab+"\t", verbosity));
+				push(new block(this, raw_instr, vars, tab+"\t", verbosity));
 			// This sub block has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')' && raw_instr.length() > 0)
-				push(new block(raw_instr.substr(1, raw_instr.length()-2), vars, tab+"\t", verbosity));
+				push(new block(this, raw_instr.substr(1, raw_instr.length()-2), vars, tab+"\t", verbosity));
 			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
-				push(new loop(raw_instr, vars, tab+"\t", verbosity));
+				push(new loop(this, raw_instr, vars, tab+"\t", verbosity));
 			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
-				push(new conditional(raw_instr, vars, tab+"\t", verbosity));
+				push(new conditional(this, raw_instr, vars, tab+"\t", verbosity));
 			// This sub block is a variable definition. keyword<bitwidth> name
 			else if (vars->vdef(raw_instr) && raw_instr.length() > 0)
-				push(expand_instantiation(raw_instr, vars, NULL, tab+"\t", verbosity, true));
+				push(expand_instantiation(this, raw_instr, vars, NULL, tab+"\t", verbosity, true));
 			else if ((k = raw_instr.find_first_of("?!@")) != raw_instr.npos && raw_instr.find(":=") == raw_instr.npos && raw_instr.length() > 0)
-				push(add_unique_variable("_fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", vars->get_type(raw_instr.substr(0, k)) + ".operator" + raw_instr[k] + "()", vars, tab+"\t", verbosity).second);
+				push(add_unique_variable(this, "_fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", vars->get_type(raw_instr.substr(0, k)) + ".operator" + raw_instr[k] + "()", vars, tab+"\t", verbosity).second);
 			// This sub block is an assignment instruction.
 			else if ((raw_instr.find(":=") != raw_instr.npos || raw_instr[raw_instr.length()-1] == '+' || raw_instr[raw_instr.length()-1] == '-') && raw_instr.length() > 0)
-				push(expand_assignment(raw_instr, vars, tab+"\t", verbosity));
+				push(expand_assignment(this, raw_instr, vars, tab+"\t", verbosity));
 			else if (raw_instr.find("skip") == raw_instr.npos && raw_instr.length() > 0)
-				push(new guard(raw_instr, vars, tab, verbosity));
+				push(new guard(this, raw_instr, vars, tab, verbosity));
 
 			j = i+2;
 			sequential = false;
@@ -253,7 +257,10 @@ void parallel::push(instruction *i)
 		if (((block*)i)->instrs.size() <= 1)
 		{
 			for (j = ((block*)i)->instrs.begin(); j != ((block*)i)->instrs.end(); j++)
+			{
+				(*j)->parent = this;
 				push(*j);
+			}
 			((block*)i)->instrs.clear();
 			delete (block*)i;
 		}
@@ -263,7 +270,10 @@ void parallel::push(instruction *i)
 	else if (i->kind() == "parallel")
 	{
 		for (j = ((parallel*)i)->instrs.begin(); j != ((parallel*)i)->instrs.end(); j++)
+		{
+			(*j)->parent = this;
 			push(*j);
+		}
 		((parallel*)i)->instrs.clear();
 		delete (parallel*)i;
 	}

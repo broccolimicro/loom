@@ -78,7 +78,7 @@ void process::parse(string raw, int verbosity)
 	{
 		if (*(i+1) == ',' || i+1 == io_block.end())
 		{
-			expand_instantiation(io_block.substr(j-io_block.begin(), i+1 - j), &vars, &input, "\t", verbosity, false);
+			expand_instantiation(NULL, io_block.substr(j-io_block.begin(), i+1 - j), &vars, &input, "\t", verbosity, false);
 			j = i+2;
 		}
 	}

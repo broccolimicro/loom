@@ -16,6 +16,10 @@
 
 instruction::instruction()
 {
+	parent = NULL;
+	from = -1;
+	vars = NULL;
+	space = NULL;
 	chp = "";
 	tab = "";
 	_kind = "instruction";
@@ -25,6 +29,7 @@ instruction::instruction()
 instruction::~instruction()
 {
 	_kind = "instruction";
+	parent = NULL;
 }
 
 string instruction::kind()

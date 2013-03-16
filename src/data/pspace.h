@@ -24,6 +24,7 @@ struct path_space
 	void push_back(path p);
 	list<path>::iterator begin();
 	list<path>::iterator end();
+	void clear();
 
 	int coverage_count(int n);
 	int coverage_max();

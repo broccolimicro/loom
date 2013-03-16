@@ -42,12 +42,7 @@ program &program::operator=(program p)
 
 void program::parse(string chp, int verbosity)
 {
-	//TODO: Lost information in statespace from guard (example a xor b) not incorperated. Copy into PRS?
 	//TODO: THIS BREAKS IF THERE ARE NO IMPLICANTS FOR A OUTPUT
-	//TODO: Logic minimization
-	//TODO: Figure out indistinguishable states
-	//TODO: Add state variables
-	//TODO: Explore State Variable Factorization
 	string::iterator i, j;
 	string cleaned_chp = "";
 	string word;
@@ -182,7 +177,7 @@ void program::parse(string chp, int verbosity)
 	vars.insert(variable("Reset", "int", value("0"), 1, false));
 	vars.insert(variable("_Reset", "int", value("1"), 1, false));
 
-	prgm = (parallel*)expand_instantiation("main _()", &vars, NULL, "", verbosity, true);
+	prgm = (parallel*)expand_instantiation(NULL, "main _()", &vars, NULL, "", verbosity, true);
 
 	cout << vars << endl;
 
@@ -190,6 +185,10 @@ void program::parse(string chp, int verbosity)
 	cout << endl;
 }
 
+/* TODO Merge first assignment into reset values
+ * TODO Projection algorithm - when do we need to do projection? when shouldn't we do projection?
+ * TODO Process decomposition - How big should we make processes?
+ */
 void program::generate_states()
 {
 	state sr, s;
@@ -230,109 +229,49 @@ void program::generate_states()
 	}
 }
 
-/* Hey Nick, I found this in block's statevar gen function
- * which has now been removed.
- *
- * TODO: Remember "factoring" idea
- *
- * I'm really not sure what the "factoring" idea is...
- *
- * Also:
- *
- * TODO Create a state variable per guarded block whose production rule is the guard.
- * TODO A possible optimization would be to check to make sure that we need one first. If we don't, then we must already have one that works, add the guard to it's condition.
- * TODO Condition all production rules of the guarded blocks on their designated state variable.
- */
 void program::insert_state_vars()
 {
 	size_t i, j, k;
 	list<path>::iterator lp;
+	vector<int>::iterator ci;
 	path_space paths(space.size());
 	path_space cov;
+	int m;
 
+	/* TODO We need to syncronize up and down variable insertion so that
+	 * we don't end up inserting too many variables.
+	 */
 	cout << "UP CONFLICTS" << endl;
 	for (i = 0; i < space.up_firings.size(); i++)
-	{
 		for (j = 0; j < space.up_firings[i].size(); j++)
-		{
 			for (k = 0; k < space.up_conflicts[space.up_firings[i][j]].size(); k++)
-			{
 				if (space.traces[i][space.up_conflicts[space.up_firings[i][j]][k]].data != "1")
 				{
-					//cout << i->first << " " << *j << endl;
 					paths.merge(space.get_paths(space.up_firings[i][j], space.up_conflicts[space.up_firings[i][j]][k], path(space.size())));
 					paths.merge(space.get_paths(space.up_conflicts[space.up_firings[i][j]][k], space.up_firings[i][j], path(space.size())));
 				}
-			}
-		}
-	}
-
-	/*cout << "DOWN CONFLICTS" << endl;
-	for (i = 0; i < space.down_conflicts.size(); i++)
-	{
-		for (j = 0; j != space.down_conflicts[i].size(); j++)
-		{
-			//cout << i->first << " " << *j << endl;
-			paths.merge(space.get_paths(i, space.down_conflicts[i][j], path(space.size())));
-			paths.merge(space.get_paths(space.down_conflicts[i][j], i, path(space.size())));
-		}
-	}*/
-
-	for (i = 0; i < space.up_conflicts.size(); i++)
-		if (space.up_conflicts[i].size() > 0)
-			paths.total[i] = 0;
 
 	cout << "All paths as follows" << endl << paths << endl;
 
-	int m = paths.coverage_max();
-
-	cout << "AND THE BEST SPLIT CHOICE IS... " << m << endl;
-	cout << paths.total << endl;
-
-	cov = paths.coverage(m);
-	cout << "With Covered Paths: " << cov.size() << endl;
-	cout << cov << endl << endl;
-	paths = paths.remainder(m);
-
-
-	// TODO Need a better way to update the conflict list
-	vector<int>::iterator ci;
-	for (lp = cov.begin(); lp != cov.end(); lp++)
-	{
-		ci = find(space.up_conflicts[lp->from].begin(), space.up_conflicts[lp->from].end(), lp->to);
-		if (ci != space.up_conflicts[lp->from].end())
-		{
-			cout << "Removing conflict " << lp->from << " " << lp->to << endl;
-			space.up_conflicts[lp->from].erase(ci);
-		}
-	}
-
-	cout << "Up Production Rule Conflicts" << endl;
-	for (i = 0; i < space.up_conflicts.size(); i++)
-	{
-		cout << i << ": ";
-		for (j = 0; j != space.up_conflicts[i].size(); j++)
-			cout << space.up_conflicts[i][j] << " ";
-		cout << endl;
-	}
-
-	for (k = 0; k < 3; k++)
+	m = 0;
+	while (m != -1)
 	{
 		for (i = 0; i < space.up_conflicts.size(); i++)
 			if (space.up_conflicts[i].size() > 0)
 				paths.total[i] = 0;
 
 		m = paths.coverage_max();
-
-		cout << "AND THE BEST SPLIT CHOICE IS... " << m << endl;
-		cout << paths.total << endl;
-
+		cout << "AND THE BEST SPLIT CHOICE IS... " << m << endl << paths.total << endl;
 		cov = paths.coverage(m);
-		cout << "With Covered Paths: " << cov.size() << endl;
-		cout << cov << endl << endl;
+		cout << "With Covered Paths: " << cov.size() << endl << cov << endl << endl;
 		paths = paths.remainder(m);
 
-		vector<int>::iterator ci;
+		// TODO Update the variable space
+		add_unique_variable(prgm, "_s", ":=1", "int<1>", &vars, "", -1);
+		// TODO Update the parse tree
+		// TODO Update the state space
+		// TODO Replace the following with a complete regeneration of the conflict space
+		// space.gen_conflicts();
 		for (lp = cov.begin(); lp != cov.end(); lp++)
 		{
 			ci = find(space.up_conflicts[lp->from].begin(), space.up_conflicts[lp->from].end(), lp->to);
@@ -342,19 +281,52 @@ void program::insert_state_vars()
 				space.up_conflicts[lp->from].erase(ci);
 			}
 		}
+	}
 
-		cout << "Up Production Rule Conflicts" << endl;
-		for (i = 0; i < space.up_conflicts.size(); i++)
+	cout << "And Remaining Paths: " << paths.remainder(m).size() << endl << paths.remainder(m) << endl << endl;
+
+	paths.clear();
+	cout << "DOWN CONFLICTS" << endl;
+	for (i = 0; i < space.down_firings.size(); i++)
+		for (j = 0; j < space.down_firings[i].size(); j++)
+			for (k = 0; k < space.down_conflicts[space.down_firings[i][j]].size(); k++)
+				if (space.traces[i][space.down_conflicts[space.down_firings[i][j]][k]].data != "0")
+				{
+					paths.merge(space.get_paths(space.down_firings[i][j], space.down_conflicts[space.down_firings[i][j]][k], path(space.size())));
+					paths.merge(space.get_paths(space.down_conflicts[space.down_firings[i][j]][k], space.down_firings[i][j], path(space.size())));
+				}
+
+	cout << "All paths as follows" << endl << paths << endl;
+
+	while (m != -1)
+	{
+		for (i = 0; i < space.down_conflicts.size(); i++)
+			if (space.down_conflicts[i].size() > 0)
+				paths.total[i] = 0;
+
+		m = paths.coverage_max();
+		cout << "AND THE BEST SPLIT CHOICE IS... " << m << endl << paths.total << endl;
+		cov = paths.coverage(m);
+		cout << "With Covered Paths: " << cov.size() << endl << cov << endl << endl;
+		paths = paths.remainder(m);
+
+		// TODO Update the variable space
+		// TODO Update the parse tree
+		// TODO Update the state space
+		// TODO Replace the following with a complete regeneration of the conflict space
+		// space.gen_conflicts();
+		for (lp = cov.begin(); lp != cov.end(); lp++)
 		{
-			cout << i << ": ";
-			for (j = 0; j != space.up_conflicts[i].size(); j++)
-				cout << space.up_conflicts[i][j] << " ";
-			cout << endl;
+			ci = find(space.down_conflicts[lp->from].begin(), space.down_conflicts[lp->from].end(), lp->to);
+			if (ci != space.down_conflicts[lp->from].end())
+			{
+				cout << "Removing conflict " << lp->from << " " << lp->to << endl;
+				space.down_conflicts[lp->from].erase(ci);
+			}
 		}
 	}
 
-	cout << "And Remaining Paths: " << paths.remainder(m).size() << endl;
-	cout << paths.remainder(m) << endl << endl;
+	cout << "And Remaining Paths: " << paths.remainder(m).size() << endl << paths.remainder(m) << endl << endl;
 
 
 
@@ -468,7 +440,6 @@ for(size_t rulei = 0; rulei < vars.global.size(); rulei++)
 			//It fires here. Should it?
 			else if(weaker == -1 || weaker == 1)
 			{
-				//TODO! Figure out if it may fire here.
 				//(space[statei][prs_up[rulei].uid]=="0"))
 				up_conflicts[rulei][statei].data = "C";
 			}
@@ -502,6 +473,15 @@ void program::generate_prs()
 	print_prs();
 }
 
+/* TODO: Factoring - production rules should be relatively short.
+ * Look for common expressions between production rules and factor them
+ * out into their own variable
+ */
+void program::factor_prs()
+{
+
+}
+
 void program::print_prs()
 {
 	cout << "Production Rules: " << endl;
@@ -511,7 +491,6 @@ void program::print_prs()
 }
 
 /*
-//TODO: Test test!!
  * Do not delete without Nicholas' consent!! He has not proven that the construction method
  * used during bottom up will yield the same results! In fact, he thinks there is a defininte
  * region of the design space where this is not the case.

@@ -23,7 +23,7 @@
 struct block : instruction
 {
 	block();
-	block(string chp, vspace *vars, string tab, int verbosity);
+	block(instruction *parent, string chp, vspace *vars, string tab, int verbosity);
 	~block();
 
 	list<instruction*>			instrs;		// an ordered list of instructions in block
@@ -32,7 +32,7 @@ struct block : instruction
 
 	void init(string chp, vspace *vars, string tab, int verbosity);
 
-	instruction *duplicate(vspace *vars, map<string, string> convert, string tab, int verbosity);
+	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
 
 	void expand_shortcuts();
 	void parse();

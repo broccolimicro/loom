@@ -53,6 +53,11 @@ list<path>::iterator path_space::end()
 	return paths.end();
 }
 
+void path_space::clear()
+{
+	paths.clear();
+}
+
 int path_space::coverage_count(int n)
 {
 	return total[n];
