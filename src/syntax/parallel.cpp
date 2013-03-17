@@ -199,25 +199,30 @@ void parallel::parse()
 	}
 }
 
-int parallel::generate_states(graph *g, int init)
+int parallel::generate_states(graph *g, int init, state filter)
 {
 	space = g;
 	from = init;
 	cout << tab << "Parallel " << chp << endl;
 
-	list<instruction*>::iterator instr_iter;
+	list<instruction*>::iterator i, j;
 	instruction *instr;
 	map<string, variable>::iterator vi;
 	vector<int> state_catcher;
 	vector<string> chp_catcher;
 	state s;
 	bool first = true;
+	state v;
 
-	// TODO X out variables modified in other branches of the parallel
-	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
-		instr = *instr_iter;
-		state_catcher.push_back(instr->generate_states(g, init));
+		v = filter;
+		for (j = instrs.begin(); j != instrs.end(); j++)
+			if (i != j)
+				v = v || (*j)->variant();
+
+		instr = *i;
+		state_catcher.push_back(instr->generate_states(g, init, v));
 		if(CHP_EDGE)
 			chp_catcher.push_back(instr->chp);
 		else
@@ -230,6 +235,9 @@ int parallel::generate_states(graph *g, int init)
 		else
 			s = s || g->states[state_catcher.back()];
 	}
+
+	s = s || filter;
+
 	uid = g->states.size();
 
 	g->append_state(s, state_catcher, chp_catcher);

@@ -285,7 +285,7 @@ void conditional::simplify()
 	add.clear();
 }
 
-int conditional::generate_states(graph *g, int init)
+int conditional::generate_states(graph *g, int init, state filter)
 {
 	space = g;
 	from = init;
@@ -301,9 +301,9 @@ int conditional::generate_states(graph *g, int init)
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
-		guard_result = instr_iter->second->generate_states(g, init);
+		guard_result = instr_iter->second->generate_states(g, init, filter);
 
-		state_catcher.push_back(instr_iter->first->generate_states(g, guard_result));
+		state_catcher.push_back(instr_iter->first->generate_states(g, guard_result, filter));
 		if (CHP_EDGE)
 			chp_catcher.push_back(instr_iter->first->chp);
 		else
@@ -316,6 +316,8 @@ int conditional::generate_states(graph *g, int init)
 		else
 			s = s || g->states[state_catcher.back()];
 	}
+
+	s = s || filter;
 
 	if (state_catcher.size() > 1)
 	{

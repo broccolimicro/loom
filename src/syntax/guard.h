@@ -26,7 +26,6 @@ struct guard : instruction
 
 	void expand_shortcuts();
 	void parse();
-	int generate_states(graph *g, int init);
 	int generate_states(graph *g, int init, state filter);
 	void generate_scribes();
 

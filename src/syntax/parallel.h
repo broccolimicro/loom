@@ -28,7 +28,7 @@ struct parallel : block
 
 	void expand_shortcuts();
 	void parse();
-	int generate_states(graph *trans, int init);
+	int generate_states(graph *trans, int init, state filter);
 	void generate_scribes();
 
 	void print_hse();

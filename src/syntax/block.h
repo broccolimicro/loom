@@ -38,7 +38,7 @@ struct block : instruction
 	void expand_shortcuts();
 	void parse();
 	void simplify();
-	int generate_states(graph *trans, int init);
+	int generate_states(graph *trans, int init, state filter);
 	void generate_scribes();
 
 	void clear();

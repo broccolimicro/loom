@@ -114,34 +114,6 @@ void guard::parse()
 		cout << tab << "Guard:\t" + chp << endl;
 }
 
-int guard::generate_states(graph *g, int init)
-{
-	space = g;
-	from = init;
-	cout << tab << "Guard " << chp << endl;
-
-	map<string, variable>::iterator vi;
-	state s, temp;
-
-	bool prs = g->states[init].prs;
-	int tag = g->states[init].tag;
-	g->states[init] = g->states[init] || estimate("~(" + chp + ")", vars);
-	g->states[init].prs = prs;
-	g->states[init].tag = tag;
-
-	uid = g->states.size();
-	s = g->states[init];
-	solution = solve(chp, vars, tab, verbosity);
-	s = s && solution;
-
-	if(CHP_EDGE)
-		g->append_state(s, init, chp + "->");
-	else
-		g->append_state(s, init, "Guard");
-
-	return uid;
-}
-
 int guard::generate_states(graph *g, int init, state filter)
 {
 	space = g;

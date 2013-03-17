@@ -208,7 +208,7 @@ void program::generate_states()
 	space.append_state(s, 0, "Reset");
 
 	cout << "Generating State Space" << endl;
-	prgm->generate_states(&space, 1);
+	prgm->generate_states(&space, 1, state());
 	space.gen_traces();
 	prgm->generate_scribes();
 	space.gen_deltas();

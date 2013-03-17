@@ -274,7 +274,7 @@ void block::simplify()
 	}
 }
 
-int block::generate_states(graph *g, int init)
+int block::generate_states(graph *g, int init, state filter)
 {
 	space = g;
 	from = init;
@@ -285,7 +285,7 @@ int block::generate_states(graph *g, int init)
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
-		init = instr->generate_states(g, init);
+		init = instr->generate_states(g, init, filter);
 	}
 
 	return init;

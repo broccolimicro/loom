@@ -221,7 +221,7 @@ void loop::parse()
 	}
 }
 
-int loop::generate_states(graph *g, int init)
+int loop::generate_states(graph *g, int init, state filter)
 {
 	space = g;
 	from = init;
@@ -237,13 +237,13 @@ int loop::generate_states(graph *g, int init)
 	string exp = "";
 	state s, v;
 
-	v = variant();
+	v = filter || variant();
 	s = g->states[init] || v;
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		guardresult = instr_iter->second->generate_states(g, init, v);
-		state_catcher.push_back(instr_iter->first->generate_states(g, guardresult));
+		state_catcher.push_back(instr_iter->first->generate_states(g, guardresult, filter));
 		if(CHP_EDGE)
 			chp_catcher.push_back(instr_iter->second->chp+"->Block");
 		else

@@ -238,7 +238,7 @@ void assignment::parse()
 		cout << "Error: Instruction not handled: " << chp << endl;
 }
 
-int assignment::generate_states(graph *g, int init)
+int assignment::generate_states(graph *g, int init, state filter)
 {
 	space = g;
 	from = init;
@@ -253,14 +253,8 @@ int assignment::generate_states(graph *g, int init)
 	uid = g->states.size();
 
 	// Set up the initial state
-	s = g->states[init];
+	s = g->states[init] || filter;
 	s.prs = true;
-	/*for(ei = expr.begin(); ei != expr.end(); ei++)
-	{
-		cout << ei->first << endl;
-		vars->global[ei->first].prs = true;  //SET THE VAR AT THIS LOCATION TO PRS 1
-	}*/
-	// Evaluate each expression
 	for (ei = expr.begin(); ei != expr.end(); ei++)
 	{
 		v = vars->find(ei->first);

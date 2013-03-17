@@ -47,7 +47,7 @@ public:
 
 	virtual void expand_shortcuts() = 0;
 	virtual void parse() = 0;
-	virtual int  generate_states(graph *trans, int init) = 0;
+	virtual int  generate_states(graph *trans, int init, state filter) = 0;
 	virtual void generate_scribes() = 0;
 
 	virtual void print_hse() = 0;
