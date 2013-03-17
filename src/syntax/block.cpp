@@ -149,6 +149,28 @@ state block::variant()
 	return result;
 }
 
+state block::active_variant()
+{
+	state result(value("_"), vars->global.size());
+
+	list<instruction*>::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+		result = result || (*i)->active_variant();
+
+	return result;
+}
+
+state block::passive_variant()
+{
+	state result(value("_"), vars->global.size());
+
+	list<instruction*>::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+		result = result || (*i)->passive_variant();
+
+	return result;
+}
+
 void block::expand_shortcuts()
 {
 }

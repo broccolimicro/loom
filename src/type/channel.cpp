@@ -48,7 +48,6 @@ channel &channel::operator=(channel r)
 	return *this;
 }
 
-// TODO don't allow reset values for channels
 void channel::parse(string chp, int verbosity)
 {
 	if (verbosity >= VERB_PARSE)

@@ -183,6 +183,21 @@ state assignment::variant()
 	return result;
 }
 
+state assignment::active_variant()
+{
+	state result(value("_"), vars->global.size());
+	list<pair<string, string> >::iterator i;
+	for (i = expr.begin(); i != expr.end(); i++)
+		result.assign(vars->get_uid(i->first), value("X"), value("_"));
+
+	return result;
+}
+
+state assignment::passive_variant()
+{
+	return state();
+}
+
 void assignment::expand_shortcuts()
 {
 	// Convert var+ to var:=1

@@ -229,7 +229,6 @@ int vspace::insert(variable v)
 	}
 
 	string n;
-	value r;
 	int w;
 
 	if (v.type == "int" && v.width > 1)
@@ -238,13 +237,11 @@ int vspace::insert(variable v)
 		label.insert(pair<string, variable>(v.name, v));
 		n = v.name;
 		w = v.width;
-		r = v.reset;
 		for (int i = 0; i < w; i++)
 		{
 			v.name = n + "[" + to_string(i) + "]";
 			v.width = 1;
 			v.uid = global.size();
-			v.reset = r[i];
 			global.insert(pair<string, variable>(v.name, v));
 		}
 	}

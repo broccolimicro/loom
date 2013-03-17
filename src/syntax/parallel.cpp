@@ -125,6 +125,28 @@ state parallel::variant()
 	return result;
 }
 
+state parallel::active_variant()
+{
+	state result(value("_"), vars->global.size());
+
+	list<instruction*>::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+		result = result || (*i)->active_variant();
+
+	return result;
+}
+
+state parallel::passive_variant()
+{
+	state result(value("_"), vars->global.size());
+
+	list<instruction*>::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+		result = result || (*i)->passive_variant();
+
+	return result;
+}
+
 void parallel::expand_shortcuts()
 {
 
@@ -219,7 +241,7 @@ int parallel::generate_states(graph *g, int init, state filter)
 		v = filter;
 		for (j = instrs.begin(); j != instrs.end(); j++)
 			if (i != j)
-				v = v || (*j)->variant();
+				v = v || (*j)->active_variant();
 
 		instr = *i;
 		state_catcher.push_back(instr->generate_states(g, init, v));

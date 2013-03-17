@@ -141,6 +141,31 @@ state conditional::variant()
 	return result;
 }
 
+state conditional::active_variant()
+{
+	state result(value("_"), vars->global.size());
+
+	list<pair<block*, guard*> >::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		result = result || i->first->active_variant();
+		result = result || i->second->active_variant();
+	}
+	return result;
+}
+
+state conditional::passive_variant()
+{
+	state result(value("_"), vars->global.size());
+
+	list<pair<block*, guard*> >::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		result = result || i->first->passive_variant();
+		result = result || i->second->passive_variant();
+	}
+	return result;
+}
 
 void conditional::expand_shortcuts()
 {

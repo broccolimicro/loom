@@ -17,6 +17,17 @@ void graph::append_state(state s, vector<int> from, vector<string> chp)
 	vector<string>::iterator b;
 	int to = states.size();
 
+	if (to == 0)
+	{
+		s[0] = value("1");
+		s[1] = value("0");
+	}
+	else
+	{
+		s[0] = value("0");
+		s[1] = value("1");
+	}
+
 	states.push_back(s);
 	for (a = from.begin(), b = chp.begin(); a != from.end() && b != chp.end(); a++, b++)
 		insert_edge(*a, to, *b);
@@ -25,6 +36,18 @@ void graph::append_state(state s, vector<int> from, vector<string> chp)
 void graph::append_state(state s, int from, string chp)
 {
 	int to = states.size();
+
+	if (to == 0)
+	{
+		s[0] = value("1");
+		s[1] = value("0");
+	}
+	else
+	{
+		s[0] = value("0");
+		s[1] = value("1");
+	}
+
 	states.push_back(s);
 
 	if (from != -1)

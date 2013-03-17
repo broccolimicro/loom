@@ -101,7 +101,7 @@ void expression::gen_variables(string e)
 	id = vars->get_uid(e);
 	if (id < 0 && e.substr(0, 2) != "0x" && e.substr(0, 2) != "0b" && e.find_first_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_") != e.npos)
 	{
-		vars->insert(variable(e, "int", value("X"), 1, false));
+		vars->insert(variable(e, "int", 1, false));
 		cout << e << endl;
 	}
 }

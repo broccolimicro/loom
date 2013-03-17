@@ -16,19 +16,17 @@ variable::variable()
 	type = "";
 	width = 0;
 	fixed = false;
-	reset = value("X");
 	uid = -1;
 	driven = false;
 	io = false;
 }
 
-variable::variable(string name, string type, value reset, uint16_t width, bool io)
+variable::variable(string name, string type, uint16_t width, bool io)
 {
-	this->chp = type + "<" + to_string(width) + ">" + name + ":=" + reset.data;
+	this->chp = type + "<" + to_string(width) + ">" + name;
 	this->name = name;
 	this->type = type;
 	this->width = width;
-	this->reset = reset;
 	this->fixed = true;
 	this->uid = -1;
 	this->driven = false;
@@ -62,7 +60,6 @@ variable::~variable()
 	name = "";
 	type = "";
 	width = 0;
-	reset = value("X");
 	fixed = false;
 }
 
@@ -73,7 +70,6 @@ variable &variable::operator=(variable v)
 	type = v.type;
 	width = v.width;
 	fixed = v.fixed;
-	reset = v.reset;
 	uid = v.uid;
 	driven = v.driven;
 	io = v.io;
@@ -83,8 +79,6 @@ variable &variable::operator=(variable v)
 
 void variable::parse(string chp)
 {
-	reset = value("X");
-
 	this->chp = chp;
 
 	string input;
@@ -93,7 +87,6 @@ void variable::parse(string chp)
 	size_t name_start = find_first_of_l0(chp, "> ");
 	size_t input_start = find_first_of_l0(chp, "(", name_start);
 	size_t input_end = find_first_of_l0(chp, ")", input_start);
-	size_t reset_start = chp.find(":=");
 
 	if (verbosity >= VERB_PARSE)
 		cout << tab << "Variable: " << chp << endl;
@@ -107,23 +100,8 @@ void variable::parse(string chp)
 		for (size_t i = input.find_first_of(","); i != input.npos; i = input.find_first_of(",", i+1))
 			inputs.push_back(input.substr(i+1, input.find_first_of(",", i+1) - i-1));
 	}
-	else if (reset_start != chp.npos)
-		name = chp.substr(name_start+1, reset_start - (name_start+1));
 	else
 		name = chp.substr(name_start+1);
-
-	if (reset_start != chp.npos)
-	{
-		reset = value(chp.substr(reset_start+2));
-		if (reset.data[1] == 'x')				// hexadecimal e.g. 0xFEEDFACE
-			reset.data = hex_to_bin(reset.data.substr(2));
-		else if (reset.data[1] == 'b')			// binary      e.g. 0b01100110
-			reset.data = reset.data.substr(2);
-		else									// decimal     e.g. 20114
-			reset.data = dec_to_bin(reset.data);
-	}
-	else
-		reset = value("X");
 
 	type = chp.substr(0, width_start);
 	if (chp.find_first_of("<>") != chp.npos)
@@ -132,10 +110,7 @@ void variable::parse(string chp)
 		width = atoi(chp.substr(width_start+1, name_start - (width_start+1)).c_str());
 	}
 	else
-	{
 		fixed = false;
-		width = reset.data.length();
-	}
 
 	if (verbosity >= VERB_PARSE)
 	{
@@ -143,7 +118,6 @@ void variable::parse(string chp)
 		cout << tab << "\tIO:    " << input << endl;
 		cout << tab << "\tType:  " << type << endl;
 		cout << tab << "\tWidth: " << width << endl;
-		cout << tab << "\tReset: " << reset << endl;
 		cout << tab << "\tIO:    " << io << endl;
 	}
 }

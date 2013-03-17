@@ -128,6 +128,31 @@ state loop::variant()
 	return result;
 }
 
+state loop::active_variant()
+{
+	state result(value("_"), vars->global.size());
+
+	list<pair<block*, guard*> >::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		result = result || i->first->active_variant();
+		result = result || i->second->active_variant();
+	}
+	return result;
+}
+
+state loop::passive_variant()
+{
+	state result(value("_"), vars->global.size());
+
+	list<pair<block*, guard*> >::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		result = result || i->first->passive_variant();
+		result = result || i->second->passive_variant();
+	}
+	return result;
+}
 
 void loop::expand_shortcuts()
 {

@@ -102,6 +102,16 @@ state guard::variant()
 	return estimate(chp, vars);
 }
 
+state guard::active_variant()
+{
+	return state();
+}
+
+state guard::passive_variant()
+{
+	return estimate(chp, vars);
+}
+
 void guard::expand_shortcuts()
 {
 }
@@ -145,7 +155,7 @@ void guard::generate_scribes()
 {
 	if (chp.find_first_of("|") != chp.npos)
 	{
-		int vi = vars->insert(variable("("+chp+")", "int", value("X"), 1, false));
+		int vi = vars->insert(variable("("+chp+")", "int", 1, false));
 
 		if (vi != -1)
 			space->traces.push_back(evaluate(chp, vars, space->traces.traces));

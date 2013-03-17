@@ -174,8 +174,8 @@ void program::parse(string chp, int verbosity)
 		}
 	}
 
-	vars.insert(variable("Reset", "int", value("0"), 1, false));
-	vars.insert(variable("_Reset", "int", value("1"), 1, false));
+	vars.insert(variable("Reset", "int", 1, false));
+	vars.insert(variable("_Reset", "int", 1, false));
 
 	prgm = (parallel*)expand_instantiation(NULL, "main _()", &vars, NULL, "", verbosity, true);
 
@@ -185,30 +185,15 @@ void program::parse(string chp, int verbosity)
 	cout << endl;
 }
 
-/* TODO Merge first assignment into reset values
- * TODO Projection algorithm - when do we need to do projection? when shouldn't we do projection?
+/* TODO Projection algorithm - when do we need to do projection? when shouldn't we do projection?
  * TODO Process decomposition - How big should we make processes?
  */
 void program::generate_states()
 {
-	state sr, s;
-	for (map<string, variable>::iterator ri = vars.global.begin(); ri != vars.global.end(); ri++)
-	{
-		if (ri->second.name == "Reset")
-			sr.assign(ri->second.uid, value("1"));
-		else if (ri->second.name == "_Reset")
-			sr.assign(ri->second.uid, value("0"));
-		else
-			sr.assign(ri->second.uid, value("X"));
-
-		s.assign(ri->second.uid, ri->second.reset);
-	}
-	s.prs = true;
-	space.append_state(sr, -1, "Power On");
-	space.append_state(s, 0, "Reset");
+	space.append_state(state(value("X"), vars.global.size()), -1, "Power On");
 
 	cout << "Generating State Space" << endl;
-	prgm->generate_states(&space, 1, state());
+	prgm->generate_states(&space, 0, state());
 	space.gen_traces();
 	prgm->generate_scribes();
 	space.gen_deltas();
