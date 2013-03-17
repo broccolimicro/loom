@@ -33,6 +33,7 @@ struct block : instruction
 	void init(string chp, vspace *vars, string tab, int verbosity);
 
 	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
+	state variant();
 
 	void expand_shortcuts();
 	void parse();

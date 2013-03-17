@@ -473,3 +473,29 @@ state solve(string raw, vspace *vars, string tab, int verbosity)
 
 	return outcomes;
 }
+
+state estimate(string e, vspace *vars)
+{
+	size_t p;
+
+	p = find_first_of_l0(e, "|");
+	if (p != e.npos)
+		return estimate(e.substr(0, p), vars) || estimate(e.substr(p+1), vars);
+
+	p = find_first_of_l0(e, "&");
+	if (p != e.npos)
+		return estimate(e.substr(0, p), vars) || estimate(e.substr(p+1), vars);
+
+	p = find_first_of_l0(e, "~");
+	if (p != e.npos)
+		return estimate(e.substr(p+1), vars);
+
+	if (e[0] == '(' && e[e.length()-1] == ')')
+		return estimate(e.substr(1, e.length()-2), vars);
+
+	state result(value("_"), vars->global.size());
+	size_t id = vars->get_uid(e);
+	if (id >= 0 && id < vars->global.size())
+		result.assign(id, value("X"), value("_"));
+	return result;
+}

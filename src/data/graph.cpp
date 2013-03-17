@@ -91,7 +91,7 @@ void graph::gen_conflicts()
 
 	up_conflicts.resize(size());
 	down_conflicts.resize(size());
-	int i, j, k;
+	int j, k;
 
 	// Compare every state in both directions
 	for (j = 0; j < size(); j++)

@@ -128,6 +128,20 @@ instruction *conditional::duplicate(instruction *parent, vspace *vars, map<strin
 	return instr;
 }
 
+state conditional::variant()
+{
+	state result(value("_"), vars->global.size());
+
+	list<pair<block*, guard*> >::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		result = result || i->first->variant();
+		result = result || i->second->variant();
+	}
+	return result;
+}
+
+
 void conditional::expand_shortcuts()
 {
 	//Check for the shorthand [var] and replace it with [var -> skip]

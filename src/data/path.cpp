@@ -38,16 +38,28 @@ void path::clear()
 
 bool path::contains(int n)
 {
-	if ((int)nodes.size() <= n)
-		nodes.resize(n+1, 0);
 	return (nodes[n] > 0);
 }
 
 void path::set(int n)
 {
-	if ((int)nodes.size() <= n)
-		nodes.resize(n+1, 0);
 	nodes[n] = 1;
+}
+
+int path::max()
+{
+	int r = -1;
+	int t = 0;
+	for (size_t i = 0; i < nodes.size(); i++)
+	{
+		if (nodes[i] > t)
+		{
+			t = nodes[i];
+			r = i;
+		}
+	}
+
+	return r;
 }
 
 vector<int>::iterator path::begin()
@@ -82,6 +94,15 @@ ostream &operator<<(ostream &os, path p)
 	for (i = p.begin(); i != p.end(); i++)
 		os << *i << " ";
 	return os;
+}
+
+path operator+(path p1, path p2)
+{
+	path result(min(p1.size(), p2.size()));
+	for (int i = 0; i < p1.size() && i < p2.size(); i++)
+		result.nodes[i] = p1[i] + p2[i];
+
+	return result;
 }
 
 bool operator==(path p1, path p2)

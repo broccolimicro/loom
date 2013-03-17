@@ -234,44 +234,69 @@ void program::insert_state_vars()
 	size_t i, j, k;
 	list<path>::iterator lp;
 	vector<int>::iterator ci;
-	path_space paths(space.size());
+	path_space up_paths(space.size());
+	path_space down_paths(space.size());
+	path_space temp;
+	path up_total;
+	path down_total;
 	path_space cov;
 	int m;
 
-	/* TODO We need to syncronize up and down variable insertion so that
+	/* TODO We need to synchronize up and down variable insertion so that
 	 * we don't end up inserting too many variables.
 	 */
-	cout << "UP CONFLICTS" << endl;
 	for (i = 0; i < space.up_firings.size(); i++)
 		for (j = 0; j < space.up_firings[i].size(); j++)
 			for (k = 0; k < space.up_conflicts[space.up_firings[i][j]].size(); k++)
 				if (space.traces[i][space.up_conflicts[space.up_firings[i][j]][k]].data != "1")
 				{
-					paths.merge(space.get_paths(space.up_firings[i][j], space.up_conflicts[space.up_firings[i][j]][k], path(space.size())));
-					paths.merge(space.get_paths(space.up_conflicts[space.up_firings[i][j]][k], space.up_firings[i][j], path(space.size())));
+					up_paths.merge(space.get_paths(space.up_firings[i][j], space.up_conflicts[space.up_firings[i][j]][k], path(space.size())));
+					up_paths.merge(space.get_paths(space.up_conflicts[space.up_firings[i][j]][k], space.up_firings[i][j], path(space.size())));
 				}
 
-	cout << "All paths as follows" << endl << paths << endl;
+	for (i = 0; i < space.down_firings.size(); i++)
+		for (j = 0; j < space.down_firings[i].size(); j++)
+			for (k = 0; k < space.down_conflicts[space.down_firings[i][j]].size(); k++)
+				if (space.traces[i][space.down_conflicts[space.down_firings[i][j]][k]].data != "0")
+				{
+					down_paths.merge(space.get_paths(space.down_firings[i][j], space.down_conflicts[space.down_firings[i][j]][k], path(space.size())));
+					down_paths.merge(space.get_paths(space.down_conflicts[space.down_firings[i][j]][k], space.down_firings[i][j], path(space.size())));
+				}
+
+	cout << "UP CONFLICTS" << endl;
+
+	cout << "All paths as follows" << endl << up_paths << endl;
 
 	m = 0;
 	while (m != -1)
 	{
-		for (i = 0; i < space.up_conflicts.size(); i++)
-			if (space.up_conflicts[i].size() > 0)
-				paths.total[i] = 0;
-
-		m = paths.coverage_max();
-		cout << "AND THE BEST SPLIT CHOICE IS... " << m << endl << paths.total << endl;
-		cov = paths.coverage(m);
+		m = up_paths.coverage_max();
+		cout << "AND THE BEST SPLIT CHOICE IS... " << m << endl << up_paths.total << endl;
+		cov = up_paths.coverage(m);
 		cout << "With Covered Paths: " << cov.size() << endl << cov << endl << endl;
-		paths = paths.remainder(m);
+
+		cout << "   " << cov.ntotal << endl;
+		cout << " + " << down_paths.total << endl;
+		down_total = cov.ntotal + down_paths.total;
+
+		//for (i = 0; i < space.up_conflicts[m].size(); i++)
+		//	down_total[space.up_conflicts[m][i]] = -1;
+
+		cout << "Down Total: " << down_total << endl;
+		cout << "Best Down Trans: " << down_total.max() << " -> " << down_paths.coverage_count(down_total.max()) << "/" << down_paths.size() << endl;
+
+		/*temp = space.get_paths(m, down_total.max(), path(space.size()));
+		cout << "TRACE " << endl;
+		cout << temp << endl;*/
+
+		up_paths = up_paths.avoidance(m);
 
 		// TODO Update the variable space
-		add_unique_variable(prgm, "_s", ":=1", "int<1>", &vars, "", -1);
+		// 		add_unique_variable(prgm, "_s", ":=1", "int<1>", &vars, "", -1);
 		// TODO Update the parse tree
 		// TODO Update the state space
 		// TODO Replace the following with a complete regeneration of the conflict space
-		// space.gen_conflicts();
+		// 		space.gen_conflicts();
 		for (lp = cov.begin(); lp != cov.end(); lp++)
 		{
 			ci = find(space.up_conflicts[lp->from].begin(), space.up_conflicts[lp->from].end(), lp->to);
@@ -283,38 +308,34 @@ void program::insert_state_vars()
 		}
 	}
 
-	cout << "And Remaining Paths: " << paths.remainder(m).size() << endl << paths.remainder(m) << endl << endl;
+	cout << "And Remaining Paths: " << up_paths.avoidance(m).size() << endl << up_paths.avoidance(m) << endl << endl;
 
-	paths.clear();
 	cout << "DOWN CONFLICTS" << endl;
-	for (i = 0; i < space.down_firings.size(); i++)
-		for (j = 0; j < space.down_firings[i].size(); j++)
-			for (k = 0; k < space.down_conflicts[space.down_firings[i][j]].size(); k++)
-				if (space.traces[i][space.down_conflicts[space.down_firings[i][j]][k]].data != "0")
-				{
-					paths.merge(space.get_paths(space.down_firings[i][j], space.down_conflicts[space.down_firings[i][j]][k], path(space.size())));
-					paths.merge(space.get_paths(space.down_conflicts[space.down_firings[i][j]][k], space.down_firings[i][j], path(space.size())));
-				}
 
-	cout << "All paths as follows" << endl << paths << endl;
+	cout << "All paths as follows" << endl << down_paths << endl;
 
+	m = 0;
 	while (m != -1)
 	{
-		for (i = 0; i < space.down_conflicts.size(); i++)
-			if (space.down_conflicts[i].size() > 0)
-				paths.total[i] = 0;
+		//for (i = 0; i < space.down_conflicts.size(); i++)
+		//	if (space.down_conflicts[i].size() > 0)
+		//		down_paths.total[i] = 0;
 
-		m = paths.coverage_max();
-		cout << "AND THE BEST SPLIT CHOICE IS... " << m << endl << paths.total << endl;
-		cov = paths.coverage(m);
+		m = down_paths.coverage_max();
+		cout << "AND THE BEST SPLIT CHOICE IS... " << m << endl << down_paths.total << endl;
+		cov = down_paths.coverage(m);
 		cout << "With Covered Paths: " << cov.size() << endl << cov << endl << endl;
-		paths = paths.remainder(m);
+		down_paths = down_paths.avoidance(m);
+
+		up_total = cov.ntotal + up_paths.total;
+		cout << up_total << endl;
+		cout << up_total.max() << endl;
 
 		// TODO Update the variable space
 		// TODO Update the parse tree
 		// TODO Update the state space
 		// TODO Replace the following with a complete regeneration of the conflict space
-		// space.gen_conflicts();
+		// 		space.gen_conflicts();
 		for (lp = cov.begin(); lp != cov.end(); lp++)
 		{
 			ci = find(space.down_conflicts[lp->from].begin(), space.down_conflicts[lp->from].end(), lp->to);
@@ -326,7 +347,7 @@ void program::insert_state_vars()
 		}
 	}
 
-	cout << "And Remaining Paths: " << paths.remainder(m).size() << endl << paths.remainder(m) << endl << endl;
+	cout << "And Remaining Paths: " << down_paths.avoidance(m).size() << endl << down_paths.avoidance(m) << endl << endl;
 
 
 

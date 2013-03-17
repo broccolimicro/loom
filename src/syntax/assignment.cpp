@@ -173,6 +173,16 @@ instruction *assignment::duplicate(instruction *parent, vspace *vars, map<string
 	return instr;
 }
 
+state assignment::variant()
+{
+	state result(value("_"), vars->global.size());
+	list<pair<string, string> >::iterator i;
+	for (i = expr.begin(); i != expr.end(); i++)
+		result.assign(vars->get_uid(i->first), value("X"), value("_"));
+
+	return result;
+}
+
 void assignment::expand_shortcuts()
 {
 	// Convert var+ to var:=1

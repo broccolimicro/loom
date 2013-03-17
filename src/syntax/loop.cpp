@@ -115,6 +115,20 @@ instruction *loop::duplicate(instruction *parent, vspace *vars, map<string, stri
 	return instr;
 }
 
+state loop::variant()
+{
+	state result(value("_"), vars->global.size());
+
+	list<pair<block*, guard*> >::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		result = result || i->first->variant();
+		result = result || i->second->variant();
+	}
+	return result;
+}
+
+
 void loop::expand_shortcuts()
 {
 	//Check for the shorthand *[S] and replace it with *[1 -> S]
@@ -215,81 +229,41 @@ int loop::generate_states(graph *g, int init)
 
 	list<pair<block*, guard*> >::iterator instr_iter;
 	map<string, variable>::iterator vi;
-	int guardresult = -1;
+
 	vector<int> state_catcher;
 	vector<string> chp_catcher;
-	int next = init;
-	bool done = false;
-	bool sub = false;
-	bool first = true;
-	state s;
-	int count = 0;
-	int i = 0;
 
-	while (!done && count++ < 5)
-	{
-		cout << tab << "Loop Iteration " << count << ": " << g->states[next] << endl;
+	int guardresult;
+	string exp = "";
+	state s, v;
 
-		first = true;
-		for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
-		{
-			guardresult = instr_iter->second->generate_states(g, next);
-			state_catcher.push_back(instr_iter->first->generate_states(g, guardresult));
-			if(CHP_EDGE)
-				chp_catcher.push_back(instr_iter->second->chp+"->Block");
-			else
-				chp_catcher.push_back("Loop merge");
-			if (first)
-			{
-				s = g->states[state_catcher.back()];
-				first = false;
-			}
-			else
-				s = s || g->states[state_catcher.back()];
-		}
+	v = variant();
+	s = g->states[init] || v;
 
-		cout << tab << "Result " << s << endl;
-		uid.push_back(g->states.size());
-
-		g->append_state(s, state_catcher, chp_catcher);
-
-		next = uid.back();
-
-		state_catcher.clear();
-		chp_catcher.clear();
-
-		done = subset(g->states[init], g->states[next]);
-
-		if (done)
-			g->insert_edge(next, init, "Loop");
-		for (i = 0; i < (int)uid.size()-1; i++)
-		{
-			sub = subset(g->states[uid[i]], g->states[next]);
-			done = done || sub;
-			if (sub && uid[i] != next)
-				g->insert_edge(next, uid[i], "Loop");
-		}
-	}
-
-	s = g->states[init];
-
-	for (i = 0; i < (int)uid.size(); i++)
-		s = s || g->states[uid[i]];
-
-	state temp;
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
-		temp = solve("~("+instr_iter->second->chp+")", instr_iter->second->vars, instr_iter->second->tab, instr_iter->second->verbosity);
-		cout << "Intersecting " << s << " and " << temp;
-		s = s && temp;
-		cout << " to get " << s << endl;
+		guardresult = instr_iter->second->generate_states(g, init, v);
+		state_catcher.push_back(instr_iter->first->generate_states(g, guardresult));
+		if(CHP_EDGE)
+			chp_catcher.push_back(instr_iter->second->chp+"->Block");
+		else
+			chp_catcher.push_back("Loop merge");
+
+		if (exp != "")
+			exp += "&";
+
+		exp += "~(" + instr_iter->second->chp + ")";
 	}
-	cout << tab << "Final Result " << s << endl;
 
-	uid.push_back(g->states.size());
-	g->append_state(s, next, "Loop");
+	s = s && solve(expression(exp).simple, vars, tab, verbosity);
 
-	return uid.back();
+	cout << tab << "Result " << s << endl;
+	uid = g->states.size();
+
+	g->append_state(s, state_catcher, chp_catcher);
+	g->insert_edge(uid, init, "Loop");
+
+	return uid;
 }
 
 void loop::generate_scribes()

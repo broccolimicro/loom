@@ -18,6 +18,7 @@ struct path_space
 
 	list<path> paths;
 	path total;
+	path ntotal;
 
 	int size();
 	void merge(path_space s);
@@ -27,10 +28,12 @@ struct path_space
 	void clear();
 
 	int coverage_count(int n);
+	int avoidance_count(int n);
 	int coverage_max();
-	path_space remainder(int n);
+	int avoidance_max();
 	path_space coverage(int n);
-
+	path_space avoidance(int n);
+	path_space inverse();
 
 	path_space &operator=(path_space s);
 

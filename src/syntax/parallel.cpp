@@ -114,6 +114,17 @@ instruction *parallel::duplicate(instruction *parent, vspace *vars, map<string, 
 	return instr;
 }
 
+state parallel::variant()
+{
+	state result(value("_"), vars->global.size());
+
+	list<instruction*>::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+		result = result || (*i)->variant();
+
+	return result;
+}
+
 void parallel::expand_shortcuts()
 {
 

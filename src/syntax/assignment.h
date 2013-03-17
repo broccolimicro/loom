@@ -22,6 +22,7 @@ struct assignment : instruction
 	assignment &operator=(assignment a);
 
 	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
+	state variant();
 
 	void expand_shortcuts();
 	void parse();

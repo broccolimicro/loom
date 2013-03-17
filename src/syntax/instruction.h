@@ -43,6 +43,7 @@ public:
 	string kind();
 
 	virtual instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity) = 0;
+	virtual state variant() = 0;
 
 	virtual void expand_shortcuts() = 0;
 	virtual void parse() = 0;

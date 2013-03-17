@@ -138,6 +138,17 @@ instruction *block::duplicate(instruction *parent, vspace *vars, map<string, str
 	return instr;
 }
 
+state block::variant()
+{
+	state result(value("_"), vars->global.size());
+
+	list<instruction*>::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+		result = result || (*i)->variant();
+
+	return result;
+}
+
 void block::expand_shortcuts()
 {
 }

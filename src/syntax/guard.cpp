@@ -92,9 +92,14 @@ instruction *guard::duplicate(instruction *parent, vspace *vars, map<string, str
 			k = instr->chp.npos;
 	}
 
-	instr->chp = instr->chp;
+	instr->chp = expression(instr->chp).simple;
 
 	return instr;
+}
+
+state guard::variant()
+{
+	return estimate(chp, vars);
 }
 
 void guard::expand_shortcuts()
@@ -118,16 +123,43 @@ int guard::generate_states(graph *g, int init)
 	map<string, variable>::iterator vi;
 	state s, temp;
 
+	bool prs = g->states[init].prs;
+	int tag = g->states[init].tag;
+	g->states[init] = g->states[init] || estimate("~(" + chp + ")", vars);
+	g->states[init].prs = prs;
+	g->states[init].tag = tag;
 
 	uid = g->states.size();
 	s = g->states[init];
-	s = s && solve(chp, vars, tab, verbosity);
+	solution = solve(chp, vars, tab, verbosity);
+	s = s && solution;
 
-	/*bool prs = g->states[init].prs;
+	if(CHP_EDGE)
+		g->append_state(s, init, chp + "->");
+	else
+		g->append_state(s, init, "Guard");
+
+	return uid;
+}
+
+int guard::generate_states(graph *g, int init, state filter)
+{
+	space = g;
+	from = init;
+	cout << tab << "Guard " << chp << endl;
+
+	map<string, variable>::iterator vi;
+	state s, temp;
+
+	bool prs = g->states[init].prs;
 	int tag = g->states[init].tag;
-	g->states[init] = g->states[init] && solve("~(" + chp + ")", vars, tab, verbosity);
+	g->states[init] = g->states[init] || estimate("~(" + chp + ")", vars);
 	g->states[init].prs = prs;
-	g->states[init].tag = tag;*/
+	g->states[init].tag = tag;
+
+	uid = g->states.size();
+	solution = solve(chp, vars, tab, verbosity);
+	s = (g->states[init] || filter) && solution;
 
 	if(CHP_EDGE)
 		g->append_state(s, init, chp + "->");

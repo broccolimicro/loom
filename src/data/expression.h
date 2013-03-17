@@ -76,5 +76,6 @@ t evaluate(string raw, vspace *vars, vector<t> values)
 }
 
 state solve(string raw, vspace *vars, string tab, int verbosity);
+state estimate(string e, vspace *vars);
 
 #endif

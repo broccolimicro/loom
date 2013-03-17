@@ -17,14 +17,17 @@ struct guard : instruction
 	~guard();
 
 	int uid;					// indexes into the state in the state space
+	state solution;
 
 	guard &operator=(guard g);
 
 	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
+	state variant();
 
 	void expand_shortcuts();
 	void parse();
-	int generate_states(graph *trans, int init);
+	int generate_states(graph *g, int init);
+	int generate_states(graph *g, int init, state filter);
 	void generate_scribes();
 
 	void print_hse();

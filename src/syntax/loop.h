@@ -19,11 +19,10 @@ struct loop : conditional
 	loop(instruction *parent, string raw, vspace *vars, string tab, int verbosity);
 	~loop();
 
-	vector<int> uid;
-
 	loop &operator=(loop l);
 
 	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
+	state variant();
 
 	void expand_shortcuts();
 	void parse();

@@ -15,6 +15,7 @@ path_space::path_space()
 path_space::path_space(int s)
 {
 	total.nodes.resize(s);
+	ntotal.nodes.resize(s);
 }
 
 path_space::~path_space()
@@ -32,7 +33,10 @@ void path_space::merge(path_space s)
 	paths.merge(s.paths);
 
 	for (int i = 0; i < s.total.size(); i++)
-		total[i] += s.total[i];
+	{
+		total.nodes[i] += s.total.nodes[i];
+		ntotal.nodes[i] += s.ntotal.nodes[i];
+	}
 }
 
 void path_space::push_back(path p)
@@ -40,7 +44,10 @@ void path_space::push_back(path p)
 	paths.push_back(p);
 
 	for (int i = 0; i < p.size(); i++)
-		total[i] += p[i];
+	{
+		total.nodes[i] += p.nodes[i];
+		ntotal.nodes[i] += 1 - p.nodes[i];
+	}
 }
 
 list<path>::iterator path_space::begin()
@@ -60,41 +67,28 @@ void path_space::clear()
 
 int path_space::coverage_count(int n)
 {
-	return total[n];
+	return total.nodes[n];
+}
+
+int path_space::avoidance_count(int n)
+{
+	return ntotal.nodes[n];
 }
 
 int path_space::coverage_max()
 {
-	int r = -1;
-	int t = 0;
-	for (int i = 0; i != total.size(); i++)
-	{
-		if (total[i] > t)
-		{
-			t = total[i];
-			r = i;
-		}
-	}
-
-	return r;
+	return total.max();
 }
 
-path_space path_space::remainder(int n)
+int path_space::avoidance_max()
 {
-	list<path>::iterator i;
-	path_space result(size());
-
-	for (i = paths.begin(); i != paths.end(); i++)
-		if (!i->contains(n))
-			result.push_back(*i);
-
-	return result;
+	return ntotal.max();
 }
 
 path_space path_space::coverage(int n)
 {
 	list<path>::iterator i;
-	path_space result(size());
+	path_space result(total.size());
 
 	for (i = paths.begin(); i != paths.end(); i++)
 		if (i->contains(n))
@@ -103,12 +97,43 @@ path_space path_space::coverage(int n)
 	return result;
 }
 
+path_space path_space::avoidance(int n)
+{
+	list<path>::iterator i;
+	path_space result(total.size());
+
+	for (i = paths.begin(); i != paths.end(); i++)
+		if (!i->contains(n))
+			result.push_back(*i);
+
+	return result;
+}
+
+path_space path_space::inverse()
+{
+	path_space result(total.size());
+
+	for (list<path>::iterator i = paths.begin(); i != paths.end(); i++)
+	{
+		path p(i->nodes.size());
+		p.from = i->from;
+		p.to = i->to;
+		for (size_t j = 0; j < i->nodes.size(); j++)
+			p.nodes.assign(j, 1 - i->nodes[j]);
+		result.push_back(p);
+	}
+
+	return result;
+}
+
 path_space &path_space::operator=(path_space s)
 {
 	paths.clear();
 	total.clear();
+	ntotal.clear();
 	paths = s.paths;
 	total = s.total;
+	ntotal = s.ntotal;
 	return *this;
 }
 
