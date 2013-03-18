@@ -107,6 +107,30 @@ path_space graph::get_paths(int from, int to, path p)
 	return result;
 }
 
+trace graph::get_trace(int from, int up, int down, trace t, value p)
+{
+	if (from == up)
+		p = value("1");
+	if (from == down)
+		p = value("0");
+
+	if (t[from].data == (t[from] || p).data)
+		return t;
+
+	t[from] = t[from] || p;
+
+	if (edges[from].size() > 0)
+	{
+		trace result(value("_"), t.size());
+		for (size_t i = 0; i < edges[from].size(); i++)
+			result = result || get_trace(edges[from][i], up, down, t, p);
+
+		return result;
+	}
+	else
+		return t;
+}
+
 void graph::gen_conflicts()
 {
 	up_conflicts.clear();
@@ -119,7 +143,7 @@ void graph::gen_conflicts()
 	// Compare every state in both directions
 	for (j = 0; j < size(); j++)
 	{
-		for (k = j; k < size(); k++)
+		for (k = 0; k < size(); k++)
 		{
 			if (k != j)
 			{
@@ -154,14 +178,18 @@ void graph::gen_deltas()
 	up.traces.clear();
 	down.traces.clear();
 	up_firings.clear();
+	up_firings_union.clear();
 	down_firings.clear();
+	down_firings_union.clear();
 	delta.traces.clear();
 
 	// Delta Calculations (Up, Down, Delta)
 	up.traces.resize(states.width(), trace());
 	up_firings.resize(states.width(), vector<int>());
+	up_firings_union.resize(states.size(), 0);
 	down.traces.resize(states.width(), trace());
 	down_firings.resize(states.width(), vector<int>());
+	down_firings_union.resize(states.size(), 0);
 	delta.traces.resize(states.width(), trace());
 
 	for (from = 0; from < edges.size(); from++)
@@ -189,6 +217,7 @@ void graph::gen_deltas()
 					{
 						upstr = upstr + "1";
 						up_firings[k].push_back(from);
+						up_firings_union[from]++;
 					}
 					else if (*sj == '1' && *si == '1')
 						upstr = upstr + "X";
@@ -199,6 +228,7 @@ void graph::gen_deltas()
 					{
 						downstr = downstr + "1";
 						down_firings[k].push_back(from);
+						down_firings_union[from]++;
 					}
 					else if (*sj == '0' && *si == '0')
 						downstr = downstr + "X";

@@ -25,7 +25,9 @@ struct graph
 
 
 	vector<vector<int> > up_firings;
+	vector<int>			 up_firings_union;
 	vector<vector<int> > down_firings;
+	vector<int>			 down_firings_union;
 	vector<vector<int> > up_conflicts;
 	vector<vector<int> > down_conflicts;
 
@@ -40,6 +42,7 @@ struct graph
 	void insert_state(state s, int from, int to);
 	void insert_edge(int from, int to, string chp);
 	path_space get_paths(int from, int to, path p);
+	trace	   get_trace(int from, int up, int down, trace t, value p);
 
 	void gen_conflicts();
 	void gen_traces();

@@ -126,6 +126,18 @@ path_space path_space::inverse()
 	return result;
 }
 
+path_space path_space::associations(int from)
+{
+	list<path>::iterator i;
+	path_space result(total.size());
+
+	for (i = paths.begin(); i != paths.end(); i++)
+		if (i->from == from)
+			result.push_back(*i);
+
+	return result;
+}
+
 path_space &path_space::operator=(path_space s)
 {
 	paths.clear();

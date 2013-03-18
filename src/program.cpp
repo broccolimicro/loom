@@ -187,12 +187,13 @@ void program::parse(string chp, int verbosity)
 
 /* TODO Projection algorithm - when do we need to do projection? when shouldn't we do projection?
  * TODO Process decomposition - How big should we make processes?
+ * TODO There is a problem with the interaction of scribe variables with bubbleless reshuffling because scribe variables insert bubbles
  */
 void program::generate_states()
 {
-	space.append_state(state(value("X"), vars.global.size()), -1, "Power On");
-
 	cout << "Generating State Space" << endl;
+
+	space.append_state(state(value("X"), vars.global.size()), -1, "Power On");
 	prgm->generate_states(&space, 0, state());
 	space.gen_traces();
 	prgm->generate_scribes();
@@ -221,15 +222,60 @@ void program::insert_state_vars()
 	vector<int>::iterator ci;
 	path_space up_paths(space.size());
 	path_space down_paths(space.size());
-	path_space temp;
+	path_space temp(space.size());
+
+	int up_conflict_path_count[space.size()][space.size()];
+	int down_conflict_path_count[space.size()][space.size()];
+	vector<path_space>	up_cov(space.size());
+	vector<path_space>  down_cov(space.size());
 	path up_total;
 	path down_total;
 	path_space cov;
-	int m;
+	int m, u, d;
 
-	/* TODO We need to synchronize up and down variable insertion so that
-	 * we don't end up inserting too many variables.
-	 */
+	int benefit[space.size()][space.size()];
+	trace trans_trace[space.size()][space.size()];
+
+	// So Here is the trick. This works for conditionals, blocks, assignments, guards. This does not work for parallel, loop.
+	// This is a two dimensional analysis (one up transition and one down transition). To get a one guard loop to work, you need at least
+	// a four dimensional analysis (two up transitions, and two down transitions). To get a two guard loop to work, I assume you need 8.
+	// So, 2^(1 + max number of loop guards) dimensional analysis for any given program. Furthermore, it thinks that it has to separate
+	// branches of a parallel block with a state variable transition... This is mildly problematic because it cannot be solved by an
+	// examination of the state space alone. To solve this problem, you need to examine the parse tree as well.
+	//
+	// This algorithms execution time balloons very quickly and becomes very very very fucking slow, BUT! it does indeed calculate the optimal
+	// state variable insertion points and resulting trace. So... projection + process decomposition to keep the space we are looking at very small?
+	// or find a less optimal, faster way? Also, ALL of this has to be iterated... making it very very slow.
+
+	// The comments explain step by step details of this algorithm:
+
+	// Step 1:
+
+	// Calculate the number of conflict paths that would be added were state i to be an implicant for an up production rule of a state variable
+	for (i = 0; i < space.up_conflicts.size(); i++)
+		for (j = 0; j < space.up_conflicts[i].size(); j++)
+		{
+			temp.clear();
+			temp.merge(space.get_paths(i, space.up_conflicts[i][j], path(space.size())));
+			temp.merge(space.get_paths(space.up_conflicts[i][j], i, path(space.size())));
+
+			up_conflict_path_count[i][space.up_conflicts[i][j]] = temp.paths.size();
+		}
+
+	// Calculate the number of conflict paths that would be added were state i to be an implicant for a down production rule of a state variable
+	for (i = 0; i < space.down_conflicts.size(); i++)
+		for (j = 0; j < space.down_conflicts[i].size(); j++)
+		{
+			temp.clear();
+			temp.merge(space.get_paths(i, space.down_conflicts[i][j], path(space.size())));
+			temp.merge(space.get_paths(space.down_conflicts[i][j], i, path(space.size())));
+
+			down_conflict_path_count[i][space.down_conflicts[i][j]] = temp.paths.size();
+		}
+
+	// Step 2:
+
+	// Calculate all of the conflict paths caused by current up production rule firings
 	for (i = 0; i < space.up_firings.size(); i++)
 		for (j = 0; j < space.up_firings[i].size(); j++)
 			for (k = 0; k < space.up_conflicts[space.up_firings[i][j]].size(); k++)
@@ -239,6 +285,7 @@ void program::insert_state_vars()
 					up_paths.merge(space.get_paths(space.up_conflicts[space.up_firings[i][j]][k], space.up_firings[i][j], path(space.size())));
 				}
 
+	// Calculate all of the conflict paths caused by current down production rule firings
 	for (i = 0; i < space.down_firings.size(); i++)
 		for (j = 0; j < space.down_firings[i].size(); j++)
 			for (k = 0; k < space.down_conflicts[space.down_firings[i][j]].size(); k++)
@@ -248,92 +295,68 @@ void program::insert_state_vars()
 					down_paths.merge(space.get_paths(space.down_conflicts[space.down_firings[i][j]][k], space.down_firings[i][j], path(space.size())));
 				}
 
-	cout << "UP CONFLICTS" << endl;
+	// Step 3:
 
-	cout << "All paths as follows" << endl << up_paths << endl;
-
+	// Generate a 2^(1 + max number of loop guards) dimensional grid with a side length equal to the number of states in the state space
+	// Each element in this grid is a calculated benefit value that represents the total number of conflict paths eliminated were there
+	// to be up transitions at (x0, y0, z0, ...) and down transitions at (x1, y1, z1, ...). The current implimentation only allows a two
+	// dimensional grid, so (x0, x1).
+	cout << "BENEFIT" << endl;
 	m = 0;
-	while (m != -1)
+	u = -1;
+	d = -1;
+	for (i = 0; i < (size_t)space.size(); i++)
 	{
-		m = up_paths.coverage_max();
-		cout << "AND THE BEST SPLIT CHOICE IS... " << m << endl << up_paths.total << endl;
-		cov = up_paths.coverage(m);
-		cout << "With Covered Paths: " << cov.size() << endl << cov << endl << endl;
-
-		cout << "   " << cov.ntotal << endl;
-		cout << " + " << down_paths.total << endl;
-		down_total = cov.ntotal + down_paths.total;
-
-		//for (i = 0; i < space.up_conflicts[m].size(); i++)
-		//	down_total[space.up_conflicts[m][i]] = -1;
-
-		cout << "Down Total: " << down_total << endl;
-		cout << "Best Down Trans: " << down_total.max() << " -> " << down_paths.coverage_count(down_total.max()) << "/" << down_paths.size() << endl;
-
-		/*temp = space.get_paths(m, down_total.max(), path(space.size()));
-		cout << "TRACE " << endl;
-		cout << temp << endl;*/
-
-		up_paths = up_paths.avoidance(m);
-
-		// TODO Update the variable space
-		// 		add_unique_variable(prgm, "_s", ":=1", "int<1>", &vars, "", -1);
-		// TODO Update the parse tree
-		// TODO Update the state space
-		// TODO Replace the following with a complete regeneration of the conflict space
-		// 		space.gen_conflicts();
-		for (lp = cov.begin(); lp != cov.end(); lp++)
+		up_cov[i] = up_paths.coverage(i);
+		for (j = 0; j < (size_t)space.size(); j++)
 		{
-			ci = find(space.up_conflicts[lp->from].begin(), space.up_conflicts[lp->from].end(), lp->to);
-			if (ci != space.up_conflicts[lp->from].end())
+			if (i == 0)
+				down_cov[j] = down_paths.coverage(j);
+
+			// Number of conflicts that will be eliminated
+
+			// This benefit value is equal to		the number of up conflict paths that pass through x0	+
+			//										the number of down conflict paths that pass through x1	-
+			//										the number of conflict paths that pass through both x0 and x1
+			benefit[i][j] = up_paths.total[i] + down_paths.total[j] - up_cov[i].total[j] - down_cov[j].total[i];
+
+			// Number of conflicts that will be added
+
+			// Now we need to subtract the number of conflict paths that will be added because the state variable
+			// transition implicants have conflicting states. We need to make sure that we don't over count this
+			// subtraction value because some of those conflicting states can be vacuous firings.
+
+			// First, calculate the trace were there to be transitions at (x0, x1)
+			trans_trace[i][j] = space.get_trace(0, i, j, trace(value("_"), space.size()), value("X"));
+
+			// Then, use that trace to check for vacuous firings when adding up conflict paths
+			for (k = 0; k < space.up_conflicts[i].size(); k++)
+				if (trans_trace[i][j][space.up_conflicts[i][k]].data != "1")
+					benefit[i][j] -= up_conflict_path_count[i][space.up_conflicts[i][k]];
+
+			for (k = 0; k < space.down_conflicts[j].size(); k++)
+				if (trans_trace[i][j][space.down_conflicts[j][k]].data != "0")
+					benefit[i][j] -= down_conflict_path_count[j][space.down_conflicts[j][k]];
+
+			// Now we look for the max of this benefit value and VUALA
+			if (benefit[i][j] > m)
 			{
-				cout << "Removing conflict " << lp->from << " " << lp->to << endl;
-				space.up_conflicts[lp->from].erase(ci);
+				u = i;
+				d = j;
+				m = benefit[i][j];
 			}
+
+			cout << benefit[i][j] << "\t";
 		}
+		cout << endl;
 	}
 
-	cout << "And Remaining Paths: " << up_paths.avoidance(m).size() << endl << up_paths.avoidance(m) << endl << endl;
+	cout << endl << endl << m << " Conflicting Paths Eliminated" << endl << "Up: " << u << endl << "Down: " << d << endl;
+	cout << trans_trace[u][d] << endl << endl;
 
-	cout << "DOWN CONFLICTS" << endl;
+	// Now we need to execute the change, recalculate, and reiterate.
 
-	cout << "All paths as follows" << endl << down_paths << endl;
-
-	m = 0;
-	while (m != -1)
-	{
-		//for (i = 0; i < space.down_conflicts.size(); i++)
-		//	if (space.down_conflicts[i].size() > 0)
-		//		down_paths.total[i] = 0;
-
-		m = down_paths.coverage_max();
-		cout << "AND THE BEST SPLIT CHOICE IS... " << m << endl << down_paths.total << endl;
-		cov = down_paths.coverage(m);
-		cout << "With Covered Paths: " << cov.size() << endl << cov << endl << endl;
-		down_paths = down_paths.avoidance(m);
-
-		up_total = cov.ntotal + up_paths.total;
-		cout << up_total << endl;
-		cout << up_total.max() << endl;
-
-		// TODO Update the variable space
-		// TODO Update the parse tree
-		// TODO Update the state space
-		// TODO Replace the following with a complete regeneration of the conflict space
-		// 		space.gen_conflicts();
-		for (lp = cov.begin(); lp != cov.end(); lp++)
-		{
-			ci = find(space.down_conflicts[lp->from].begin(), space.down_conflicts[lp->from].end(), lp->to);
-			if (ci != space.down_conflicts[lp->from].end())
-			{
-				cout << "Removing conflict " << lp->from << " " << lp->to << endl;
-				space.down_conflicts[lp->from].erase(ci);
-			}
-		}
-	}
-
-	cout << "And Remaining Paths: " << down_paths.avoidance(m).size() << endl << down_paths.avoidance(m) << endl << endl;
-
+	// Fuck that hurt my head.
 
 
 

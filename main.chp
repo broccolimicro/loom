@@ -25,7 +25,7 @@ process mux0b2(chan4p0b i, chan4p0b o1, chan4p0b o2, chan4p1b s)
 	o1.r-;
 	o2.r-;
 	s.ra-;
-	*[
+	
 		// wait for a request
 		[s.t | s.f];
 		// service the request
@@ -36,7 +36,7 @@ process mux0b2(chan4p0b i, chan4p0b o1, chan4p0b o2, chan4p1b s)
 		s.ra+;
 		[~s.t & ~s.f];
 		s.ra-;
-	]
+	
 }
 
 
@@ -63,11 +63,11 @@ process main()
 	chan4p0b C;
 	chan4p1b D;
 	
-	chan4p0b E;
+	/*chan4p0b E;
 	chan4p0b F;
 	chan4p0b G;
-	chan4p1b I;
+	chan4p1b I;*/
 		
-	mux0b2 MyMuxA(A, B, C, D)||
-	mux0b2 MyMuxB(E, F, G, I)
+	mux0b2 MyMuxA(A, B, C, D)
+	//mux0b2 MyMuxB(E, F, G, I)
 }

@@ -35,6 +35,8 @@ struct path
 ostream &operator<<(ostream &os, path p);
 
 path operator+(path p1, path p2);
+path operator/(path p1, int n);
+path operator*(path p1, int n);
 
 bool operator==(path p1, path p2);
 bool operator<(path p1, path p2);

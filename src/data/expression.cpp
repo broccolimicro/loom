@@ -102,7 +102,7 @@ void expression::gen_variables(string e)
 	if (id < 0 && e.substr(0, 2) != "0x" && e.substr(0, 2) != "0b" && e.find_first_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_") != e.npos)
 	{
 		vars->insert(variable(e, "int", 1, false));
-		cout << e << endl;
+		//cout << e << endl;
 	}
 }
 
@@ -112,7 +112,7 @@ void expression::gen_minterms(string e)
 	string v;
 	trace_space values(vars->global.size());
 
-	cout << "Minterms " << vars->global.size() << endl;
+	//cout << "Minterms " << vars->global.size() << endl;
 
 	m = pow(2, values.size())/2;
 	n = 2;
@@ -132,11 +132,11 @@ void expression::gen_minterms(string e)
 		m /= 2;
 		n *= 2;
 
-		cout << values[i] << endl;
+		//cout << values[i] << endl;
 	}
 
 	trace result = evaluate(e, vars, values.traces);
-	cout << "Result " << result << endl;
+	//cout << "Result " << result << endl;
 
 	for (i = 0; i < result.size(); i++)
 		if (result[i].data == "1")
@@ -155,10 +155,10 @@ void expression::gen_primes()
 	vector<int> count;
 	int count_sum;
 
-	cout << "Minterms\t";
+	/*cout << "Minterms\t";
 	for (i = 0; i < implicants.size(); i++)
 		cout << "[" << implicants[i] << "] ";
-	cout << endl;
+	cout << endl;*/
 
 	t[1] = implicants;
 
@@ -193,10 +193,10 @@ void expression::gen_primes()
 		t[1] = t[0];
 	}
 
-	cout << "Primes\t";
+	/*cout << "Primes\t";
 	for (i = 0; i < primes.size(); i++)
 		cout << "[" << primes[i] << "] ";
-	cout << endl;
+	cout << endl;*/
 }
 
 void expression::gen_essentials()
@@ -210,32 +210,32 @@ void expression::gen_essentials()
 	size_t max_count = implicants.size();
 	size_t choice;
 
-	cout << "Prime Implicant Chart" << endl;
+	//cout << "Prime Implicant Chart" << endl;
 	cov.clear();
 	for (j = 0; j < implicants.size(); j++)
 		cov.insert(pair<size_t, vector<size_t> >(j, vector<size_t>()));
 	for (j = 0; j < implicants.size(); j++)
 	{
-		cout << implicants[j] << " is covered by ";
+		//cout << implicants[j] << " is covered by ";
 		for (i = 0; i < primes.size(); i++)
 			if (subset(primes[i], implicants[j]))
 			{
-				cout << "[" << primes[i] << "] ";
+				//cout << "[" << primes[i] << "] ";
 				cov[j].push_back(i);
 			}
 
 		if (cov[j].size() == 1 && find(essentials.begin(), essentials.end(), cov[j].front()) == essentials.end())
 			essentials.push_back(cov[j].front());
 
-		cout << endl;
+		//cout << endl;
 	}
 
-	cout << endl;
+	//cout << endl;
 
-	cout << "Essential Prime Implicants" << endl;
+	/*cout << "Essential Prime Implicants" << endl;
 	for (j = 0; j < essentials.size(); j++)
 		cout << "[" << primes[essentials[j]] << "]" << endl;
-	cout << endl;
+	cout << endl;*/
 
 	Tcov.clear();
 	for (j = 0; j < primes.size(); j++)
@@ -250,7 +250,7 @@ void expression::gen_essentials()
 			Tcov[cov[j][k]].push_back(j);
 	}
 
-	cout << "Leftover Non-Essential Prime Implicants" << endl;
+	/*cout << "Leftover Non-Essential Prime Implicants" << endl;
 	for (i = 0; i < primes.size(); i++)
 	{
 		if (Tcov[i].size() > 0)
@@ -261,7 +261,7 @@ void expression::gen_essentials()
 			cout << endl;
 		}
 	}
-	cout << endl;
+	cout << endl;*/
 
 	max_count = implicants.size();
 	while (max_count > 0)
@@ -292,10 +292,10 @@ void expression::gen_essentials()
 		}
 	}
 
-	cout << "Best Essential Prime Implicants" << endl;
+	/*cout << "Best Essential Prime Implicants" << endl;
 	for (j = 0; j < essentials.size(); j++)
 		cout << "[" << primes[essentials[j]] << "]" << endl;
-	cout << endl;
+	cout << endl;*/
 }
 
 void expression::gen_output()
@@ -337,7 +337,7 @@ void expression::gen_output()
 	if (simple == "")
 		simple += "0";
 
-	cout << "Final Result " << simple << endl;
+	//cout << "Final Result " << simple << endl;
 }
 
 expression &expression::operator()(string e)
@@ -385,8 +385,8 @@ state solve(string raw, vspace *vars, string tab, int verbosity)
 	if (vars->global.size() != 0)
 		outcomes.assign(vars->global.size()-1, value("?"), value("?"));
 
-	if (verbosity >= VERB_PARSE)
-		cout << tab << "Solve: " << raw << endl;
+	//if (verbosity >= VERB_PARSE)
+	//	cout << tab << "Solve: " << raw << endl;
 
 	depth = 0;
 	for (i = raw.begin(), j = raw.begin(); i != raw.end()+1; i++)
@@ -401,8 +401,8 @@ state solve(string raw, vspace *vars, string tab, int verbosity)
 			outcomes = (solve(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity) ||
 						solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity));
 
-			if (verbosity >= VERB_PARSE)
-				cout << tab << outcomes << endl;
+			//if (verbosity >= VERB_PARSE)
+			//	cout << tab << outcomes << endl;
 
 			return outcomes;
 		}
@@ -421,8 +421,8 @@ state solve(string raw, vspace *vars, string tab, int verbosity)
 			outcomes = (solve(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity) &&
 						solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity));
 
-			if (verbosity >= VERB_PARSE)
-				cout << tab << outcomes << endl;
+			//if (verbosity >= VERB_PARSE)
+			//	cout << tab << outcomes << endl;
 
 			return outcomes;
 		}
@@ -440,8 +440,8 @@ state solve(string raw, vspace *vars, string tab, int verbosity)
 		{
 			outcomes = ~solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
 
-			if (verbosity >= VERB_PARSE)
-				cout << tab << outcomes << endl;
+			//if (verbosity >= VERB_PARSE)
+			//	cout << tab << outcomes << endl;
 
 			return outcomes;
 		}
@@ -453,8 +453,8 @@ state solve(string raw, vspace *vars, string tab, int verbosity)
 	{
 		outcomes = solve(raw.substr(s+1, e-s-1), vars, tab+"\t", verbosity);
 
-		if (verbosity >= VERB_PARSE)
-			cout << tab << outcomes << endl;
+		//if (verbosity >= VERB_PARSE)
+		//	cout << tab << outcomes << endl;
 
 		return outcomes;
 	}
@@ -468,8 +468,8 @@ state solve(string raw, vspace *vars, string tab, int verbosity)
 	else
 		cout << "Error: Undefined variable " << raw << "." << endl;
 
-	if (verbosity >= VERB_PARSE)
-		cout << tab << outcomes << endl;
+	//if (verbosity >= VERB_PARSE)
+	//	cout << tab << outcomes << endl;
 
 	return outcomes;
 }

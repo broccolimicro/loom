@@ -105,6 +105,20 @@ path operator+(path p1, path p2)
 	return result;
 }
 
+path operator/(path p1, int n)
+{
+	for (int i = 0; i < p1.size(); i++)
+		p1[i] /= n;
+	return p1;
+}
+
+path operator*(path p1, int n)
+{
+	for (int i = 0; i < p1.size(); i++)
+		p1[i] *= n;
+	return p1;
+}
+
 bool operator==(path p1, path p2)
 {
 	vector<int>::iterator i, j;

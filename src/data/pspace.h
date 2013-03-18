@@ -34,6 +34,7 @@ struct path_space
 	path_space coverage(int n);
 	path_space avoidance(int n);
 	path_space inverse();
+	path_space associations(int from);
 
 	path_space &operator=(path_space s);
 
