@@ -233,9 +233,6 @@ void program::insert_state_vars()
 	path_space cov;
 	int m, u, d;
 
-	int benefit[space.size()][space.size()];
-	trace trans_trace[space.size()][space.size()];
-
 	// So Here is the trick. This works for conditionals, blocks, assignments, guards. This does not work for parallel, loop.
 	// This is a two dimensional analysis (one up transition and one down transition). To get a one guard loop to work, you need at least
 	// a four dimensional analysis (two up transitions, and two down transitions). To get a two guard loop to work, I assume you need 8.
@@ -305,6 +302,9 @@ void program::insert_state_vars()
 	m = 0;
 	u = -1;
 	d = -1;
+	int benefit;
+	trace trans_trace;
+	trace t;
 	for (i = 0; i < (size_t)space.size(); i++)
 	{
 		up_cov[i] = up_paths.coverage(i);
@@ -318,41 +318,45 @@ void program::insert_state_vars()
 			// This benefit value is equal to		the number of up conflict paths that pass through x0	+
 			//										the number of down conflict paths that pass through x1	-
 			//										the number of conflict paths that pass through both x0 and x1
-			benefit[i][j] = up_paths.total[i] + down_paths.total[j] - up_cov[i].total[j] - down_cov[j].total[i];
+			benefit = up_paths.total[i] + down_paths.total[j] - up_cov[i].total[j] - down_cov[j].total[i];
 
-			// Number of conflicts that will be added
+			//if (benefit > m)
+			//{
+				// Number of conflicts that will be added
 
-			// Now we need to subtract the number of conflict paths that will be added because the state variable
-			// transition implicants have conflicting states. We need to make sure that we don't over count this
-			// subtraction value because some of those conflicting states can be vacuous firings.
+				// Now we need to subtract the number of conflict paths that will be added because the state variable
+				// transition implicants have conflicting states. We need to make sure that we don't over count this
+				// subtraction value because some of those conflicting states can be vacuous firings.
 
-			// First, calculate the trace were there to be transitions at (x0, x1)
-			trans_trace[i][j] = space.get_trace(0, i, j, trace(value("_"), space.size()), value("X"));
+				// First, calculate the trace were there to be transitions at (x0, x1)
+				trans_trace = space.get_trace(0, i, j, trace(value("_"), space.size()), value("X"));
 
-			// Then, use that trace to check for vacuous firings when adding up conflict paths
-			for (k = 0; k < space.up_conflicts[i].size(); k++)
-				if (trans_trace[i][j][space.up_conflicts[i][k]].data != "1")
-					benefit[i][j] -= up_conflict_path_count[i][space.up_conflicts[i][k]];
+				// Then, use that trace to check for vacuous firings when adding up conflict paths
+				for (k = 0; k < space.up_conflicts[i].size(); k++)
+					if (trans_trace[space.up_conflicts[i][k]].data != "1")
+						benefit -= up_conflict_path_count[i][space.up_conflicts[i][k]];
 
-			for (k = 0; k < space.down_conflicts[j].size(); k++)
-				if (trans_trace[i][j][space.down_conflicts[j][k]].data != "0")
-					benefit[i][j] -= down_conflict_path_count[j][space.down_conflicts[j][k]];
+				for (k = 0; k < space.down_conflicts[j].size(); k++)
+					if (trans_trace[space.down_conflicts[j][k]].data != "0")
+						benefit -= down_conflict_path_count[j][space.down_conflicts[j][k]];
 
-			// Now we look for the max of this benefit value and VUALA
-			if (benefit[i][j] > m)
-			{
-				u = i;
-				d = j;
-				m = benefit[i][j];
-			}
+				// Now we look for the max of this benefit value and VUALA
+				if (benefit > m)
+				{
+					u = i;
+					d = j;
+					m = benefit;
+					t = trans_trace;
+				}
+			//}
 
-			cout << benefit[i][j] << "\t";
+			cout << benefit << "\t";
 		}
 		cout << endl;
 	}
 
 	cout << endl << endl << m << " Conflicting Paths Eliminated" << endl << "Up: " << u << endl << "Down: " << d << endl;
-	cout << trans_trace[u][d] << endl << endl;
+	cout << t << endl << endl;
 
 	// Now we need to execute the change, recalculate, and reiterate.
 

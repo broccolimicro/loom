@@ -43,6 +43,7 @@ struct graph
 	void insert_edge(int from, int to, string chp);
 	path_space get_paths(int from, int to, path p);
 	trace	   get_trace(int from, int up, int down, trace t, value p);
+	trace	   get_trace(int from, vector<int> up, vector<int> down, trace t, value p);
 
 	void gen_conflicts();
 	void gen_traces();

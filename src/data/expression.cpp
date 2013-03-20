@@ -465,6 +465,9 @@ state solve(string raw, vspace *vars, string tab, int verbosity)
 	else if (raw == "1")
 		for (map<string, variable>::iterator vi = vars->global.begin(); vi != vars->global.end(); vi++)
 			outcomes.assign(vi->second.uid, value("X"), value("?"));
+	else if (raw == "0")
+		for (map<string, variable>::iterator vi = vars->global.begin(); vi != vars->global.end(); vi++)
+			outcomes.assign(vi->second.uid, value("_"), value("?"));
 	else
 		cout << "Error: Undefined variable " << raw << "." << endl;
 

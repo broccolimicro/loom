@@ -131,6 +131,30 @@ trace graph::get_trace(int from, int up, int down, trace t, value p)
 		return t;
 }
 
+trace graph::get_trace(int from, vector<int> up, vector<int> down, trace t, value p)
+{
+	if (find(up.begin(), up.end(), from) != up.end())
+		p = value("1");
+	if (find(down.begin(), down.end(), from) != down.end())
+		p = value("0");
+
+	if (t[from].data == (t[from] || p).data)
+		return t;
+
+	t[from] = t[from] || p;
+
+	if (edges[from].size() > 0)
+	{
+		trace result(value("_"), t.size());
+		for (size_t i = 0; i < edges[from].size(); i++)
+			result = result || get_trace(edges[from][i], up, down, t, p);
+
+		return result;
+	}
+	else
+		return t;
+}
+
 void graph::gen_conflicts()
 {
 	up_conflicts.clear();

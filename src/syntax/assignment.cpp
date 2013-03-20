@@ -259,11 +259,12 @@ int assignment::generate_states(graph *g, int init, state filter)
 	from = init;
 	cout << tab << "Assignment " << chp << endl;
 
-	variable *v;
+	variable *v, *v1;
 	map<string, variable>::iterator vi;
 	list<pair<string, string> >::iterator ei;
 	string search;
 	state s;
+	int i;
 
 	uid = g->states.size();
 
@@ -274,7 +275,7 @@ int assignment::generate_states(graph *g, int init, state filter)
 	{
 		v = vars->find(ei->first);
 
-		if (v != NULL)
+		if (v != NULL && v->width == 1 && v->type == "int")
 		{
 			s.assign(v->uid, evaluate(ei->second, vars, s.values), value("?"));
 
@@ -286,6 +287,29 @@ int assignment::generate_states(graph *g, int init, state filter)
 				for (vi = vars->global.begin(); vi != vars->global.end(); vi++)
 					if (vi->first.substr(0, search.length()) == search && vi->first != ei->first)
 						s.assign(vi->second.uid, value("X"));
+			}
+		}
+		else if (v != NULL && v->type == "int")
+		{
+			for (i = 0; i < v->width; i++)
+			{
+				v1 = vars->find(ei->first + "[" + to_string(i) + "]");
+				if (v != NULL)
+				{
+					s.assign(v1->uid, evaluate(ei->second, vars, s.values)[i], value("?"));
+
+					// TODO Make this search smarter
+					// Search for this channel's other variables and X them out.
+					search = ei->first.substr(0, ei->first.find_last_of("."));
+					if (vars->get_kind(search) == "channel")
+					{
+						for (vi = vars->global.begin(); vi != vars->global.end(); vi++)
+							if (vi->first.substr(0, search.length()) == search && vi->first != ei->first)
+								s.assign(vi->second.uid, value("X"));
+					}
+				}
+				else
+					cout << "Error: Undefined variable " << ei->first << "." << endl;
 			}
 		}
 		else

@@ -113,7 +113,7 @@ value value::operator[](size_t i)
 	string s;
 
 	if (i < data.length())
-		str << data[i];
+		str << data[data.length() - i - 1];
 	else
 		str << '0';
 
@@ -303,8 +303,10 @@ value operator&(value s1, value s2)
 			result.data = "0" + result.data;
 		else if (a == 'X' || b == 'X')
 			result.data = "X" + result.data;
-		else
+		else if (a == '1' && b == '1')
 			result.data = "1" + result.data;
+		else
+			result.data = "_" + result.data;
 	}
 
 	return result;
@@ -325,8 +327,10 @@ value operator|(value s1, value s2)
 			result.data = "1" + result.data;
 		else if (a == 'X' || b == 'X')
 			result.data = "X" + result.data;
-		else
+		else if (a == '0' && b == '0')
 			result.data = "0" + result.data;
+		else
+			result.data = "_" + result.data;
 	}
 
 	return result;

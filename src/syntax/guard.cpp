@@ -126,6 +126,27 @@ void guard::parse()
 
 int guard::generate_states(graph *g, int init, state filter)
 {
+	/* TODO If a variable in a guard has a definite value in the previous state (not 'X'), then what do we do?
+	 * Choice 1: replace their occurrence in the guard with their current, constant value
+	 * Choice 2: X them out in the state before
+	 * Choice 3: Set them such that the guard evaluates to false in the state before
+	 * Choice 4: Do choice 1, simplify the expression, then do choice 2
+	 * Choice 5: Do choice 1, simplify the expression, then do choice 3
+	 *
+	 * Important cases to consider are:
+	 * a,b := 1,2;
+	 * c := a+b		<-- this has variables a and b in a guard right after they are assigned. I suggest choice 3
+	 *
+	 * chan4p0b a
+	 * a.r := 1;
+	 * a?			<-- This might happen in the HSE due to HSE optimizations... I suggest choice 3
+	 *
+	 * After executing choice 1, you will be left with a bunch impossible states (underscores). These
+	 * represent the branches of conditionals that will never happen. Since this state space represents
+	 * the union of all execution paths and values, we can say that for sure. This could be a huge optimization,
+	 * removing a bunch of hardware that will always run the same way.
+	 */
+
 	space = g;
 	from = init;
 	cout << tab << "Guard " << chp << endl;
@@ -133,14 +154,49 @@ int guard::generate_states(graph *g, int init, state filter)
 	map<string, variable>::iterator vi;
 	state s, temp;
 
+	// Choice 1
+	/*cout << "CHP Replace " << endl;
+	cout << chp << endl;
+	size_t k = 0, curr;
+	string vname;
+	temp = estimate(chp, vars);
+	for (int i = 0; i < temp.size(); i++)
+	{
+		if (temp[i].data == "X" && g->states[init][i].data != "X")
+		{
+			vname = vars->get_name(i);
+			k = 0;
+			while (k < chp.length())
+			{
+				curr = find_name(chp, vname, k);
+				if (curr == chp.npos)
+					break;
+				chp.replace(curr, vname.length(), g->states[init][i].data);
+				k = curr + g->states[init][i].data.length();
+			}
+		}
+	}
+	cout << chp << endl;
+	chp = expression(chp).simple;
+	cout << chp << endl;*/
+
+	// Choice 2
 	bool prs = g->states[init].prs;
 	int tag = g->states[init].tag;
-	g->states[init] = g->states[init] || estimate("~(" + chp + ")", vars);
+	g->states[init] = g->states[init] || estimate(chp, vars);
 	g->states[init].prs = prs;
 	g->states[init].tag = tag;
 
+	/*// Choice 3
+	bool prs = g->states[init].prs;
+	int tag = g->states[init].tag;
+	g->states[init] = g->states[init] && solve(expression("~(" + chp + ")").simple, vars, "", -1);
+	g->states[init].prs = prs;
+	g->states[init].tag = tag;*/
+
 	uid = g->states.size();
 	solution = solve(chp, vars, tab, verbosity);
+	cout << solution << endl;
 	s = (g->states[init] || filter) && solution;
 
 	if(CHP_EDGE)
