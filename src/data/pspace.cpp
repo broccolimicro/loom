@@ -14,8 +14,8 @@ path_space::path_space()
 
 path_space::path_space(int s)
 {
-	total.nodes.resize(s);
-	ntotal.nodes.resize(s);
+	total.nodes.assign(s, 0);
+	ntotal.nodes.assign(s, 0);
 }
 
 path_space::~path_space()
@@ -63,6 +63,8 @@ list<path>::iterator path_space::end()
 void path_space::clear()
 {
 	paths.clear();
+	total.clear();
+	ntotal.clear();
 }
 
 int path_space::coverage_count(int n)

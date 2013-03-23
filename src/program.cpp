@@ -220,23 +220,20 @@ void program::insert_state_vars()
 	size_t i, j, k;
 	list<path>::iterator lp;
 	vector<int>::iterator ci;
-	path_space up_paths(space.size());
-	path_space down_paths(space.size());
-	path_space temp(space.size());
+	path_space up_paths;
+	path_space down_paths;
+	path_space temp;
 
-	int up_conflict_path_count[space.size()][space.size()];
-	int down_conflict_path_count[space.size()][space.size()];
+	vector<vector<int> > up_conflict_path_count;
+	vector<vector<int> > down_conflict_path_count;
 	vector<path_space>	up_cov(space.size());
 	vector<path_space>  down_cov(space.size());
-	path up_total;
-	path down_total;
-	path_space cov;
 	int m, u, d;
 
 	// So Here is the trick. This works for conditionals, blocks, assignments, guards. This does not work for parallel, loop.
 	// This is a two dimensional analysis (one up transition and one down transition). To get a one guard loop to work, you need at least
 	// a four dimensional analysis (two up transitions, and two down transitions). To get a two guard loop to work, I assume you need 8.
-	// So, 2^(1 + max number of loop guards) dimensional analysis for any given program. Furthermore, it thinks that it has to separate
+	// So, 2*(1 + max number of loop guards) dimensional analysis for any given program. Furthermore, it thinks that it has to separate
 	// branches of a parallel block with a state variable transition... This is mildly problematic because it cannot be solved by an
 	// examination of the state space alone. To solve this problem, you need to examine the parse tree as well.
 	//
@@ -248,115 +245,192 @@ void program::insert_state_vars()
 
 	// Step 1:
 
-	// Calculate the number of conflict paths that would be added were state i to be an implicant for an up production rule of a state variable
-	for (i = 0; i < space.up_conflicts.size(); i++)
-		for (j = 0; j < space.up_conflicts[i].size(); j++)
-		{
-			temp.clear();
-			temp.merge(space.get_paths(i, space.up_conflicts[i][j], path(space.size())));
-			temp.merge(space.get_paths(space.up_conflicts[i][j], i, path(space.size())));
+	timeval t0, t1, t2;
 
-			up_conflict_path_count[i][space.up_conflicts[i][j]] = temp.paths.size();
-		}
 
-	// Calculate the number of conflict paths that would be added were state i to be an implicant for a down production rule of a state variable
-	for (i = 0; i < space.down_conflicts.size(); i++)
-		for (j = 0; j < space.down_conflicts[i].size(); j++)
-		{
-			temp.clear();
-			temp.merge(space.get_paths(i, space.down_conflicts[i][j], path(space.size())));
-			temp.merge(space.get_paths(space.down_conflicts[i][j], i, path(space.size())));
-
-			down_conflict_path_count[i][space.down_conflicts[i][j]] = temp.paths.size();
-		}
-
-	// Step 2:
-
-	// Calculate all of the conflict paths caused by current up production rule firings
-	for (i = 0; i < space.up_firings.size(); i++)
-		for (j = 0; j < space.up_firings[i].size(); j++)
-			for (k = 0; k < space.up_conflicts[space.up_firings[i][j]].size(); k++)
-				if (space.traces[i][space.up_conflicts[space.up_firings[i][j]][k]].data != "1")
-				{
-					up_paths.merge(space.get_paths(space.up_firings[i][j], space.up_conflicts[space.up_firings[i][j]][k], path(space.size())));
-					up_paths.merge(space.get_paths(space.up_conflicts[space.up_firings[i][j]][k], space.up_firings[i][j], path(space.size())));
-				}
-
-	// Calculate all of the conflict paths caused by current down production rule firings
-	for (i = 0; i < space.down_firings.size(); i++)
-		for (j = 0; j < space.down_firings[i].size(); j++)
-			for (k = 0; k < space.down_conflicts[space.down_firings[i][j]].size(); k++)
-				if (space.traces[i][space.down_conflicts[space.down_firings[i][j]][k]].data != "0")
-				{
-					down_paths.merge(space.get_paths(space.down_firings[i][j], space.down_conflicts[space.down_firings[i][j]][k], path(space.size())));
-					down_paths.merge(space.get_paths(space.down_conflicts[space.down_firings[i][j]][k], space.down_firings[i][j], path(space.size())));
-				}
-
-	// Step 3:
-
-	// Generate a 2^(1 + max number of loop guards) dimensional grid with a side length equal to the number of states in the state space
-	// Each element in this grid is a calculated benefit value that represents the total number of conflict paths eliminated were there
-	// to be up transitions at (x0, y0, z0, ...) and down transitions at (x1, y1, z1, ...). The current implimentation only allows a two
-	// dimensional grid, so (x0, x1).
-	cout << "BENEFIT" << endl;
-	m = 0;
-	u = -1;
-	d = -1;
-	int benefit;
-	trace trans_trace;
-	trace t;
-	for (i = 0; i < (size_t)space.size(); i++)
+	for (int blarg = 0; blarg < 3; blarg++)
 	{
-		up_cov[i] = up_paths.coverage(i);
-		for (j = 0; j < (size_t)space.size(); j++)
+		up_paths.paths.clear();
+		up_paths.total.nodes.clear();
+		up_paths.ntotal.nodes.clear();
+		up_paths.total.nodes.assign(space.size(), 0);
+		up_paths.ntotal.nodes.assign(space.size(), 0);
+
+		down_paths.paths.clear();
+		down_paths.total.nodes.clear();
+		down_paths.ntotal.nodes.clear();
+		down_paths.total.nodes.assign(space.size(), 0);
+		down_paths.ntotal.nodes.assign(space.size(), 0);
+
+		temp.paths.clear();
+		temp.total.nodes.clear();
+		temp.ntotal.nodes.clear();
+		temp.total.nodes.assign(space.size(), 0);
+		temp.ntotal.nodes.assign(space.size(), 0);
+
+		up_conflict_path_count.resize(space.size());
+		down_conflict_path_count.resize(space.size());
+
+		up_cov.clear();
+		up_cov.resize(space.size());
+		down_cov.clear();
+		down_cov.resize(space.size());
+
+		cout << space.states.size() << " " << space.up_firings_transpose.size() << " " << space.down_firings_transpose.size() << endl;
+		gettimeofday(&t0, NULL);
+
+		// Calculate the number of conflict paths that would be added were state i to be an implicant for an up production rule of a state variable
+		for (i = 0; i < space.up_conflicts.size(); i++)
 		{
-			if (i == 0)
-				down_cov[j] = down_paths.coverage(j);
+			up_conflict_path_count[i].assign(space.size(), 0);
+			for (j = 0; j < space.up_conflicts[i].size(); j++)
+			{
+				temp.clear();
+				temp.merge(space.get_paths(i, space.up_conflicts[i][j], path(space.size())));
+				temp.merge(space.get_paths(space.up_conflicts[i][j], i, path(space.size())));
 
-			// Number of conflicts that will be eliminated
+				up_conflict_path_count[i][space.up_conflicts[i][j]] = temp.paths.size();
 
-			// This benefit value is equal to		the number of up conflict paths that pass through x0	+
-			//										the number of down conflict paths that pass through x1	-
-			//										the number of conflict paths that pass through both x0 and x1
-			benefit = up_paths.total[i] + down_paths.total[j] - up_cov[i].total[j] - down_cov[j].total[i];
-
-			//if (benefit > m)
-			//{
-				// Number of conflicts that will be added
-
-				// Now we need to subtract the number of conflict paths that will be added because the state variable
-				// transition implicants have conflicting states. We need to make sure that we don't over count this
-				// subtraction value because some of those conflicting states can be vacuous firings.
-
-				// First, calculate the trace were there to be transitions at (x0, x1)
-				trans_trace = space.get_trace(0, i, j, trace(value("_"), space.size()), value("X"));
-
-				// Then, use that trace to check for vacuous firings when adding up conflict paths
-				for (k = 0; k < space.up_conflicts[i].size(); k++)
-					if (trans_trace[space.up_conflicts[i][k]].data != "1")
-						benefit -= up_conflict_path_count[i][space.up_conflicts[i][k]];
-
-				for (k = 0; k < space.down_conflicts[j].size(); k++)
-					if (trans_trace[space.down_conflicts[j][k]].data != "0")
-						benefit -= down_conflict_path_count[j][space.down_conflicts[j][k]];
-
-				// Now we look for the max of this benefit value and VUALA
-				if (benefit > m)
-				{
-					u = i;
-					d = j;
-					m = benefit;
-					t = trans_trace;
-				}
-			//}
-
-			cout << benefit << "\t";
+				// Calculate all of the conflict paths caused by current up production rule firings
+				for (k = 0; k < space.up_firings_transpose[i].size(); k++)
+					if (space.traces[space.up_firings_transpose[i][k]][space.up_conflicts[i][j]].data != "1")
+					{
+						up_paths.merge(temp);
+						k = space.up_firings_transpose[i].size();
+					}
+			}
 		}
-		cout << endl;
+
+		// Calculate the number of conflict paths that would be added were state i to be an implicant for a down production rule of a state variable
+		for (i = 0; i < space.down_conflicts.size(); i++)
+		{
+			down_conflict_path_count[i].assign(space.size(), 0);
+			for (j = 0; j < space.down_conflicts[i].size(); j++)
+			{
+				temp.clear();
+				temp.merge(space.get_paths(i, space.down_conflicts[i][j], path(space.size())));
+				temp.merge(space.get_paths(space.down_conflicts[i][j], i, path(space.size())));
+
+				down_conflict_path_count[i][space.down_conflicts[i][j]] = temp.paths.size();
+
+				// Calculate all of the conflict paths caused by current down production rule firings
+				for (k = 0; k < space.down_firings_transpose[i].size(); k++)
+					if (space.traces[space.down_firings_transpose[i][k]][space.down_conflicts[i][j]].data != "0")
+					{
+						down_paths.merge(temp);
+						k = space.down_firings_transpose[i].size();
+					}
+			}
+		}
+
+		gettimeofday(&t1, NULL);
+
+		cout << "Step 1: " << ((double)(t1.tv_sec - t0.tv_sec) + 0.000001*(double)(t1.tv_usec - t0.tv_usec)) << " seconds" << endl;
+
+		// Step 2:
+
+		// Generate a 2*(1 + max number of loop guards) dimensional grid with a side length equal to the number of states in the state space
+		// Each element in this grid is a calculated benefit value that represents the total number of conflict paths eliminated were there
+		// to be up transitions at (x0, y0, z0, ...) and down transitions at (x1, y1, z1, ...). The current implimentation only allows a two
+		// dimensional grid, so (x0, x1).
+		m = 0;
+		u = -1;
+		d = -1;
+		int benefit;
+		trace trans_trace;
+		trace t;
+		for (i = 0; i < (size_t)space.size(); i++)
+		{
+			up_cov[i] = up_paths.coverage(i);
+			for (j = 0; j < (size_t)space.size(); j++)
+			{
+				if (i == 0)
+					down_cov[j] = down_paths.coverage(j);
+
+				if (i != j)
+				{
+
+					// Number of conflicts that will be eliminated
+
+					// This benefit value is equal to		the number of up conflict paths that pass through x0	+
+					//										the number of down conflict paths that pass through x1	-
+					//										the number of conflict paths that pass through both x0 and x1
+					benefit = up_paths.total[i] + down_paths.total[j] - up_cov[i].total[j] - down_cov[j].total[i];
+
+					if (benefit > m)
+					{
+						// Number of conflicts that will be added
+
+						// Now we need to subtract the number of conflict paths that will be added because the state variable
+						// transition implicants have conflicting states. We need to make sure that we don't over count this
+						// subtraction value because some of those conflicting states can be vacuous firings.
+
+						// First, calculate the trace were there to be transitions at (x0, x1)
+						trans_trace = space.get_trace(i, j);
+
+						// Then, use that trace to check for vacuous firings when adding up conflict paths
+						for (k = 0; k < space.up_conflicts[i].size(); k++)
+							if (trans_trace[space.up_conflicts[i][k]].data != "1")
+								benefit -= up_conflict_path_count[i][space.up_conflicts[i][k]];
+
+						for (k = 0; k < space.down_conflicts[j].size(); k++)
+							if (trans_trace[space.down_conflicts[j][k]].data != "0")
+								benefit -= down_conflict_path_count[j][space.down_conflicts[j][k]];
+
+						// Now we look for the max of this benefit value and VUALA
+						if (benefit > m)
+						{
+							u = i;
+							d = j;
+							m = benefit;
+							t = trans_trace;
+						}
+					}
+				}
+			}
+		}
+
+		gettimeofday(&t2, NULL);
+
+		cout << "Step 2: " << ((double)(t2.tv_sec - t1.tv_sec) + 0.000001*(double)(t2.tv_usec - t1.tv_usec)) << " seconds" << endl;
+		cout << "Total: " << ((double)(t2.tv_sec - t0.tv_sec) + 0.000001*(double)(t2.tv_usec - t0.tv_usec)) << " seconds" << endl;
+
+		cout << endl << endl << m << " Conflicting Paths Eliminated" << endl << "Up: " << u << endl << "Down: " << d << endl;
+		cout << t << endl << endl;
+
+		cout << space.get_trace(u, d) << endl;
+
+		// Insert new variable
+		int vid = vars.insert(variable(vars.unique_name("_sv"), "int", 1, false));
+
+		cout << *(vars.find(vid)) << endl;
+
+		// Update the space
+		space.set_trace(vid, t);
+
+		i = space.duplicate_state(u);
+		space.states[i][vid] = value("1");
+		space.states[i].prs = true;
+		space.traces[vid][i] = value("1");
+		i = space.duplicate_state(d);
+		space.states[i][vid] = value("0");
+		space.states[i].prs = true;
+		space.traces[vid][i] = value("0");
+
+		/*space.up_firings.resize(vid+1);
+		space.up_firings[vid].push_back(u);
+		space.up_firings_transpose.resize(space.states.size());
+		space.up_firings_transpose[u].push_back(vid);
+		space.down_firings.resize(vid+1);
+		space.down_firings[vid].push_back(d);
+		space.down_firings_transpose.resize(space.states.size());
+		space.down_firings_transpose[d].push_back(vid);*/
+
+		space.gen_deltas();
+		space.gen_conflicts();
 	}
 
-	cout << endl << endl << m << " Conflicting Paths Eliminated" << endl << "Up: " << u << endl << "Down: " << d << endl;
-	cout << t << endl << endl;
+	cout << space << endl;
 
 	// Now we need to execute the change, recalculate, and reiterate.
 

@@ -7,7 +7,8 @@ graph::graph()
 
 graph::~graph()
 {
-	edges.clear();
+	front_edges.clear();
+	back_edges.clear();
 	transitions.clear();
 }
 
@@ -54,23 +55,47 @@ void graph::append_state(state s, int from, string chp)
 		insert_edge(from, to, chp);
 }
 
-void graph::insert_state(state s, int from, int to)
+int graph::insert_state(state s, int from)
 {
+	int i;
 	int id = states.size();
 	states.push_back(s);
-	for (int i = 0; i < traces.size() && i < s.size(); i++)
+	for (i = 0; i < traces.size() && i < s.size(); i++)
 		traces[i].push_back(s[i]);
 
-	replace(edges[from].begin(), edges[from].end(), to, id);
-	edges.push_back(vector<int>());
-	edges[id].push_back(to);
+	int delid = 0;
+	for (i = 0; i < from; i++)
+		delid += front_edges[i].size();
+
+	//vector<value>::iterator x;
+	//up.traces.front().values.erase(x);
+
+	front_edges.resize(id+1);
+	front_edges[id].assign(front_edges[from].begin(), front_edges[from].end());
+	front_edges[from].clear();
+	front_edges[from].push_back(id);
+
+	transitions.resize(id+1);
+	transitions[id].assign(transitions[from].begin(), transitions[from].end());
+	transitions[from].clear();
+	transitions[from].push_back("Assign");
+
+	return id;
+}
+
+int graph::duplicate_state(int from)
+{
+	return insert_state(states[from], from);
 }
 
 void graph::insert_edge(int from, int to, string chp)
 {
-	if (from >= (int)edges.size())
-		edges.resize(from+1, vector<int>());
-	edges[from].push_back(to);
+	if (from >= (int)front_edges.size())
+		front_edges.resize(from+1, vector<int>());
+	front_edges[from].push_back(to);
+	if (to >= (int)back_edges.size())
+		back_edges.resize(to+1, vector<int>());
+	back_edges[to].push_back(from);
 
 	if (from >= (int)transitions.size())
 		transitions.resize(from+1, vector<string>());
@@ -79,13 +104,13 @@ void graph::insert_edge(int from, int to, string chp)
 
 path_space graph::get_paths(int from, int to, path p)
 {
+	path_space result(size()), temp(size());
+
 	if (p.from == -1 && p.to == -1)
 	{
 		p.from = from;
 		p.to = to;
 	}
-
-	path_space result(size()), temp(size());
 
 	if (p[from] > 0)
 	{
@@ -101,58 +126,122 @@ path_space graph::get_paths(int from, int to, path p)
 
 	p.set(from);
 
-	for (size_t i = 0; i < edges[from].size(); i++)
-		result.merge(get_paths(edges[from][i], to, p));
+	while (front_edges[from].size() == 1)
+	{
+		from = front_edges[from].front();
+
+		if (p.from == -1 && p.to == -1)
+		{
+			p.from = from;
+			p.to = to;
+		}
+
+		if (p[from] > 0)
+			return result;
+
+		if (from == to)
+		{
+			result.push_back(p);
+			return result;
+		}
+
+		p.set(from);
+	}
+
+	for (size_t i = 0; i < front_edges[from].size(); i++)
+		result.merge(get_paths(front_edges[from][i], to, p));
 
 	return result;
 }
 
-trace graph::get_trace(int from, int up, int down, trace t, value p)
+value graph::get_next(int from, int to, int up, int down, value def)
 {
-	if (from == up)
-		p = value("1");
-	if (from == down)
-		p = value("0");
-
-	if (t[from].data == (t[from] || p).data)
-		return t;
-
-	t[from] = t[from] || p;
-
-	if (edges[from].size() > 0)
-	{
-		trace result(value("_"), t.size());
-		for (size_t i = 0; i < edges[from].size(); i++)
-			result = result || get_trace(edges[from][i], up, down, t, p);
-
-		return result;
-	}
+	if (from == up && from == down)
+		return value("_");
+	else if (from == up)
+		return value("1");
+	else if (from == down)
+		return value("0");
 	else
-		return t;
+		return def;
 }
 
-trace graph::get_trace(int from, vector<int> up, vector<int> down, trace t, value p)
+trace graph::get_trace(int up, int down)
 {
-	if (find(up.begin(), up.end(), from) != up.end())
-		p = value("1");
-	if (find(down.begin(), down.end(), from) != down.end())
-		p = value("0");
+	vector<int> coverage(size());
+	vector<int> lastfork;
+	vector<vector<int> > branches(size());
+	int i, j;
+	trace result;
 
-	if (t[from].data == (t[from] || p).data)
-		return t;
+	coverage.assign(size(), 0);
 
-	t[from] = t[from] || p;
+	result.values.assign(states.size(), value("_"));
+	result.values[0] = value("X");
 
-	if (edges[from].size() > 0)
+	for (i = 0; i < size(); i++)
+		for (j = 0; j < (int)front_edges[i].size(); j++)
+			result[front_edges[i][j]] = result[front_edges[i][j]] || get_next(i, front_edges[i][j], up, down, result[i]);
+
+	for (i = 0; i < size(); i++)
+		for (j = 0; j < (int)front_edges[i].size(); j++)
+			result[front_edges[i][j]] = result[front_edges[i][j]] || get_next(i, front_edges[i][j], up, down, result[i]);
+	return result;
+}
+
+trace graph::get_trace(vector<int> up, vector<int> down)
+{
+	size_t i, j, l;
+	vector<int> to;
+	vector<int> loop;
+	vector<int>::iterator upi, downi;
+	trace result(value("X"), states.size());
+	to.assign(states.size(), 0);
+	loop.assign(states.size(), 0);
+
+	result.values[0] = value("X");
+
+	to[0] = 1;
+	for (i = 0; i < front_edges.size(); i++)
 	{
-		trace result(value("_"), t.size());
-		for (size_t i = 0; i < edges[from].size(); i++)
-			result = result || get_trace(edges[from][i], up, down, t, p);
+		if (i != l+1)
+			i = l;
 
-		return result;
+		l = i;
+		for (j = 0; j < front_edges[i].size(); j++)
+		{
+			to[front_edges[i][j]]++;
+			upi = find(up.begin(), up.end(), i);
+			downi = find(down.begin(), down.end(), i);
+			if (upi != up.end() && downi != down.end())
+				result[front_edges[i][j]] = value("X");
+			if (upi != up.end())
+				result[front_edges[i][j]] = value("1");
+			else if (downi != down.end())
+				result[front_edges[i][j]] = value("0");
+			else if (result[i].data != "X" && to[front_edges[i][j]] == 1)
+				result[front_edges[i][j]] = result[i].data;
+			else if (result[i].data == result[front_edges[i][j]].data && to[front_edges[i][j]] > 1)
+				result[front_edges[i][j]] = result[i].data;
+			else
+				result[front_edges[i][j]] = value("X");
+
+			if ((size_t)front_edges[i][j] < l && loop[i] <= 1)
+				l = front_edges[i][j];
+		}
+
+		loop[i]++;
 	}
-	else
-		return t;
+
+	return result;
+}
+
+void graph::set_trace(int uid, trace t)
+{
+	traces.assign(uid, t);
+
+	for (size_t i = 0; i < states.size(); i++)
+		states[i].assign(uid, t[i], value("X"));
 }
 
 void graph::gen_conflicts()
@@ -190,8 +279,9 @@ void graph::gen_conflicts()
 
 void graph::gen_traces()
 {
+	size_t i;
 	traces.traces.clear();
-	for (size_t i = 0; i < states.width(); i++)
+	for (i = 0; i < states.width(); i++)
 		traces.push_back(states(i));
 }
 
@@ -202,22 +292,22 @@ void graph::gen_deltas()
 	up.traces.clear();
 	down.traces.clear();
 	up_firings.clear();
-	up_firings_union.clear();
+	up_firings_transpose.clear();
 	down_firings.clear();
-	down_firings_union.clear();
+	down_firings_transpose.clear();
 	delta.traces.clear();
 
 	// Delta Calculations (Up, Down, Delta)
 	up.traces.resize(states.width(), trace());
 	up_firings.resize(states.width(), vector<int>());
-	up_firings_union.resize(states.size(), 0);
+	up_firings_transpose.resize(states.size(), vector<int>());
 	down.traces.resize(states.width(), trace());
 	down_firings.resize(states.width(), vector<int>());
-	down_firings_union.resize(states.size(), 0);
+	down_firings_transpose.resize(states.size(), vector<int>());
 	delta.traces.resize(states.width(), trace());
 
-	for (from = 0; from < edges.size(); from++)
-		for (x = 0; x < edges[from].size(); x++)
+	for (from = 0; from < front_edges.size(); from++)
+		for (x = 0; x < front_edges[from].size(); x++)
 		{
 			vector<value>::iterator i, j;
 			string::iterator si, sj;
@@ -227,7 +317,7 @@ void graph::gen_deltas()
 			state from_state;
 			state to_state;
 
-			to = edges[from][x];
+			to = front_edges[from][x];
 			from_state = states[from];
 			to_state = states[to];
 
@@ -241,7 +331,7 @@ void graph::gen_deltas()
 					{
 						upstr = upstr + "1";
 						up_firings[k].push_back(from);
-						up_firings_union[from]++;
+						up_firings_transpose[from].push_back(k);
 					}
 					else if (*sj == '1' && *si == '1')
 						upstr = upstr + "X";
@@ -252,7 +342,7 @@ void graph::gen_deltas()
 					{
 						downstr = downstr + "1";
 						down_firings[k].push_back(from);
-						down_firings_union[from]++;
+						down_firings_transpose[from].push_back(k);
 					}
 					else if (*sj == '0' && *si == '0')
 						downstr = downstr + "X";
@@ -341,19 +431,19 @@ void graph::print_dot()
 	outputGraph << "\tgraph [ dpi =" << GRAPH_DPI << " ];" << endl;
 	for(i = 0; i < states.size(); i++)
 	{
-		if(i >= edges.size())
-			edges.resize(i+1, vector<int>());
+		if(i >= front_edges.size())
+			front_edges.resize(i+1, vector<int>());
 
 		// "Node 1" -> "Node 2" [ label = "trans" ];
-		for (j = 0; j < edges[i].size(); j++)
+		for (j = 0; j < front_edges[i].size(); j++)
 		{
 			outputGraph << "\t\"" << i << ":";
 			if(STATE_LONG_NAME)
 				outputGraph << states[i];
 			outputGraph << "\"" << " -> ";
-			outputGraph << "\"" << edges[i][j] << ":";
+			outputGraph << "\"" << front_edges[i][j] << ":";
 			if(STATE_LONG_NAME)
-				outputGraph << states[edges[i][j]];
+				outputGraph << states[front_edges[i][j]];
 			outputGraph << "\" [ label = \"" << (transitions[i])[j] << "\" ];" << endl;
 		}
 	}
@@ -393,8 +483,8 @@ ostream &operator<<(ostream &os, graph g)
 	{
 		os << *i << "\t" << j << " -> { ";
 
-		if (j < g.edges.size())
-			for (m = g.edges[j].begin(); m != g.edges[j].end(); m++)
+		if (j < g.front_edges.size())
+			for (m = g.front_edges[j].begin(); m != g.front_edges[j].end(); m++)
 				os << *m << " ";
 
 		os << "}\t";

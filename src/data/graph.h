@@ -23,27 +23,31 @@ struct graph
 	trace_space up;
 	trace_space down;
 
-
 	vector<vector<int> > up_firings;
-	vector<int>			 up_firings_union;
+	vector<vector<int> > up_firings_transpose;
 	vector<vector<int> > down_firings;
-	vector<int>			 down_firings_union;
+	vector<vector<int> > down_firings_transpose;
 	vector<vector<int> > up_conflicts;
 	vector<vector<int> > down_conflicts;
 
 	// From				  , To
 	// Instruction indexed, Instruction indexed
-	vector<vector<int> > edges;
+	vector<vector<int> > front_edges;
+	vector<vector<int> > back_edges;
 	// Strings that caused given transition
 	vector<vector<string> > transitions;
 
 	void append_state(state s, vector<int> from, vector<string> chp = vector<string>());
 	void append_state(state s, int from = -1, string chp = "");
-	void insert_state(state s, int from, int to);
+	int insert_state(state s, int from);
+	int duplicate_state(int from);
 	void insert_edge(int from, int to, string chp);
 	path_space get_paths(int from, int to, path p);
-	trace	   get_trace(int from, int up, int down, trace t, value p);
-	trace	   get_trace(int from, vector<int> up, vector<int> down, trace t, value p);
+	value	   get_next(int from, int to, int up, int down, value def);
+	trace	   get_trace(int up, int down);
+	trace	   get_trace(vector<int> up, vector<int> down);
+
+	void set_trace(int uid, trace t);
 
 	void gen_conflicts();
 	void gen_traces();

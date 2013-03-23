@@ -68,6 +68,14 @@ process main()
 	chan4p0b G;
 	chan4p1b I;
 		
-	mux0b2 MyMuxA(A, B, C, D)||
+	mux0b2 MyMuxA(A, B, C, D) ||
 	mux0b2 MyMuxB(E, F, G, I)
+	
+	/*int<2> a;
+	int<2> b;
+	int<2> c;
+	int<2> d;
+	int<2> e;
+	
+	e := (a+b) | (c+d);*/
 }

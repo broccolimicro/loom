@@ -33,7 +33,7 @@ int path::size()
 
 void path::clear()
 {
-	nodes.clear();
+	nodes.assign(nodes.size(), 0);
 }
 
 bool path::contains(int n)
