@@ -168,24 +168,27 @@ value graph::get_next(int from, int to, int up, int down, value def)
 
 trace graph::get_trace(int up, int down)
 {
-	vector<int> coverage(size());
-	vector<int> lastfork;
-	vector<vector<int> > branches(size());
-	int i, j;
+	int i, j, k;
 	trace result;
-
-	coverage.assign(size(), 0);
+	value next;
+	bool change;
 
 	result.values.assign(states.size(), value("_"));
 	result.values[0] = value("X");
 
-	for (i = 0; i < size(); i++)
-		for (j = 0; j < (int)front_edges[i].size(); j++)
-			result[front_edges[i][j]] = result[front_edges[i][j]] || get_next(i, front_edges[i][j], up, down, result[i]);
-
-	for (i = 0; i < size(); i++)
-		for (j = 0; j < (int)front_edges[i].size(); j++)
-			result[front_edges[i][j]] = result[front_edges[i][j]] || get_next(i, front_edges[i][j], up, down, result[i]);
+	change = true;
+	while (change)
+	{
+		change = false;
+		for (i = 0; i < size(); i++)
+			for (j = 0; j < (int)front_edges[i].size(); j++)
+			{
+				next = get_next(i, front_edges[i][j], up, down, result[i]);
+				if (!subset(result[front_edges[i][j]], next))
+					change = true;
+				result[front_edges[i][j]] = result[front_edges[i][j]] || next;
+			}
+	}
 	return result;
 }
 
