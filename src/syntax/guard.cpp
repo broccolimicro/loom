@@ -181,11 +181,11 @@ int guard::generate_states(graph *g, int init, state filter)
 	cout << chp << endl;*/
 
 	// Choice 2
-	bool prs = g->states[init].prs;
+	/*bool prs = g->states[init].prs;
 	int tag = g->states[init].tag;
 	g->states[init] = g->states[init] || estimate(chp, vars);
 	g->states[init].prs = prs;
-	g->states[init].tag = tag;
+	g->states[init].tag = tag;*/
 
 	/*// Choice 3
 	bool prs = g->states[init].prs;

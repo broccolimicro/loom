@@ -217,97 +217,187 @@ void program::generate_states()
 
 void program::insert_state_vars()
 {
-	size_t i, j, k, l;
-	list<path>::iterator lp;
-	vector<int>::iterator ci;
-	path_space up_paths;
-	path_space down_paths;
-	path_space temp;
+	int i, j, k, l, m;
+	int w, h;
 
-	vector<vector<int> > up_conflict_path_count;
-	vector<vector<int> > down_conflict_path_count;
-	vector<path_space>	up_cov(space.size());
-	vector<path_space>  down_cov(space.size());
-	int m, u, d;
+	vector<int> up, down;
+	vector<bool> rup, rdown;
+	trace values;
+	int benefit;
 
-	// So Here is the trick. This works for conditionals, blocks, assignments, guards. This does not work for parallel, loop.
-	// This is a two dimensional analysis (one up transition and one down transition). To get a one guard loop to work, you need at least
-	// a four dimensional analysis (two up transitions, and two down transitions). To get a two guard loop to work, I assume you need 8.
-	// So, 2*(1 + max number of loop guards) dimensional analysis for any given program. Furthermore, it thinks that it has to separate
-	// branches of a parallel block with a state variable transition... This is mildly problematic because it cannot be solved by an
-	// examination of the state space alone. To solve this problem, you need to examine the parse tree as well.
-	//
-	// This algorithms execution time balloons very quickly and becomes very very very fucking slow, BUT! it does indeed calculate the optimal
-	// state variable insertion points and resulting trace. So... projection + process decomposition to keep the space we are looking at very small?
-	// or find a less optimal, faster way? Also, ALL of this has to be iterated... making it very very slow.
+	vector<int> best_up, best_down;
+	trace best_values;
+	int best_benefit;
 
-	// The comments explain step by step details of this algorithm:
+	list<pair<int, int> > up_conflict_firings;
+	list<pair<int, int> > down_conflict_firings;
 
-	// Step 1:
+	list<pair<int, int> >::iterator ci;
+
+	int cc0, cc1;
 
 	timeval t0, t1, t2;
 
+	/* THIS IS A STRAIGHTFORWARD BRUTE FORCE ALGORITHM. IT IS NOT SMART. IT IS NOT FAST. BUT IT WORKS.
+	 *
+	 * This works for loops, conditionals, blocks, assignments, and guards. This does not work for parallel (yet) because it thinks that it has to
+	 * separate branches of a parallel block with a state variable transition... This is mildly problematic because it cannot be solved by an
+	 * examination of the state space alone. To solve this problem, you need to examine the parse tree as well. This will probably be solved with
+	 * a check in the function that generates the conflicting state list and maybe a parallel block id and branch id. The idea is to not generate a
+	 * conflicting pair if the parallel block id of both states is the same, but the branch id of both state is different.
+	 *
+	 * This algorithms execution time balloons very quickly and becomes very very very fucking slow, BUT! it does indeed calculate the optimal
+	 * state variable insertion points and resulting trace. So... projection + process decomposition to keep the space we are looking at very small?
+	 * or find a less optimal, faster way?
+	 */
 
-	for (int blarg = 0; blarg < 10; blarg++)
+	/* Turn this knob to control how many up transitions are allowed and how many down transitions are allowed. For a state space of size 25,
+	 * 1 is instant, 2 takes exactly 1 minute, and 3 takes hours. This is the glory of a brute force method.
+	 */
+	int dimension = 1;
+
+	best_benefit = 1;
+	for (m = 0; m < 10 && best_benefit > 0; m++)
 	{
-		cout << space.states.size() << " " << space.up_firings_transpose.size() << " " << space.down_firings_transpose.size() << endl;
+		/* Step 1: cache the list of conflict firings already present in the state space. This does not include conflicts between two
+		 * states in which neither states are a firing for a variable.
+		 */
+
 		gettimeofday(&t0, NULL);
+
+		up_conflict_firings.clear();
+		down_conflict_firings.clear();
+
+		// Calculate the list of up production rule conflict pairs
+		for (i = 0; i < (int)space.up_firings.size(); i++)
+			for (k = 0; k < (int)space.up_firings[i].size(); k++)
+				for (j = 0; j < (int)space.up_conflicts[space.up_firings[i][k]].size(); j++)
+					up_conflict_firings.push_back(pair<int, int>(space.up_firings[i][k], space.up_conflicts[space.up_firings[i][k]][j]));
+
+		// Eliminate duplicate pairs so that we can get an accurate measure
+		up_conflict_firings.sort();
+		up_conflict_firings.unique();
+
+		cout << "Up Production Rule Conflicts" << endl;
+		for (ci = up_conflict_firings.begin(); ci != up_conflict_firings.end(); ci++)
+			cout << "[" << ci->first << "," << ci->second << "]";
+		cout << endl;
+
+		// Calculate the list of down production rule conflict pairs
+		for (i = 0; i < (int)space.down_firings.size(); i++)
+			for (k = 0; k < (int)space.down_firings[i].size(); k++)
+				for (j = 0; j < (int)space.down_conflicts[space.down_firings[i][k]].size(); j++)
+					down_conflict_firings.push_back(pair<int, int>(space.down_firings[i][k], space.down_conflicts[space.down_firings[i][k]][j]));
+
+		// Eliminate duplicate pairs so that we can get an accurate measure
+		down_conflict_firings.sort();
+		down_conflict_firings.unique();
+
+		cout << "Down Production Rule Conflicts" << endl;
+		for (ci = down_conflict_firings.begin(); ci != down_conflict_firings.end(); ci++)
+			cout << "[" << ci->first << "," << ci->second << "]";
+		cout << endl;
 
 		gettimeofday(&t1, NULL);
 
+		cc0 = cc1;
+		cc1 = up_conflict_firings.size() + down_conflict_firings.size();
+		cout << cc0 - cc1 << " conflicts eliminated. " << best_benefit << " conflicts promised." << endl;
+
+		cout << "Conflicts left to eliminate: " << up_conflict_firings.size() << " " << down_conflict_firings.size() << endl;
+
 		cout << "Step 1: " << ((double)(t1.tv_sec - t0.tv_sec) + 0.000001*(double)(t1.tv_usec - t0.tv_usec)) << " seconds" << endl;
 
-		// Step 2:
-
-		// Generate a 2*(1 + max number of loop guards) dimensional grid with a side length equal to the number of states in the state space
-		// Each element in this grid is a calculated benefit value that represents the total number of conflict paths eliminated were there
-		// to be up transitions at (x0, y0, z0, ...) and down transitions at (x1, y1, z1, ...). The current implimentation only allows a two
-		// dimensional grid, so (x0, x1).
-		m = 0;
-		u = -1;
-		d = -1;
-		int benefit;
-		trace trans_trace;
-		trace t;
-		for (i = 0; i < (size_t)space.size(); i++)
+		/* Step 2: Generate a multidimensional grid with a side length equal to the number of states in the state space and a dimension
+		 * equal to the number of up firings plus down firings allowed. The overall size of this grid is space.size^(up.size + down.size). Which
+		 * means for a state space of 25 states and 4 possible up firings and 4 possible down firings, there are 25^8 or about 1.526E11 elements
+		 * to iterate trough. Each element is a calculated benefit value that represents the total number of conflicts that would be eliminated
+		 * were there to be a state variable with up transitions at (x0, y0, z0, ...) and down transitions at (x1, y1, z1, ...) inserted into the
+		 * variable space.
+		 *
+		 * Then, take the element with the max benefit value at address (x0, y0, z0, ...) and (x1, y1, z1, ...), insert into the variable space,
+		 * update the state space, update the conflict list, repeat. Theoretically, we should repeat until the maximum benefit achievable is 0
+		 * (we cannot eliminate any more conflicts). But this doesn't ever seem to happen. It seems to level off at a maximum benefit of 5.
+		 */
+		best_benefit = 0;
+		up.assign(dimension, -1);
+		down.assign(dimension, -1);
+		best_up.assign(dimension, -1);
+		best_down.assign(dimension, -1);
+		w = pow(space.size(), up.size());
+		h = pow(space.size(), down.size());
+		bool overlap;
+		for (i = 0; i < w; i++)
 		{
-			for (j = 0; j < (size_t)space.size(); j++)
+			// Set up our up transition indices: (x0, y0, z0, ...)
+			rup.assign(space.size(), false);
+			l = 1;
+			for (k = 0; k < (int)up.size(); k++)
 			{
-				benefit = 0;
-				if (i != j)
+				up[k] = (i / l)%space.size();
+				rup[up[k]] = true;
+				l *= space.size();
+			}
+
+			for (j = 0; j < h; j++)
+			{
+				// Set up our down transition indices: (x1, y1, z1, ...)
+				rdown.assign(space.size(), false);
+				l = 1;
+				for (k = 0; k < (int)down.size(); k++)
 				{
-					trans_trace = space.get_trace(i, j);
+					down[k] = (j / l)%space.size();
+					rdown[down[k]] = true;
+					l *= space.size();
+				}
 
-					for (k = 0; k < space.up_firings_transpose.size(); k++)
-						if (space.up_firings_transpose[k].size() > 0)
-							for (l = 0; l < space.up_conflicts[k].size(); l++)
-								if ((trans_trace[k].data == "0" && trans_trace[space.up_conflicts[k][l]].data == "1") ||
-									(trans_trace[k].data == "1" && trans_trace[space.up_conflicts[k][l]].data == "0"))
-									benefit++;
+				// Check to make sure that we aren't dealing with an up transition happening at the same time as a down transition.
+				benefit = 0;
+				overlap = false;
+				for (k = 0; k < (int)up.size() && !overlap; k++)
+					for (l = 0; l < (int)down.size() && !overlap; l++)
+						if (up[k] == down[l])
+							overlap = true;
+				if (!overlap)
+				{
+					// Get the trace given the up firings at (x0, y0, z0, ...) and down firings at (x1, y1, z1, ...)
+					values.values.assign(space.size(), value("_"));
+					values[0] = value("X");
+					space.get_trace(0, &rup, &rdown, &values);
 
-					for (k = 0; k < space.down_firings_transpose.size(); k++)
-						if (space.down_firings_transpose[k].size() > 0)
-							for (l = 0; l < space.down_conflicts[k].size(); l++)
-								if ((trans_trace[k].data == "0" && trans_trace[space.down_conflicts[k][l]].data == "1") ||
-									(trans_trace[k].data == "1" && trans_trace[space.down_conflicts[k][l]].data == "0"))
-									benefit++;
+					// TODO I am counting wrong here... the algorithm is too optimistic right now
 
-					for (l = 0; l < space.down_conflicts[j].size(); l++)
-						if (!((trans_trace[j].data == "0" && trans_trace[space.down_conflicts[j][l]].data == "1") ||
-							(trans_trace[j].data == "1" && trans_trace[space.down_conflicts[j][l]].data == "0")))
-							benefit--;
+					// Add the number of up production rule conflicts eliminated in this trace to the benefit
+					for (ci = up_conflict_firings.begin(); ci != up_conflict_firings.end(); ci++)
+						if ((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
+							(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0'))
+							benefit++;
 
-					for (l = 0; l < space.up_conflicts[i].size(); l++)
-						if (!((trans_trace[i].data == "0" && trans_trace[space.up_conflicts[i][l]].data == "1") ||
-							(trans_trace[i].data == "1" && trans_trace[space.up_conflicts[i][l]].data == "0")))
-							benefit--;
+					// Add the number of down production rule conflicts eliminated in this trace to the benefit
+					for (ci = down_conflict_firings.begin(); ci != down_conflict_firings.end(); ci++)
+						if ((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
+							(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0'))
+							benefit++;
 
-					if (benefit > m)
+					// Subtract the number of up production rule conflicts added by adding this variable with these up firings from the benefit
+					for (k = 0; k < (int)up.size(); k++)
+						for (l = 0; l < (int)space.up_conflicts[up[k]].size(); l++)
+							if (values[space.up_conflicts[up[k]][l]].data[0] == '0')
+								benefit--;
+
+					// Subtract the number of down production rule conflicts added by adding this variable with these down firings from the benefit
+					for (k = 0; k < (int)down.size(); k++)
+						for (l = 0; l < (int)space.down_conflicts[down[k]].size(); l++)
+							if (values[space.down_conflicts[down[k]][l]].data[0] == '1')
+								benefit--;
+
+					// Check to see if these firings yield the most benefit
+					if (benefit > best_benefit)
 					{
-						u = i;
-						d = j;
-						m = benefit;
-						t = trans_trace;
+						best_up = up;
+						best_down = down;
+						best_benefit = benefit;
+						best_values = values;
 					}
 				}
 				cout << benefit << "\t";
@@ -321,181 +411,39 @@ void program::insert_state_vars()
 		cout << "Step 2: " << ((double)(t2.tv_sec - t1.tv_sec) + 0.000001*(double)(t2.tv_usec - t1.tv_usec)) << " seconds" << endl;
 		cout << "Total: " << ((double)(t2.tv_sec - t0.tv_sec) + 0.000001*(double)(t2.tv_usec - t0.tv_usec)) << " seconds" << endl;
 
-		cout << endl << endl << m << " Conflicting Paths Eliminated" << endl << "Up: " << u << endl << "Down: " << d << endl;
-		cout << t << endl << endl;
-
-		cout << space.get_trace(u, d) << endl;
+		cout << endl << endl << best_benefit << " Conflicting Paths Eliminated" << endl;
+		cout << "Up:\t";
+		for (k = 0; k < (int)best_up.size(); k++)
+			cout << best_up[k] << ", ";
+		cout << endl;
+		cout << "Down:\t";
+		for (k = 0; k < (int)best_down.size(); k++)
+			cout << best_down[k] << ", ";
+		cout << endl;
+		cout << best_values << endl << endl;
 
 		// Insert new variable
 		int vid = vars.insert(variable(vars.unique_name("_sv"), "int", 1, false));
-
 		cout << *(vars.find(vid)) << endl;
 
 		// Update the space
-		space.set_trace(vid, t);
-
-		i = space.duplicate_state(u);
+		space.set_trace(vid, best_values);
+		i = space.duplicate_state(best_up[0]);
 		space.states[i][vid] = value("1");
 		space.states[i].prs = true;
 		space.traces[vid][i] = value("1");
-		i = space.duplicate_state(d);
+		i = space.duplicate_state(best_down[0]);
 		space.states[i][vid] = value("0");
 		space.states[i].prs = true;
 		space.traces[vid][i] = value("0");
 
-		/*space.up_firings.resize(vid+1);
-		space.up_firings[vid].push_back(u);
-		space.up_firings_transpose.resize(space.states.size());
-		space.up_firings_transpose[u].push_back(vid);
-		space.down_firings.resize(vid+1);
-		space.down_firings[vid].push_back(d);
-		space.down_firings_transpose.resize(space.states.size());
-		space.down_firings_transpose[d].push_back(vid);*/
-
+		// Recalculate the firings and conflicts lists
 		space.gen_deltas();
 		space.gen_conflicts();
 	}
 
 	cout << space << endl;
-
-	// Now we need to execute the change, recalculate, and reiterate.
-
-	// Fuck that hurt my head.
-
-
-
-
-
-	/*vector<vector<int> >::iterator confli;
-	int sv_from, sv_to;
-	bool sv_up;
-	//Up
-	//Go through the list of conflicts
-	for(confli = space.up_conflicts.begin(); confli!= space.up_conflicts.end(); confli++)
-	{
-		//If the list of states confli conflicts with is not zero,
-		if(confli->second.size() > 0)
-		{
-			//Chose the first one arbitrarily.
-			//Select an edge
-			if(confli->second[0] > confli->first)
-			{
-				cout << "I am inserting a state variable after " << confli->first << " and before " << confli->second[0] << endl;
-				//I commondeered an edge.
-				sv_from = 4;
-				sv_to = 5;
-				sv_up = false; // ?
-				break;
-			}
-			else
-			{
-				cout << "I am inserting a state variable before " << confli->first << " and after " << confli->second[0] << endl;
-				sv_from = 5;
-				sv_to = 4;
-				sv_up = true; // ?
-				break;
-			}
-		}
-	}//Confli
-	//If we didn't find anything, do the same search for down.
-
-
-
-	//We have now selected an edge to commondeer.
-	//Add a new variable to our globals list
-	//pair<string, instruction*> add_unique_variable(string prefix, string postfix, string type, vspace *vars, string tab, int verbosity)
-	add_unique_variable("sv", "", "int<1>", &vars, "", -1);*/
-	//Create a new state for SV go high (probably based off of the from of the commondeered edge)
-
-	//Remove the edge between them.
-
-	//Add the edge from sv_from to our new state
-
-	//Add the edge from our new state to sv_to
-
-	//Add the values into state space
-
-	//Add an additional variable to the trace
-
-	//Add the values into trace space
-
-	//Recalculate diff space
-
-	//Recalculate conflicts
-
-	//Iterate until complete
 }
-//Fuck this code
-/*
-//Indistinguishable states before PRS?
-
-//The below, or a totally crazy idea:
-//Make a datastructure containing 'indistinguishable from's for each state
-//Somehow shrink these lists so they don't matter anymore or something. Magic.
-//Other thoughts: Would it be dumb to iterate through once with all implicants instead?
-
-//Set up data structures
-vector<trace> up_conflicts;
-vector<trace> down_conflicts;
-
-up_conflicts.resize(vars.global.size());
-down_conflicts.resize(vars.global.size());
-for(size_t i = 0; i < vars.global.size(); i ++)
-{
-	up_conflicts[i].values.resize(space.size());
-	down_conflicts[i].values.resize(space.size());
-}
-
-cout << " SV up start " << endl;
-//===== SEARCH FOR NEEDED UP UP ======
-// === iterate through every rule's implicants
-for(size_t rulei = 0; rulei < vars.global.size(); rulei++)
-{
-	cout << " rulei " << endl;
-	// === For each implicant...
-	for(size_t impi = 0; impi < prs[rulei].up_implicants.size(); impi++)
-	{
-		cout << " impi " << endl;
-		//...iterate once through the state space.
-		for(int statei = 0; statei < space.size(); statei++)
-		{
-			cout << " statei " << statei<< endl;
-			//Write down if the state is an okay firing, conflict firing, or mandatory firing (vector<trace>)
-			int weaker = who_weaker(prs[rulei].up_implicants[impi], space.states[statei]);
-			//cout << "prs_up[rulei].implicants[impi]" << prs_up[rulei].implicants[impi] << " space.states[statei] " << space.states[statei] << endl;
-			//It is supposed to fire here!
-			cout << " who weaker: " << weaker << " prs_up[rulei].implicants[impi].tag " << prs[rulei].up_implicants[impi].tag << endl;
-			if(statei == (prs[rulei].up_implicants[impi].tag))
-				up_conflicts[rulei][statei].data = "!";
-			//It doesn't fire here.
-			else if(weaker == 0 || weaker == 2)
-				up_conflicts[rulei][statei].data = "_";
-			//It fires here. Should it?
-			else if(weaker == -1 || weaker == 1)
-			{
-				//(space[statei][prs_up[rulei].uid]=="0"))
-				up_conflicts[rulei][statei].data = "C";
-			}
-			else
-				up_conflicts[rulei][statei].data = "?";
-			cout << "bottom of loop " << endl;
-		} //statei for
-	}//impi for
-}//rulei for
-
-cout << "Up conflict traces:" << endl;
-for (size_t i = 0; i < vars.global.size(); i++)
-	cout<< prs[i].up << " " << up_conflicts[i] << endl;
-
-// === Chose indices in state space to insert state variables
-// === Insert these into the CHP and reparse? Is better way?
-
-
-
-//===== SEARCH FOR NEEDED DOWN SV ======
-// === iterate through every rule's implicants
-
-cout << "Done state var insert" << endl;*/
 
 void program::generate_prs()
 {

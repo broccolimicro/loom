@@ -43,9 +43,8 @@ struct graph
 	int duplicate_state(int from);
 	void insert_edge(int from, int to, string chp);
 	path_space get_paths(int from, int to, path p);
-	value	   get_next(int from, int to, int up, int down, value def);
-	trace	   get_trace(int up, int down);
-	trace	   get_trace(vector<int> up, vector<int> down);
+	void	   get_trace(int from, int up, int down, trace *result);
+	void	   get_trace(int from, vector<bool> *up, vector<bool> *down, trace *result);
 
 	void set_trace(int uid, trace t);
 

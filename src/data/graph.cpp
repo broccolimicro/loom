@@ -154,89 +154,96 @@ path_space graph::get_paths(int from, int to, path p)
 	return result;
 }
 
-value graph::get_next(int from, int to, int up, int down, value def)
+void graph::get_trace(int from, int up, int down, trace *result)
 {
-	if (from == up && from == down)
-		return value("_");
-	else if (from == up)
-		return value("1");
-	else if (from == down)
-		return value("0");
-	else
-		return def;
-}
-
-trace graph::get_trace(int up, int down)
-{
-	int i, j, k;
-	trace result;
 	value next;
-	bool change;
+	value temp;
 
-	result.values.assign(states.size(), value("_"));
-	result.values[0] = value("X");
-
-	change = true;
-	while (change)
+	while (front_edges[from].size() == 1)
 	{
-		change = false;
-		for (i = 0; i < size(); i++)
-			for (j = 0; j < (int)front_edges[i].size(); j++)
-			{
-				next = get_next(i, front_edges[i][j], up, down, result[i]);
-				if (!subset(result[front_edges[i][j]], next))
-					change = true;
-				result[front_edges[i][j]] = result[front_edges[i][j]] || next;
-			}
+		if (from == up && from == down)
+			next = (*result)[front_edges[from].front()] || value("_");
+		else if (from == up)
+			next = (*result)[front_edges[from].front()] || value("1");
+		else if (from == down)
+			next = (*result)[front_edges[from].front()] || value("0");
+		else
+			next = (*result)[front_edges[from].front()] || (*result)[from];
+
+		if (next.data == (*result)[front_edges[from].front()].data)
+			return;
+
+		(*result)[front_edges[from].front()] = next;
+
+		from = front_edges[from].front();
 	}
-	return result;
+
+	if (from == up && from == down)
+		temp = value("_");
+	else if (from == up)
+		temp = value("1");
+	else if (from == down)
+		temp = value("0");
+	else
+		temp = (*result)[from];
+
+	for (int i = 0; i < (int)front_edges[from].size(); i++)
+	{
+		next = (*result)[front_edges[from][i]] || temp;
+
+		if (next.data != (*result)[front_edges[from][i]].data)
+		{
+			(*result)[front_edges[from][i]] = next;
+			get_trace(front_edges[from][i], up, down, result);
+		}
+	}
 }
 
-trace graph::get_trace(vector<int> up, vector<int> down)
+void graph::get_trace(int from, vector<bool> *up, vector<bool> *down, trace *result)
 {
-	size_t i, j, l;
-	vector<int> to;
-	vector<int> loop;
-	vector<int>::iterator upi, downi;
-	trace result(value("X"), states.size());
-	to.assign(states.size(), 0);
-	loop.assign(states.size(), 0);
+	value next;
+	value temp;
+	int curr;
 
-	result.values[0] = value("X");
-
-	to[0] = 1;
-	for (i = 0; i < front_edges.size(); i++)
+	while (front_edges[from].size() == 1)
 	{
-		if (i != l+1)
-			i = l;
+		curr = front_edges[from].front();
+		if ((*up)[from] && (*down)[from])
+			return;
+		else if ((*up)[from])
+			next = (*result)[curr] || value("1");
+		else if ((*down)[from])
+			next = (*result)[curr] || value("0");
+		else
+			next = (*result)[curr] || (*result)[from];
 
-		l = i;
-		for (j = 0; j < front_edges[i].size(); j++)
-		{
-			to[front_edges[i][j]]++;
-			upi = find(up.begin(), up.end(), i);
-			downi = find(down.begin(), down.end(), i);
-			if (upi != up.end() && downi != down.end())
-				result[front_edges[i][j]] = value("X");
-			if (upi != up.end())
-				result[front_edges[i][j]] = value("1");
-			else if (downi != down.end())
-				result[front_edges[i][j]] = value("0");
-			else if (result[i].data != "X" && to[front_edges[i][j]] == 1)
-				result[front_edges[i][j]] = result[i].data;
-			else if (result[i].data == result[front_edges[i][j]].data && to[front_edges[i][j]] > 1)
-				result[front_edges[i][j]] = result[i].data;
-			else
-				result[front_edges[i][j]] = value("X");
+		if (next.data == (*result)[curr].data)
+			return;
 
-			if ((size_t)front_edges[i][j] < l && loop[i] <= 1)
-				l = front_edges[i][j];
-		}
-
-		loop[i]++;
+		(*result)[curr] = next;
+		from = curr;
 	}
 
-	return result;
+	if ((*up)[from] && (*down)[from])
+		temp = value("_");
+	else if ((*up)[from])
+		temp = value("1");
+	else if ((*down)[from])
+		temp = value("0");
+	else
+		temp = (*result)[from];
+
+	for (int i = 0; i < (int)front_edges[from].size(); i++)
+	{
+		curr = front_edges[from][i];
+		next = (*result)[curr] || temp;
+
+		if (next.data != (*result)[curr].data)
+		{
+			(*result)[curr] = next;
+			get_trace(curr, up, down, result);
+		}
+	}
 }
 
 void graph::set_trace(int uid, trace t)
