@@ -62,6 +62,11 @@ process main()
 	chan4p0b B;
 	chan4p0b C;
 	chan4p1b D;
+	
+	//chan4p0b E;
+	//chan4p0b F;
+	//chan4p0b G;
+	//chan4p1b H;
 		
 	mux0b2 MyMuxA(A, B, C, D)
 	

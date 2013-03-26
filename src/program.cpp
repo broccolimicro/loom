@@ -217,13 +217,27 @@ void program::generate_states()
 
 void program::insert_state_vars()
 {
-	int i, j, k, l, m;
+	srand(time(0));
+
+	int i, j, k, l, m, n;
 	int w, h;
+	int vid = -1;
+
+	int occd0, occd1, occu0, occu1;
+	int occpd, occpu, boccpd, boccpu;
+	int db, ub, bdb, bub;
+
+	bool imp_up, imp_down;
 
 	vector<int> up, down;
 	vector<bool> rup, rdown;
 	trace values;
 	int benefit;
+
+	int up_benefit;
+	int down_benefit;
+	int up_deficit;
+	int down_deficit;
 
 	vector<int> best_up, best_down;
 	trace best_values;
@@ -231,6 +245,9 @@ void program::insert_state_vars()
 
 	list<pair<int, int> > up_conflict_firings;
 	list<pair<int, int> > down_conflict_firings;
+
+	list<pair<int, int> > old_up_conflict_firings;
+	list<pair<int, int> > old_down_conflict_firings;
 
 	list<pair<int, int> >::iterator ci;
 
@@ -257,7 +274,7 @@ void program::insert_state_vars()
 	int dimension = 1;
 
 	best_benefit = 1;
-	for (m = 0; m < 10 && best_benefit > 0; m++)
+	for (m = 0; m < 30 && best_benefit > 0; m++)
 	{
 		/* Step 1: cache the list of conflict firings already present in the state space. This does not include conflicts between two
 		 * states in which neither states are a firing for a variable.
@@ -272,7 +289,8 @@ void program::insert_state_vars()
 		for (i = 0; i < (int)space.up_firings.size(); i++)
 			for (k = 0; k < (int)space.up_firings[i].size(); k++)
 				for (j = 0; j < (int)space.up_conflicts[space.up_firings[i][k]].size(); j++)
-					up_conflict_firings.push_back(pair<int, int>(space.up_firings[i][k], space.up_conflicts[space.up_firings[i][k]][j]));
+					if (space.traces[i][space.up_conflicts[space.up_firings[i][k]][j]].data[0] != '1')
+						up_conflict_firings.push_back(pair<int, int>(space.up_firings[i][k], space.up_conflicts[space.up_firings[i][k]][j]));
 
 		// Eliminate duplicate pairs so that we can get an accurate measure
 		up_conflict_firings.sort();
@@ -287,7 +305,8 @@ void program::insert_state_vars()
 		for (i = 0; i < (int)space.down_firings.size(); i++)
 			for (k = 0; k < (int)space.down_firings[i].size(); k++)
 				for (j = 0; j < (int)space.down_conflicts[space.down_firings[i][k]].size(); j++)
-					down_conflict_firings.push_back(pair<int, int>(space.down_firings[i][k], space.down_conflicts[space.down_firings[i][k]][j]));
+					if (space.traces[i][space.down_conflicts[space.down_firings[i][k]][j]].data[0] != '0')
+						down_conflict_firings.push_back(pair<int, int>(space.down_firings[i][k], space.down_conflicts[space.down_firings[i][k]][j]));
 
 		// Eliminate duplicate pairs so that we can get an accurate measure
 		down_conflict_firings.sort();
@@ -307,6 +326,86 @@ void program::insert_state_vars()
 		cout << "Conflicts left to eliminate: " << up_conflict_firings.size() << " " << down_conflict_firings.size() << endl;
 
 		cout << "Step 1: " << ((double)(t1.tv_sec - t0.tv_sec) + 0.000001*(double)(t1.tv_usec - t0.tv_usec)) << " seconds" << endl;
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		/* for testing purposes
+
+		old_up_conflict_firings.clear();
+		old_down_conflict_firings.clear();
+
+		// Calculate the list of up production rule conflict pairs
+		for (i = 0; i < (int)space.up_firings.size(); i++)
+			if (i != vid)
+				for (k = 0; k < (int)space.up_firings[i].size(); k++)
+					for (j = 0; j < (int)space.up_conflicts[space.up_firings[i][k]].size(); j++)
+						if (space.traces[i][space.up_conflicts[space.up_firings[i][k]][j]].data[0] != '1')
+							old_up_conflict_firings.push_back(pair<int, int>(space.up_firings[i][k], space.up_conflicts[space.up_firings[i][k]][j]));
+
+		// Eliminate duplicate pairs so that we can get an accurate measure
+		old_up_conflict_firings.sort();
+		old_up_conflict_firings.unique();
+
+		// Calculate the list of down production rule conflict pairs
+		for (i = 0; i < (int)space.down_firings.size(); i++)
+			if (i != vid)
+				for (k = 0; k < (int)space.down_firings[i].size(); k++)
+					for (j = 0; j < (int)space.down_conflicts[space.down_firings[i][k]].size(); j++)
+						if (space.traces[i][space.down_conflicts[space.down_firings[i][k]][j]].data[0] != '0')
+							old_down_conflict_firings.push_back(pair<int, int>(space.down_firings[i][k], space.down_conflicts[space.down_firings[i][k]][j]));
+
+		// Eliminate duplicate pairs so that we can get an accurate measure
+		old_down_conflict_firings.sort();
+		old_down_conflict_firings.unique();
+
+		cout << vid << " Should be added" << endl;
+		for (ci = old_down_conflict_firings.begin(); ci != old_down_conflict_firings.end(); ci++)
+			cout << "[" << ci->first << "," << ci->second << "]";
+		cout << endl;
+
+
+		occd1 = old_down_conflict_firings.size();
+		occu1 = old_up_conflict_firings.size();
+
+		old_up_conflict_firings.clear();
+		old_down_conflict_firings.clear();
+
+		// Calculate the list of up production rule conflict pairs
+		for (k = 0; vid >= 0 && k < (int)space.up_firings[vid].size(); k++)
+			for (j = 0; j < (int)space.up_conflicts[space.up_firings[vid][k]].size(); j++)
+				if (space.traces[vid][space.up_conflicts[space.up_firings[vid][k]][j]].data[0] != '1')
+					old_up_conflict_firings.push_back(pair<int, int>(space.up_firings[vid][k], space.up_conflicts[space.up_firings[vid][k]][j]));
+		// Eliminate duplicate pairs so that we can get an accurate measure
+		old_up_conflict_firings.sort();
+		old_up_conflict_firings.unique();
+
+		// Calculate the list of down production rule conflict pairs
+		for (k = 0; vid >= 0 && k < (int)space.down_firings[vid].size(); k++)
+			for (j = 0; j < (int)space.down_conflicts[space.down_firings[vid][k]].size(); j++)
+				if (space.traces[vid][space.down_conflicts[space.down_firings[vid][k]][j]].data[0] != '0')
+					old_down_conflict_firings.push_back(pair<int, int>(space.down_firings[vid][k], space.down_conflicts[space.down_firings[vid][k]][j]));
+
+		// Eliminate duplicate pairs so that we can get an accurate measure
+		old_down_conflict_firings.sort();
+		old_down_conflict_firings.unique();
+
+		cout << vid << " Should be added" << endl;
+		for (ci = old_down_conflict_firings.begin(); ci != old_down_conflict_firings.end(); ci++)
+			cout << "[" << ci->first << "," << ci->second << "]";
+		cout << endl;
+
+		cout << "Conflicts Promised:\t" << bub << "\t" << bdb << endl;
+		cout << "Conflicts Removed:\t" << occu0 - occu1 << "\t" << occd0 - occd1 << endl;
+		cout << "Conflicts Predicted:\t" << boccpu << "\t" << boccpd << endl;
+		cout << "Conflicts Added:\t" << old_up_conflict_firings.size() << "\t" << old_down_conflict_firings.size() << endl;
+
+		occd0 = down_conflict_firings.size();
+		occu0 = up_conflict_firings.size();*/
+
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 		/* Step 2: Generate a multidimensional grid with a side length equal to the number of states in the state space and a dimension
 		 * equal to the number of up firings plus down firings allowed. The overall size of this grid is space.size^(up.size + down.size). Which
@@ -353,6 +452,10 @@ void program::insert_state_vars()
 
 				// Check to make sure that we aren't dealing with an up transition happening at the same time as a down transition.
 				benefit = 0;
+				up_benefit = 0;
+				down_benefit = 0;
+				up_deficit = 0;
+				down_deficit = 0;
 				overlap = false;
 				for (k = 0; k < (int)up.size() && !overlap; k++)
 					for (l = 0; l < (int)down.size() && !overlap; l++)
@@ -365,53 +468,156 @@ void program::insert_state_vars()
 					values[0] = value("X");
 					space.get_trace(0, &rup, &rdown, &values);
 
-					// TODO I am counting wrong here... the algorithm is too optimistic right now
+					// TODO counting is off by one for up conflicts and down conflicts each. Making the total error a maximum of 2
 
 					// Add the number of up production rule conflicts eliminated in this trace to the benefit
 					for (ci = up_conflict_firings.begin(); ci != up_conflict_firings.end(); ci++)
-						if ((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
-							(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0'))
-							benefit++;
+					{
+						if (rup[ci->first])
+						{
+							if (values[ci->second].data[0] == '0')
+								up_benefit++;
+
+							if (!((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
+								(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0')) && find(space.up_conflicts[ci->first].begin(), space.up_conflicts[ci->first].end(), ci->second) == space.up_conflicts[ci->first].end())
+								up_benefit--;
+							if ((values[ci->first].data[0] != '1' && rdown[ci->second]) ||
+								(values[ci->first].data[0] != '0' && rup[ci->second]))
+								up_benefit--;
+
+							if (rup[ci->second] && find(space.up_conflicts[ci->first].begin(), space.up_conflicts[ci->first].end(), ci->second) == space.up_conflicts[ci->first].end())
+								up_benefit--;
+						}
+						else if (rdown[ci->first])
+						{
+							if (values[ci->second].data[0] == '1')
+								up_benefit++;
+
+							if (!((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
+								(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0')) && find(space.down_conflicts[ci->first].begin(), space.down_conflicts[ci->first].end(), ci->second) == space.down_conflicts[ci->first].end())
+								down_benefit--;
+							if ((values[ci->first].data[0] != '1' && rdown[ci->second]) ||
+								(values[ci->first].data[0] != '0' && rup[ci->second]))
+								down_benefit--;
+
+							if (rdown[ci->second] && find(space.down_conflicts[ci->first].begin(), space.down_conflicts[ci->first].end(), ci->second) == space.down_conflicts[ci->first].end())
+								up_benefit--;
+						}
+						else
+						{
+							if ((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
+								(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0'))
+								up_benefit++;
+
+							if ((values[ci->first].data[0] != '1' && rdown[ci->second]) ||
+								(values[ci->first].data[0] != '0' && rup[ci->second]))
+								up_benefit--;
+						}
+					}
 
 					// Add the number of down production rule conflicts eliminated in this trace to the benefit
 					for (ci = down_conflict_firings.begin(); ci != down_conflict_firings.end(); ci++)
-						if ((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
-							(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0'))
-							benefit++;
+					{
+						if (rup[ci->first])
+						{
+							if (values[ci->second].data[0] == '0')
+								down_benefit++;
+
+							if (!((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
+								(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0')) && find(space.up_conflicts[ci->first].begin(), space.up_conflicts[ci->first].end(), ci->second) == space.up_conflicts[ci->first].end())
+								up_benefit--;
+							if ((values[ci->first].data[0] != '1' && rdown[ci->second]) ||
+								(values[ci->first].data[0] != '0' && rup[ci->second]))
+								up_benefit--;
+
+							if (rup[ci->second] && find(space.up_conflicts[ci->first].begin(), space.up_conflicts[ci->first].end(), ci->second) == space.up_conflicts[ci->first].end())
+								down_benefit--;
+						}
+						else if (rdown[ci->first])
+						{
+							if (values[ci->second].data[0] == '1')
+								down_benefit++;
+
+							if (!((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
+								(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0')) && find(space.down_conflicts[ci->first].begin(), space.down_conflicts[ci->first].end(), ci->second) == space.down_conflicts[ci->first].end())
+								down_benefit--;
+							if ((values[ci->first].data[0] != '1' && rdown[ci->second]) ||
+								(values[ci->first].data[0] != '0' && rup[ci->second]))
+								down_benefit--;
+
+							if (rdown[ci->second] && find(space.down_conflicts[ci->first].begin(), space.down_conflicts[ci->first].end(), ci->second) == space.down_conflicts[ci->first].end())
+								down_benefit--;
+						}
+						else
+						{
+							if ((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
+								(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0'))
+								down_benefit++;
+
+							if ((values[ci->first].data[0] != '1' && rdown[ci->second]) ||
+								(values[ci->first].data[0] != '0' && rup[ci->second]))
+								down_benefit--;
+						}
+					}
 
 					// Subtract the number of up production rule conflicts added by adding this variable with these up firings from the benefit
 					for (k = 0; k < (int)up.size(); k++)
 						for (l = 0; l < (int)space.up_conflicts[up[k]].size(); l++)
-							if (values[space.up_conflicts[up[k]][l]].data[0] == '0')
-								benefit--;
+						{
+							if (values[space.up_conflicts[up[k]][l]].data[0] != '1')
+								up_deficit++;
+							if (rdown[space.up_conflicts[up[k]][l]])
+								up_deficit++;
+						}
 
 					// Subtract the number of down production rule conflicts added by adding this variable with these down firings from the benefit
 					for (k = 0; k < (int)down.size(); k++)
 						for (l = 0; l < (int)space.down_conflicts[down[k]].size(); l++)
-							if (values[space.down_conflicts[down[k]][l]].data[0] == '1')
-								benefit--;
+						{
+							if (values[space.down_conflicts[down[k]][l]].data[0] != '0')
+								down_deficit++;
+							if (rup[space.down_conflicts[down[k]][l]])
+								down_deficit++;
+						}
 
+					benefit = up_benefit + down_benefit - up_deficit - down_deficit;
 					// Check to see if these firings yield the most benefit
 					if (benefit > best_benefit)
 					{
+						bub = up_benefit;
+						bdb = down_benefit;
+						boccpd = down_deficit;
+						boccpu = up_deficit;
 						best_up = up;
 						best_down = down;
 						best_benefit = benefit;
 						best_values = values;
 					}
+					/* for testing purposes
+					if (benefit > 0 && rand()%10 == 0)
+					{
+						bub = up_benefit;
+						bdb = down_benefit;
+						boccpd = down_deficit;
+						boccpu = up_deficit;
+						best_up = up;
+						best_down = down;
+						best_benefit = benefit;
+						best_values = values;
+					}*/
 				}
-				cout << benefit << "\t";
+				//cout << benefit << "\t";
 			}
-			cout << endl;
+			//cout << endl;
 		}
-		cout << endl;
+		//cout << endl;
 
 		gettimeofday(&t2, NULL);
 
 		cout << "Step 2: " << ((double)(t2.tv_sec - t1.tv_sec) + 0.000001*(double)(t2.tv_usec - t1.tv_usec)) << " seconds" << endl;
 		cout << "Total: " << ((double)(t2.tv_sec - t0.tv_sec) + 0.000001*(double)(t2.tv_usec - t0.tv_usec)) << " seconds" << endl;
 
-		cout << endl << endl << best_benefit << " Conflicting Paths Eliminated" << endl;
+		/*cout << endl << endl << best_benefit << " Conflicting Paths Eliminated" << endl;
 		cout << "Up:\t";
 		for (k = 0; k < (int)best_up.size(); k++)
 			cout << best_up[k] << ", ";
@@ -420,26 +626,40 @@ void program::insert_state_vars()
 		for (k = 0; k < (int)best_down.size(); k++)
 			cout << best_down[k] << ", ";
 		cout << endl;
-		cout << best_values << endl << endl;
+		cout << best_values << endl << endl;*/
 
-		// Insert new variable
-		int vid = vars.insert(variable(vars.unique_name("_sv"), "int", 1, false));
-		cout << *(vars.find(vid)) << endl;
+		if (best_benefit != 0)
+		{
+			// Insert new variable
+			vid = vars.insert(variable(vars.unique_name("_sv"), "int", 1, false));
+			cout << *(vars.find(vid)) << endl;
 
-		// Update the space
-		space.set_trace(vid, best_values);
-		i = space.duplicate_state(best_up[0]);
-		space.states[i][vid] = value("1");
-		space.states[i].prs = true;
-		space.traces[vid][i] = value("1");
-		i = space.duplicate_state(best_down[0]);
-		space.states[i][vid] = value("0");
-		space.states[i].prs = true;
-		space.traces[vid][i] = value("0");
+			// Update the space
+			space.set_trace(vid, best_values);
 
-		// Recalculate the firings and conflicts lists
-		space.gen_deltas();
-		space.gen_conflicts();
+			sort(best_up.begin(), best_up.end());
+			unique(best_up.begin(), best_up.end());
+			for (j = 0; j < (int)best_up.size(); j++)
+			{
+				i = space.duplicate_state(best_up[j]);
+				space.states[i][vid] = value("1");
+				space.states[i].prs = true;
+				space.traces[vid][i] = value("1");
+			}
+
+			sort(best_down.begin(), best_down.end());
+			unique(best_down.begin(), best_down.end());
+			for (j = 0; j < (int)best_down.size(); j++)
+			{
+				i = space.duplicate_state(best_down[j]);
+				space.states[i][vid] = value("0");
+				space.states[i].prs = true;
+				space.traces[vid][i] = value("0");
+			}
+
+			space.gen_deltas();
+			space.gen_conflicts();
+		}
 	}
 
 	cout << space << endl;

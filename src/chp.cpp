@@ -106,6 +106,9 @@ int main(int argc, char **argv)
 
 	program p(prgm, VERB_TRACE);
 
+	cout << endl;
+
+
 	//fclose(log);
 
 }
