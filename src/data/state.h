@@ -19,17 +19,20 @@ struct state
 	~state();
 	// Variable indexed using uid
 	vector<value> values;
-	//Optional tag field to 'label' states.
-	//In diff spaces, the tag marks the 'from' state.
-	//In an implicants list (see rule) it is the state that must cause a fire.
-	int tag;
 	//Should this state be used to generate state variables from?
-	bool prs;
+	vector<unsigned char> prs;
+	map<int, int> branch;
+
+
+
 	void clear();
 	vector<value>::iterator begin();
 	vector<value>::iterator end();
 	void assign(int i, value v, value r = value("?"));
 	int size();
+
+	bool fire(int uid);
+	void drive(int uid);
 
 	value &operator[](int i);
 

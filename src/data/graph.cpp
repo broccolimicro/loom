@@ -263,6 +263,10 @@ void graph::gen_conflicts()
 	down_conflicts.resize(size());
 	int j, k;
 
+	map<int, int>::iterator m, n;
+	bool parallel;
+
+
 	// Compare every state in both directions
 	for (j = 0; j < size(); j++)
 	{
@@ -270,14 +274,20 @@ void graph::gen_conflicts()
 		{
 			if (k != j)
 			{
-				if (BUBBLELESS)
+				parallel = false;
+				for (m = states[j].branch.begin(); m != states[j].branch.end() && !parallel; m++)
+					for (n = states[k].branch.begin(); n != states[k].branch.end() && !parallel; n++)
+						if (m->first == n->first && m->second != n->second)
+							parallel = true;
+
+				if (!parallel && BUBBLELESS)
 				{
 					if (up_conflict(states[j], states[k]))
 						up_conflicts[j].push_back(k);
 					if (down_conflict(states[j], states[k]))
 						down_conflicts[j].push_back(k);
 				}
-				else if (conflict(states[j], states[k]))
+				else if (!parallel && conflict(states[j], states[k]))
 				{
 					up_conflicts[j].push_back(k);
 					down_conflicts[j].push_back(k);
@@ -337,7 +347,7 @@ void graph::gen_deltas()
 				downstr = "";
 				for (si = i->begin(), sj = j->begin(); si != i->end() && sj != j->end(); si++, sj++)
 				{
-					if (*sj == '1' && *si != '1' && to_state.prs)
+					if (*sj == '1' && *si != '1' && to_state.fire(k))
 					{
 						upstr = upstr + "1";
 						up_firings[k].push_back(from);
@@ -348,7 +358,7 @@ void graph::gen_deltas()
 					else
 						upstr = upstr + "0";
 
-					if (*sj == '0' && *si != '0' && to_state.prs)
+					if (*sj == '0' && *si != '0' && to_state.fire(k))
 					{
 						downstr = downstr + "1";
 						down_firings[k].push_back(from);
@@ -487,11 +497,17 @@ ostream &operator<<(ostream &os, graph g)
 	vector<state>::iterator i;
 	vector<int>::iterator m;
 	vector<string>::iterator q;
+	map<int, int>::iterator bi;
 
 	os << "State Space:" << endl;
 	for (i = g.states.begin(), j = 0; i != g.states.end(); i++, j++)
 	{
-		os << *i << "\t" << j << " -> { ";
+		os << *i << "\t";
+
+		for (bi = i->branch.begin(); bi != i->branch.end(); bi++)
+			cout << "[" << bi->first << "," << bi->second << "]";
+
+		cout << "\t" << j << " -> { ";
 
 		if (j < g.front_edges.size())
 			for (m = g.front_edges[j].begin(); m != g.front_edges[j].end(); m++)

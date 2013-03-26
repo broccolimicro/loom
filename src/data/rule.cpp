@@ -119,7 +119,6 @@ void rule::gen_minterms(graph *g)
 
 		cout << implicant << "\t" << implicant_output << endl;
 		final_output = final_output | implicant_output;
-		implicant.tag = g->up_firings[uid][ii];
 		up.implicants.push_back(implicant);
 	}
 	cout << endl;
@@ -172,7 +171,6 @@ void rule::gen_minterms(graph *g)
 
 		cout << implicant << "\t" << implicant_output << endl;
 		final_output = final_output | implicant_output;
-		implicant.tag = g->down_firings[uid][ii];
 		down.implicants.push_back(implicant);
 	}
 	cout << endl;
@@ -207,17 +205,6 @@ void rule::gen_output(vspace *v)
 	down.gen_output();
 
 	cout << endl << endl << endl << endl;
-}
-
-void print_implicant_tags(vector<state> implicants)
-{
-	int size = implicants.size();
-	for (int i = 0; i < size; i++)
-	{
-		if (i != 0)
-			cout << ", ";
-		cout << implicants[i].tag;
-	}
 }
 
 ostream &operator<<(ostream &os, rule r)

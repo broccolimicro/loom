@@ -146,16 +146,7 @@ int guard::generate_states(graph *g, int init, state filter)
 	 * the union of all execution paths and values, we can say that for sure. This could be a huge optimization,
 	 * removing a bunch of hardware that will always run the same way.
 	 *
-	 * TODO If we modify the values in the state before a guard and that state happens
-	 * to be the result of an assignment, the production rule generation algorithm will think that it needs to
-	 * generate production rules for those "may as well be" values from the guard... BAD NEWS
-	 * What you may be able to do is put a PRS flag on every value, then only selected value changes
-	 * will be considered in the production rule generation function. This adds a lot of overhead though.
-	 * Maybe add an array of characters for every state? each bit in the array would represent a single value?
-	 * That would decrease the overhead by 8x and we wouldn't have to deal with the prs flag in value.
-	 * You could also try to solve this problem in the conflict list generation function. if an
-	 * implicant state is in conflict with the state before it and the state before it has it's prs flag low (a guard)
-	 * and the implicant state is a subset of its conflicting state, then do not generate a conflict for that pair.
+	 * TODO modifying the previous state bypasses the variant x-out system employed by parallel, loop, and conditional.
 	 */
 
 	space = g;
@@ -166,7 +157,7 @@ int guard::generate_states(graph *g, int init, state filter)
 	state s, temp;
 
 	// Choice 1
-	/*cout << "CHP Replace " << endl;
+	cout << "CHP Replace " << endl;
 	cout << chp << endl;
 	size_t k = 0, curr;
 	string vname;
@@ -189,21 +180,13 @@ int guard::generate_states(graph *g, int init, state filter)
 	}
 	cout << chp << endl;
 	chp = expression(chp).simple;
-	cout << chp << endl;*/
+	cout << chp << endl;
 
 	// Choice 2
-	/*bool prs = g->states[init].prs;
-	int tag = g->states[init].tag;
-	g->states[init] = g->states[init] || estimate(chp, vars);
-	g->states[init].prs = prs;
-	g->states[init].tag = tag;*/
+	//g->states[init] = g->states[init] || estimate(chp, vars);
 
 	// Choice 3
-	/*bool prs = g->states[init].prs;
-	int tag = g->states[init].tag;
-	g->states[init] = g->states[init] && solve(expression("~(" + chp + ")").simple, vars, "", -1);
-	g->states[init].prs = prs;
-	g->states[init].tag = tag;*/
+	//g->states[init] = g->states[init] && solve(expression("~(" + chp + ")").simple, vars, "", -1);
 
 	uid = g->states.size();
 	solution = solve(chp, vars, tab, verbosity);

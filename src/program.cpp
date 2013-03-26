@@ -219,15 +219,9 @@ void program::insert_state_vars()
 {
 	srand(time(0));
 
-	int i, j, k, l, m, n;
+	int i, j, k, l, m;
 	int w, h;
 	int vid = -1;
-
-	int occd0, occd1, occu0, occu1;
-	int occpd, occpu, boccpd, boccpu;
-	int db, ub, bdb, bub;
-
-	bool imp_up, imp_down;
 
 	vector<int> up, down;
 	vector<bool> rup, rdown;
@@ -256,12 +250,6 @@ void program::insert_state_vars()
 	timeval t0, t1, t2;
 
 	/* THIS IS A STRAIGHTFORWARD BRUTE FORCE ALGORITHM. IT IS NOT SMART. IT IS NOT FAST. BUT IT WORKS.
-	 *
-	 * This works for loops, conditionals, blocks, assignments, and guards. This does not work for parallel (yet) because it thinks that it has to
-	 * separate branches of a parallel block with a state variable transition... This is mildly problematic because it cannot be solved by an
-	 * examination of the state space alone. To solve this problem, you need to examine the parse tree as well. This will probably be solved with
-	 * a check in the function that generates the conflicting state list and maybe a parallel block id and branch id. The idea is to not generate a
-	 * conflicting pair if the parallel block id of both states is the same, but the branch id of both state is different.
 	 *
 	 * This algorithms execution time balloons very quickly and becomes very very very fucking slow, BUT! it does indeed calculate the optimal
 	 * state variable insertion points and resulting trace. So... projection + process decomposition to keep the space we are looking at very small?
@@ -326,85 +314,6 @@ void program::insert_state_vars()
 		cout << "Conflicts left to eliminate: " << up_conflict_firings.size() << " " << down_conflict_firings.size() << endl;
 
 		cout << "Step 1: " << ((double)(t1.tv_sec - t0.tv_sec) + 0.000001*(double)(t1.tv_usec - t0.tv_usec)) << " seconds" << endl;
-
-		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		/* for testing purposes
-
-		old_up_conflict_firings.clear();
-		old_down_conflict_firings.clear();
-
-		// Calculate the list of up production rule conflict pairs
-		for (i = 0; i < (int)space.up_firings.size(); i++)
-			if (i != vid)
-				for (k = 0; k < (int)space.up_firings[i].size(); k++)
-					for (j = 0; j < (int)space.up_conflicts[space.up_firings[i][k]].size(); j++)
-						if (space.traces[i][space.up_conflicts[space.up_firings[i][k]][j]].data[0] != '1')
-							old_up_conflict_firings.push_back(pair<int, int>(space.up_firings[i][k], space.up_conflicts[space.up_firings[i][k]][j]));
-
-		// Eliminate duplicate pairs so that we can get an accurate measure
-		old_up_conflict_firings.sort();
-		old_up_conflict_firings.unique();
-
-		// Calculate the list of down production rule conflict pairs
-		for (i = 0; i < (int)space.down_firings.size(); i++)
-			if (i != vid)
-				for (k = 0; k < (int)space.down_firings[i].size(); k++)
-					for (j = 0; j < (int)space.down_conflicts[space.down_firings[i][k]].size(); j++)
-						if (space.traces[i][space.down_conflicts[space.down_firings[i][k]][j]].data[0] != '0')
-							old_down_conflict_firings.push_back(pair<int, int>(space.down_firings[i][k], space.down_conflicts[space.down_firings[i][k]][j]));
-
-		// Eliminate duplicate pairs so that we can get an accurate measure
-		old_down_conflict_firings.sort();
-		old_down_conflict_firings.unique();
-
-		cout << vid << " Should be added" << endl;
-		for (ci = old_down_conflict_firings.begin(); ci != old_down_conflict_firings.end(); ci++)
-			cout << "[" << ci->first << "," << ci->second << "]";
-		cout << endl;
-
-
-		occd1 = old_down_conflict_firings.size();
-		occu1 = old_up_conflict_firings.size();
-
-		old_up_conflict_firings.clear();
-		old_down_conflict_firings.clear();
-
-		// Calculate the list of up production rule conflict pairs
-		for (k = 0; vid >= 0 && k < (int)space.up_firings[vid].size(); k++)
-			for (j = 0; j < (int)space.up_conflicts[space.up_firings[vid][k]].size(); j++)
-				if (space.traces[vid][space.up_conflicts[space.up_firings[vid][k]][j]].data[0] != '1')
-					old_up_conflict_firings.push_back(pair<int, int>(space.up_firings[vid][k], space.up_conflicts[space.up_firings[vid][k]][j]));
-		// Eliminate duplicate pairs so that we can get an accurate measure
-		old_up_conflict_firings.sort();
-		old_up_conflict_firings.unique();
-
-		// Calculate the list of down production rule conflict pairs
-		for (k = 0; vid >= 0 && k < (int)space.down_firings[vid].size(); k++)
-			for (j = 0; j < (int)space.down_conflicts[space.down_firings[vid][k]].size(); j++)
-				if (space.traces[vid][space.down_conflicts[space.down_firings[vid][k]][j]].data[0] != '0')
-					old_down_conflict_firings.push_back(pair<int, int>(space.down_firings[vid][k], space.down_conflicts[space.down_firings[vid][k]][j]));
-
-		// Eliminate duplicate pairs so that we can get an accurate measure
-		old_down_conflict_firings.sort();
-		old_down_conflict_firings.unique();
-
-		cout << vid << " Should be added" << endl;
-		for (ci = old_down_conflict_firings.begin(); ci != old_down_conflict_firings.end(); ci++)
-			cout << "[" << ci->first << "," << ci->second << "]";
-		cout << endl;
-
-		cout << "Conflicts Promised:\t" << bub << "\t" << bdb << endl;
-		cout << "Conflicts Removed:\t" << occu0 - occu1 << "\t" << occd0 - occd1 << endl;
-		cout << "Conflicts Predicted:\t" << boccpu << "\t" << boccpd << endl;
-		cout << "Conflicts Added:\t" << old_up_conflict_firings.size() << "\t" << old_down_conflict_firings.size() << endl;
-
-		occd0 = down_conflict_firings.size();
-		occu0 = up_conflict_firings.size();*/
-
-
-		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 
 		/* Step 2: Generate a multidimensional grid with a side length equal to the number of states in the state space and a dimension
@@ -560,6 +469,8 @@ void program::insert_state_vars()
 						}
 					}
 
+					// Below this comment works completely, the bug is in the above code.
+
 					// Subtract the number of up production rule conflicts added by adding this variable with these up firings from the benefit
 					for (k = 0; k < (int)up.size(); k++)
 						for (l = 0; l < (int)space.up_conflicts[up[k]].size(); l++)
@@ -584,27 +495,11 @@ void program::insert_state_vars()
 					// Check to see if these firings yield the most benefit
 					if (benefit > best_benefit)
 					{
-						bub = up_benefit;
-						bdb = down_benefit;
-						boccpd = down_deficit;
-						boccpu = up_deficit;
 						best_up = up;
 						best_down = down;
 						best_benefit = benefit;
 						best_values = values;
 					}
-					/* for testing purposes
-					if (benefit > 0 && rand()%10 == 0)
-					{
-						bub = up_benefit;
-						bdb = down_benefit;
-						boccpd = down_deficit;
-						boccpu = up_deficit;
-						best_up = up;
-						best_down = down;
-						best_benefit = benefit;
-						best_values = values;
-					}*/
 				}
 				//cout << benefit << "\t";
 			}
@@ -627,7 +522,6 @@ void program::insert_state_vars()
 			cout << best_down[k] << ", ";
 		cout << endl;
 		cout << best_values << endl << endl;*/
-
 		if (best_benefit != 0)
 		{
 			// Insert new variable
@@ -643,7 +537,7 @@ void program::insert_state_vars()
 			{
 				i = space.duplicate_state(best_up[j]);
 				space.states[i][vid] = value("1");
-				space.states[i].prs = true;
+				space.states[i].drive(vid);
 				space.traces[vid][i] = value("1");
 			}
 
@@ -653,7 +547,7 @@ void program::insert_state_vars()
 			{
 				i = space.duplicate_state(best_down[j]);
 				space.states[i][vid] = value("0");
-				space.states[i].prs = true;
+				space.states[i].drive(vid);
 				space.traces[vid][i] = value("0");
 			}
 

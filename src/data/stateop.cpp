@@ -9,7 +9,6 @@ state &state::operator=(state s)
 {
 	values = s.values;
 	prs = s.prs;
-	tag = s.tag;
 	return *this;
 }
 
@@ -53,6 +52,8 @@ state operator&(state s1, state s2)
 		result.values.push_back(a & b);
 	}
 
+	result.prs = s1.prs;
+
 	return result;
 }
 
@@ -73,6 +74,8 @@ state operator|(state s1, state s2)
 		result.values.push_back(a | b);
 	}
 
+	result.prs = s1.prs;
+
 	return result;
 }
 
@@ -85,6 +88,8 @@ state operator&(state s1, value s2)
 	for (i = s1.values.begin(); i != s1.values.end(); i++)
 		result.values.push_back(*i & s2);
 
+	result.prs = s1.prs;
+
 	return result;
 }
 
@@ -96,6 +101,8 @@ state operator|(state s1, value s2)
 	//result.var =  s1.var + "|" + s2.data;
 	for (i = s1.values.begin(); i != s1.values.end(); i++)
 		result.values.push_back(*i | s2);
+
+	result.prs = s1.prs;
 
 	return result;
 }
@@ -133,6 +140,8 @@ state operator~(state s)
 	for (i = s.values.begin(); i != s.values.end(); i++)
 		result.values.push_back(~*i);
 
+	result.prs = s.prs;
+
 	return result;
 }
 
@@ -146,7 +155,6 @@ bool operator==(state s1, state s2)
 			return false;
 	}
 	return true;
-
 }
 
 bool operator!=(state s1, state s2)
@@ -178,6 +186,8 @@ state operator||(state s1, state s2)
 		result.values.push_back(a || b);
 	}
 
+	result.prs = s1.prs;
+
 	return result;
 }
 
@@ -197,8 +207,9 @@ state operator&&(state s1, state s2)
 		result.values.push_back(a && b);
 	}
 
-	return result;
+	result.prs = s1.prs;
 
+	return result;
 }
 
 state operator!(state s)
@@ -209,6 +220,8 @@ state operator!(state s)
 	//result.var =  "~" + s.var;
 	for (i = s.values.begin(); i != s.values.end(); i++)
 		result.values.push_back(!*i);
+
+	result.prs = s.prs;
 
 	return result;
 }

@@ -36,7 +36,6 @@ struct rule
 	void gen_output(vspace *v);
 };
 
-void print_implicant_tags(vector<state> implicants);
 ostream &operator<<(ostream &os, rule r);
 
 

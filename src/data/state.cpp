@@ -13,7 +13,7 @@
 
 state::state()
 {
-	prs = false;
+	prs.clear();
 }
 
 state::~state()
@@ -23,12 +23,12 @@ state::~state()
 state::state(vector<value> v)
 {
 	values = v;
-	prs = false;
+	prs.clear();
 }
 
 state::state(value v, int c)
 {
-	prs = false;
+	prs.clear();
 	for (int i = 0; i < c; i++)
 		values.push_back(v);
 }
@@ -58,6 +58,20 @@ void state::assign(int i, value v, value r)
 int state::size()
 {
 	return values.size();
+}
+
+bool state::fire(int uid)
+{
+	if (prs.size() <= uid/8)
+		prs.resize(uid/8 + 1, 0);
+	return (bool)((prs[uid/8] >> (uid%8)) & 0x01);
+}
+
+void state::drive(int uid)
+{
+	if (prs.size() <= uid/8)
+		prs.resize(uid/8 + 1, 0);
+	prs[uid/8] |= (0x01 << (uid%8));
 }
 
 

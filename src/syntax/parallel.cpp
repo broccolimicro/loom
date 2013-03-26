@@ -235,6 +235,7 @@ int parallel::generate_states(graph *g, int init, state filter)
 	state s;
 	bool first = true;
 	state v;
+	int k;
 
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
@@ -262,9 +263,33 @@ int parallel::generate_states(graph *g, int init, state filter)
 
 	uid = g->states.size();
 
+	for (k = 0; k < instrs.size(); k++)
+		recursive_branch_set(g, g->front_edges[init][k], pair<int, int>(uid, k));
+
 	g->append_state(s, state_catcher, chp_catcher);
 
 	return uid;
+}
+
+void parallel::recursive_branch_set(graph *g, int from, pair<int, int> id)
+{
+	int i;
+
+	if (g->states[from].branch.find(id.first) != g->states[from].branch.end())
+		return;
+	g->states[from].branch.insert(id);
+
+	while (g->front_edges[from].size() == 1)
+	{
+		if (g->states[g->front_edges[from].front()].branch.find(id.first) != g->states[g->front_edges[from].front()].branch.end())
+			return;
+		g->states[g->front_edges[from].front()].branch.insert(id);
+		from = g->front_edges[from].front();
+	}
+
+	for (i = 0; i < (int)g->front_edges[from].size(); i++)
+		if (g->states[g->front_edges[from][i]].branch.find(id.first) == g->states[g->front_edges[from][i]].branch.end())
+			recursive_branch_set(g, g->front_edges[from][i], id);
 }
 
 void parallel::generate_scribes()

@@ -270,7 +270,6 @@ int assignment::generate_states(graph *g, int init, state filter)
 
 	// Set up the initial state
 	s = g->states[init] || filter;
-	s.prs = true;
 	for (ei = expr.begin(); ei != expr.end(); ei++)
 	{
 		v = vars->find(ei->first);
@@ -278,6 +277,7 @@ int assignment::generate_states(graph *g, int init, state filter)
 		if (v != NULL && v->width == 1 && v->type == "int")
 		{
 			s.assign(v->uid, evaluate(ei->second, vars, s.values), value("?"));
+			s.drive(v->uid);
 
 			// TODO Make this search smarter
 			// Search for this channel's other variables and X them out.
@@ -297,6 +297,7 @@ int assignment::generate_states(graph *g, int init, state filter)
 				if (v != NULL)
 				{
 					s.assign(v1->uid, evaluate(ei->second, vars, s.values)[i], value("?"));
+					s.drive(v1->uid);
 
 					// TODO Make this search smarter
 					// Search for this channel's other variables and X them out.

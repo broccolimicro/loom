@@ -30,8 +30,9 @@ struct parallel : block
 
 	void expand_shortcuts();
 	void parse();
-	int generate_states(graph *trans, int init, state filter);
+	int generate_states(graph *g, int init, state filter);
 	void generate_scribes();
+	void recursive_branch_set(graph *g, int from, pair<int, int> id);
 
 	void print_hse();
 
