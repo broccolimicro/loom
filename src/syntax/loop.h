@@ -28,10 +28,14 @@ struct loop : conditional
 
 	void expand_shortcuts();
 	void parse();
+	void merge();
 	int generate_states(graph *trans, int init, state filter);
+	state simulate_states(state init, state filter);
 	void generate_scribes();
 
-	void print_hse();
+	void insert_instr(int uid, int nid, instruction *instr);
+
+	void print_hse(string t);
 };
 
 #endif

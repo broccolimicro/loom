@@ -207,7 +207,7 @@ void loop::parse()
 
 		if (!guarded && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) != '|' && *(i-1) != '|') || (i == chp.end() && type == choice)))
 		{
-			if (verbosity >= VERB_PARSE)
+			if (verbosity & VERB_GENERATE_PARSE_TREE)
 				cout << tab << "Choice\n";
 			if (type == unknown)
 				type = choice;
@@ -225,7 +225,7 @@ void loop::parse()
 		}
 		else if (!guarded && depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '[' && *(i+1) == ']') || i == chp.end()))
 		{
-			if (verbosity >= VERB_PARSE)
+			if (verbosity & VERB_GENERATE_PARSE_TREE)
 				cout << tab << "Mutex\n";
 			if (type == unknown)
 				type = mutex;
@@ -246,49 +246,85 @@ void loop::parse()
 	}
 }
 
+void loop::merge()
+{
+	list<pair<block*, guard*> >::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		i->second->merge();
+		i->first->merge();
+	}
+}
+
 int loop::generate_states(graph *g, int init, state filter)
 {
-	space = g;
-	from = init;
-	cout << tab << "Loop " << chp << endl;
-
 	list<pair<block*, guard*> >::iterator instr_iter;
-	map<string, variable>::iterator vi;
-
 	vector<int> state_catcher;
 	vector<string> chp_catcher;
-
 	int guardresult;
 	string exp = "";
 	state s, v;
 
-	v = filter || variant();
-	s = g->states[init] || v;
+	if (filter.size() == 0)
+		filter = null(vars->size());
 
+	if (verbosity & VERB_GENERATE_STATE_SPACE)
+		cout << tab << "Loop " << chp << endl;
+
+	space = g;
+	from = init;
+	v = variant();
+	s = null(vars->size());
+	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+		s = s || instr_iter->first->simulate_states(instr_iter->second->simulate_states(full(vars->size()), null(vars->size())), filter);
+
+	v = filter || (v && s);
+	s = g->states[init] || v;
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		guardresult = instr_iter->second->generate_states(g, init, v);
 		state_catcher.push_back(instr_iter->first->generate_states(g, guardresult, filter));
-		if(CHP_EDGE)
-			chp_catcher.push_back(instr_iter->second->chp+"->Block");
-		else
-			chp_catcher.push_back("Loop merge");
 
-		if (exp != "")
-			exp += "&";
+		chp_catcher.push_back(CHP_EDGE ? (instr_iter->second->chp+"->Block") : "Loop merge");
 
-		exp += "~(" + instr_iter->second->chp + ")";
+		exp += (exp != "" ? "&~(" : "~(") + instr_iter->second->chp + ")";
 	}
 
 	s = s && solve(expression(exp).simple, vars, tab, verbosity);
 
-	cout << tab << "Result " << s << endl;
-	uid = g->states.size();
+	if (verbosity & VERB_GENERATE_STATE_SPACE)
+		cout << tab << s << endl;
 
-	g->append_state(s, state_catcher, chp_catcher);
-	g->insert_edge(uid, init, "Loop");
+	uid = g->append_state(s, state_catcher, chp_catcher);
+
+	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+		g->insert_edge(uid, instr_iter->second->uid, CHP_EDGE ? (instr_iter->second->chp + "->") : "Loopback");
 
 	return uid;
+}
+
+state loop::simulate_states(state init, state filter)
+{
+	list<pair<block*, guard*> >::iterator instr_iter;
+	string exp = "";
+	state s, v;
+
+	if (filter.size() == 0)
+		filter = null(vars->size());
+
+	v = variant();
+	s = null(vars->size());
+	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+	{
+		s = s || instr_iter->first->simulate_states(instr_iter->second->simulate_states(full(vars->size()), null(vars->size())), filter);
+		exp += (exp != "" ? "&~(" : "~(") + instr_iter->second->chp + ")";
+	}
+	v = filter || (v && s);
+	s = init || v;
+
+	s = s && solve(expression(exp).simple, vars, tab, verbosity);
+
+	return s;
 }
 
 void loop::generate_scribes()
@@ -301,19 +337,50 @@ void loop::generate_scribes()
 	}
 }
 
-void loop::print_hse()
+void loop::insert_instr(int uid, int nid, instruction *instr)
 {
-	cout << "\n" << tab << "*[";
+	instr->uid = nid;
+	instr->from = uid;
+
+	list<pair<block*, guard*> >::iterator i, k;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		if (i->second->uid == uid)
+		{
+			i->first->instrs.front()->from = nid;
+			i->first->instrs.push_front(instr);
+			return;
+		}
+		else if (i->first->uid == uid)
+		{
+			i->first->instrs.push_back(instr);
+			i->first->uid = nid;
+			return;
+		}
+	}
+
+	for (i = instrs.begin(); i != instrs.end(); i++)
+		i->first->insert_instr(uid, nid, instr);
+}
+
+void loop::print_hse(string t)
+{
+	cout << "\n" << t << "*[";
 	list<pair<block*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		if (i != instrs.begin() && type == mutex)
-			cout << "\n" << tab << "[]";
+			cout << "\n" << t << "[]";
 		else if (i != instrs.begin() && type == choice)
-			cout << "\n" << tab << "|";
-		i->second->print_hse();
-		cout << " ->\t";
-		i->first->print_hse();
+			cout << "\n" << t << "|";
+		if (instrs.size() > 1 || i->second->chp != "1")
+		{
+			i->second->print_hse(t + "\t");
+			cout << " ->\t";
+		}
+		else
+			cout << "\t";
+		i->first->print_hse(t + "\t");
 	}
-	cout << "\n" << tab << "]";
+	cout << endl << t << "]";
 }

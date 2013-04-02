@@ -63,13 +63,12 @@ void process::parse(string raw, int verbosity)
 	map<string, variable>::iterator vi, vj;
 	map<string, keyword*>::iterator ti;
 
-	cout << "Process:\t" << chp << endl;
-
 	name = chp.substr(name_start, name_end - name_start);
 	io_block = chp.substr(input_start, input_end - input_start);
 
-	if (verbosity >= VERB_PARSE)
+	if (verbosity & VERB_GENERATE_PARSE_TREE)
 	{
+		cout << "Process:\t" << chp << endl;
 		cout << "\tName:\t" << name << endl;
 		cout << "\tInputs:\t" << io_block << endl;
 	}
@@ -85,7 +84,12 @@ void process::parse(string raw, int verbosity)
 
 	def.init(chp.substr(block_start, block_end - block_start), &vars, "\t", verbosity);
 
-	cout << vars << endl;
-	def.print_hse();
-	cout << endl << endl;
+	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	{
+		cout << "\tVariables:" << endl;
+		vars.print("\t\t");
+		cout << "\tHSE:" << endl;
+		def.print_hse("\t\t");
+		cout << endl << endl;
+	}
 }

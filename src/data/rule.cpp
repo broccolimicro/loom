@@ -21,12 +21,13 @@ rule::rule(int uid)
 	this->name = "";
 }
 
-rule::rule(int uid, graph *g, vspace *v)
+rule::rule(int uid, graph *g, vspace *v, int verbosity)
 {
 	this->uid = uid;
 	this->up.vars = v;
 	this->down.vars = v;
 	this->name = v->get_name(uid);
+	this->verbosity = verbosity;
 
 	gen_minterms(g);
 	gen_primes();
@@ -50,7 +51,6 @@ rule &rule::operator=(rule r)
 
 void rule::gen_minterms(graph *g)
 {
-	cout << "Generating Minterms for " << uid << endl;
 	list<int> invars;
 	list<int>::iterator vk;
 
@@ -63,8 +63,13 @@ void rule::gen_minterms(graph *g)
 	int vj, ii;
 	int count, mcount, var;
 
+	if (verbosity & VERB_GENERATE_BASE_PRS)
+	{
+		cout << "Generating Minterms for " << uid << endl;
+		cout << "Up Minterms" << endl;
+	}
+
 	// Up Production Rule Minterms (Duplicate Code)
-	cout << "Up Minterms" << endl;
 	final_output = trace(value("0"), g->up[uid].size());
 	for (ii = 0; ii < (int)g->up_firings[uid].size(); ii++)
 	{
@@ -117,16 +122,21 @@ void rule::gen_minterms(graph *g)
 			}
 		}
 
-		cout << implicant << "\t" << implicant_output << endl;
+		if (verbosity & VERB_GENERATE_BASE_PRS)
+			cout << implicant << "\t" << implicant_output << endl;
 		final_output = final_output | implicant_output;
 		up.implicants.push_back(implicant);
 	}
-	cout << endl;
-	cout << "Desired:  " << g->up[uid] << endl;
-	cout << "Obtained: " << final_output << endl;
+
+	if (verbosity & VERB_GENERATE_BASE_PRS)
+	{
+		cout << endl;
+		cout << "Desired:  " << g->up[uid] << endl;
+		cout << "Obtained: " << final_output << endl;
+		cout << "Down Minterms" << endl;
+	}
 
 	// Down Production Rule Minterms (Duplicate Code)
-	cout << "Down Minterms" << endl;
 	final_output = trace(value("0"), g->up[uid].size());
 	for (ii = 0; ii < (int)g->down_firings[uid].size(); ii++)
 	{
@@ -169,34 +179,43 @@ void rule::gen_minterms(graph *g)
 			}
 		}
 
-		cout << implicant << "\t" << implicant_output << endl;
+		if (verbosity & VERB_GENERATE_BASE_PRS)
+			cout << implicant << "\t" << implicant_output << endl;
 		final_output = final_output | implicant_output;
 		down.implicants.push_back(implicant);
 	}
-	cout << endl;
-	cout << "Desired:  " << g->down[uid] << endl;
-	cout << "Obtained: " << final_output << endl;
-	cout << endl;
+
+	if (verbosity & VERB_GENERATE_BASE_PRS)
+	{
+		cout << endl;
+		cout << "Desired:  " << g->down[uid] << endl;
+		cout << "Obtained: " << final_output << endl;
+		cout << endl;
+	}
 }
 
 void rule::gen_primes()
 {
-	cout << "Generating Prime Implicants for " << uid << endl;
+	if (verbosity & VERB_GENERATE_BASE_PRS)
+		cout << "Generating Prime Implicants for " << uid << endl;
 
 	up.gen_primes();
 	down.gen_primes();
 
-	cout << endl;
+	if (verbosity & VERB_GENERATE_BASE_PRS)
+		cout << endl;
 }
 
 void rule::gen_essentials()
 {
-	cout << "Generating Essential Prime Implicants for " << uid << endl;
+	if (verbosity & VERB_GENERATE_BASE_PRS)
+		cout << "Generating Essential Prime Implicants for " << uid << endl;
 
 	up.gen_essentials();
 	down.gen_essentials();
 
-	cout << endl;
+	if (verbosity & VERB_GENERATE_BASE_PRS)
+		cout << endl;
 }
 
 void rule::gen_output(vspace *v)
@@ -204,14 +223,18 @@ void rule::gen_output(vspace *v)
 	up.gen_output();
 	down.gen_output();
 
-	cout << endl << endl << endl << endl;
+	if (verbosity & VERB_GENERATE_BASE_PRS)
+		cout << endl << endl << endl << endl;
 }
 
 ostream &operator<<(ostream &os, rule r)
 {
 	list<state>::iterator i;
 
-    os << r.up.simple << " -> " << r.name << "+" << endl << r.down.simple << " -> " << r.name << "-" << endl;
+	if (r.up.implicants.size() > 0)
+		os << r.up.simple << " -> " << r.name << "+" << endl;
+	if (r.down.implicants.size() > 0)
+		os << r.down.simple << " -> " << r.name << "-" << endl;
 
     return os;
 }

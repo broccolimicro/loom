@@ -50,9 +50,6 @@ channel &channel::operator=(channel r)
 
 void channel::parse(string chp, int verbosity)
 {
-	if (verbosity >= VERB_PARSE)
-		cout << "Channel: " << chp << endl;
-
 	int name_start = chp.find_first_of(" ")+1;
 	int name_end = chp.find_first_of("{");
 	int block_start = chp.find_first_of("{")+1;
@@ -71,8 +68,9 @@ void channel::parse(string chp, int verbosity)
 	name = chp.substr(name_start, name_end - name_start);
 	io_block = chp.substr(block_start, block_end - block_start);
 
-	if (verbosity >= VERB_PARSE)
+	if (verbosity & VERB_GENERATE_PARSE_TREE)
 	{
+		cout << "Channel: " << chp << endl;
 		cout << "\tName:  " << name << endl;
 		cout << "\tBlock: " << io_block << endl;
 	}
@@ -112,6 +110,11 @@ void channel::parse(string chp, int verbosity)
 		}
 	}
 
+	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	{
+		cout << endl;
+	}
+
 	/* These variables won't automatically be instantiated as
 	 * [operator name].[var name] because they are considered
 	 * to be io variables. If you look above at the expand instantiation
@@ -129,6 +132,8 @@ void channel::parse(string chp, int verbosity)
 	send->parse(s, verbosity);
 	recv->parse(r, verbosity);
 	probe->parse(p, verbosity);
+
+
 }
 
 ostream &operator<<(ostream &os, channel s)

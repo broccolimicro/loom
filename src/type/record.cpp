@@ -58,14 +58,12 @@ void record::parse(string raw, int verbosity)
 
 	map<string, variable> expansion;
 
-	if (verbosity >= VERB_PARSE)
-		cout << "Record: " << chp << endl;
-
 	name = chp.substr(name_start, name_end - name_start);
 	io_block = chp.substr(block_start, block_end - block_start);
 
-	if (verbosity >= VERB_PARSE)
+	if (verbosity & VERB_GENERATE_PARSE_TREE)
 	{
+		cout << "Record: " << chp << endl;
 		cout << "\tName:  " << name << endl;
 		cout << "\tBlock: " << io_block << endl;
 	}
@@ -78,6 +76,11 @@ void record::parse(string raw, int verbosity)
 
 			j = i+2;
 		}
+	}
+
+	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	{
+		cout << endl;
 	}
 }
 

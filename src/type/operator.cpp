@@ -65,10 +65,15 @@ void operate::parse(string raw, int verbosity)
 	map<string, keyword*>::iterator ti;
 	list<string>::iterator ii, ij;
 
-	cout << "Operator:\t" << chp << endl;
-
 	name = chp.substr(name_start, name_end - name_start);
 	io_block = chp.substr(input_start, input_end - input_start);
+
+	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	{
+		cout << "Operator:\t" << chp << endl;
+		cout << "\tName:\t" << name << endl;
+		cout << "\tInputs:\t" << io_block << endl;
+	}
 
 	for (i = io_block.begin(), j = io_block.begin(); i != io_block.end(); i++)
 	{
@@ -107,13 +112,12 @@ void operate::parse(string raw, int verbosity)
 	}
 	name += ")";
 
-	if (verbosity >= VERB_PARSE)
+	if (verbosity & VERB_GENERATE_PARSE_TREE)
 	{
-		cout << "\tName:\t" << name << endl;
-		cout << "\tInputs:\t" << io_block << endl;
+		cout << "\tVariables:" << endl;
+		vars.print("\t\t");
+		cout << "\tHSE:" << endl;
+		def.print_hse("\t\t");
+		cout << endl << endl;
 	}
-
-	cout << vars << endl;
-	def.print_hse();
-	cout << endl << endl;
 }

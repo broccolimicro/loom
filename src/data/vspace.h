@@ -18,6 +18,8 @@ struct vspace
 	map<string, variable> global;
 	map<string, variable> label;
 
+	int size();
+
 	variable *find(int uid);
 	variable *find(string name);
 	keyword	 *find_type(string name);
@@ -41,6 +43,8 @@ struct vspace
 	void clear();
 
 	vspace &operator=(vspace s);
+
+	void print(string t);
 };
 
 ostream &operator<<(ostream &os, vspace s);

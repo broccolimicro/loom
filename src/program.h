@@ -28,10 +28,19 @@ struct program
 	graph					space;
 	parallel				*prgm;
 
+	int verbosity;
+
 	program &operator=(program p);
 
 	void parse(string chp, int verbosity);
+	void merge();
+	void project();
+	void decompose();
+	void reshuffle();
+
+
 	void generate_states();
+	void insert_scribe_vars();
 	void insert_state_vars();
 	void generate_prs();
 	void factor_prs();

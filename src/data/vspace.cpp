@@ -7,6 +7,11 @@
 
 #include "vspace.h"
 
+int vspace::size()
+{
+	return (int)global.size();
+}
+
 variable *vspace::find(int uid)
 {
 	map<string, variable>::iterator i;
@@ -275,6 +280,21 @@ vspace &vspace::operator=(vspace s)
 	return *this;
 }
 
+void vspace::print(string t)
+{
+	size_t i;
+	variable *v;
+	for (i = 0; i < global.size(); i++)
+	{
+		v = find((int)i);
+		cout << t << v->type << " " << v->name << " UID:" << v->uid << " IO:" << v->io << "\n";
+	}
+
+	map<string, variable>::iterator vi;
+	for (vi = label.begin(); vi != label.end(); vi++)
+		cout << t << vi->second.type << " " << vi->first << "\n";
+}
+
 ostream &operator<<(ostream &os, vspace s)
 {
 	size_t i;
@@ -282,7 +302,7 @@ ostream &operator<<(ostream &os, vspace s)
 	for (i = 0; i < s.global.size(); i++)
 	{
 		v = s.find((int)i);
-		os << v->type << " " << v->name << ": " << v->uid << "," << v->io << "\n";
+		os << v->type << " " << v->name << " UID:" << v->uid << " IO:" << v->io << "\n";
 	}
 
 	map<string, variable>::iterator vi;

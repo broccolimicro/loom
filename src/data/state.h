@@ -33,6 +33,7 @@ struct state
 
 	bool fire(int uid);
 	void drive(int uid);
+	void drive(int uid, value v, value r = value("?"));
 
 	value &operator[](int i);
 
@@ -44,6 +45,9 @@ struct state
 	state &operator&=(value s);
 	state &operator|=(value s);
 };
+
+state null(int s);
+state full(int s);
 
 bool is_all_x(state s1);
 

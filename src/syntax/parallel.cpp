@@ -154,7 +154,7 @@ void parallel::expand_shortcuts()
 
 void parallel::parse()
 {
-	if (verbosity >= VERB_PARSE)
+	if (verbosity & VERB_GENERATE_PARSE_TREE)
 		cout << tab << "Parallel: " << chp << endl;
 
 	string				raw_instr;	// chp of a sub block
@@ -221,12 +221,15 @@ void parallel::parse()
 	}
 }
 
+void parallel::merge()
+{
+	list<instruction*>::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+		(*i)->merge();
+}
+
 int parallel::generate_states(graph *g, int init, state filter)
 {
-	space = g;
-	from = init;
-	cout << tab << "Parallel " << chp << endl;
-
 	list<instruction*>::iterator i, j;
 	instruction *instr;
 	map<string, variable>::iterator vi;
@@ -237,9 +240,18 @@ int parallel::generate_states(graph *g, int init, state filter)
 	state v;
 	int k;
 
+	if (verbosity & VERB_GENERATE_STATE_SPACE)
+		cout << tab << "Parallel " << chp << endl;
+
+	space = g;
+	from = init;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
-		v = filter;
+		if (filter.size() > 0)
+			v = filter;
+		else
+			v = state(value("_"), vars->global.size());
+
 		for (j = instrs.begin(); j != instrs.end(); j++)
 			if (i != j)
 				v = v || (*j)->active_variant();
@@ -259,7 +271,8 @@ int parallel::generate_states(graph *g, int init, state filter)
 			s = s || g->states[state_catcher.back()];
 	}
 
-	s = s || filter;
+	if (filter.size() > 0)
+		s = s || filter;
 
 	uid = g->states.size();
 
@@ -268,7 +281,35 @@ int parallel::generate_states(graph *g, int init, state filter)
 
 	g->append_state(s, state_catcher, chp_catcher);
 
+	if (verbosity & VERB_GENERATE_STATE_SPACE)
+		cout << tab << s << endl;
+
 	return uid;
+}
+
+state parallel::simulate_states(state init, state filter)
+{
+	list<instruction*>::iterator i, j;
+	instruction *instr;
+	state s;
+	state v;
+
+	if (filter.size() == 0)
+		filter = null(vars->size());
+
+	s = filter;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		v = filter;
+		for (j = instrs.begin(); j != instrs.end(); j++)
+			if (i != j)
+				v = v || (*j)->active_variant();
+
+		instr = *i;
+		s = s || instr->simulate_states(init, v);
+	}
+
+	return s;
 }
 
 void parallel::recursive_branch_set(graph *g, int from, pair<int, int> id)
@@ -299,17 +340,79 @@ void parallel::generate_scribes()
 		(*i)->generate_scribes();
 }
 
-void parallel::print_hse()
+void parallel::insert_instr(int uid, int nid, instruction *instr)
 {
-	cout << "\n" << tab << "(\n";
-	list<instruction*>::iterator i;
+	instr->uid = nid;
+	instr->from = uid;
+
+	block *b;
+	instruction* j;
+	list<instruction*>::iterator i, k;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
-		if (i != instrs.begin())
-			cout << "||";
-		(*i)->print_hse();
+		j = *i;
+		if (j->uid == uid)
+		{
+			if (j->kind() != "block")
+			{
+				b = new block();
+				b->from = j->from;
+				b->instrs.push_back(j);
+				b->chp = j->chp + ";" + instr->chp;
+				b->parent = this;
+				b->space = space;
+				b->vars = vars;
+				b->verbosity = verbosity;
+				b->tab = tab;
+				instrs.remove(*i);
+				instrs.push_back(b);
+			}
+			else
+				b = (block*)j;
+
+			b->instrs.push_back(instr);
+			b->uid = nid;
+			return;
+		}
 	}
-	cout << "\n" << tab << ")";
+
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		j = *i;
+		if (j->kind() == "parallel")
+			((parallel*)j)->insert_instr(uid, nid, instr);
+		else if (j->kind() == "loop")
+			((loop*)j)->insert_instr(uid, nid, instr);
+		else if (j->kind() == "conditional")
+			((conditional*)j)->insert_instr(uid, nid, instr);
+		else if (j->kind() == "guard")
+			((guard*)j)->insert_instr(uid, nid, instr);
+		else if (j->kind() == "block")
+			((block*)j)->insert_instr(uid, nid, instr);
+		else if (j->kind() == "assignment")
+			((assignment*)j)->insert_instr(uid, nid, instr);
+	}
+}
+
+void parallel::print_hse(string t)
+{
+	if (instrs.size() > 1)
+	{
+		cout << "\n" << t << "(\n" << t + "\t";
+		list<instruction*>::iterator i;
+		for (i = instrs.begin(); i != instrs.end(); i++)
+		{
+			if (i != instrs.begin())
+				cout << "||\n\t" << t;
+			(*i)->print_hse(t + "\t");
+		}
+		cout << "\n" << t << ")";
+	}
+	else if (instrs.size() == 1)
+	{
+		cout << t;
+		instrs.front()->print_hse(t);
+	}
 }
 
 void parallel::push(instruction *i)

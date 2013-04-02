@@ -12,12 +12,10 @@
 #include "data/value.h"
 #include "data/state.h"
 #include "data/trace.h"
-#include "data/path.h"
 #include "data/variable.h"
 #include "data/sspace.h"
 #include "data/tspace.h"
 #include "data/vspace.h"
-#include "data/pspace.h"
 #include "data/graph.h"
 #include "data/rule.h"
 

@@ -21,12 +21,14 @@ struct rule
 {
 	rule();
 	rule(int uid);
-	rule(int uid, graph *g, vspace *v);
+	rule(int uid, graph *g, vspace *v, int verbosity);
 	~rule();
 
 	int uid;
 	string name;
 	expression up, down;
+
+	int verbosity;
 
 	rule &operator=(rule r);
 

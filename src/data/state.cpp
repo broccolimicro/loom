@@ -74,6 +74,26 @@ void state::drive(int uid)
 	prs[uid/8] |= (0x01 << (uid%8));
 }
 
+void state::drive(int uid, value v, value r)
+{
+	if (uid >= (int)values.size())
+		values.resize(uid+1, r);
+	values[uid] = v;
+
+	if (prs.size() <= uid/8)
+		prs.resize(uid/8 + 1, 0);
+	prs[uid/8] |= (0x01 << (uid%8));
+}
+
+state null(int s)
+{
+	return state(value("_"), s);
+}
+
+state full(int s)
+{
+	return state(value("X"), s);
+}
 
 bool is_all_x(state s1)
 {

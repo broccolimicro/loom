@@ -120,8 +120,13 @@ void guard::parse()
 {
 	// TODO Expand multi-bit guard expressions using operators
 	chp = expression(chp).simple;
-	if (verbosity >= VERB_PARSE)
+	if (verbosity & VERB_GENERATE_PARSE_TREE)
 		cout << tab << "Guard:\t" + chp << endl;
+}
+
+void guard::merge()
+{
+
 }
 
 int guard::generate_states(graph *g, int init, state filter)
@@ -149,16 +154,19 @@ int guard::generate_states(graph *g, int init, state filter)
 	 * TODO modifying the previous state bypasses the variant x-out system employed by parallel, loop, and conditional.
 	 */
 
+	if (filter.size() == 0)
+		filter = null(vars->size());
+
 	space = g;
 	from = init;
-	cout << tab << "Guard " << chp << endl;
+
+	if (verbosity & VERB_GENERATE_STATE_SPACE)
+		cout << tab << "Guard " << chp << endl;
 
 	map<string, variable>::iterator vi;
 	state s, temp;
 
 	// Choice 1
-	cout << "CHP Replace " << endl;
-	cout << chp << endl;
 	size_t k = 0, curr;
 	string vname;
 	temp = estimate(chp, vars);
@@ -178,9 +186,7 @@ int guard::generate_states(graph *g, int init, state filter)
 			}
 		}
 	}
-	cout << chp << endl;
 	chp = expression(chp).simple;
-	cout << chp << endl;
 
 	// Choice 2
 	//g->states[init] = g->states[init] || estimate(chp, vars);
@@ -188,17 +194,50 @@ int guard::generate_states(graph *g, int init, state filter)
 	// Choice 3
 	//g->states[init] = g->states[init] && solve(expression("~(" + chp + ")").simple, vars, "", -1);
 
-	uid = g->states.size();
-	solution = solve(chp, vars, tab, verbosity);
-	cout << solution << endl;
-	s = (g->states[init] || filter) && solution;
+	s = (g->states[init] || filter) && solve(chp, vars, tab, verbosity);
 
-	if(CHP_EDGE)
-		g->append_state(s, init, chp + "->");
-	else
-		g->append_state(s, init, "Guard");
+	if (verbosity & VERB_GENERATE_STATE_SPACE)
+		cout << tab << s << endl;
+
+	uid = g->append_state(s, init, CHP_EDGE ? (chp + "->") : "Guard");
 
 	return uid;
+}
+
+state guard::simulate_states(state init, state filter)
+{
+	map<string, variable>::iterator vi;
+	state s, temp;
+	string temp_chp;
+	size_t k = 0, curr;
+	string vname;
+
+	if (filter.size() == 0)
+		filter = null(vars->size());
+
+	// Choice 1
+	temp_chp = chp;
+
+	temp = estimate(temp_chp, vars);
+	for (int i = 0; i < temp.size(); i++)
+	{
+		if (temp[i].data == "X" && init[i].data != "X")
+		{
+			vname = vars->get_name(i);
+			k = 0;
+			while (k < temp_chp.length())
+			{
+				curr = find_name(temp_chp, vname, k);
+				if (curr == temp_chp.npos)
+					break;
+				temp_chp.replace(curr, vname.length(), init[i].data);
+				k = curr + init[i].data.length();
+			}
+		}
+	}
+	temp_chp = expression(temp_chp).simple;
+
+	return (init || filter) && solve(temp_chp, vars, tab, verbosity);
 }
 
 void guard::generate_scribes()
@@ -221,7 +260,11 @@ void guard::generate_scribes()
 	}
 }
 
-void guard::print_hse()
+void guard::insert_instr(int uid, int nid, instruction *instr)
+{
+}
+
+void guard::print_hse(string t)
 {
 	cout << chp;
 }

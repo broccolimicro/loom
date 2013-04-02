@@ -30,6 +30,7 @@ public:
 	// The raw CHP of this instruction.
 	instruction *parent;
 	int from;
+	int uid;
 	string chp;
 
 	// Some pointers for good use
@@ -49,10 +50,14 @@ public:
 
 	virtual void expand_shortcuts() = 0;
 	virtual void parse() = 0;
+	virtual void merge() = 0;
 	virtual int  generate_states(graph *trans, int init, state filter) = 0;
+	virtual state simulate_states(state init, state filter) = 0;
 	virtual void generate_scribes() = 0;
 
-	virtual void print_hse() = 0;
+	virtual void insert_instr(int uid, int nid, instruction *instr) = 0;
+
+	virtual void print_hse(string t) = 0;
 };
 
 #endif

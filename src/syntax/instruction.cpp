@@ -18,12 +18,13 @@ instruction::instruction()
 {
 	parent = NULL;
 	from = -1;
+	uid = -1;
 	vars = NULL;
 	space = NULL;
 	chp = "";
 	tab = "";
 	_kind = "instruction";
-	verbosity = VERB_SUPPRESS;
+	verbosity = VERB_NONE;
 }
 
 instruction::~instruction()

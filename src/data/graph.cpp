@@ -12,7 +12,7 @@ graph::~graph()
 	transitions.clear();
 }
 
-void graph::append_state(state s, vector<int> from, vector<string> chp)
+int graph::append_state(state s, vector<int> from, vector<string> chp)
 {
 	vector<int>::iterator a;
 	vector<string>::iterator b;
@@ -32,9 +32,11 @@ void graph::append_state(state s, vector<int> from, vector<string> chp)
 	states.push_back(s);
 	for (a = from.begin(), b = chp.begin(); a != from.end() && b != chp.end(); a++, b++)
 		insert_edge(*a, to, *b);
+
+	return to;
 }
 
-void graph::append_state(state s, int from, string chp)
+int graph::append_state(state s, int from, string chp)
 {
 	int to = states.size();
 
@@ -53,6 +55,8 @@ void graph::append_state(state s, int from, string chp)
 
 	if (from != -1)
 		insert_edge(from, to, chp);
+
+	return to;
 }
 
 int graph::insert_state(state s, int from)
@@ -100,58 +104,6 @@ void graph::insert_edge(int from, int to, string chp)
 	if (from >= (int)transitions.size())
 		transitions.resize(from+1, vector<string>());
 	transitions[from].push_back(chp);
-}
-
-path_space graph::get_paths(int from, int to, path p)
-{
-	path_space result(size()), temp(size());
-
-	if (p.from == -1 && p.to == -1)
-	{
-		p.from = from;
-		p.to = to;
-	}
-
-	if (p[from] > 0)
-	{
-		p.clear();
-		return result;
-	}
-
-	if (from == to)
-	{
-		result.push_back(p);
-		return result;
-	}
-
-	p.set(from);
-
-	while (front_edges[from].size() == 1)
-	{
-		from = front_edges[from].front();
-
-		if (p.from == -1 && p.to == -1)
-		{
-			p.from = from;
-			p.to = to;
-		}
-
-		if (p[from] > 0)
-			return result;
-
-		if (from == to)
-		{
-			result.push_back(p);
-			return result;
-		}
-
-		p.set(from);
-	}
-
-	for (size_t i = 0; i < front_edges[from].size(); i++)
-		result.merge(get_paths(front_edges[from][i], to, p));
-
-	return result;
 }
 
 void graph::get_trace(int from, int up, int down, trace *result)
@@ -387,20 +339,154 @@ int graph::width()
 	return traces.size();
 }
 
-void graph::print_up()
+void graph::print_states(vspace *v)
 {
-	size_t i, j;
+	size_t j, k;
+	vector<state>::iterator i;
+	vector<int>::iterator m;
+	vector<string>::iterator q;
+	map<int, int>::iterator bi;
 
-	cout << "Up Production Rule Space" << endl;
-	cout << up << endl;
-
-	cout << "Up Production Rule Firings" << endl;
-	for (i = 0; i < up_firings.size(); i++)
+	size_t max_length = 0;
+	vector<string> names(v->global.size());
+	for (j = 0; j < v->global.size(); j++)
 	{
-		for (j = 0; j < up_firings[i].size(); j++)
-			cout << up_firings[i][j] << " ";
+		names[j] = v->get_name(j);
+		if (names[j].length() > max_length)
+			max_length = names[j].length();
+	}
+
+	for (j = 0; j < max_length; j++)
+	{
+		for (k = 0; k < names.size(); k++)
+		{
+			if (max_length - j <= names[k].length())
+				cout << names[k][names[k].length() - (max_length - j)] << " ";
+			else
+				cout << "  ";
+		}
 		cout << endl;
 	}
+	cout << endl;
+	for (i = states.begin(), j = 0; i != states.end(); i++, j++)
+	{
+		cout << *i << " ";
+
+		for (bi = i->branch.begin(); bi != i->branch.end(); bi++)
+			cout << "[" << bi->first << "," << bi->second << "]";
+
+		cout << "\t" << j << " -> { ";
+
+		if (j < front_edges.size())
+			for (m = front_edges[j].begin(); m != front_edges[j].end(); m++)
+				cout << *m << " ";
+
+		cout << "}\t";
+		if (j < transitions.size())
+			for (q = transitions[j].begin(); q != transitions[j].end(); q++)
+				cout << *q << " ";
+
+		cout << endl;
+	}
+
+	cout << endl;
+}
+
+void graph::print_traces(vspace *v)
+{
+	size_t j, k;
+	size_t max_length = 0;
+	vector<string> names(v->global.size());
+	for (j = 0; j < v->global.size(); j++)
+	{
+		names[j] = v->get_name(j);
+		if (names[j].length() > max_length)
+			max_length = names[j].length();
+	}
+
+	for (j = 0; j < traces.size(); j++)
+	{
+		cout << names[j];
+		for (k = 0; k < max_length - names[j].length() + 2; k++)
+			cout << " ";
+		cout << traces.traces[j] << endl;
+	}
+
+	cout << endl;
+}
+
+void graph::print_up(vspace *v)
+{
+	size_t j, k;
+	size_t max_length = 0;
+	vector<string> names(v->global.size());
+	for (j = 0; j < v->global.size(); j++)
+	{
+		names[j] = v->get_name(j);
+		if (names[j].length() > max_length)
+			max_length = names[j].length();
+	}
+
+	for (j = 0; j < traces.size(); j++)
+	{
+		cout << names[j];
+		for (k = 0; k < max_length - names[j].length() + 2; k++)
+			cout << " ";
+		cout << up.traces[j] << endl;
+	}
+
+	cout << endl;
+}
+
+void graph::print_down(vspace *v)
+{
+	size_t j, k;
+	size_t max_length = 0;
+	vector<string> names(v->global.size());
+	for (j = 0; j < v->global.size(); j++)
+	{
+		names[j] = v->get_name(j);
+		if (names[j].length() > max_length)
+			max_length = names[j].length();
+	}
+
+	for (j = 0; j < traces.size(); j++)
+	{
+		cout << names[j];
+		for (k = 0; k < max_length - names[j].length() + 2; k++)
+			cout << " ";
+		cout << down.traces[j] << endl;
+	}
+
+	cout << endl;
+}
+
+void graph::print_delta(vspace *v)
+{
+	size_t j, k;
+	size_t max_length = 0;
+	vector<string> names(v->global.size());
+	for (j = 0; j < v->global.size(); j++)
+	{
+		names[j] = v->get_name(j);
+		if (names[j].length() > max_length)
+			max_length = names[j].length();
+	}
+
+	for (j = 0; j < traces.size(); j++)
+	{
+		cout << names[j];
+		for (k = 0; k < max_length - names[j].length() + 2; k++)
+			cout << " ";
+		cout << delta.traces[j] << endl;
+	}
+
+	cout << endl;
+}
+
+void graph::print_conflicts()
+{
+	size_t i, j;
 
 	cout << "Up Production Rule Conflicts" << endl;
 	for (i = 0; i < up_conflicts.size(); i++)
@@ -408,22 +494,6 @@ void graph::print_up()
 		cout << i << ": ";
 		for (j = 0; j != up_conflicts[i].size(); j++)
 			cout << up_conflicts[i][j] << " ";
-		cout << endl;
-	}
-}
-
-void graph::print_down()
-{
-	size_t i, j;
-
-	cout << "Down Production Rule Space" << endl;
-	cout << down << endl;
-
-	cout << "Down Production Rule Firings" << endl;
-	for (i = 0; i < down_firings.size(); i++)
-	{
-		for (j = 0; j < down_firings[i].size(); j++)
-			cout << down_firings[i][j] << " ";
 		cout << endl;
 	}
 
@@ -435,6 +505,45 @@ void graph::print_down()
 			cout << down_conflicts[i][j] << " ";
 		cout << endl;
 	}
+
+	cout << endl;
+}
+
+void graph::print_firings(vspace *v)
+{
+	size_t i, j, k;
+	size_t max_length = 0;
+	vector<string> names(v->global.size());
+	for (j = 0; j < v->global.size(); j++)
+	{
+		names[j] = v->get_name(j);
+		if (names[j].length() > max_length)
+			max_length = names[j].length();
+	}
+
+	cout << "Up Production Rule Firings" << endl;
+	for (i = 0; i < up_firings.size(); i++)
+	{
+		cout << names[i];
+		for (k = 0; k < max_length - names[i].length() + 2; k++)
+			cout << " ";
+		for (j = 0; j < up_firings[i].size(); j++)
+			cout << up_firings[i][j] << " ";
+		cout << endl;
+	}
+
+	cout << "Down Production Rule Firings" << endl;
+	for (i = 0; i < down_firings.size(); i++)
+	{
+		cout << names[i];
+		for (k = 0; k < max_length - names[i].length() + 2; k++)
+			cout << " ";
+		for (j = 0; j < down_firings[i].size(); j++)
+			cout << down_firings[i][j] << " ";
+		cout << endl;
+	}
+
+	cout << endl;
 }
 
 void graph::print_dot()
@@ -469,26 +578,6 @@ void graph::print_dot()
 	}
 	outputGraph << "}\n\n";
 	outputGraph.close();
-}
-
-void graph::print_delta()
-{
-	vector<vector<int> >::iterator i;
-	vector<int>::iterator j;
-	map<int, vector<int> >::iterator k;
-
-	cout << "Delta Space" << endl;
-	cout << delta << endl;
-
-	/*size_t j;
-	vector<state>::iterator i;
-	vector<int>::iterator m;
-	vector<string>::iterator q;
-
-	cout << "Delta Space:" << endl;
-	for (i = delta.begin(), j = 0; i != delta.end(); i++, j++)
-		cout << *i << "\t" << i->tag << endl;
-	cout << endl;*/
 }
 
 ostream &operator<<(ostream &os, graph g)

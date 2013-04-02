@@ -19,8 +19,6 @@ struct parallel : block
 	parallel(instruction *parent, string chp, vspace *vars, string tab, int verbosity);
 	~parallel();
 
-	int uid;					// indexes into the state in the state space
-
 	parallel &operator=(parallel p);
 
 	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
@@ -30,11 +28,16 @@ struct parallel : block
 
 	void expand_shortcuts();
 	void parse();
+	void merge();
 	int generate_states(graph *g, int init, state filter);
+	state simulate_states(state init, state filter);
 	void generate_scribes();
-	void recursive_branch_set(graph *g, int from, pair<int, int> id);
 
-	void print_hse();
+
+	void recursive_branch_set(graph *g, int from, pair<int, int> id);
+	void insert_instr(int uid, int nid, instruction *instr);
+
+	void print_hse(string t);
 
 	void push(instruction *i);
 };

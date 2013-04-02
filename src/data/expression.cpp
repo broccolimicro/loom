@@ -462,6 +462,7 @@ state solve(string raw, vspace *vars, string tab, int verbosity)
 	id = vars->get_uid(raw);
 	if (id != -1)
 		outcomes.assign(id, value("1"), value("?"));
+	// TODO This is important for constants within guards such as a & 1 or a & 0, but breaks guards that are constants like 1 or 0
 	else if (raw == "1")
 		for (map<string, variable>::iterator vi = vars->global.begin(); vi != vars->global.end(); vi++)
 			outcomes.assign(vi->second.uid, value("X"), value("?"));
@@ -470,7 +471,6 @@ state solve(string raw, vspace *vars, string tab, int verbosity)
 			outcomes.assign(vi->second.uid, value("_"), value("?"));
 	else
 		cout << "Error: Undefined variable " << raw << "." << endl;
-
 	//if (verbosity >= VERB_PARSE)
 	//	cout << tab << outcomes << endl;
 

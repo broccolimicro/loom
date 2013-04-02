@@ -198,6 +198,29 @@ state assignment::passive_variant()
 	return state();
 }
 
+void assignment::x_channel(state *s, string v)
+{
+	map<string, variable>::iterator vi;
+	string search;
+	size_t n;
+
+	// Search for this channel's other variables and X them out.
+	n = v.find_last_of(".");
+
+	if (n != v.npos)
+	{
+		search = v.substr(0, n);
+		x_channel(s, search);
+	}
+	else
+		search = v;
+
+	if (vars->get_kind(search) == "channel")
+		for (vi = vars->global.begin(); vi != vars->global.end(); vi++)
+			if (vi->first.substr(0, search.length()) == search && !s->fire(vi->second.uid))
+				s->assign(vi->second.uid, value("X"));
+}
+
 void assignment::expand_shortcuts()
 {
 	// Convert var+ to var:=1
@@ -218,7 +241,7 @@ void assignment::parse()
 	string left, right;
 	variable *v;
 
-	if (verbosity >= VERB_PARSE)
+	if (verbosity & VERB_GENERATE_PARSE_TREE)
 		cout << tab << "Assignment:\t" + chp << endl;
 
 	// Identify that this instruction is an assign.
@@ -253,78 +276,97 @@ void assignment::parse()
 		cout << "Error: Instruction not handled: " << chp << endl;
 }
 
+void assignment::merge()
+{
+
+}
+
 int assignment::generate_states(graph *g, int init, state filter)
 {
-	space = g;
-	from = init;
-	cout << tab << "Assignment " << chp << endl;
-
 	variable *v, *v1;
-	map<string, variable>::iterator vi;
 	list<pair<string, string> >::iterator ei;
-	string search;
 	state s;
 	int i;
 
-	uid = g->states.size();
+	if (verbosity & VERB_GENERATE_STATE_SPACE)
+		cout << tab << "Assignment " << chp << endl;
+
+	if (filter.size() == 0)
+		filter = null(vars->size());
 
 	// Set up the initial state
+	space	= g;
+	from	= init;
 	s = g->states[init] || filter;
 	for (ei = expr.begin(); ei != expr.end(); ei++)
 	{
 		v = vars->find(ei->first);
-
 		if (v != NULL && v->width == 1 && v->type == "int")
 		{
-			s.assign(v->uid, evaluate(ei->second, vars, s.values), value("?"));
-			s.drive(v->uid);
-
-			// TODO Make this search smarter
-			// Search for this channel's other variables and X them out.
-			search = ei->first.substr(0, ei->first.find_last_of("."));
-			if (vars->get_kind(search) == "channel")
-			{
-				for (vi = vars->global.begin(); vi != vars->global.end(); vi++)
-					if (vi->first.substr(0, search.length()) == search && vi->first != ei->first)
-						s.assign(vi->second.uid, value("X"));
-			}
+			s.drive(v->uid, evaluate(ei->second, vars, s.values));
+			x_channel(&s, ei->first);
 		}
 		else if (v != NULL && v->type == "int")
-		{
 			for (i = 0; i < v->width; i++)
 			{
 				v1 = vars->find(ei->first + "[" + to_string(i) + "]");
 				if (v != NULL)
 				{
-					s.assign(v1->uid, evaluate(ei->second, vars, s.values)[i], value("?"));
-					s.drive(v1->uid);
-
-					// TODO Make this search smarter
-					// Search for this channel's other variables and X them out.
-					search = ei->first.substr(0, ei->first.find_last_of("."));
-					if (vars->get_kind(search) == "channel")
-					{
-						for (vi = vars->global.begin(); vi != vars->global.end(); vi++)
-							if (vi->first.substr(0, search.length()) == search && vi->first != ei->first)
-								s.assign(vi->second.uid, value("X"));
-					}
+					s.drive(v1->uid, evaluate(ei->second, vars, s.values)[i]);
+					x_channel(&s, ei->first);
 				}
 				else
 					cout << "Error: Undefined variable " << ei->first << "." << endl;
 			}
-		}
 		else
 			cout << "Error: Undefined variable " << ei->first << "." << endl;
 	}
 
-	cout << tab << s << endl;
+	if (verbosity & VERB_GENERATE_STATE_SPACE)
+		cout << tab << s << endl;
 
-	if(CHP_EDGE)
-		g->append_state(s, init, chp);
-	else
-		g->append_state(s, init, "Assign");
+	uid	= g->append_state(s, init, CHP_EDGE ? chp : "Assign");
 
 	return uid;
+}
+
+state assignment::simulate_states(state init, state filter)
+{
+	variable *v, *v1;
+	list<pair<string, string> >::iterator ei;
+	state s;
+	int i;
+
+	if (filter.size() == 0)
+		filter = null(vars->size());
+
+	// Set up the initial state
+	s = init || filter;
+	for (ei = expr.begin(); ei != expr.end(); ei++)
+	{
+		v = vars->find(ei->first);
+		if (v != NULL && v->width == 1 && v->type == "int")
+		{
+			s.drive(v->uid, evaluate(ei->second, vars, s.values));
+			x_channel(&s, ei->first);
+		}
+		else if (v != NULL && v->type == "int")
+			for (i = 0; i < v->width; i++)
+			{
+				v1 = vars->find(ei->first + "[" + to_string(i) + "]");
+				if (v != NULL)
+				{
+					s.drive(v1->uid, evaluate(ei->second, vars, s.values)[i]);
+					x_channel(&s, ei->first);
+				}
+				else
+					cout << "Error: Undefined variable " << ei->first << "." << endl;
+			}
+		else
+			cout << "Error: Undefined variable " << ei->first << "." << endl;
+	}
+
+	return s;
 }
 
 void assignment::generate_scribes()
@@ -340,8 +382,6 @@ instruction *expand_assignment(instruction *parent, string chp, vspace *vars, st
 	list<pair<string, string> >::iterator i;
 	list<pair<string, string> > remove;
 	variable *v;
-
-	p->print_hse();
 
 	for (i = a->expr.begin(); i != a->expr.end(); i++)
 	{
@@ -379,7 +419,7 @@ instruction *expand_assignment(instruction *parent, string chp, vspace *vars, st
 
 pair<string, instruction*> expand_expression(string chp, vspace *vars, string top, string tab, int verbosity)
 {
-	if (verbosity >= VERB_PARSE)
+	if (verbosity & VERB_GENERATE_PARSE_TREE)
 		cout << tab << "Decompose: " << chp << endl;
 
 	map<string, variable>::iterator v;
@@ -678,7 +718,11 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 	return pair<string, instruction*>(C.first, ret);
 }
 
-void assignment::print_hse()
+void assignment::insert_instr(int uid, int nid, instruction *instr)
+{
+}
+
+void assignment::print_hse(string t)
 {
 	if (expr.size() == 1 && expr.begin()->second == "0")
 		cout << expr.begin()->first << "-";

@@ -35,7 +35,6 @@ block::block(instruction *parent, string chp, vspace *vars, string tab, int verb
 
 	expand_shortcuts();
 	parse();
-	simplify();
 }
 
 block::~block()
@@ -77,7 +76,6 @@ void block::init(string chp, vspace *vars, string tab, int verbosity)
 
 	expand_shortcuts();
 	parse();
-	simplify();
 }
 
 /* This copies a guard to another process and replaces
@@ -177,7 +175,7 @@ void block::expand_shortcuts()
 
 void block::parse()
 {
-	if (verbosity >= VERB_PARSE)
+	if (verbosity & VERB_GENERATE_PARSE_TREE)
 		cout << tab << "Block: " << chp << endl;
 
 	string				raw_instr;	// chp of a sub block
@@ -248,7 +246,7 @@ void block::parse()
 	}
 }
 
-void block::simplify()
+void block::merge()
 {
 	list<instruction*>::iterator i, j;
 	list<pair<block*, guard*> >::iterator k;
@@ -269,15 +267,14 @@ void block::simplify()
 			if (ic->instrs.size() == 1 && ic->instrs.front().first->instrs.size() == 0)
 			{
 				for (k = jc->instrs.begin(); k != jc->instrs.end(); k++)
-				{
 					k->second->chp = expression("(" + ic->instrs.front().second->chp + ")&(" + k->second->chp + ")").simple;
-				}
 				instrs.remove(*i);
 				//delete (conditional*)(*i);
 			}
 		}
 		else if ((*i)->kind() == "assignment" && (*j)->kind() == "assignment")
 		{
+			// TODO We need to check to see if one assignment reads a value of a channel that the other is modifying
 			ia = (assignment*)*i;
 			ja = (assignment*)*j;
 
@@ -288,26 +285,55 @@ void block::simplify()
 						conflict_count++;
 
 			if (conflict_count == 0)
+			{
 				ja->expr.merge(ia->expr);
-			instrs.remove(*i);
-			//delete (assignment*)*i;
+				ja->chp = "";
+				for (m = ja->expr.begin(); m != ja->expr.end(); m++)
+					ja->chp += (m != ja->expr.begin() ? "," : "") + m->first;
+				ja->chp += ":=";
+				for (m = ja->expr.begin(); m != ja->expr.end(); m++)
+					ja->chp += (m != ja->expr.begin() ? "," : "") + m->second;
+				instrs.remove(*i);
+				//delete (assignment*)*i;
+			}
 		}
 		i = j;
 	}
+
+	for (j = instrs.begin(); j != instrs.end(); j++)
+		(*j)->merge();
 }
 
 int block::generate_states(graph *g, int init, state filter)
 {
+	list<instruction*>::iterator instr_iter;
+	instruction *instr;
+
+	if (verbosity & VERB_GENERATE_STATE_SPACE)
+		cout << tab << "Block " << chp << endl;
+
 	space = g;
 	from = init;
-	cout << tab << "Block " << chp << endl;
+	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+	{
+		instr = *instr_iter;
+		init = instr->generate_states(g, init, filter);
+	}
+
+	uid = init;
+
+	return init;
+}
+
+state block::simulate_states(state init, state filter)
+{
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
 		instr = *instr_iter;
-		init = instr->generate_states(g, init, filter);
+		init = instr->simulate_states(init, filter);
 	}
 
 	return init;
@@ -339,14 +365,55 @@ void block::clear()
 	instrs.clear();
 }
 
-void block::print_hse()
+void block::insert_instr(int uid, int nid, instruction *instr)
+{
+	instr->uid = nid;
+	instr->from = uid;
+
+	instruction *j;
+	list<instruction*>::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		j = *i;
+		if (j->uid == uid)
+		{
+			i++;
+			if (i == instrs.end())
+				instrs.push_back(instr);
+			else
+				instrs.insert(i, instr);
+			// TODO Set the from field here
+
+			return;
+		}
+	}
+
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		j = *i;
+		if (j->kind() == "parallel")
+			((parallel*)j)->insert_instr(uid, nid, instr);
+		else if (j->kind() == "loop")
+			((loop*)j)->insert_instr(uid, nid, instr);
+		else if (j->kind() == "conditional")
+			((conditional*)j)->insert_instr(uid, nid, instr);
+		else if (j->kind() == "guard")
+			((guard*)j)->insert_instr(uid, nid, instr);
+		else if (j->kind() == "block")
+			((block*)j)->insert_instr(uid, nid, instr);
+		else if (j->kind() == "assignment")
+			((assignment*)j)->insert_instr(uid, nid, instr);
+	}
+}
+
+void block::print_hse(string t)
 {
 	list<instruction*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		if (i != instrs.begin())
 			cout << ";";
-		(*i)->print_hse();
+		(*i)->print_hse(t);
 	}
 }
 

@@ -77,6 +77,8 @@
  */
 int main(int argc, char **argv)
 {
+	int verbosity = VERB_ALL;
+
 	//FILE *log = fopen("log.txt", "w");
 	//*stdout = *log;
 
@@ -95,6 +97,9 @@ int main(int argc, char **argv)
 		open = prgm.find_first_of("\"", i+1);
 		close = prgm.find_first_of("\"", open+1);
 
+		if (verbosity & VERB_GENERATE_PRECOMPILATION)
+			cout << "Expanding Inclusion: " << prgm.substr(open+1, close-open-1) << endl;
+
 		ifstream s(prgm.substr(open+1, close-open-1).c_str());
 		string f((istreambuf_iterator<char>(s)),
 	             istreambuf_iterator<char>());
@@ -104,7 +109,7 @@ int main(int argc, char **argv)
 
 	}
 
-	program p(prgm, VERB_TRACE);
+	program p(prgm, verbosity);
 
 	cout << endl;
 

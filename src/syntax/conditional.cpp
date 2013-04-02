@@ -34,7 +34,6 @@ conditional::conditional(instruction *parent, string chp, vspace *vars, string t
 
 	expand_shortcuts();
 	parse();
-	simplify();
 }
 conditional::~conditional()
 {
@@ -200,7 +199,7 @@ void conditional::parse()
 	string guardstr, blockstr;
 	bool guarded = true;
 
-	if (verbosity >= VERB_PARSE)
+	if (verbosity & VERB_GENERATE_PARSE_TREE)
 		cout << tab << "Conditional:\t" << chp << endl;
 
 	//Parse instructions!
@@ -222,7 +221,7 @@ void conditional::parse()
 
 		if (!guarded && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) != '|' && *(i-1) != '|') || (i == chp.end() && type == choice)))
 		{
-			if (verbosity >= VERB_PARSE)
+			if (verbosity & VERB_GENERATE_PARSE_TREE)
 				cout << tab << "Choice\n";
 			if (type == unknown)
 				type = choice;
@@ -240,7 +239,7 @@ void conditional::parse()
 		}
 		else if (!guarded && depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '[' && *(i+1) == ']') || i == chp.end()))
 		{
-			if (verbosity >= VERB_PARSE)
+			if (verbosity & VERB_GENERATE_PARSE_TREE)
 				cout << tab << "Mutex\n";
 			if (type == unknown)
 				type = mutex;
@@ -261,7 +260,7 @@ void conditional::parse()
 	}
 }
 
-void conditional::simplify()
+void conditional::merge()
 {
 	list<pair<block*, guard*> >::iterator i, j;
 	list<instruction*>::iterator ii;
@@ -275,7 +274,6 @@ void conditional::simplify()
 	{
 		if (i->first->instrs.size() > 0 && i->first->instrs.front()->kind() == "conditional")
 		{
-			cout << "Simplifying" << endl;
 			front = (conditional*)i->first->instrs.front();
 			i->first->instrs.pop_front();
 
@@ -308,51 +306,60 @@ void conditional::simplify()
 	for (i = add.begin(); i != add.end(); i++)
 		instrs.push_back(*i);
 	add.clear();
+
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		i->second->merge();
+		i->first->merge();
+	}
 }
 
 int conditional::generate_states(graph *g, int init, state filter)
 {
-	space = g;
-	from = init;
-	cout << tab << "Conditional " << chp << endl;
-
 	list<pair<block*, guard*> >::iterator instr_iter;
-	map<string, variable>::iterator vi;
-	int guard_result = init;
 	vector<int> state_catcher;
 	vector<string> chp_catcher;
 	state s;
-	bool first = true;
 
+	if (filter.size() == 0)
+		filter = null(vars->size());
+
+	if (verbosity & VERB_GENERATE_STATE_SPACE)
+		cout << tab << "Conditional " << chp << endl;
+
+	space = g;
+	from = init;
+	s = filter;
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
-		guard_result = instr_iter->second->generate_states(g, init, filter);
-
-		state_catcher.push_back(instr_iter->first->generate_states(g, guard_result, filter));
-		if (CHP_EDGE)
-			chp_catcher.push_back(instr_iter->first->chp);
-		else
-			chp_catcher.push_back("Conditional Merge");
-		if (first)
-		{
-			s = g->states[state_catcher.back()];
-			first = false;
-		}
-		else
-			s = s || g->states[state_catcher.back()];
+		state_catcher.push_back(instr_iter->first->generate_states(g, instr_iter->second->generate_states(g, init, filter), filter));
+		chp_catcher.push_back(CHP_EDGE ? instr_iter->first->chp : "Conditional Merge");
+		s = s || g->states[state_catcher.back()];
 	}
-
-	s = s || filter;
 
 	if (state_catcher.size() > 1)
-	{
-		uid = g->states.size();
-		g->append_state(s, state_catcher, chp_catcher);
-	}
+		uid = g->append_state(s, state_catcher, chp_catcher);
 	else
 		uid = state_catcher.back();
 
+	if (verbosity & VERB_GENERATE_STATE_SPACE)
+		cout << tab << g->states[uid] << endl;
+
 	return uid;
+}
+
+state conditional::simulate_states(state init, state filter)
+{
+	list<pair<block*, guard*> >::iterator instr_iter;
+	state s;
+
+	if (filter.size() == 0)
+		filter = null(vars->size());
+
+	s = filter;
+	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+		s = s || instr_iter->first->simulate_states(instr_iter->second->simulate_states(init, filter), filter);
+	return s;
 }
 
 void conditional::generate_scribes()
@@ -365,10 +372,36 @@ void conditional::generate_scribes()
 	}
 }
 
-void conditional::print_hse()
+void conditional::insert_instr(int uid, int nid, instruction *instr)
+{
+	instr->uid = nid;
+	instr->from = uid;
+
+	list<pair<block*, guard*> >::iterator i, k;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+		if (i->second->uid == uid)
+		{
+			i->first->instrs.front()->from = nid;
+			i->first->instrs.push_front(instr);
+			return;
+		}
+		else if (i->first->uid == uid)
+		{
+			i->first->instrs.push_back(instr);
+			i->first->uid = nid;
+			return;
+		}
+	}
+
+	for (i = instrs.begin(); i != instrs.end(); i++)
+		i->first->insert_instr(uid, nid, instr);
+}
+
+void conditional::print_hse(string t)
 {
 	if (instrs.size() > 1)
-		cout << "\n" << tab;
+		cout << "\n" << t;
 	cout << "[";
 	if (instrs.size() > 1)
 		cout << "\t";
@@ -379,7 +412,7 @@ void conditional::print_hse()
 		if (i != instrs.begin() && type == mutex)
 		{
 			if (instrs.size() > 1)
-				cout << "\n" << tab;
+				cout << "\n" << t;
 			cout << "[]";
 			if (instrs.size() > 1)
 				cout << "\t";
@@ -387,19 +420,19 @@ void conditional::print_hse()
 		else if (i != instrs.begin() && type == choice)
 		{
 			if (instrs.size() > 1)
-				cout << "\n" << tab;
+				cout << "\n" << t;
 			cout << "|";
 			if (instrs.size() > 1)
 				cout << "\t";
 		}
-		i->second->print_hse();
+		i->second->print_hse(t+"\t");
 		if (i->first->instrs.size() > 0)
 		{
 			cout << " -> ";
-			i->first->print_hse();
+			i->first->print_hse(t+"\t");
 		}
 	}
 	if (instrs.size() > 1)
-		cout << "\n" << tab;
+		cout << "\n" << t;
 	cout << "]";
 }

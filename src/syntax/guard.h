@@ -16,7 +16,6 @@ struct guard : instruction
 	guard(instruction *parent, string chp, vspace *vars, string tab, int verbosity);
 	~guard();
 
-	int uid;					// indexes into the state in the state space
 	state solution;
 
 	guard &operator=(guard g);
@@ -28,10 +27,14 @@ struct guard : instruction
 
 	void expand_shortcuts();
 	void parse();
+	void merge();
 	int generate_states(graph *g, int init, state filter);
+	state simulate_states(state init, state filter);
 	void generate_scribes();
 
-	void print_hse();
+	void insert_instr(int uid, int nid, instruction *instr);
+
+	void print_hse(string t);
 };
 
 #endif

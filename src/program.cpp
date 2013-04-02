@@ -9,13 +9,24 @@ program::program()
 
 program::program(string chp, int verbosity)
 {
+	this->verbosity = verbosity;
 	vars.types = &type_space;
-	parse(chp, verbosity);
-	generate_states();
-	insert_state_vars();
-	generate_prs();
-	cout << endl << endl<< "Done!" << endl;
 
+	// CHP to HSE
+	parse(chp, verbosity);
+	merge();
+	//project();
+	//decompose();
+	//reshuffle();
+
+	// HSE to State Space
+	generate_states();
+	insert_scribe_vars();
+	insert_state_vars();
+
+	// State Space to PRS
+	generate_prs();
+	//factor_prs();
 }
 
 program::~program()
@@ -39,7 +50,6 @@ program &program::operator=(program p)
 	return *this;
 }
 
-
 void program::parse(string chp, int verbosity)
 {
 	//TODO: THIS BREAKS IF THERE ARE NO IMPLICANTS FOR A OUTPUT
@@ -57,7 +67,7 @@ void program::parse(string chp, int verbosity)
 	// Define the basic types. In this case, 'int'
 	type_space.insert(pair<string, keyword*>("int", new keyword("int")));
 
-	//Remove line comments:
+	// Remove line comments:
 	size_t comment_begin = chp.find("//");
 	size_t comment_end = chp.find("\n", comment_begin);
 	while (comment_begin != chp.npos && comment_end != chp.npos){
@@ -66,7 +76,7 @@ void program::parse(string chp, int verbosity)
 		comment_end = chp.find("\n", comment_begin);
 	}
 
-	//Remove block comments:
+	// Remove block comments:
 	comment_begin = chp.find("/*");
 	comment_end = chp.find("*/");
 	while (comment_begin != chp.npos && comment_end != chp.npos){
@@ -75,7 +85,7 @@ void program::parse(string chp, int verbosity)
 		comment_end = chp.find("*/");
 	}
 
-	// remove extraneous whitespace
+	// Remove extraneous whitespace
 	for (i = chp.begin(); i != chp.end(); i++)
 	{
 		if (!sc(*i))
@@ -84,7 +94,10 @@ void program::parse(string chp, int verbosity)
 			cleaned_chp += ' ';
 	}
 
-	// split the program into records and processes
+	if (verbosity & VERB_PRECOMPILED_CHP)
+		cout << chp << endl;
+
+	// Split the program into records and processes
 	int depth[3] = {0};
 	for (i = cleaned_chp.begin(), j = cleaned_chp.begin(); i != cleaned_chp.end(); i++)
 	{
@@ -179,40 +192,78 @@ void program::parse(string chp, int verbosity)
 
 	prgm = (parallel*)expand_instantiation(NULL, "main _()", &vars, NULL, "", verbosity, true);
 
-	cout << vars << endl;
+	if (verbosity & VERB_GENERATE_PARSE_TREE)
+		cout << vars << endl;
 
-	prgm->print_hse();
-	cout << endl;
+	if (verbosity & VERB_BASE_HSE)
+	{
+		prgm->print_hse("");
+		cout << endl;
+	}
 }
 
-/* TODO Projection algorithm - when do we need to do projection? when shouldn't we do projection?
- * TODO Process decomposition - How big should we make processes?
- * TODO There is a problem with the interaction of scribe variables with bubbleless reshuffling because scribe variables insert bubbles
- */
+void program::merge()
+{
+	prgm->merge();
+
+	if (verbosity & VERB_MERGED_HSE)
+	{
+		prgm->print_hse("");
+		cout << endl;
+	}
+}
+
+// TODO Projection algorithm - when do we need to do projection? when shouldn't we do projection?
+void program::project()
+{
+	if (verbosity & VERB_PROJECTED_HSE)
+	{
+		prgm->print_hse("");
+		cout << endl;
+	}
+}
+
+// TODO Process decomposition - How big should we make processes?
+void program::decompose()
+{
+	if (verbosity & VERB_DECOMPOSED_HSE)
+	{
+		prgm->print_hse("");
+		cout << endl;
+	}
+}
+
+// TODO Handshaking Reshuffling
+void program::reshuffle()
+{
+	if (verbosity & VERB_RESHUFFLED_HSE)
+	{
+		prgm->print_hse("");
+		cout << endl;
+	}
+}
+
+// TODO There is a problem with the interaction of scribe variables with bubbleless reshuffling because scribe variables insert bubbles
 void program::generate_states()
 {
-	cout << "Generating State Space" << endl;
-
 	space.append_state(state(value("X"), vars.global.size()), -1, "Power On");
 	prgm->generate_states(&space, 0, state());
 	space.gen_traces();
-	prgm->generate_scribes();
-	space.gen_deltas();
-	space.gen_conflicts();
 
-	if(STATESP_CO)
-	{
-		cout << vars << endl;
-		cout << space << endl << endl;
-		cout >> space << endl << endl;
-		space.print_up();
-		space.print_down();
-		space.print_delta();
-	}
-	if(STATESP_GR)
-	{
+	if (verbosity & VERB_BASE_STATE_SPACE)
+		space.print_states(&vars);
+	if (verbosity & VERB_BASE_STATE_SPACE_DOT)
 		space.print_dot();
-	}
+}
+
+void program::insert_scribe_vars()
+{
+	prgm->generate_scribes();
+
+	if (verbosity & VERB_SCRIBEVAR_STATE_SPACE)
+		space.print_states(&vars);
+	if (verbosity & VERB_SCRIBEVAR_STATE_SPACE_DOT)
+		space.print_dot();
 }
 
 void program::insert_state_vars()
@@ -234,6 +285,7 @@ void program::insert_state_vars()
 	int down_deficit;
 
 	vector<int> best_up, best_down;
+	vector<bool> best_rup, best_rdown;
 	trace best_values;
 	int best_benefit;
 
@@ -247,7 +299,7 @@ void program::insert_state_vars()
 
 	int cc0, cc1;
 
-	timeval t0, t1, t2;
+	timeval t0, t1;
 
 	/* THIS IS A STRAIGHTFORWARD BRUTE FORCE ALGORITHM. IT IS NOT SMART. IT IS NOT FAST. BUT IT WORKS.
 	 *
@@ -262,13 +314,24 @@ void program::insert_state_vars()
 	int dimension = 1;
 
 	best_benefit = 1;
+	gettimeofday(&t1, NULL);
 	for (m = 0; m < 30 && best_benefit > 0; m++)
 	{
+		t0 = t1;
+		gettimeofday(&t1, NULL);
+		/*space.print_traces(&vars);
+		space.print_up(&vars);
+		space.print_down(&vars);
+		space.print_delta(&vars);
+		space.print_conflicts();
+		space.print_firings(&vars);*/
+
+		space.gen_deltas();
+		space.gen_conflicts();
+
 		/* Step 1: cache the list of conflict firings already present in the state space. This does not include conflicts between two
 		 * states in which neither states are a firing for a variable.
 		 */
-
-		gettimeofday(&t0, NULL);
 
 		up_conflict_firings.clear();
 		down_conflict_firings.clear();
@@ -284,11 +347,6 @@ void program::insert_state_vars()
 		up_conflict_firings.sort();
 		up_conflict_firings.unique();
 
-		cout << "Up Production Rule Conflicts" << endl;
-		for (ci = up_conflict_firings.begin(); ci != up_conflict_firings.end(); ci++)
-			cout << "[" << ci->first << "," << ci->second << "]";
-		cout << endl;
-
 		// Calculate the list of down production rule conflict pairs
 		for (i = 0; i < (int)space.down_firings.size(); i++)
 			for (k = 0; k < (int)space.down_firings[i].size(); k++)
@@ -300,21 +358,38 @@ void program::insert_state_vars()
 		down_conflict_firings.sort();
 		down_conflict_firings.unique();
 
-		cout << "Down Production Rule Conflicts" << endl;
-		for (ci = down_conflict_firings.begin(); ci != down_conflict_firings.end(); ci++)
-			cout << "[" << ci->first << "," << ci->second << "]";
-		cout << endl;
-
-		gettimeofday(&t1, NULL);
-
-		cc0 = cc1;
+		cc0 = m == 0 ? up_conflict_firings.size() + down_conflict_firings.size() : cc1;
 		cc1 = up_conflict_firings.size() + down_conflict_firings.size();
-		cout << cc0 - cc1 << " conflicts eliminated. " << best_benefit << " conflicts promised." << endl;
 
-		cout << "Conflicts left to eliminate: " << up_conflict_firings.size() << " " << down_conflict_firings.size() << endl;
+		if (verbosity & VERB_GENERATE_STATE_VARIABLES)
+		{
+			if (m == 0)
+				cout << "Remainder:      " << cc1 << endl;
+			else
+			{
+				cout << "Actual Delta:   " << cc0 - cc1 << endl;
+				cout << "Guessed Delta:  " << best_benefit << endl;
+				cout << "Remainder:      " << cc1 << endl;
+				cout << "Iteration Time: " << ((double)(t1.tv_sec - t0.tv_sec) + 0.000001*(double)(t1.tv_usec - t0.tv_usec)) << " seconds" << endl;
+				cout << endl << endl;
+			}
+		}
 
-		cout << "Step 1: " << ((double)(t1.tv_sec - t0.tv_sec) + 0.000001*(double)(t1.tv_usec - t0.tv_usec)) << " seconds" << endl;
+		if (verbosity & VERB_GENERATE_STATE_VARIABLES)
+		{
+			cout << "Up Conflicts:   ";
+			for (ci = up_conflict_firings.begin(); ci != up_conflict_firings.end(); ci++)
+				cout << "[" << ci->first << "," << ci->second << "]";
+			cout << endl;
+		}
 
+		if (verbosity & VERB_GENERATE_STATE_VARIABLES)
+		{
+			cout << "Down Conflicts: ";
+			for (ci = down_conflict_firings.begin(); ci != down_conflict_firings.end(); ci++)
+				cout << "[" << ci->first << "," << ci->second << "]";
+			cout << endl;
+		}
 
 		/* Step 2: Generate a multidimensional grid with a side length equal to the number of states in the state space and a dimension
 		 * equal to the number of up firings plus down firings allowed. The overall size of this grid is space.size^(up.size + down.size). Which
@@ -473,6 +548,7 @@ void program::insert_state_vars()
 
 					// Subtract the number of up production rule conflicts added by adding this variable with these up firings from the benefit
 					for (k = 0; k < (int)up.size(); k++)
+					{
 						for (l = 0; l < (int)space.up_conflicts[up[k]].size(); l++)
 						{
 							if (values[space.up_conflicts[up[k]][l]].data[0] != '1')
@@ -481,8 +557,13 @@ void program::insert_state_vars()
 								up_deficit++;
 						}
 
+						if (values[up[k]].data[0] != '0')
+							up_benefit--;
+					}
+
 					// Subtract the number of down production rule conflicts added by adding this variable with these down firings from the benefit
 					for (k = 0; k < (int)down.size(); k++)
+					{
 						for (l = 0; l < (int)space.down_conflicts[down[k]].size(); l++)
 						{
 							if (values[space.down_conflicts[down[k]][l]].data[0] != '0')
@@ -490,6 +571,9 @@ void program::insert_state_vars()
 							if (rup[space.down_conflicts[down[k]][l]])
 								down_deficit++;
 						}
+						if (values[down[k]].data[0] != '1')
+							down_benefit--;
+					}
 
 					benefit = up_benefit + down_benefit - up_deficit - down_deficit;
 					// Check to see if these firings yield the most benefit
@@ -497,20 +581,20 @@ void program::insert_state_vars()
 					{
 						best_up = up;
 						best_down = down;
+						best_rup = rup;
+						best_rdown = rdown;
 						best_benefit = benefit;
 						best_values = values;
 					}
 				}
-				//cout << benefit << "\t";
+				if (verbosity & VERB_GENERATE_STATE_VARIABLES)
+					cout << benefit << "\t";
 			}
-			//cout << endl;
+			if (verbosity & VERB_GENERATE_STATE_VARIABLES)
+				cout << endl;
 		}
-		//cout << endl;
-
-		gettimeofday(&t2, NULL);
-
-		cout << "Step 2: " << ((double)(t2.tv_sec - t1.tv_sec) + 0.000001*(double)(t2.tv_usec - t1.tv_usec)) << " seconds" << endl;
-		cout << "Total: " << ((double)(t2.tv_sec - t0.tv_sec) + 0.000001*(double)(t2.tv_usec - t0.tv_usec)) << " seconds" << endl;
+		if (verbosity & VERB_GENERATE_STATE_VARIABLES)
+			cout << endl;
 
 		/*cout << endl << endl << best_benefit << " Conflicting Paths Eliminated" << endl;
 		cout << "Up:\t";
@@ -526,7 +610,9 @@ void program::insert_state_vars()
 		{
 			// Insert new variable
 			vid = vars.insert(variable(vars.unique_name("_sv"), "int", 1, false));
-			cout << *(vars.find(vid)) << endl;
+
+			if (verbosity & VERB_GENERATE_STATE_VARIABLES)
+				cout << "Inserting:      " << *(vars.find(vid)) << "\t\t" << best_values << endl;
 
 			// Update the space
 			space.set_trace(vid, best_values);
@@ -539,6 +625,8 @@ void program::insert_state_vars()
 				space.states[i][vid] = value("1");
 				space.states[i].drive(vid);
 				space.traces[vid][i] = value("1");
+
+				prgm->insert_instr(best_up[j], i, new assignment(NULL, vars.get_name(vid) + "+", &vars, "", verbosity));
 			}
 
 			sort(best_down.begin(), best_down.end());
@@ -549,32 +637,46 @@ void program::insert_state_vars()
 				space.states[i][vid] = value("0");
 				space.states[i].drive(vid);
 				space.traces[vid][i] = value("0");
-			}
 
-			space.gen_deltas();
-			space.gen_conflicts();
+				prgm->insert_instr(best_down[j], i, new assignment(NULL, vars.get_name(vid) + "-", &vars, "", verbosity));
+			}
 		}
 	}
 
-	cout << space << endl;
+	if (verbosity & VERB_STATE_VAR_HSE)
+	{
+		prgm->print_hse("");
+		cout << endl;
+	}
+
+	if (verbosity & VERB_STATEVAR_STATE)
+		space.print_states(&vars);
+	if (verbosity & VERB_STATEVAR_STATE_DOT)
+		space.print_dot();
 }
 
 void program::generate_prs()
 {
 	for (int vi = 0; vi < space.width(); vi++)
 		if (vars.get_name(vi).find_first_of("|&~") == string::npos && vars.get_name(vi).find("Reset") == string::npos)
-			prs.push_back(rule(vi, &space, &vars));
+			prs.push_back(rule(vi, &space, &vars, verbosity));
 
-	print_prs();
+	if (verbosity & VERB_BASE_PRS)
+		print_prs();
 }
 
 /* TODO: Factoring - production rules should be relatively short.
  * Look for common expressions between production rules and factor them
- * out into their own variable
+ * out into their own variable.
+ *
+ * It might be good to do this after state variable insertion and before production rule generation?
+ * It would require use of the up and down firings list...
  */
 void program::factor_prs()
 {
 
+	if (verbosity & VERB_FACTORED_PRS)
+		print_prs();
 }
 
 void program::print_prs()
