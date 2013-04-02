@@ -32,7 +32,7 @@ variable::variable(string name, string type, uint16_t width, bool io)
 	this->driven = false;
 	this->io = io;
 
-	/*if (verbosity & VERB_GENERATE_PARSE_TREE)
+	/*if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 	{
 		cout << tab << "Variable: " << chp << endl;
 		cout << tab << "\tName:  " << name << endl;
@@ -88,7 +88,7 @@ void variable::parse(string chp)
 	size_t input_start = find_first_of_l0(chp, "(", name_start);
 	size_t input_end = find_first_of_l0(chp, ")", input_start);
 
-	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 		cout << tab << "Variable: " << chp << endl;
 
 	if (input_start != chp.npos)
@@ -112,7 +112,7 @@ void variable::parse(string chp)
 	else
 		fixed = false;
 
-	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 	{
 		cout << tab << "\tName:  " << name << endl;
 		cout << tab << "\tIO:    " << input << endl;

@@ -199,7 +199,7 @@ void conditional::parse()
 	string guardstr, blockstr;
 	bool guarded = true;
 
-	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 		cout << tab << "Conditional:\t" << chp << endl;
 
 	//Parse instructions!
@@ -221,7 +221,7 @@ void conditional::parse()
 
 		if (!guarded && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) != '|' && *(i-1) != '|') || (i == chp.end() && type == choice)))
 		{
-			if (verbosity & VERB_GENERATE_PARSE_TREE)
+			if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 				cout << tab << "Choice\n";
 			if (type == unknown)
 				type = choice;
@@ -239,7 +239,7 @@ void conditional::parse()
 		}
 		else if (!guarded && depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '[' && *(i+1) == ']') || i == chp.end()))
 		{
-			if (verbosity & VERB_GENERATE_PARSE_TREE)
+			if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 				cout << tab << "Mutex\n";
 			if (type == unknown)
 				type = mutex;
@@ -324,7 +324,7 @@ int conditional::generate_states(graph *g, int init, state filter)
 	if (filter.size() == 0)
 		filter = null(vars->size());
 
-	if (verbosity & VERB_GENERATE_STATE_SPACE)
+	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
 		cout << tab << "Conditional " << chp << endl;
 
 	space = g;
@@ -342,7 +342,7 @@ int conditional::generate_states(graph *g, int init, state filter)
 	else
 		uid = state_catcher.back();
 
-	if (verbosity & VERB_GENERATE_STATE_SPACE)
+	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
 		cout << tab << g->states[uid] << endl;
 
 	return uid;

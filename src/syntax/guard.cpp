@@ -120,7 +120,7 @@ void guard::parse()
 {
 	// TODO Expand multi-bit guard expressions using operators
 	chp = expression(chp).simple;
-	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 		cout << tab << "Guard:\t" + chp << endl;
 }
 
@@ -160,7 +160,7 @@ int guard::generate_states(graph *g, int init, state filter)
 	space = g;
 	from = init;
 
-	if (verbosity & VERB_GENERATE_STATE_SPACE)
+	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
 		cout << tab << "Guard " << chp << endl;
 
 	map<string, variable>::iterator vi;
@@ -196,7 +196,7 @@ int guard::generate_states(graph *g, int init, state filter)
 
 	s = (g->states[init] || filter) && solve(chp, vars, tab, verbosity);
 
-	if (verbosity & VERB_GENERATE_STATE_SPACE)
+	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
 		cout << tab << s << endl;
 
 	uid = g->append_state(s, init, CHP_EDGE ? (chp + "->") : "Guard");

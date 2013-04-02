@@ -63,7 +63,7 @@ void rule::gen_minterms(graph *g)
 	int vj, ii;
 	int count, mcount, var;
 
-	if (verbosity & VERB_GENERATE_BASE_PRS)
+	if (verbosity & VERB_BASE_PRS && verbosity & VERB_DEBUG)
 	{
 		cout << "Generating Minterms for " << uid << endl;
 		cout << "Up Minterms" << endl;
@@ -122,13 +122,13 @@ void rule::gen_minterms(graph *g)
 			}
 		}
 
-		if (verbosity & VERB_GENERATE_BASE_PRS)
+		if (verbosity & VERB_BASE_PRS && verbosity & VERB_DEBUG)
 			cout << implicant << "\t" << implicant_output << endl;
 		final_output = final_output | implicant_output;
 		up.implicants.push_back(implicant);
 	}
 
-	if (verbosity & VERB_GENERATE_BASE_PRS)
+	if (verbosity & VERB_BASE_PRS && verbosity & VERB_DEBUG)
 	{
 		cout << endl;
 		cout << "Desired:  " << g->up[uid] << endl;
@@ -179,13 +179,13 @@ void rule::gen_minterms(graph *g)
 			}
 		}
 
-		if (verbosity & VERB_GENERATE_BASE_PRS)
+		if (verbosity & VERB_BASE_PRS && verbosity & VERB_DEBUG)
 			cout << implicant << "\t" << implicant_output << endl;
 		final_output = final_output | implicant_output;
 		down.implicants.push_back(implicant);
 	}
 
-	if (verbosity & VERB_GENERATE_BASE_PRS)
+	if (verbosity & VERB_BASE_PRS && verbosity & VERB_DEBUG)
 	{
 		cout << endl;
 		cout << "Desired:  " << g->down[uid] << endl;
@@ -196,25 +196,25 @@ void rule::gen_minterms(graph *g)
 
 void rule::gen_primes()
 {
-	if (verbosity & VERB_GENERATE_BASE_PRS)
+	if (verbosity & VERB_BASE_PRS && verbosity & VERB_DEBUG)
 		cout << "Generating Prime Implicants for " << uid << endl;
 
 	up.gen_primes();
 	down.gen_primes();
 
-	if (verbosity & VERB_GENERATE_BASE_PRS)
+	if (verbosity & VERB_BASE_PRS && verbosity & VERB_DEBUG)
 		cout << endl;
 }
 
 void rule::gen_essentials()
 {
-	if (verbosity & VERB_GENERATE_BASE_PRS)
+	if (verbosity & VERB_BASE_PRS && verbosity & VERB_DEBUG)
 		cout << "Generating Essential Prime Implicants for " << uid << endl;
 
 	up.gen_essentials();
 	down.gen_essentials();
 
-	if (verbosity & VERB_GENERATE_BASE_PRS)
+	if (verbosity & VERB_BASE_PRS && verbosity & VERB_DEBUG)
 		cout << endl;
 }
 
@@ -223,7 +223,7 @@ void rule::gen_output(vspace *v)
 	up.gen_output();
 	down.gen_output();
 
-	if (verbosity & VERB_GENERATE_BASE_PRS)
+	if (verbosity & VERB_BASE_PRS && verbosity & VERB_DEBUG)
 		cout << endl << endl << endl << endl;
 }
 

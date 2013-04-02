@@ -68,7 +68,7 @@ void operate::parse(string raw, int verbosity)
 	name = chp.substr(name_start, name_end - name_start);
 	io_block = chp.substr(input_start, input_end - input_start);
 
-	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 	{
 		cout << "Operator:\t" << chp << endl;
 		cout << "\tName:\t" << name << endl;
@@ -112,7 +112,7 @@ void operate::parse(string raw, int verbosity)
 	}
 	name += ")";
 
-	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 	{
 		cout << "\tVariables:" << endl;
 		vars.print("\t\t");

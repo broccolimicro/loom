@@ -241,7 +241,7 @@ void assignment::parse()
 	string left, right;
 	variable *v;
 
-	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 		cout << tab << "Assignment:\t" + chp << endl;
 
 	// Identify that this instruction is an assign.
@@ -288,7 +288,7 @@ int assignment::generate_states(graph *g, int init, state filter)
 	state s;
 	int i;
 
-	if (verbosity & VERB_GENERATE_STATE_SPACE)
+	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
 		cout << tab << "Assignment " << chp << endl;
 
 	if (filter.size() == 0)
@@ -322,7 +322,7 @@ int assignment::generate_states(graph *g, int init, state filter)
 			cout << "Error: Undefined variable " << ei->first << "." << endl;
 	}
 
-	if (verbosity & VERB_GENERATE_STATE_SPACE)
+	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
 		cout << tab << s << endl;
 
 	uid	= g->append_state(s, init, CHP_EDGE ? chp : "Assign");
@@ -419,7 +419,7 @@ instruction *expand_assignment(instruction *parent, string chp, vspace *vars, st
 
 pair<string, instruction*> expand_expression(string chp, vspace *vars, string top, string tab, int verbosity)
 {
-	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 		cout << tab << "Decompose: " << chp << endl;
 
 	map<string, variable>::iterator v;

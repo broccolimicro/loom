@@ -192,7 +192,7 @@ void program::parse(string chp, int verbosity)
 
 	prgm = (parallel*)expand_instantiation(NULL, "main _()", &vars, NULL, "", verbosity, true);
 
-	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 		cout << vars << endl;
 
 	if (verbosity & VERB_BASE_HSE)
@@ -361,7 +361,7 @@ void program::insert_state_vars()
 		cc0 = m == 0 ? up_conflict_firings.size() + down_conflict_firings.size() : cc1;
 		cc1 = up_conflict_firings.size() + down_conflict_firings.size();
 
-		if (verbosity & VERB_GENERATE_STATE_VARIABLES)
+		if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 		{
 			if (m == 0)
 				cout << "Remainder:      " << cc1 << endl;
@@ -375,7 +375,7 @@ void program::insert_state_vars()
 			}
 		}
 
-		if (verbosity & VERB_GENERATE_STATE_VARIABLES)
+		if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 		{
 			cout << "Up Conflicts:   ";
 			for (ci = up_conflict_firings.begin(); ci != up_conflict_firings.end(); ci++)
@@ -383,7 +383,7 @@ void program::insert_state_vars()
 			cout << endl;
 		}
 
-		if (verbosity & VERB_GENERATE_STATE_VARIABLES)
+		if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 		{
 			cout << "Down Conflicts: ";
 			for (ci = down_conflict_firings.begin(); ci != down_conflict_firings.end(); ci++)
@@ -587,35 +587,27 @@ void program::insert_state_vars()
 						best_values = values;
 					}
 				}
-				if (verbosity & VERB_GENERATE_STATE_VARIABLES)
+				if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 					cout << benefit << "\t";
 			}
-			if (verbosity & VERB_GENERATE_STATE_VARIABLES)
+			if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 				cout << endl;
 		}
-		if (verbosity & VERB_GENERATE_STATE_VARIABLES)
+		if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 			cout << endl;
 
-		/*cout << endl << endl << best_benefit << " Conflicting Paths Eliminated" << endl;
-		cout << "Up:\t";
-		for (k = 0; k < (int)best_up.size(); k++)
-			cout << best_up[k] << ", ";
-		cout << endl;
-		cout << "Down:\t";
-		for (k = 0; k < (int)best_down.size(); k++)
-			cout << best_down[k] << ", ";
-		cout << endl;
-		cout << best_values << endl << endl;*/
 		if (best_benefit != 0)
 		{
 			// Insert new variable
 			vid = vars.insert(variable(vars.unique_name("_sv"), "int", 1, false));
 
-			if (verbosity & VERB_GENERATE_STATE_VARIABLES)
+			if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 				cout << "Inserting:      " << *(vars.find(vid)) << "\t\t" << best_values << endl;
 
 			// Update the space
 			space.set_trace(vid, best_values);
+
+			// TODO inserting assignments that happen as a result of reset (uid = 0)
 
 			sort(best_up.begin(), best_up.end());
 			unique(best_up.begin(), best_up.end());

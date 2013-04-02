@@ -154,7 +154,7 @@ void parallel::expand_shortcuts()
 
 void parallel::parse()
 {
-	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 		cout << tab << "Parallel: " << chp << endl;
 
 	string				raw_instr;	// chp of a sub block
@@ -240,7 +240,7 @@ int parallel::generate_states(graph *g, int init, state filter)
 	state v;
 	int k;
 
-	if (verbosity & VERB_GENERATE_STATE_SPACE)
+	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
 		cout << tab << "Parallel " << chp << endl;
 
 	space = g;
@@ -281,7 +281,7 @@ int parallel::generate_states(graph *g, int init, state filter)
 
 	g->append_state(s, state_catcher, chp_catcher);
 
-	if (verbosity & VERB_GENERATE_STATE_SPACE)
+	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
 		cout << tab << s << endl;
 
 	return uid;

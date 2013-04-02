@@ -68,7 +68,7 @@ void channel::parse(string chp, int verbosity)
 	name = chp.substr(name_start, name_end - name_start);
 	io_block = chp.substr(block_start, block_end - block_start);
 
-	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 	{
 		cout << "Channel: " << chp << endl;
 		cout << "\tName:  " << name << endl;
@@ -110,7 +110,7 @@ void channel::parse(string chp, int verbosity)
 		}
 	}
 
-	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 	{
 		cout << endl;
 	}

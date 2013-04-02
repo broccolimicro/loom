@@ -175,7 +175,7 @@ void block::expand_shortcuts()
 
 void block::parse()
 {
-	if (verbosity & VERB_GENERATE_PARSE_TREE)
+	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 		cout << tab << "Block: " << chp << endl;
 
 	string				raw_instr;	// chp of a sub block
@@ -309,7 +309,7 @@ int block::generate_states(graph *g, int init, state filter)
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
 
-	if (verbosity & VERB_GENERATE_STATE_SPACE)
+	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
 		cout << tab << "Block " << chp << endl;
 
 	space = g;
