@@ -1,10 +1,9 @@
 /*
  * value.h
  *
- *  Created on: Oct 30, 2012
- *      Author: Ned Bingham and Nicholas Kramer
- *
- *  DO NOT DISTRIBUTE
+ * This structure contains a single value for a single variable.
+ * It also flags whether or not this value should generate a
+ * production rule.
  */
 
 #include "../common.h"
@@ -12,10 +11,6 @@
 #ifndef value_h
 #define value_h
 
-/* This structure contains a single value for a single variable.
- * It also flags whether or not this value should generate a
- * production rule.
- */
 struct value
 {
 	value();

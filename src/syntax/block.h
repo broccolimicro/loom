@@ -1,18 +1,7 @@
 /*
  * block.h
  *
- *  Created on: Oct 28, 2012
- *      Author: Ned Bingham and Nicholas Kramer
- *
- *  DO NOT DISTRIBUTE
- */
-
-#ifndef block_h
-#define block_h
-
-#include "instruction.h"
-
-/* This structure represents a block. An conditional statement
+ * This structure represents a block. An conditional statement
  * or loop can be considered a block. By definition, it is
  * something that we can pull out and analyze independently of
  * every other structure in the program. Within a block, there
@@ -20,6 +9,13 @@
  * We also include a list of spaces to keep track of the state space
  * transition affected by this block.
  */
+
+#ifndef block_h
+#define block_h
+
+#include "instruction.h"
+
+
 struct block : instruction
 {
 	block();

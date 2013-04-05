@@ -1,8 +1,12 @@
-/*
- * sspace.h
+/* sspace.h
  *
- *  Created on: Jan 26, 2013
- *      Author: nbingham
+ * sspace is the data structure that holds a collection (the whole space)
+ * of all the states of a data set. The most common use is in graph, which
+ * contains a state space for the whole program. In this example, the state
+ * space represents every state which the program can find itself in. Another
+ * common use is a 'diff space', which is the dual of a state space graph;
+ * every edge becomes a state that marks the difference between the two sides of
+ * the edge.
  */
 
 #ifndef sspace_h

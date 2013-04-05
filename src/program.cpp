@@ -247,6 +247,8 @@ void program::reshuffle()
 void program::generate_states()
 {
 	space.append_state(state(value("X"), vars.global.size()), -1, "Power On");
+	//TODO: Okay, I am going to say it. I think it is weird that we are passing a list of instructions to parallel to state space.
+	//It does not feel like a syntax structure's job to do that kind of thing.
 	prgm->generate_states(&space, 0, state());
 	space.gen_traces();
 
@@ -660,12 +662,25 @@ void program::generate_prs()
 /* TODO: Factoring - production rules should be relatively short.
  * Look for common expressions between production rules and factor them
  * out into their own variable.
- *
- * It might be good to do this after state variable insertion and before production rule generation?
- * It would require use of the up and down firings list...
  */
 void program::factor_prs()
 {
+
+	//Not as trivial as seemed on initial exploration.
+	//Must find cost function for inserting state variable.
+	//Must find benefit for inserting factor
+	//Balance size of factored chunk vs how many rules factored from
+	//Prioritize longer rules to reduce capacitive driving (i.e. not every 'factor removed' is equal)
+	//MUST factor if over cap in series/parallel
+
+	for(size_t prsi = 0; prsi < prs.size(); prsi++)
+	{
+		prs[prsi].find_var_usage_up();
+		prs[prsi].find_var_usage_down();
+
+	}
+
+	//BAH TOO BRUTE FORCE TOO SLOW DELETE EVERYTHING HIDE THE SHAME KNOW THERE IS BETTER
 
 	if (verbosity & VERB_FACTORED_PRS)
 		print_prs();

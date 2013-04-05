@@ -1,10 +1,11 @@
 /*
  * loop.h
  *
- *  Created on: Oct 28, 2012
- *      Author: Ned Bingham and Nicholas Kramer
- *
- *  DO NOT DISTRIBUTE
+ * Loop is a fundamental CHP structure of the form *[G1->S1[]G2->S2] such that G1 and G2 are
+ * guards and S1 and S2 are statements to be executed. If G1 evaluates true, S1 executes, and
+ * likewise for G2 and S2. As long as one of the guards evaluates to true, the process will
+ * continue executing iterations of the loop. If no guard evaluates true, the loop terminates.
+ * TODO: Functional information
  */
 
 

@@ -1,10 +1,9 @@
 /*
  * common.h
  *
- *  Created on: Oct 23, 2012
- *      Author: Ned Bingham and Nicholas Kramer
- *
- *  DO NOT DISTRIBUTE
+ * Common is a collection of functions not specific to the compiler that
+ * we found useful to define. Note that our #defines for user flags are
+ * also stored in common.h as it is accessed by everyone.
  */
 
 #ifndef common_h
@@ -48,7 +47,8 @@ size_t find_first_of_l0(string subject, list<string> search, size_t pos = 0, lis
 size_t find_last_of_l0(string subject, string search, size_t pos = string::npos);
 size_t find_last_of_l0(string subject, list<string> search, size_t pos = string::npos, list<string> exclude = list<string>());
 
-
+//In chp.cpp, there is a variable valled verbosity. Set it to one of the following settings to control exactly what is output.
+//(bitmasks)
 // Predefined verbosity sets
 #define VERB_ALL							0xFFFFFFFF
 #define VERB_NONE							0x00000000

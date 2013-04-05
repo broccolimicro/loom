@@ -1,8 +1,10 @@
 /*
  * vspace.h
  *
- *  Created on: Feb 9, 2013
- *      Author: nbingham
+ * A variable space collects information about all the variables in a given program.
+ * It includes a list variables, as well as types and labels for those variables.
+ * The concept behind vspace is to consolidate information about variables into one
+ * easy to access place. vspace is primarily used in program.
  */
 
 #ifndef vspace_h

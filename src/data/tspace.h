@@ -1,8 +1,9 @@
 /*
  * tspace.h
  *
- *  Created on: Feb 9, 2013
- *      Author: nbingham
+ * tspace, or trace space, is a collection of traces for every variable in a program.
+ * A tspace can be thought of as the transpose of a state space. The primary tspace for
+ * a program is held in graph.
  */
 
 #ifndef tspace_h

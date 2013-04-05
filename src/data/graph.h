@@ -1,6 +1,10 @@
 /*
  * graph.h
  *
+ * Graph is a data structure that contains structural information about a given program's execution.
+ * Each program has an associated graph. A graph contains the state space and trace space data structures.
+ * It also contains edges describing how each state (and likewise trace) can transition to other states
+ * based on the execution of the program.
  */
 
 #include "../common.h"

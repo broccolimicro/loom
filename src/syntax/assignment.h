@@ -1,8 +1,10 @@
 /*
  * assignment.h
  *
- *  Created on: Jan 22, 2013
- *      Author: nbingham
+ * An assignment is a basic CHP syntax of the form variable:=value, often shorthanded
+ * with variable+ for assignment to 1 and variable- for assignment to 0.
+ * The assignment structure contains a uid indicating the statespace state it affects,
+ * as well as a list of simultaneous assignments (expression variable pairs).
  */
 
 #ifndef assignment_h

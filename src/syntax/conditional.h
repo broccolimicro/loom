@@ -1,10 +1,12 @@
 /*
  * conditional.h
  *
- *  Created on: Oct 28, 2012
- *      Author: Ned Bingham and Nicholas Kramer
- *
- *  DO NOT DISTRIBUTE
+ * A conditional is a fundamental CHP syntax that takes the form [G1->S1[]G2->S2]
+ * Where G1 and G2 are guards and S1 and S2 are statements to execute. If G1 evaluates.
+ * S1 is to execute. If G2 evaluates, S2 is to execute. If neither guard evaluates,
+ * the statement is to block until one of the guards does evaluate. The environment guarantees
+ * mutual exclusion for [] (deterministic selection). Nondeterministic selection is yet to be
+ * implemented. TODO: Description on what conditional programatically does.
  */
 
 #ifndef conditional_h

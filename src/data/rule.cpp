@@ -49,6 +49,13 @@ rule &rule::operator=(rule r)
 	return *this;
 }
 
+/* gen_minterms produces the weakest set of implicants that cannot reduce
+ * the conflict firing space by adding another variable to a given implicant.
+ * This information is stored in the implicants field of rule's up and down.
+ * Note that the implicants are generated in a greedy manner: Each variable
+ * added to a given implicant is selected based on which would reduce the number
+ * of conflict states the most.
+ */
 void rule::gen_minterms(graph *g)
 {
 	list<int> invars;
@@ -194,6 +201,8 @@ void rule::gen_minterms(graph *g)
 	}
 }
 
+// gen_primes takes a list of implicants and reduces them to prime implicants
+// using expression's gen_primes function.
 void rule::gen_primes()
 {
 	if (verbosity & VERB_BASE_PRS && verbosity & VERB_DEBUG)
@@ -206,6 +215,8 @@ void rule::gen_primes()
 		cout << endl;
 }
 
+// gen_primes takes a list of prime implicants and reduces them to essential
+// implicants using expression's gen_essentials function.
 void rule::gen_essentials()
 {
 	if (verbosity & VERB_BASE_PRS && verbosity & VERB_DEBUG)
@@ -218,6 +229,7 @@ void rule::gen_essentials()
 		cout << endl;
 }
 
+//TODO: Not quite sure of the broader purpose. Write good description.
 void rule::gen_output(vspace *v)
 {
 	up.gen_output();
@@ -227,6 +239,24 @@ void rule::gen_output(vspace *v)
 		cout << endl << endl << endl << endl;
 }
 
+void rule::find_var_usage_up()
+{
+	//TODO:
+	//Also, I kinda missed out on this whole switching to expression thing. Meh
+	var_usage_up = 0x0;
+
+}
+
+void rule::find_var_usage_down()
+{
+	//TODO:
+	//Also, I kinda missed out on this whole switching to expression thing. Meh
+	var_usage_down = 0x0;
+}
+
+//Print the rule in the following format:
+//up left -> up right+
+//down left -> down right-
 ostream &operator<<(ostream &os, rule r)
 {
 	list<state>::iterator i;

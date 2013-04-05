@@ -1,8 +1,5 @@
 /*
  * expression.cpp
- *
- *  Created on: Mar 15, 2013
- *      Author: nbingham
  */
 
 #include "expression.h"
@@ -106,6 +103,7 @@ void expression::gen_variables(string e)
 	}
 }
 
+//Used by rule
 void expression::gen_minterms(string e)
 {
 	int i, j, k, m, n;
@@ -143,6 +141,7 @@ void expression::gen_minterms(string e)
 			implicants.push_back(values(i));
 }
 
+//Used by rule
 void expression::gen_primes()
 {
 	if (vars == NULL || implicants.size() == 0)
@@ -199,6 +198,7 @@ void expression::gen_primes()
 	cout << endl;*/
 }
 
+//Used by rule
 void expression::gen_essentials()
 {
 	if (vars == NULL || primes.size() == 0)
@@ -298,6 +298,7 @@ void expression::gen_essentials()
 	cout << endl;*/
 }
 
+//Used by rule
 void expression::gen_output()
 {
 	if (vars == NULL)

@@ -73,11 +73,13 @@
  * of the types described in this program and all of the global variables
  * defined in this program. It also contains a list of all of the errors
  * produced during the compilation and a list of all of the production rules
- * that result from this compilation.
- */
+ * that result from this compilation. This is the top level of the compiler,
+ * if you will. It contains all the information used throughout the entire
+ * program's compilation. */
+
 int main(int argc, char **argv)
 {
-	int verbosity = VERB_DATA;
+	int verbosity = VERB_ALL;
 
 	//FILE *log = fopen("log.txt", "w");
 	//*stdout = *log;

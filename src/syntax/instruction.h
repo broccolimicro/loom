@@ -1,10 +1,7 @@
 /*
  * instruction.h
  *
- *  Created on: Oct 23, 2012
- *      Author: Ned Bingham and Nicholas Kramer
- *
- *  DO NOT DISTRIBUTE
+ * TODO: Come up with a pithy way to describe this.
  */
 
 #ifndef instruction_h

@@ -1,5 +1,9 @@
 #include "state.h"
 
+/*
+ * We defined a whole suite of state operators, but it got too beefy.
+ * Many of them were thus moved here.
+ */
 value &state::operator[](int i)
 {
 	return values[i];

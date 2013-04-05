@@ -12,6 +12,9 @@ graph::~graph()
 	transitions.clear();
 }
 
+/*
+ * TODO: Write appropriate description
+ */
 int graph::append_state(state s, vector<int> from, vector<string> chp)
 {
 	vector<int>::iterator a;
@@ -36,6 +39,9 @@ int graph::append_state(state s, vector<int> from, vector<string> chp)
 	return to;
 }
 
+/*
+ * TODO: Write appropriate description
+ */
 int graph::append_state(state s, int from, string chp)
 {
 	int to = states.size();
@@ -59,6 +65,10 @@ int graph::append_state(state s, int from, string chp)
 	return to;
 }
 
+/* insert_state takes in a state, s, and a uid, from. It then
+ * appends s to the end of the state space and inserts appropriate edges.
+ * insert_state returns the UID of the new state.
+ */
 int graph::insert_state(state s, int from)
 {
 	int i;
@@ -87,11 +97,20 @@ int graph::insert_state(state s, int from)
 	return id;
 }
 
+/* duplicate_state takes the UID of a state. It then inserts a state
+ * directly after the given UID's corrosponding state identical to the
+ * state indexed. The function returns the UID of the duplicated state.
+ */
 int graph::duplicate_state(int from)
 {
 	return insert_state(states[from], from);
 }
 
+/* insert_edge is responsible for updating the front_edges and back_edges
+ * datastructures. Given a from/to pair, insert_edge will add the appropriate
+ * edge to each. It also takes a string 'chp' which is simply a message attached
+ * to each edge, stored in'transitions'.
+ */
 void graph::insert_edge(int from, int to, string chp)
 {
 	if (from >= (int)front_edges.size())
@@ -106,6 +125,9 @@ void graph::insert_edge(int from, int to, string chp)
 	transitions[from].push_back(chp);
 }
 
+/*
+ * TODO: Write appropriate description
+ */
 void graph::get_trace(int from, int up, int down, trace *result)
 {
 	value next;
@@ -151,6 +173,9 @@ void graph::get_trace(int from, int up, int down, trace *result)
 	}
 }
 
+/*
+ * TODO: Write appropriate description
+ */
 void graph::get_trace(int from, vector<bool> *up, vector<bool> *down, trace *result)
 {
 	value next;
@@ -198,6 +223,10 @@ void graph::get_trace(int from, vector<bool> *up, vector<bool> *down, trace *res
 	}
 }
 
+/* set_trace takes in a UID of the trace to be affected, as well as the new trace.
+ * set_trace then updates graph's tracespace with the appropriate value, and
+ * updates graph's state space to reflect this change.
+ */
 void graph::set_trace(int uid, trace t)
 {
 	traces.assign(uid, t);
@@ -206,6 +235,9 @@ void graph::set_trace(int uid, trace t)
 		states[i].assign(uid, t[i], value("X"));
 }
 
+/*
+ * TODO: Write appropriate description
+ */
 void graph::gen_conflicts()
 {
 	up_conflicts.clear();
@@ -249,6 +281,9 @@ void graph::gen_conflicts()
 	}
 }
 
+/*
+ * TODO: Write appropriate description
+ */
 void graph::gen_traces()
 {
 	size_t i;
@@ -257,6 +292,9 @@ void graph::gen_traces()
 		traces.push_back(states(i));
 }
 
+/*
+ * TODO: Write appropriate description
+ */
 void graph::gen_deltas()
 {
 	size_t from, to, x;
@@ -329,11 +367,13 @@ void graph::gen_deltas()
 		}
 }
 
+//Returns the size of the state space (How long, i.e. how many states)
 int graph::size()
 {
 	return states.size();
 }
 
+//Returns the width of the trace space (How wide, i.e. how many variables)
 int graph::width()
 {
 	return traces.size();
@@ -546,6 +586,12 @@ void graph::print_firings(vspace *v)
 	cout << endl;
 }
 
+/* print_dot generates and outputs to a file called "graph.dot". The function
+ * prints graph's state space and transitions in a .dot format, recognized by
+ * the graph generation program, graphviz. Visit http://www.graphviz.org for
+ * appropriate plugins to render .dot files and more information on file
+ * structure.
+ */
 void graph::print_dot()
 {
 	size_t i, j;
@@ -580,6 +626,8 @@ void graph::print_dot()
 	outputGraph.close();
 }
 
+//TODO: Is it proper that we are printing a statespace as the default << of a graph,
+//given all the info it contains?
 ostream &operator<<(ostream &os, graph g)
 {
 	size_t j;
@@ -613,6 +661,7 @@ ostream &operator<<(ostream &os, graph g)
     return os;
 }
 
+//Does this answer the above TODO sufficiently?
 ostream &operator>>(ostream &os, graph g)
 {
 	os << "Trace Space:" << endl;

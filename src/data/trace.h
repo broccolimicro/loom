@@ -1,10 +1,10 @@
 /*
  * trace.h
  *
- *  Created on: Oct 23, 2012
- *      Author: Ned Bingham and Nicholas Kramer
- *
- *  DO NOT DISTRIBUTE
+ * Trace contains the known values of given variable for every 'instant' in the program's execution.
+ * One way to think about a trace is as the columns of a state space. Trace is most often used in the
+ * context of a trace space, which contains a trace for every variable in the program. Trace is a good tool
+ * for capturing how a single variable behaves over the whole execution of the program.
  */
 
 #include "../common.h"
@@ -13,11 +13,6 @@
 #ifndef trace_h
 #define trace_h
 
-/* This structure represents a whole value
- * trace for a single variable. It contains
- * the name of the variable it represents
- * and a list of value structures.
- */
 struct trace
 {
 	trace();

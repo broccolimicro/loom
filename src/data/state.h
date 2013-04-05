@@ -1,8 +1,9 @@
 /*
-  * state.h
+ * state.h
  *
- *  Created on: Jan 26, 2013
- *      Author: nbingham
+ * State holds known information about every variable at a given instance of a program's execution.
+ * States are used prodominantly in sspace, but sometimes as containers to hold one piece of information
+ * for all variables.
  */
 
 #include "value.h"

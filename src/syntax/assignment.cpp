@@ -1,9 +1,3 @@
-/*
- * assignment.cpp
- *
- *  Created on: Jan 22, 2013
- *      Author: nbingham
- */
 
 #include "../common.h"
 #include "../utility.h"
@@ -173,6 +167,8 @@ instruction *assignment::duplicate(instruction *parent, vspace *vars, map<string
 	return instr;
 }
 
+//In this context, variant calculates what varied based on this assignment
+//TODO: Technically X to 1 isn't a variant if X was a 1. I'm not sure if this comes into play badly anywhere...
 state assignment::variant()
 {
 	state result(value("_"), vars->global.size());
@@ -183,6 +179,7 @@ state assignment::variant()
 	return result;
 }
 
+//TODO: Ask Ned what an active variant is
 state assignment::active_variant()
 {
 	state result(value("_"), vars->global.size());
@@ -221,6 +218,10 @@ void assignment::x_channel(state *s, string v)
 				s->assign(vi->second.uid, value("X"));
 }
 
+/* Expand shortcut handles cases of implied syntax.
+ * It runs before parsing, and translates user input from main.chp into a standard
+ * form that parse can recognize. In assignment, the implied syntax is var+ and var-
+ */
 void assignment::expand_shortcuts()
 {
 	// Convert var+ to var:=1
@@ -232,6 +233,8 @@ void assignment::expand_shortcuts()
 		chp = chp.substr(0, chp.find("-")) + ":=0";
 }
 
+//Parse populates information about this assignment, such as
+//TODO go through
 void assignment::parse()
 {
 	size_t middle;

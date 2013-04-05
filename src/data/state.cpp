@@ -1,12 +1,3 @@
-/*
- * state.cpp
- *
- *  Created on: Oct 30, 2012
- *      Author: Ned Bingham and Nicholas Kramer
- *
- *  DO NOT DISTRIBUTE
- */
-
 #include "state.h"
 #include "value.h"
 #include "../common.h"
@@ -38,16 +29,20 @@ void state::clear()
 	values.clear();
 }
 
+//Returns an iterator (pointer) to the first value in this state
 vector<value>::iterator state::begin()
 {
 	return values.begin();
 }
 
+//Returns an iterator (pointer) to the last value in this state
 vector<value>::iterator state::end()
 {
 	return values.end();
 }
 
+
+// TODO: Document using precise language the purpose of r
 void state::assign(int i, value v, value r)
 {
 	if (i >= (int)values.size())
@@ -55,11 +50,13 @@ void state::assign(int i, value v, value r)
 	values[i] = v;
 }
 
+//Returns the size of the state (number of variables, also the width of the state space this state belongs to)
 int state::size()
 {
 	return values.size();
 }
 
+//TODO: ?
 bool state::fire(int uid)
 {
 	if (prs.size() <= uid/8)
@@ -67,6 +64,7 @@ bool state::fire(int uid)
 	return (bool)((prs[uid/8] >> (uid%8)) & 0x01);
 }
 
+//TODO: ?
 void state::drive(int uid)
 {
 	if (prs.size() <= uid/8)
@@ -74,6 +72,7 @@ void state::drive(int uid)
 	prs[uid/8] |= (0x01 << (uid%8));
 }
 
+//TODO: ?
 void state::drive(int uid, value v, value r)
 {
 	if (uid >= (int)values.size())

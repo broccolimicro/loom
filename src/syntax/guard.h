@@ -1,8 +1,8 @@
 /*
  * guard.h
  *
- *  Created on: Jan 22, 2013
- *      Author: nbingham
+ * A guard is a fundamental CHP syntax. It is an expression that can evaluate to true or false.
+ *  TODO: expand
  */
 
 #ifndef guard_h
