@@ -682,6 +682,8 @@ void program::factor_prs()
 
 	//BAH TOO BRUTE FORCE TOO SLOW DELETE EVERYTHING HIDE THE SHAME KNOW THERE IS BETTER
 
+
+
 	if (verbosity & VERB_FACTORED_PRS)
 		print_prs();
 }
