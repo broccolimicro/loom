@@ -185,9 +185,7 @@ void graph::get_trace(int from, vector<bool> *up, vector<bool> *down, trace *res
 	while (front_edges[from].size() == 1)
 	{
 		curr = front_edges[from].front();
-		if ((*up)[from] && (*down)[from])
-			return;
-		else if ((*up)[from])
+		if ((*up)[from])
 			next = (*result)[curr] || value("1");
 		else if ((*down)[from])
 			next = (*result)[curr] || value("0");
@@ -201,9 +199,7 @@ void graph::get_trace(int from, vector<bool> *up, vector<bool> *down, trace *res
 		from = curr;
 	}
 
-	if ((*up)[from] && (*down)[from])
-		temp = value("_");
-	else if ((*up)[from])
+	if ((*up)[from])
 		temp = value("1");
 	else if ((*down)[from])
 		temp = value("0");

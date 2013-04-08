@@ -69,6 +69,8 @@
 #include "program.h"
 #include "utility.h"
 
+#include "data/value_array.h"
+
 /* This structure describes a whole program. It contains a record of all
  * of the types described in this program and all of the global variables
  * defined in this program. It also contains a list of all of the errors
@@ -117,5 +119,4 @@ int main(int argc, char **argv)
 
 
 	//fclose(log);
-
 }
