@@ -32,6 +32,13 @@ struct value_array
 	void inelastic_set(int uid, uint32_t v);
 	void elastic_set(int uid, uint32_t v, uint32_t r = 0);
 
+	void sv_union(int uid, uint32_t v);
+	void sv_intersect(int uid, uint32_t v);
+	void sv_invert(int uid);
+	void sv_or(int uid, uint32_t v);
+	void sv_and(int uid, uint32_t v);
+	void sv_not(int uid);
+
 	uint32_t operator[](int i);
 
 	value_array &operator=(value_array s);

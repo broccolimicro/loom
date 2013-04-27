@@ -100,6 +100,7 @@ instruction *assignment::duplicate(instruction *parent, vspace *vars, map<string
 		k = 0;
 		while (k != e->first.npos)
 		{
+
 			j = convert.end();
 			min = e->first.length();
 			curr = 0;

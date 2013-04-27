@@ -294,14 +294,23 @@ void program::insert_state_vars()
 	list<pair<int, int> > up_conflict_firings;
 	list<pair<int, int> > down_conflict_firings;
 
-	list<pair<int, int> > old_up_conflict_firings;
-	list<pair<int, int> > old_down_conflict_firings;
-
 	list<pair<int, int> >::iterator ci;
 
 	int cc0, cc1;
 
+	// These are strictly for debugging purposes
 	timeval t0, t1;
+	int best_up_benefit;
+	int best_down_benefit;
+	int best_up_deficit;
+	int best_down_deficit;
+
+	list<pair<int, int> > old_up_conflict_firings;
+	list<pair<int, int> > old_down_conflict_firings;
+	list<pair<int, int> > actual_up_benefit;
+	list<pair<int, int> > actual_down_benefit;
+	list<pair<int, int> > actual_up_deficit;
+	list<pair<int, int> > actual_down_deficit;
 
 	/* THIS IS A STRAIGHTFORWARD BRUTE FORCE ALGORITHM. IT IS NOT SMART. IT IS NOT FAST. BUT IT WORKS.
 	 *
@@ -334,6 +343,14 @@ void program::insert_state_vars()
 		/* Step 1: cache the list of conflict firings already present in the state space. This does not include conflicts between two
 		 * states in which neither states are a firing for a variable.
 		 */
+
+		if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
+		{
+			old_up_conflict_firings.clear();
+			old_down_conflict_firings.clear();
+			old_up_conflict_firings = up_conflict_firings;
+			old_down_conflict_firings = down_conflict_firings;
+		}
 
 		up_conflict_firings.clear();
 		down_conflict_firings.clear();
@@ -369,8 +386,60 @@ void program::insert_state_vars()
 				cout << "Remainder:      " << cc1 << endl;
 			else
 			{
-				cout << "Actual Delta:   " << cc0 - cc1 << endl;
-				cout << "Guessed Delta:  " << best_benefit << endl;
+				actual_up_benefit.clear();
+				actual_down_benefit.clear();
+				actual_up_deficit.clear();
+				actual_down_deficit.clear();
+
+				for (ci = old_up_conflict_firings.begin(); ci != old_up_conflict_firings.end(); ci++)
+					if (find(up_conflict_firings.begin(), up_conflict_firings.end(), *ci) == up_conflict_firings.end())
+						actual_up_benefit.push_back(*ci);
+
+				for (ci = old_down_conflict_firings.begin(); ci != old_down_conflict_firings.end(); ci++)
+					if (find(down_conflict_firings.begin(), down_conflict_firings.end(), *ci) == down_conflict_firings.end())
+						actual_down_benefit.push_back(*ci);
+
+				for (ci = up_conflict_firings.begin(); ci != up_conflict_firings.end(); ci++)
+					if (find(old_up_conflict_firings.begin(), old_up_conflict_firings.end(), *ci) == old_up_conflict_firings.end())
+						actual_up_deficit.push_back(*ci);
+
+				for (ci = down_conflict_firings.begin(); ci != down_conflict_firings.end(); ci++)
+					if (find(old_down_conflict_firings.begin(), old_down_conflict_firings.end(), *ci) == old_down_conflict_firings.end())
+						actual_down_deficit.push_back(*ci);
+
+
+				cout << "Old Up Conflicts:   ";
+				for (ci = old_up_conflict_firings.begin(); ci != old_up_conflict_firings.end(); ci++)
+					cout << "[" << ci->first << "," << ci->second << "]";
+				cout << endl;
+
+				cout << "Old Down Conflicts: ";
+				for (ci = old_down_conflict_firings.begin(); ci != old_down_conflict_firings.end(); ci++)
+					cout << "[" << ci->first << "," << ci->second << "]";
+				cout << endl;
+
+				cout << "Actual Up Benefit:   ";
+				for (ci = actual_up_benefit.begin(); ci != actual_up_benefit.end(); ci++)
+					cout << "[" << ci->first << "," << ci->second << "]";
+				cout << endl;
+
+				cout << "Actual Down Benefit: ";
+				for (ci = actual_down_benefit.begin(); ci != actual_down_benefit.end(); ci++)
+					cout << "[" << ci->first << "," << ci->second << "]";
+				cout << endl;
+
+				cout << "Actual Up Deficit:   ";
+				for (ci = actual_up_deficit.begin(); ci != actual_up_deficit.end(); ci++)
+					cout << "[" << ci->first << "," << ci->second << "]";
+				cout << endl;
+
+				cout << "Actual Down Deficit: ";
+				for (ci = actual_down_deficit.begin(); ci != actual_down_deficit.end(); ci++)
+					cout << "[" << ci->first << "," << ci->second << "]";
+				cout << endl;
+
+				cout << "Actual Delta:   " << cc0 - cc1 << " = " << actual_up_benefit.size() << " + " << actual_down_benefit.size() << " - " << actual_up_deficit.size() << " - " << actual_down_deficit.size() << endl;
+				cout << "Guessed Delta:  " << best_benefit << " = " << best_up_benefit << " + " << best_down_benefit << " - " << best_up_deficit << " - " << best_down_deficit << endl;
 				cout << "Remainder:      " << cc1 << endl;
 				cout << "Iteration Time: " << ((double)(t1.tv_sec - t0.tv_sec) + 0.000001*(double)(t1.tv_usec - t0.tv_usec)) << " seconds" << endl;
 				cout << endl << endl;
@@ -404,7 +473,7 @@ void program::insert_state_vars()
 		 * update the state space, update the conflict list, repeat. Theoretically, we should repeat until the maximum benefit achievable is 0
 		 * (we cannot eliminate any more conflicts). But this doesn't ever seem to happen. It seems to level off at a maximum benefit of 5.
 		 */
-		best_benefit = 0;
+		best_benefit = -9999999;
 		up.assign(dimension, -1);
 		down.assign(dimension, -1);
 		best_up.assign(dimension, -1);
@@ -459,94 +528,120 @@ void program::insert_state_vars()
 					// Add the number of up production rule conflicts eliminated in this trace to the benefit
 					for (ci = up_conflict_firings.begin(); ci != up_conflict_firings.end(); ci++)
 					{
+						// Cases 2 and 4
 						if (rup[ci->first])
 						{
-							if (values[ci->second].data[0] == '0')
-								up_benefit++;
-
-							if (!((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
-								(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0')) && find(space.up_conflicts[ci->first].begin(), space.up_conflicts[ci->first].end(), ci->second) == space.up_conflicts[ci->first].end())
-								up_benefit--;
-							if ((values[ci->first].data[0] != '1' && rdown[ci->second]) ||
-								(values[ci->first].data[0] != '0' && rup[ci->second]))
-								up_benefit--;
-
-							if (rup[ci->second] && find(space.up_conflicts[ci->first].begin(), space.up_conflicts[ci->first].end(), ci->second) == space.up_conflicts[ci->first].end())
-								up_benefit--;
-						}
-						else if (rdown[ci->first])
-						{
-							if (values[ci->second].data[0] == '1')
-								up_benefit++;
-
-							if (!((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
-								(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0')) && find(space.down_conflicts[ci->first].begin(), space.down_conflicts[ci->first].end(), ci->second) == space.down_conflicts[ci->first].end())
-								down_benefit--;
-							if ((values[ci->first].data[0] != '1' && rdown[ci->second]) ||
-								(values[ci->first].data[0] != '0' && rup[ci->second]))
-								down_benefit--;
-
-							if (rdown[ci->second] && find(space.down_conflicts[ci->first].begin(), space.down_conflicts[ci->first].end(), ci->second) == space.down_conflicts[ci->first].end())
-								up_benefit--;
-						}
-						else
-						{
+							// F => C
 							if ((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
 								(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0'))
 								up_benefit++;
 
+							// DF => C
+							if (values[ci->second].data[0] != '0')
+								up_deficit++;
+
+							// F => DC
 							if ((values[ci->first].data[0] != '1' && rdown[ci->second]) ||
 								(values[ci->first].data[0] != '0' && rup[ci->second]))
-								up_benefit--;
+								up_deficit++;
+
+							// DF => DC
+							if (rup[ci->second])
+								up_deficit++;
+						}
+						else if (rdown[ci->first])
+						{
+							// F => C
+							if ((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
+								(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0'))
+								up_benefit++;
+
+							// DF => C
+							if (values[ci->second].data[0] != '1')
+								up_deficit++;
+
+							// F => DC
+							if ((values[ci->first].data[0] != '1' && rdown[ci->second]) ||
+								(values[ci->first].data[0] != '0' && rup[ci->second]))
+								up_deficit++;
+
+							// DF => DC
+							if (rdown[ci->second])
+								up_deficit++;
+						}
+						// Cases 1 and 3
+						else
+						{
+							// F => C
+							if ((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
+								(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0'))
+								up_benefit++;
+
+							// F => DC
+							if ((values[ci->first].data[0] != '1' && rdown[ci->second]) ||
+								(values[ci->first].data[0] != '0' && rup[ci->second]))
+								up_deficit++;
 						}
 					}
 
 					// Add the number of down production rule conflicts eliminated in this trace to the benefit
 					for (ci = down_conflict_firings.begin(); ci != down_conflict_firings.end(); ci++)
 					{
+						// Cases 2 and 4
 						if (rup[ci->first])
 						{
-							if (values[ci->second].data[0] == '0')
-								down_benefit++;
-
-							if (!((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
-								(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0')) && find(space.up_conflicts[ci->first].begin(), space.up_conflicts[ci->first].end(), ci->second) == space.up_conflicts[ci->first].end())
-								up_benefit--;
-							if ((values[ci->first].data[0] != '1' && rdown[ci->second]) ||
-								(values[ci->first].data[0] != '0' && rup[ci->second]))
-								up_benefit--;
-
-							if (rup[ci->second] && find(space.up_conflicts[ci->first].begin(), space.up_conflicts[ci->first].end(), ci->second) == space.up_conflicts[ci->first].end())
-								down_benefit--;
-						}
-						else if (rdown[ci->first])
-						{
-							if (values[ci->second].data[0] == '1')
-								down_benefit++;
-
-							if (!((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
-								(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0')) && find(space.down_conflicts[ci->first].begin(), space.down_conflicts[ci->first].end(), ci->second) == space.down_conflicts[ci->first].end())
-								down_benefit--;
-							if ((values[ci->first].data[0] != '1' && rdown[ci->second]) ||
-								(values[ci->first].data[0] != '0' && rup[ci->second]))
-								down_benefit--;
-
-							if (rdown[ci->second] && find(space.down_conflicts[ci->first].begin(), space.down_conflicts[ci->first].end(), ci->second) == space.down_conflicts[ci->first].end())
-								down_benefit--;
-						}
-						else
-						{
+							// F => C
 							if ((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
 								(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0'))
 								down_benefit++;
 
+							// DF => C
+							if (values[ci->second].data[0] != '0')
+								down_deficit++;
+
+							// F => DC
 							if ((values[ci->first].data[0] != '1' && rdown[ci->second]) ||
 								(values[ci->first].data[0] != '0' && rup[ci->second]))
-								down_benefit--;
+								down_deficit++;
+
+							// DF => DC
+							if (rup[ci->second])
+								down_deficit++;
+						}
+						else if (rdown[ci->first])
+						{
+							// F => C
+							if ((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
+								(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0'))
+								down_benefit++;
+
+							// DF => C
+							if (values[ci->second].data[0] != '1')
+								down_deficit++;
+
+							// F => DC
+							if ((values[ci->first].data[0] != '1' && rdown[ci->second]) ||
+								(values[ci->first].data[0] != '0' && rup[ci->second]))
+								down_deficit++;
+
+							// DF => DC
+							if (rdown[ci->second])
+								down_deficit++;
+						}
+						// Cases 1 and 3
+						else
+						{
+							// F => C
+							if ((values[ci->first].data[0] == '0' && values[ci->second].data[0] == '1') ||
+								(values[ci->first].data[0] == '1' && values[ci->second].data[0] == '0'))
+								down_benefit++;
+
+							// F => DC
+							if ((values[ci->first].data[0] != '1' && rdown[ci->second]) ||
+								(values[ci->first].data[0] != '0' && rup[ci->second]))
+								down_deficit++;
 						}
 					}
-
-					// Below this comment works completely, the bug is in the above code.
 
 					// Subtract the number of up production rule conflicts added by adding this variable with these up firings from the benefit
 					for (k = 0; k < (int)up.size(); k++)
@@ -555,12 +650,12 @@ void program::insert_state_vars()
 						{
 							if (values[space.up_conflicts[up[k]][l]].data[0] != '1')
 								up_deficit++;
-							if (rdown[space.up_conflicts[up[k]][l]])
-								up_deficit++;
+							//if (rdown[space.up_conflicts[up[k]][l]])
+							//	up_deficit++;
 						}
 
-						if (values[up[k]].data[0] != '0')
-							up_benefit--;
+						//if (values[up[k]].data[0] != '0')
+						//	up_deficit++;
 					}
 
 					// Subtract the number of down production rule conflicts added by adding this variable with these down firings from the benefit
@@ -570,11 +665,12 @@ void program::insert_state_vars()
 						{
 							if (values[space.down_conflicts[down[k]][l]].data[0] != '0')
 								down_deficit++;
-							if (rup[space.down_conflicts[down[k]][l]])
-								down_deficit++;
+							//if (rup[space.down_conflicts[down[k]][l]])
+							//	down_deficit++;
 						}
-						if (values[down[k]].data[0] != '1')
-							down_benefit--;
+
+						//if (values[down[k]].data[0] != '1')
+						//	down_deficit++;
 					}
 
 					benefit = up_benefit + down_benefit - up_deficit - down_deficit;
@@ -586,6 +682,10 @@ void program::insert_state_vars()
 						best_rup = rup;
 						best_rdown = rdown;
 						best_benefit = benefit;
+						best_up_benefit = up_benefit;
+						best_down_benefit = down_benefit;
+						best_up_deficit = up_deficit;
+						best_down_deficit = down_deficit;
 						best_values = values;
 					}
 				}

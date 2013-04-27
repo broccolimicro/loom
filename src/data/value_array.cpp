@@ -92,6 +92,36 @@ void value_array::elastic_set(int uid, uint32_t v, uint32_t r)
 	}
 }
 
+void value_array::sv_union(int uid, uint32_t v)
+{
+	values[uid >> 4] |= (v & (0x00000003 << (30 - ((uid & 0x0000000F)<<1))));
+}
+
+void value_array::sv_intersect(int uid, uint32_t v)
+{
+	values[uid >> 4] &= (v | ~(0x00000003 << (30 - ((uid & 0x0000000F)<<1))));
+}
+
+void value_array::sv_invert(int uid)
+{
+	values[uid >> 4] ^= (0x00000003 << (30 - ((uid & 0x0000000F)<<1)));
+}
+
+void value_array::sv_or(int uid, uint32_t v)
+{
+
+}
+
+void value_array::sv_and(int uid, uint32_t v)
+{
+
+}
+
+void value_array::sv_not(int uid)
+{
+
+}
+
 value_array nullv(int s)
 {
 	return value_array(s, 0x00000000);

@@ -4,7 +4,7 @@ record dualrail
 	int<1> f;
 }
 
-channel chan4p0b
+channel achan4p0b
 {
 	int<1> r;
 	int<1> a;
@@ -25,33 +25,57 @@ channel chan4p0b
 	}
 }
 
-channel chan4p1b
+channel achan4p1b
 {
-	int<1> ra;
-	int<1> t;
-	int<1> f;
+	dualrail r;
+	int<1> a;
 	
 	operator!(int<1> i)
 	{
-		[	i  -> t,f := 1,0
-		[]	~i -> t,f := 0,1
-		];[ra]; t,f := 0,0; [~ra];
+		[	i  -> r.t,r.f := 1,0
+		[]	~i -> r.t,r.f := 0,1
+		];[a]; r.t,r.f := 0,0; [~a];
 	}
 	
 	operator?(int<1> i)
 	{
-		[t | f]; i := t; ra+; [~t & ~f]; ra-;
+		[r.t | r.f]; i := r.t; a+; [~r.t & ~r.f]; a-;
 	}
 	
 	operator@()
 	{
-		ra
+		a
 	}
 }
 
-channel chan2p0b
+channel achan2p0b
 {
 	int<1> r;
+	int<1> a;
+	
+	operator!(int<1> i)
+	{
+		[   r -> r-;[~a]
+		[] ~r -> r+;[ a]
+		]
+	}
+	
+	operator?(int<1> i)
+	{
+		[   a -> [~r];a-
+		[] ~a -> [ r];a+
+		]
+	}
+	
+	operator@()
+	{
+		r
+	}
+}
+
+channel achan2p1b
+{
+	dualrail r;
 	int<1> a;
 	
 	operator!(int<1> i)

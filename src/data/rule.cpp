@@ -91,7 +91,7 @@ void rule::gen_minterms(graph *g)
 		 * insertion algorithm handle bubble reshuffling.
 		 */
 		invars.clear();
-		for (vj = 0; vj < g->width(); vj++)
+		for (vj = 0; vj < implier.size(); vj++)
 			if (((BUBBLELESS && implier[vj].data == "0") || !BUBBLELESS) && vj != uid)
 				invars.push_back(vj);
 
@@ -152,7 +152,7 @@ void rule::gen_minterms(graph *g)
 		implicant_output = trace(value("1"), g->up[uid].size());
 
 		invars.clear();
-		for (vj = 0; vj < g->width(); vj++)
+		for (vj = 0; vj < implier.size(); vj++)
 			if (((BUBBLELESS && implier[vj].data == "1") || !BUBBLELESS) && vj != uid)
 				invars.push_back(vj);
 
