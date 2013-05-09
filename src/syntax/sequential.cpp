@@ -1,5 +1,5 @@
 /*
- * block.cpp
+ * sequential.cpp
  *
  *  Created on: Oct 29, 2012
  *      Author: Ned Bingham and Nicholas Kramer
@@ -12,21 +12,21 @@
 #include "../type.h"
 #include "../data.h"
 
-#include "block.h"
+#include "sequential.h"
 #include "parallel.h"
 #include "conditional.h"
 #include "loop.h"
 
-block::block()
+sequential::sequential()
 {
-	_kind = "block";
+	_kind = "sequential";
 }
 
-block::block(instruction *parent, string chp, vspace *vars, string tab, int verbosity)
+sequential::sequential(instruction *parent, string chp, vspace *vars, string tab, int verbosity)
 {
 	clear();
 
-	this->_kind = "block";
+	this->_kind = "sequential";
 	this->chp = chp;
 	this->tab = tab;
 	this->verbosity = verbosity;
@@ -37,9 +37,9 @@ block::block(instruction *parent, string chp, vspace *vars, string tab, int verb
 	parse();
 }
 
-block::~block()
+sequential::~sequential()
 {
-	_kind = "block";
+	_kind = "sequential";
 
 	list<instruction*>::iterator j;
 	for (j = instrs.begin(); j != instrs.end(); j++)
@@ -52,7 +52,7 @@ block::~block()
 	instrs.clear();
 }
 
-block &block::operator=(block b)
+sequential &sequential::operator=(sequential b)
 {
 	this->chp		= b.chp;
 	this->instrs	= b.instrs;
@@ -64,11 +64,11 @@ block &block::operator=(block b)
 	return *this;
 }
 
-void block::init(string chp, vspace *vars, string tab, int verbosity)
+void sequential::init(string chp, vspace *vars, string tab, int verbosity)
 {
 	clear();
 
-	this->_kind = "block";
+	this->_kind = "sequential";
 	this->chp = chp;
 	this->tab = tab;
 	this->verbosity = verbosity;
@@ -81,11 +81,11 @@ void block::init(string chp, vspace *vars, string tab, int verbosity)
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *block::duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity)
+instruction *sequential::duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity)
 {
-	block *instr;
+	sequential *instr;
 
-	instr 				= new block();
+	instr 				= new sequential();
 	instr->chp			= this->chp;
 	instr->vars			= vars;
 	instr->tab			= tab;
@@ -136,7 +136,7 @@ instruction *block::duplicate(instruction *parent, vspace *vars, map<string, str
 	return instr;
 }
 
-state block::variant()
+state sequential::variant()
 {
 	state result(value("_"), vars->global.size());
 
@@ -147,7 +147,7 @@ state block::variant()
 	return result;
 }
 
-state block::active_variant()
+state sequential::active_variant()
 {
 	state result(value("_"), vars->global.size());
 
@@ -158,7 +158,7 @@ state block::active_variant()
 	return result;
 }
 
-state block::passive_variant()
+state sequential::passive_variant()
 {
 	state result(value("_"), vars->global.size());
 
@@ -169,16 +169,16 @@ state block::passive_variant()
 	return result;
 }
 
-void block::expand_shortcuts()
+void sequential::expand_shortcuts()
 {
 }
 
-void block::parse()
+void sequential::parse()
 {
 	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
-		cout << tab << "Block: " << chp << endl;
+		cout << tab << "Sequential: " << chp << endl;
 
-	string				raw_instr;	// chp of a sub block
+	string				raw_instr;	// chp of a sub sequential
 	string::iterator	i, j;
 	bool				para = false;
 	int					depth[3] = {0};
@@ -211,25 +211,25 @@ void block::parse()
 			// Get the instruction string.
 			raw_instr = chp.substr(j-chp.begin(), i-j);
 
-			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
+			// This sub sequential is a set of parallel sub sub sequentials. s0 || s1 || ... || sn
 			if (para && raw_instr.length() > 0)
 				push(new parallel(this, raw_instr, vars, tab+"\t", verbosity));
-			// This sub block has a specific order of operations. (s)
+			// This sub sequential has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')' && raw_instr.length() > 0)
-				push(new block(this, raw_instr.substr(1, raw_instr.length()-2), vars, tab+"\t", verbosity));
-			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
+				push(new sequential(this, raw_instr.substr(1, raw_instr.length()-2), vars, tab+"\t", verbosity));
+			// This sub sequential is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
 				push(new loop(this, raw_instr, vars, tab+"\t", verbosity));
-			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
+			// This sub sequential is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
 				push(new conditional(this, raw_instr, vars, tab+"\t", verbosity));
-			// This sub block is a variable instantiation.
+			// This sub sequential is a variable instantiation.
 			else if (vars->vdef(raw_instr) && raw_instr.length() > 0)
 				push(expand_instantiation(this, raw_instr, vars, NULL, tab+"\t", verbosity, true));
-			// This sub block is a communication instantiation.
+			// This sub sequential is a communication instantiation.
 			else if ((k = raw_instr.find_first_of("?!@")) != raw_instr.npos && raw_instr.find(":=") == raw_instr.npos && raw_instr.length() > 0)
 				push(add_unique_variable(this, raw_instr.substr(0, k) + "._fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", vars->get_type(raw_instr.substr(0, k)) + ".operator" + raw_instr[k] + "()", vars, tab, verbosity).second);
-			// This sub block is an assignment instruction.
+			// This sub sequential is an assignment instruction.
 			else if ((raw_instr.find(":=") != raw_instr.npos || raw_instr[raw_instr.length()-1] == '+' || raw_instr[raw_instr.length()-1] == '-') && raw_instr.length() > 0)
 				push(expand_assignment(this, raw_instr, vars, tab+"\t", verbosity));
 			else if (raw_instr.find("skip") == raw_instr.npos && raw_instr.length() > 0)
@@ -240,16 +240,16 @@ void block::parse()
 		}
 		// We are in the current scope, and the current character
 		// is a parallel bar or the end of the chp string. This is
-		// the middle of a parallel sub block.
+		// the middle of a parallel sub sequential.
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) == '|') || i == chp.end()))
 			para = true;
 	}
 }
 
-void block::merge()
+void sequential::merge()
 {
 	list<instruction*>::iterator i, j;
-	list<pair<block*, guard*> >::iterator k;
+	list<pair<sequential*, guard*> >::iterator k;
 	list<pair<string, string> >::iterator m, n;
 	i = instrs.begin();
 	j = instrs.begin();
@@ -304,13 +304,13 @@ void block::merge()
 		(*j)->merge();
 }
 
-int block::generate_states(graph *g, int init, state filter)
+int sequential::generate_states(graph *g, int init, state filter)
 {
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
 
-	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
-		cout << tab << "Block " << chp << endl;
+	if ((verbosity & VERB_BASE_STATE_SPACE) && (verbosity & VERB_DEBUG))
+		cout << tab << "Sequential " << chp << endl;
 
 	space = g;
 	from = init;
@@ -325,7 +325,7 @@ int block::generate_states(graph *g, int init, state filter)
 	return init;
 }
 
-state block::simulate_states(state init, state filter)
+state sequential::simulate_states(state init, state filter)
 {
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
@@ -339,7 +339,7 @@ state block::simulate_states(state init, state filter)
 	return init;
 }
 
-void block::generate_scribes()
+void sequential::generate_scribes()
 {
 	list<instruction*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
@@ -349,10 +349,10 @@ void block::generate_scribes()
 /* This function cleans up all of the memory allocated
  * during parsing, and prepares for the next parsing.
  */
-void block::clear()
+void sequential::clear()
 {
 	chp = "";
-	_kind = "block";
+	_kind = "sequential";
 
 	list<instruction*>::iterator j;
 	for (j = instrs.begin(); j != instrs.end(); j++)
@@ -365,7 +365,7 @@ void block::clear()
 	instrs.clear();
 }
 
-void block::insert_instr(int uid, int nid, instruction *instr)
+void sequential::insert_instr(int uid, int nid, instruction *instr)
 {
 	instr->uid = nid;
 	instr->from = uid;
@@ -399,14 +399,14 @@ void block::insert_instr(int uid, int nid, instruction *instr)
 			((conditional*)j)->insert_instr(uid, nid, instr);
 		else if (j->kind() == "guard")
 			((guard*)j)->insert_instr(uid, nid, instr);
-		else if (j->kind() == "block")
-			((block*)j)->insert_instr(uid, nid, instr);
+		else if (j->kind() == "sequential")
+			((sequential*)j)->insert_instr(uid, nid, instr);
 		else if (j->kind() == "assignment")
 			((assignment*)j)->insert_instr(uid, nid, instr);
 	}
 }
 
-void block::print_hse(string t)
+void sequential::print_hse(string t)
 {
 	list<instruction*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
@@ -417,7 +417,7 @@ void block::print_hse(string t)
 	}
 }
 
-void block::push(instruction *i)
+void sequential::push(instruction *i)
 {
 	if (i == NULL)
 		return;
@@ -438,15 +438,15 @@ void block::push(instruction *i)
 		else
 			instrs.push_back(i);
 	}
-	else if (i->kind() == "block")
+	else if (i->kind() == "sequential")
 	{
-		for (j = ((block*)i)->instrs.begin(); j != ((block*)i)->instrs.end(); j++)
+		for (j = ((sequential*)i)->instrs.begin(); j != ((sequential*)i)->instrs.end(); j++)
 		{
 			(*j)->parent = this;
 			push(*j);
 		}
-		((block*)i)->instrs.clear();
-		delete (block*)i;
+		((sequential*)i)->instrs.clear();
+		delete (sequential*)i;
 	}
 	else
 		instrs.push_back(i);

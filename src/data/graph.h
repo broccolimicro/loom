@@ -15,6 +15,37 @@
 #ifndef graph_h
 #define graph_h
 
+/*struct state
+{
+	value_array values;
+	map<int, int> branch;
+};
+
+struct transition
+{
+	value_array delta;
+
+	// limited definition
+	// 01 is output
+	// 10 is input
+	// 00 is no obligation
+	// 11 is no obligation
+	value_array xdi;
+};
+
+template <class s, class t>
+struct petri
+{
+	petri();
+	~petri();
+
+	vector<s> S;
+	vector<t> T;
+	matrix<int> Wp;
+	matrix<int> Wn;
+	vector<int> M0;
+};*/
+
 struct graph
 {
 	graph();
@@ -57,6 +88,9 @@ struct graph
 
 	int size();
 	int width();
+
+	void merge();
+	void trim();
 
 	void print_states(vspace *v);
 	void print_traces(vspace *v);

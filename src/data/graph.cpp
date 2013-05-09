@@ -21,17 +21,6 @@ int graph::append_state(state s, vector<int> from, vector<string> chp)
 	vector<string>::iterator b;
 	int to = states.size();
 
-	if (to == 0)
-	{
-		s[0] = value("1");
-		s[1] = value("0");
-	}
-	else
-	{
-		s[0] = value("0");
-		s[1] = value("1");
-	}
-
 	states.push_back(s);
 	for (a = from.begin(), b = chp.begin(); a != from.end() && b != chp.end(); a++, b++)
 		insert_edge(*a, to, *b);
@@ -45,18 +34,6 @@ int graph::append_state(state s, vector<int> from, vector<string> chp)
 int graph::append_state(state s, int from, string chp)
 {
 	int to = states.size();
-
-	if (to == 0)
-	{
-		s[0] = value("1");
-		s[1] = value("0");
-	}
-	else
-	{
-		s[0] = value("0");
-		s[1] = value("1");
-	}
-
 	states.push_back(s);
 
 	if (from != -1)
@@ -375,6 +352,74 @@ int graph::width()
 	return traces.size();
 }
 
+void graph::merge()
+{
+	/*int i, k;
+	vector<int>::iterator j;
+	list<pair<vector<int>*, vector<int>::iterator> > rem;
+	list<pair<vector<int>*, int> > add;
+	list<pair<vector<int>*, vector<int>::iterator> >::iterator ri;
+	list<pair<vector<int>*, int> >::iterator ai;
+
+	list<int> srem;
+	list<int>::iterator si;
+
+	cout << endl;
+	cout << "Merging Equal States" << endl;
+	for (i = 0; i < front_edges.size(); i++)
+		for (j = front_edges[i].begin(); j != front_edges[i].end(); j++)
+		{
+			if (states[i] == states[*j])
+			{
+				if (*j < front_edges.size())
+					for (k = 0; k < front_edges[*j].size(); k++)
+						add.push_back(pair<vector<int>*, int>(&front_edges[i], front_edges[*j][k]));
+				if (*j < back_edges.size())
+					for (k = 0; k < back_edges[*j].size(); k++)
+						if (back_edges[*j][k] != i)
+							add.push_back(pair<vector<int>*, int>(&back_edges[i], back_edges[*j][k]));
+
+				cout << i << "\t" << states[i] << endl;
+				cout << *j << "\t" << states[*j] << endl;
+
+				rem.push_back(pair<vector<int>*, vector<int>::iterator>(&front_edges[i], j));
+				srem.push_back(*j);
+			}
+		}
+
+
+	for (ri = rem.begin(); ri != rem.end(); ri++)
+		ri->first->erase(ri->second);
+
+	for (ai = add.begin(); ai != add.end(); ai++)
+		ai->first->push_back(ai->second);
+
+	vector<vector<int> >::iterator fi;
+	vector<vector<string> >::iterator ti;
+	vector<state>::iterator ssi;
+
+	srem.sort();
+	srem.reverse();
+	for (si = srem.begin(); si != srem.end(); si++)
+	{
+		states.remove(*si);
+		for (fi = front_edges.begin(), i = 0; fi != front_edges.end() && i < *si; fi++, i++);
+		fi->clear();
+		front_edges.erase(fi);
+		for (fi = back_edges.begin(), i = 0; fi != back_edges.end() && i < *si; fi++, i++);
+		fi->clear();
+		back_edges.erase(fi);
+		for (ti = transitions.begin(), i = 0; ti != transitions.end() && i < *si; ti++, i++);
+		ti->clear();
+		transitions.erase(ti);
+	}*/
+}
+
+void graph::trim()
+{
+
+}
+
 void graph::print_states(vspace *v)
 {
 	size_t j, k;
@@ -440,7 +485,7 @@ void graph::print_traces(vspace *v)
 			max_length = names[j].length();
 	}
 
-	for (j = 0; j < traces.size(); j++)
+	for (j = 0; j < (int)traces.size(); j++)
 	{
 		cout << names[j];
 		for (k = 0; k < max_length - names[j].length() + 2; k++)
@@ -463,7 +508,7 @@ void graph::print_up(vspace *v)
 			max_length = names[j].length();
 	}
 
-	for (j = 0; j < traces.size(); j++)
+	for (j = 0; j < (int)traces.size(); j++)
 	{
 		cout << names[j];
 		for (k = 0; k < max_length - names[j].length() + 2; k++)
@@ -486,7 +531,7 @@ void graph::print_down(vspace *v)
 			max_length = names[j].length();
 	}
 
-	for (j = 0; j < traces.size(); j++)
+	for (j = 0; j < (int)traces.size(); j++)
 	{
 		cout << names[j];
 		for (k = 0; k < max_length - names[j].length() + 2; k++)
@@ -509,7 +554,7 @@ void graph::print_delta(vspace *v)
 			max_length = names[j].length();
 	}
 
-	for (j = 0; j < traces.size(); j++)
+	for (j = 0; j < (int)traces.size(); j++)
 	{
 		cout << names[j];
 		for (k = 0; k < max_length - names[j].length() + 2; k++)

@@ -4,6 +4,34 @@ record dualrail
 	int<1> f;
 }
 
+operator&(int<1> s, int<1> a, int<1> b)
+{
+	[	 a & b -> s+
+	[]	~a | ~b -> s-
+	]
+}
+
+channel achan4p0b
+{
+	int<1> r;
+	int<1> a;
+	
+	operator!()
+	{
+		r+; [a]; r-; [~a];
+	}
+	
+	operator?()
+	{
+		[r]; a+; [~r]; a-;
+	}
+	
+	operator@()
+	{
+		r
+	}
+}
+
 channel achan4p1b
 {
 	dualrail r;
@@ -18,7 +46,7 @@ channel achan4p1b
 	
 	operator?(int<1> i)
 	{
-		[r.t | r.f]; i := r.t; a+; [~r.t & ~r.f]; a-;
+		[r.t | r.f]; i := r.t & ~r.f; a+; [~r.t & ~r.f]; a-;
 	}
 	
 	operator@()
@@ -39,9 +67,9 @@ process mux1b2(achan4p1b A, achan4p1b B, achan4p1b S, achan4p1b O)
 	]
 }
 
-process main()
+process chip(achan4p0b a)
 {
-	achan4p1b x0;
+	/*achan4p1b x0;
 	achan4p1b y0;
 	achan4p1b s0;
 	achan4p1b o0;
@@ -56,5 +84,9 @@ process main()
 	
 	mux1b2 MyMux0(x0, y0, s0, o0)||
 	mux1b2 MyMux1(x1, y1, s1, o1)||
-	mux1b2 MyMux2(o0, o1, s, o)
+	mux1b2 MyMux2(o0, o1, s, o)*/
+	
+	call.a+;a!
+	
+	//a!||(b?;(c!||d?))
 }

@@ -1,30 +1,30 @@
 /*
- * block.h
+ * sequential.h
  *
- * This structure represents a block. An conditional statement
- * or loop can be considered a block. By definition, it is
+ * This structure represents a sequential. An conditional statement
+ * or loop can be considered a sequential. By definition, it is
  * something that we can pull out and analyze independently of
- * every other structure in the program. Within a block, there
- * can be a process instantiation, variable declarations, and sub-blocks.
+ * every other structure in the program. Within a sequential, there
+ * can be a process instantiation, variable declarations, and sub-sequentials.
  * We also include a list of spaces to keep track of the state space
- * transition affected by this block.
+ * transition affected by this sequential.
  */
 
-#ifndef block_h
-#define block_h
+#ifndef sequential_h
+#define sequential_h
 
 #include "instruction.h"
 
 
-struct block : instruction
+struct sequential : instruction
 {
-	block();
-	block(instruction *parent, string chp, vspace *vars, string tab, int verbosity);
-	~block();
+	sequential();
+	sequential(instruction *parent, string chp, vspace *vars, string tab, int verbosity);
+	~sequential();
 
-	list<instruction*>			instrs;		// an ordered list of instructions in block
+	list<instruction*>			instrs;		// an ordered list of instructions in sequential
 
-	block &operator=(block b);
+	sequential &operator=(sequential b);
 
 	void init(string chp, vspace *vars, string tab, int verbosity);
 
@@ -54,6 +54,6 @@ struct block : instruction
 size_t search_back(string s, size_t offset);
 size_t search_front(string s, size_t offset);
 //list<size_t> state_variable_positions(space left, space right, string tab, int verbosity);
-//bool production_rule_check(string *raw, block *b, string tab, int verbosity);
+//bool production_rule_check(string *raw, sequential *b, string tab, int verbosity);
 
 #endif

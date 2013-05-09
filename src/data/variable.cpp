@@ -18,10 +18,11 @@ variable::variable()
 	fixed = false;
 	uid = -1;
 	driven = false;
-	io = false;
+	arg = false;
+	verbosity = 0;
 }
 
-variable::variable(string name, string type, uint16_t width, bool io)
+variable::variable(string name, string type, uint16_t width, bool arg)
 {
 	this->chp = type + "<" + to_string(width) + ">" + name;
 	this->name = name;
@@ -30,24 +31,15 @@ variable::variable(string name, string type, uint16_t width, bool io)
 	this->fixed = true;
 	this->uid = -1;
 	this->driven = false;
-	this->io = io;
-
-	/*if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
-	{
-		cout << tab << "Variable: " << chp << endl;
-		cout << tab << "\tName:  " << name << endl;
-		cout << tab << "\tType:  " << type << endl;
-		cout << tab << "\tWidth: " << width << endl;
-		cout << tab << "\tReset: " << reset << endl;
-		cout << tab << "\tIO:    " << io << endl;
-	}*/
+	this->arg = arg;
+	this->verbosity = 0;
 }
 
-variable::variable(string chp, bool io, string tab, int verbosity)
+variable::variable(string chp, bool arg, string tab, int verbosity)
 {
 	this->chp = chp;
 	this->uid = -1;
-	this->io = io;
+	this->arg = arg;
 	this->tab = tab;
 	this->verbosity = verbosity;
 	this->driven = false;
@@ -72,7 +64,7 @@ variable &variable::operator=(variable v)
 	fixed = v.fixed;
 	uid = v.uid;
 	driven = v.driven;
-	io = v.io;
+	arg = v.arg;
 
 	return *this;
 }
@@ -115,10 +107,10 @@ void variable::parse(string chp)
 	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 	{
 		cout << tab << "\tName:  " << name << endl;
-		cout << tab << "\tIO:    " << input << endl;
+		cout << tab << "\tArg:    " << input << endl;
 		cout << tab << "\tType:  " << type << endl;
 		cout << tab << "\tWidth: " << width << endl;
-		cout << tab << "\tIO:    " << io << endl;
+		cout << tab << "\tArg:    " << arg << endl;
 	}
 }
 

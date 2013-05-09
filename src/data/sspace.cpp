@@ -61,6 +61,15 @@ trace state_space::operator()(int i)
 	return ret;
 }
 
+void state_space::remove(int i)
+{
+	vector<state>::iterator k = states.begin();
+	for (int j = 0; j < i; j++)
+		k++;
+
+	states.erase(k);
+}
+
 //Print the state space to the ostream. e.g. cout << var << endl;
 ostream &operator<<(ostream &os, state_space s)
 {

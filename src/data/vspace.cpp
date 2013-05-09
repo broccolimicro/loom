@@ -187,7 +187,7 @@ bool vspace::vdef(string s)
 	return false;
 }
 
-map<string, string> vspace::instantiate(string parent, bool parent_io, vspace* s, bool io)
+map<string, string> vspace::instantiate(string parent, bool parent_arg, vspace* s, bool arg)
 {
 	if (s == NULL)
 		return map<string, string>();
@@ -198,26 +198,64 @@ map<string, string> vspace::instantiate(string parent, bool parent_io, vspace* s
 	map<string, variable>::iterator i;
 	for (i = s->global.begin(); i != s->global.end(); i++)
 	{
-		if (i->second.io == io)
+		if (i->second.arg == arg)
 		{
 			v = i->second;
 			rename.insert(pair<string, string>(v.name, parent + "." + v.name));
 			v.name = parent + "." + v.name;
 			v.uid = global.size();
-			v.io = parent_io;
+			v.arg = parent_arg;
 			global.insert(pair<string, variable>(v.name, v));
 		}
 	}
 
 	for (i = s->label.begin(); i != s->label.end(); i++)
 	{
-		if (i->second.io == io)
+		if (i->second.arg == arg)
 		{
 			v = i->second;
 			rename.insert(pair<string, string>(v.name, parent + "." + v.name));
 			v.name = parent + "." + v.name;
 			v.uid = label.size();
-			v.io = parent_io;
+			v.arg = parent_arg;
+			label.insert(pair<string, variable>(v.name, v));
+		}
+	}
+
+	return rename;
+}
+
+map<string, string> vspace::call(string parent, bool parent_arg, vspace* s)
+{
+	if (s == NULL)
+		return map<string, string>();
+
+	map<string, string> rename;
+
+	variable v;
+	map<string, variable>::iterator i;
+	for (i = s->global.begin(); i != s->global.end(); i++)
+	{
+		if (i->second.name.find("call") != string::npos)
+		{
+			v = i->second;
+			rename.insert(pair<string, string>(v.name, parent + "." + v.name));
+			v.name = parent + "." + v.name;
+			v.uid = global.size();
+			v.arg = parent_arg;
+			global.insert(pair<string, variable>(v.name, v));
+		}
+	}
+
+	for (i = s->label.begin(); i != s->label.end(); i++)
+	{
+		if (i->second.name.find("call") != string::npos)
+		{
+			v = i->second;
+			rename.insert(pair<string, string>(v.name, parent + "." + v.name));
+			v.name = parent + "." + v.name;
+			v.uid = label.size();
+			v.arg = parent_arg;
 			label.insert(pair<string, variable>(v.name, v));
 		}
 	}
@@ -287,7 +325,7 @@ void vspace::print(string t)
 	for (i = 0; i < global.size(); i++)
 	{
 		v = find((int)i);
-		cout << t << v->type << " " << v->name << " UID:" << v->uid << " IO:" << v->io << "\n";
+		cout << t << v->type << " " << v->name << " UID:" << v->uid << " Arg:" << v->arg << "\n";
 	}
 
 	map<string, variable>::iterator vi;
@@ -302,7 +340,7 @@ ostream &operator<<(ostream &os, vspace s)
 	for (i = 0; i < s.global.size(); i++)
 	{
 		v = s.find((int)i);
-		os << v->type << " " << v->name << " UID:" << v->uid << " IO:" << v->io << "\n";
+		os << v->type << " " << v->name << " UID:" << v->uid << " Arg:" << v->arg << "\n";
 	}
 
 	map<string, variable>::iterator vi;

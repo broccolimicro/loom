@@ -51,28 +51,28 @@ void record::parse(string raw, int verbosity)
 
 	int name_start = chp.find_first_of(" ")+1;
 	int name_end = chp.find_first_of("{");
-	int block_start = chp.find_first_of("{")+1;
-	int block_end = chp.length()-1;
+	int sequential_start = chp.find_first_of("{")+1;
+	int sequential_end = chp.length()-1;
 	string::iterator i, j;
-	string io_block;
+	string io_sequential;
 
 	map<string, variable> expansion;
 
 	name = chp.substr(name_start, name_end - name_start);
-	io_block = chp.substr(block_start, block_end - block_start);
+	io_sequential = chp.substr(sequential_start, sequential_end - sequential_start);
 
 	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 	{
 		cout << "Record: " << chp << endl;
 		cout << "\tName:  " << name << endl;
-		cout << "\tBlock: " << io_block << endl;
+		cout << "\tSequential: " << io_sequential << endl;
 	}
 
-	for (i = io_block.begin(), j = io_block.begin(); i != io_block.end(); i++)
+	for (i = io_sequential.begin(), j = io_sequential.begin(); i != io_sequential.end(); i++)
 	{
 		if (*(i+1) == ';')
 		{
-			expand_instantiation(NULL, io_block.substr(j-io_block.begin(), i+1 - j), &vars, NULL, "\t", verbosity, false);
+			expand_instantiation(NULL, io_sequential.substr(j-io_sequential.begin(), i+1 - j), &vars, NULL, "\t", verbosity, false);
 
 			j = i+2;
 		}

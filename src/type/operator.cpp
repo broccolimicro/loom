@@ -21,12 +21,14 @@ operate::operate()
 {
 	name = "";
 	_kind = "operate";
+	is_inline = true;
 }
 
 operate::operate(string raw, map<string, keyword*> *types, int verbosity)
 {
 	_kind = "operate";
 	vars.types = types;
+	is_inline = true;
 
 	parse(raw, verbosity);
 }
@@ -35,6 +37,7 @@ operate::~operate()
 {
 	name = "";
 	_kind = "operate";
+	is_inline = true;
 
 	vars.clear();
 }
@@ -55,9 +58,9 @@ void operate::parse(string raw, int verbosity)
 	size_t name_end = chp.find_first_of("(");
 	size_t input_start = chp.find_first_of("(")+1;
 	size_t input_end = chp.find_first_of(")");
-	size_t block_start = chp.find_first_of("{")+1;
-	size_t block_end = chp.length()-1;
-	string io_block;
+	size_t sequential_start = chp.find_first_of("{")+1;
+	size_t sequential_end = chp.length()-1;
+	string io_sequential;
 	string::iterator i, j;
 
 	map<string, variable> temp;
@@ -66,35 +69,35 @@ void operate::parse(string raw, int verbosity)
 	list<string>::iterator ii, ij;
 
 	name = chp.substr(name_start, name_end - name_start);
-	io_block = chp.substr(input_start, input_end - input_start);
+	io_sequential = chp.substr(input_start, input_end - input_start);
 
 	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 	{
 		cout << "Operator:\t" << chp << endl;
 		cout << "\tName:\t" << name << endl;
-		cout << "\tInputs:\t" << io_block << endl;
+		cout << "\tInputs:\t" << io_sequential << endl;
 	}
 
-	for (i = io_block.begin(), j = io_block.begin(); i != io_block.end(); i++)
+	for (i = io_sequential.begin(), j = io_sequential.begin(); i != io_sequential.end(); i++)
 	{
-		if (*(i+1) == ',' || i+1 == io_block.end())
+		if (*(i+1) == ',' || i+1 == io_sequential.end())
 		{
-			expand_instantiation(NULL, io_block.substr(j-io_block.begin(), i+1 - j), &vars, &input, "\t", verbosity, false);
+			expand_instantiation(NULL, io_sequential.substr(j-io_sequential.begin(), i+1 - j), &vars, &args, "\t", verbosity, false);
 			j = i+2;
 		}
 	}
 
-	if (input.size() > 3)
+	if (args.size() > 3)
 		cout << "Error: Operators can have at most two inputs and one output." << endl;
 
-	def.init(chp.substr(block_start, block_end - block_start), &vars, "\t", verbosity);
+	def.init(chp.substr(sequential_start, sequential_end - sequential_start), &vars, "\t", verbosity);
 
 	variable *tv;
 
 	name += "(";
-	ij = input.begin();
+	ij = args.begin();
 	ij++;
-	for (ii = ij; ii != input.end(); ii++)
+	for (ii = ij; ii != args.end(); ii++)
 	{
 		if (ii != ij)
 			name += ",";

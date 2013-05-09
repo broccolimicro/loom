@@ -52,10 +52,10 @@ void channel::parse(string chp, int verbosity)
 {
 	int name_start = chp.find_first_of(" ")+1;
 	int name_end = chp.find_first_of("{");
-	int block_start = chp.find_first_of("{")+1;
-	int block_end = chp.length()-1;
+	int sequential_start = chp.find_first_of("{")+1;
+	int sequential_end = chp.length()-1;
 	string::iterator i, j;
-	string io_block;
+	string io_sequential;
 	string raw;
 
 	string s = "", r = "", p = "";
@@ -66,17 +66,17 @@ void channel::parse(string chp, int verbosity)
 	map<string, variable> expansion;
 
 	name = chp.substr(name_start, name_end - name_start);
-	io_block = chp.substr(block_start, block_end - block_start);
+	io_sequential = chp.substr(sequential_start, sequential_end - sequential_start);
 
 	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 	{
 		cout << "Channel: " << chp << endl;
 		cout << "\tName:  " << name << endl;
-		cout << "\tBlock: " << io_block << endl;
+		cout << "\tSequential: " << io_sequential << endl;
 	}
 
 	int depth[3] = {0};
-	for (i = io_block.begin(), j = io_block.begin(); i != io_block.end(); i++)
+	for (i = io_sequential.begin(), j = io_sequential.begin(); i != io_sequential.end(); i++)
 	{
 		if (*i == '(')
 			depth[0]++;
@@ -93,12 +93,12 @@ void channel::parse(string chp, int verbosity)
 
 		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == ';')
 		{
-			expand_instantiation(NULL, io_block.substr(j-io_block.begin(), i - j), &vars, NULL, "\t", verbosity, false);
+			expand_instantiation(NULL, io_sequential.substr(j-io_sequential.begin(), i - j), &vars, NULL, "\t", verbosity, false);
 			j = i+1;
 		}
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == '}')
 		{
-			raw = io_block.substr(j-io_block.begin(), i - j + 1);
+			raw = io_sequential.substr(j-io_sequential.begin(), i - j + 1);
 			if (raw.find("operator!") != raw.npos)
 				s = raw;
 			else if (raw.find("operator?") != raw.npos)

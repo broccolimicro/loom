@@ -18,8 +18,8 @@
 struct variable
 {
 	variable();
-	variable(string name, string type, uint16_t width, bool io);
-	variable(string chp, bool io, string tab, int verbosity);
+	variable(string name, string type, uint16_t width, bool arg);
+	variable(string chp, bool arg, string tab, int verbosity);
 	~variable();
 
 	int			uid;
@@ -29,7 +29,7 @@ struct variable
 	uint16_t	width;		// the bit width of the instantiated variable
 	bool		fixed;		// is the bit width of this variable fixed or variable?
 	bool		driven;		// keep track of whether or not this variable is driven within this process
-	bool		io;			// Is this variable an input variable into a process?
+	bool		arg;		// Is this variable an argument variable into a process?
 
 	list<string> inputs;
 

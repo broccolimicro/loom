@@ -157,9 +157,9 @@ void parallel::parse()
 	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 		cout << tab << "Parallel: " << chp << endl;
 
-	string				raw_instr;	// chp of a sub block
+	string				raw_instr;	// chp of a sub sequential
 	string::iterator	i, j;
-	bool				sequential = false;
+	bool				semicolon = false;
 	int					depth[3] = {0};
 	size_t				k;
 
@@ -181,43 +181,43 @@ void parallel::parse()
 
 		// We are in the current scope, and the current character
 		// is a semicolon or the end of the chp string. This is
-		// the end of a block.
+		// the end of a sequential.
 		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) == '|') || i == chp.end()))
 		{
-			// Get the block string.
+			// Get the sequential string.
 			raw_instr = chp.substr(j-chp.begin(), i-j);
 
-			// This sub block is a set of parallel sub sub blocks. s0 || s1 || ... || sn
-			if (sequential && raw_instr.length() > 0)
-				push(new block(this, raw_instr, vars, tab+"\t", verbosity));
-			// This sub block has a specific order of operations. (s)
+			// This sub sequential is a set of parallel sub sub sequentials. s0 || s1 || ... || sn
+			if (semicolon && raw_instr.length() > 0)
+				push(new sequential(this, raw_instr, vars, tab+"\t", verbosity));
+			// This sub sequential has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')' && raw_instr.length() > 0)
-				push(new block(this, raw_instr.substr(1, raw_instr.length()-2), vars, tab+"\t", verbosity));
-			// This sub block is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
+				push(new sequential(this, raw_instr.substr(1, raw_instr.length()-2), vars, tab+"\t", verbosity));
+			// This sub sequential is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
 				push(new loop(this, raw_instr, vars, tab+"\t", verbosity));
-			// This sub block is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
+			// This sub sequential is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
 				push(new conditional(this, raw_instr, vars, tab+"\t", verbosity));
-			// This sub block is a variable definition. keyword<bitwidth> name
+			// This sub sequential is a variable definition. keyword<bitwidth> name
 			else if (vars->vdef(raw_instr) && raw_instr.length() > 0)
 				push(expand_instantiation(this, raw_instr, vars, NULL, tab+"\t", verbosity, true));
 			else if ((k = raw_instr.find_first_of("?!@")) != raw_instr.npos && raw_instr.find(":=") == raw_instr.npos && raw_instr.length() > 0)
-				push(add_unique_variable(this, "_fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", vars->get_type(raw_instr.substr(0, k)) + ".operator" + raw_instr[k] + "()", vars, tab+"\t", verbosity).second);
-			// This sub block is an assignment instruction.
+				push(add_unique_variable(this, raw_instr.substr(0, k) + "._fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", vars->get_type(raw_instr.substr(0, k)) + ".operator" + raw_instr[k] + "()", vars, tab+"\t", verbosity).second);
+			// This sub sequential is an assignment instruction.
 			else if ((raw_instr.find(":=") != raw_instr.npos || raw_instr[raw_instr.length()-1] == '+' || raw_instr[raw_instr.length()-1] == '-') && raw_instr.length() > 0)
 				push(expand_assignment(this, raw_instr, vars, tab+"\t", verbosity));
 			else if (raw_instr.find("skip") == raw_instr.npos && raw_instr.length() > 0)
 				push(new guard(this, raw_instr, vars, tab, verbosity));
 
 			j = i+2;
-			sequential = false;
+			semicolon = false;
 		}
 		// We are in the current scope, and the current character
 		// is a parallel bar or the end of the chp string. This is
-		// the middle of a parallel sub block.
+		// the middle of a parallel sub sequential.
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && (*i == ';' || i == chp.end()))
-			sequential = true;
+			semicolon = true;
 	}
 }
 
@@ -328,7 +328,7 @@ void parallel::recursive_branch_set(graph *g, int from, pair<int, int> id)
 		from = g->front_edges[from].front();
 	}
 
-	for (i = 0; i < (int)g->front_edges[from].size(); i++)
+	for (i = 0; from < (int)g->front_edges.size() && i < (int)g->front_edges[from].size(); i++)
 		if (g->states[g->front_edges[from][i]].branch.find(id.first) == g->states[g->front_edges[from][i]].branch.end())
 			recursive_branch_set(g, g->front_edges[from][i], id);
 }
@@ -345,7 +345,7 @@ void parallel::insert_instr(int uid, int nid, instruction *instr)
 	instr->uid = nid;
 	instr->from = uid;
 
-	block *b;
+	sequential *b;
 	instruction* j;
 	list<instruction*>::iterator i, k;
 	for (i = instrs.begin(); i != instrs.end(); i++)
@@ -353,9 +353,9 @@ void parallel::insert_instr(int uid, int nid, instruction *instr)
 		j = *i;
 		if (j->uid == uid)
 		{
-			if (j->kind() != "block")
+			if (j->kind() != "sequential")
 			{
-				b = new block();
+				b = new sequential();
 				b->from = j->from;
 				b->instrs.push_back(j);
 				b->chp = j->chp + ";" + instr->chp;
@@ -368,7 +368,7 @@ void parallel::insert_instr(int uid, int nid, instruction *instr)
 				instrs.push_back(b);
 			}
 			else
-				b = (block*)j;
+				b = (sequential*)j;
 
 			b->instrs.push_back(instr);
 			b->uid = nid;
@@ -387,8 +387,8 @@ void parallel::insert_instr(int uid, int nid, instruction *instr)
 			((conditional*)j)->insert_instr(uid, nid, instr);
 		else if (j->kind() == "guard")
 			((guard*)j)->insert_instr(uid, nid, instr);
-		else if (j->kind() == "block")
-			((block*)j)->insert_instr(uid, nid, instr);
+		else if (j->kind() == "sequential")
+			((sequential*)j)->insert_instr(uid, nid, instr);
 		else if (j->kind() == "assignment")
 			((assignment*)j)->insert_instr(uid, nid, instr);
 	}
@@ -421,17 +421,17 @@ void parallel::push(instruction *i)
 		return;
 
 	list<instruction*>::iterator j;
-	if (i->kind() == "block")
+	if (i->kind() == "sequential")
 	{
-		if (((block*)i)->instrs.size() <= 1)
+		if (((sequential*)i)->instrs.size() <= 1)
 		{
-			for (j = ((block*)i)->instrs.begin(); j != ((block*)i)->instrs.end(); j++)
+			for (j = ((sequential*)i)->instrs.begin(); j != ((sequential*)i)->instrs.end(); j++)
 			{
 				(*j)->parent = this;
 				push(*j);
 			}
-			((block*)i)->instrs.clear();
-			delete (block*)i;
+			((sequential*)i)->instrs.clear();
+			delete (sequential*)i;
 		}
 		else
 			instrs.push_back(i);

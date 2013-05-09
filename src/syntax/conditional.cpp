@@ -37,7 +37,7 @@ conditional::~conditional()
 	_kind = "conditional";
 	type = unknown;
 
-	list<pair<block*, guard*> >::iterator i;
+	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		if (i->first != NULL)
@@ -117,9 +117,9 @@ instruction *conditional::duplicate(instruction *parent, vspace *vars, map<strin
 			k = instr->chp.npos;
 	}
 
-	list<pair<block*, guard*> >::iterator l;
+	list<pair<sequential*, guard*> >::iterator l;
 	for (l = instrs.begin(); l != instrs.end(); l++)
-		instr->instrs.push_back(pair<block*, guard*>((block*)l->first->duplicate(instr, vars, convert, tab+"\t", verbosity), (guard*)l->second->duplicate(instr, vars, convert, tab+"\t", verbosity)));
+		instr->instrs.push_back(pair<sequential*, guard*>((sequential*)l->first->duplicate(instr, vars, convert, tab+"\t", verbosity), (guard*)l->second->duplicate(instr, vars, convert, tab+"\t", verbosity)));
 
 	return instr;
 }
@@ -128,7 +128,7 @@ state conditional::variant()
 {
 	state result(value("_"), vars->global.size());
 
-	list<pair<block*, guard*> >::iterator i;
+	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		result = result || i->first->variant();
@@ -141,7 +141,7 @@ state conditional::active_variant()
 {
 	state result(value("_"), vars->global.size());
 
-	list<pair<block*, guard*> >::iterator i;
+	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		result = result || i->first->active_variant();
@@ -154,7 +154,7 @@ state conditional::passive_variant()
 {
 	state result(value("_"), vars->global.size());
 
-	list<pair<block*, guard*> >::iterator i;
+	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		result = result || i->first->passive_variant();
@@ -193,7 +193,7 @@ void conditional::expand_shortcuts()
 void conditional::parse()
 {
 	string::iterator i, j, k;
-	string guardstr, blockstr;
+	string guardstr, sequentialstr;
 	bool guarded = true;
 
 	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
@@ -225,12 +225,12 @@ void conditional::parse()
 			else if (type == mutex)
 				cout << "Error: A conditional can either be mutually exclusive or choice, but not both." << endl;
 
-			blockstr = chp.substr(j-chp.begin(), i-j);
-			k = blockstr.find("->") + blockstr.begin();
-			guardstr = blockstr.substr(0, k-blockstr.begin());
-			blockstr = blockstr.substr(k-blockstr.begin()+2);
+			sequentialstr = chp.substr(j-chp.begin(), i-j);
+			k = sequentialstr.find("->") + sequentialstr.begin();
+			guardstr = sequentialstr.substr(0, k-sequentialstr.begin());
+			sequentialstr = sequentialstr.substr(k-sequentialstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block(this, blockstr, vars, tab+"\t", verbosity), new guard(this, guardstr, vars, tab+"\t", verbosity)));
+			instrs.push_back(pair<sequential*, guard*>(new sequential(this, sequentialstr, vars, tab+"\t", verbosity), new guard(this, guardstr, vars, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 		}
@@ -243,12 +243,12 @@ void conditional::parse()
 			else if (type == choice)
 				cout << "Error: A conditional can either be mutually exclusive or choice, but not both." << endl;
 
-			blockstr = chp.substr(j-chp.begin(), i-j);
-			k = blockstr.find("->") + blockstr.begin();
-			guardstr = blockstr.substr(0, k-blockstr.begin());
-			blockstr = blockstr.substr(k-blockstr.begin()+2);
+			sequentialstr = chp.substr(j-chp.begin(), i-j);
+			k = sequentialstr.find("->") + sequentialstr.begin();
+			guardstr = sequentialstr.substr(0, k-sequentialstr.begin());
+			sequentialstr = sequentialstr.substr(k-sequentialstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block(this, blockstr, vars, tab+"\t", verbosity), new guard(this, guardstr, vars, tab+"\t", verbosity)));
+			instrs.push_back(pair<sequential*, guard*>(new sequential(this, sequentialstr, vars, tab+"\t", verbosity), new guard(this, guardstr, vars, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}
@@ -259,13 +259,13 @@ void conditional::parse()
 
 void conditional::merge()
 {
-	list<pair<block*, guard*> >::iterator i, j;
+	list<pair<sequential*, guard*> >::iterator i, j;
 	list<instruction*>::iterator ii;
-	block *copy;
-	block *nblock;
+	sequential *copy;
+	sequential *nsequential;
 	guard *nguard;
 	conditional *front;
-	list<pair<block*, guard*> > add;
+	list<pair<sequential*, guard*> > add;
 
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
@@ -277,15 +277,15 @@ void conditional::merge()
 			j = front->instrs.begin();
 			for (j++; j != front->instrs.end(); j++)
 			{
-				nblock = j->first;
-				copy = (block*)i->first->duplicate(this, vars, map<string, string>(), tab, verbosity);
+				nsequential = j->first;
+				copy = (sequential*)i->first->duplicate(this, vars, map<string, string>(), tab, verbosity);
 				for (ii = copy->instrs.begin(); ii != copy->instrs.end(); ii++)
-					nblock->instrs.push_back(*ii);
+					nsequential->instrs.push_back(*ii);
 				copy->instrs.clear();
 				delete copy;
 				nguard = j->second;
 				nguard->chp = expression("(" + i->second->chp + ")&(" + nguard->chp + ")").simple;
-				add.push_back(pair<block*, guard*>(nblock, nguard));
+				add.push_back(pair<sequential*, guard*>(nsequential, nguard));
 			}
 			j = front->instrs.begin();
 
@@ -313,7 +313,7 @@ void conditional::merge()
 
 int conditional::generate_states(graph *g, int init, state filter)
 {
-	list<pair<block*, guard*> >::iterator instr_iter;
+	list<pair<sequential*, guard*> >::iterator instr_iter;
 	vector<int> state_catcher;
 	vector<string> chp_catcher;
 	state s;
@@ -347,7 +347,7 @@ int conditional::generate_states(graph *g, int init, state filter)
 
 state conditional::simulate_states(state init, state filter)
 {
-	list<pair<block*, guard*> >::iterator instr_iter;
+	list<pair<sequential*, guard*> >::iterator instr_iter;
 	state s;
 
 	if (filter.size() == 0)
@@ -361,7 +361,7 @@ state conditional::simulate_states(state init, state filter)
 
 void conditional::generate_scribes()
 {
-	list<pair<block*, guard*> >::iterator i;
+	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		i->second->generate_scribes();
@@ -374,7 +374,7 @@ void conditional::insert_instr(int uid, int nid, instruction *instr)
 	instr->uid = nid;
 	instr->from = uid;
 
-	list<pair<block*, guard*> >::iterator i, k;
+	list<pair<sequential*, guard*> >::iterator i, k;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		if (i->second->uid == uid)
@@ -403,7 +403,7 @@ void conditional::print_hse(string t)
 	if (instrs.size() > 1)
 		cout << "\t";
 
-	list<pair<block*, guard*> >::iterator i;
+	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		if (i != instrs.begin() && type == mutex)

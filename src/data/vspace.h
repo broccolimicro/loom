@@ -39,7 +39,8 @@ struct vspace
 
 	bool vdef(string str);
 
-	map<string, string> instantiate(string parent, bool parent_io, vspace* s, bool io);
+	map<string, string> instantiate(string parent, bool parent_arg, vspace* s, bool arg);
+	map<string, string> call(string parent, bool parent_arg, vspace* s);
 
 	int insert(variable v);
 	void clear();

@@ -11,9 +11,9 @@
 #ifndef parallel_h
 #define parallel_h
 
-#include "block.h"
+#include "sequential.h"
 
-struct parallel : block
+struct parallel : sequential
 {
 	parallel();
 	parallel(instruction *parent, string chp, vspace *vars, string tab, int verbosity);

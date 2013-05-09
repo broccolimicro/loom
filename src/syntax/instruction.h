@@ -12,7 +12,7 @@
 #include "../type/keyword.h"
 
 /* This structure describes an instruction in the chp program, namely what lies between
- * two semicolons in a block of. This has not been expanded to ;S1||S2; type of composition.
+ * two semicolons in a sequential of. This has not been expanded to ;S1||S2; type of composition.
  */
 struct instruction
 {

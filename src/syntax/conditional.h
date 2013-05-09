@@ -4,7 +4,7 @@
  * A conditional is a fundamental CHP syntax that takes the form [G1->S1[]G2->S2]
  * Where G1 and G2 are guards and S1 and S2 are statements to execute. If G1 evaluates.
  * S1 is to execute. If G2 evaluates, S2 is to execute. If neither guard evaluates,
- * the statement is to block until one of the guards does evaluate. The environment guarantees
+ * the statement is to sequential until one of the guards does evaluate. The environment guarantees
  * mutual exclusion for [] (deterministic selection). Nondeterministic selection is yet to be
  * implemented. TODO: Description on what conditional programatically does.
  */
@@ -13,7 +13,7 @@
 #define conditional_h
 
 #include "guard.h"
-#include "block.h"
+#include "sequential.h"
 #include "parallel.h"
 
 enum conditional_type
@@ -30,7 +30,7 @@ struct conditional : parallel
 	~conditional();
 
 	conditional_type type;
-	list<pair<block*, guard*> > instrs;		//Guards index instructions
+	list<pair<sequential*, guard*> > instrs;		//Guards index instructions
 
 	conditional &operator=(conditional c);
 

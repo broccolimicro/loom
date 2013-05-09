@@ -31,6 +31,7 @@ struct state_space
 	state &operator[](int i);
 	trace operator()(int i);
 
+	void remove(int i);
 };
 
 ostream &operator<<(ostream &os, state_space s);

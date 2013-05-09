@@ -33,24 +33,34 @@ instruction *expand_instantiation(instruction *parent, string chp, vspace *vars,
 		{
 			if (allow_process)
 			{
-				rename = vars->instantiate(v.name, !allow_process, &(((process*)type)->vars), false);
+				process *p = (process*)type;
 
-				if (v.type.find_first_of("!?@") != v.type.npos && v.name.find_first_of(".") != v.name.npos)
+				if (p->is_inline)
 				{
-					string chname = v.name.substr(0, v.name.find_first_of("."));
-					string chtype = v.type.substr(0, v.type.find_first_of("."));
-					keyword* ch = vars->find_type(chtype);
-					if (ch != NULL)
+					rename = vars->instantiate(v.name, !allow_process, &(p->vars), false);
+
+					if (v.type.find_first_of("!?@") != v.type.npos && v.name.find_first_of(".") != v.name.npos)
 					{
-						rename2 = vars->instantiate(chname, !allow_process, &(((channel*)ch)->vars), true);
-						rename.insert(rename2.begin(), rename2.end());
+						string chname = v.name.substr(0, v.name.find_first_of("."));
+						string chtype = v.type.substr(0, v.type.find_first_of("."));
+						keyword* ch = vars->find_type(chtype);
+						if (ch != NULL)
+						{
+							rename2 = vars->instantiate(chname, !allow_process, &(((channel*)ch)->vars), true);
+							rename.insert(rename2.begin(), rename2.end());
+						}
 					}
+
+					for (i = v.inputs.begin(), j = p->args.begin(); i != v.inputs.end() && j != p->args.end(); i++, j++)
+						rename.insert(pair<string, string>(*j, *i));
+
+					return p->def.duplicate(parent, vars, rename, tab, verbosity);
 				}
-
-				for (i = v.inputs.begin(), j = ((process*)type)->input.begin(); i != v.inputs.end() && j != ((process*)type)->input.end(); i++, j++)
-					rename.insert(pair<string, string>(*j, *i));
-
-				return ((process*)type)->def.duplicate(parent, vars, rename, tab, verbosity);
+				else
+				{
+					rename = vars->call(v.name, !allow_process, &(p->vars));
+					return new sequential(parent, v.name + ".call.r+;[" + v.name + ".call.a];" + v.name + ".call.r-;[~" + v.name + ".call.a];", vars, tab, verbosity);
+				}
 			}
 			else
 				cout << "Error: Invalid use of type " << type->kind() << " in record definition." << endl;

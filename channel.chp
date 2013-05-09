@@ -39,7 +39,7 @@ channel achan4p1b
 	
 	operator?(int<1> i)
 	{
-		[r.t | r.f]; i := r.t; a+; [~r.t & ~r.f]; a-;
+		[r.t | r.f]; i := r.t & ~r.f; a+; [~r.t & ~r.f]; a-;
 	}
 	
 	operator@()

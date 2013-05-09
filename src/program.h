@@ -22,12 +22,6 @@ struct program
 	~program();
 
 	map<string, keyword*>	type_space;
-	vector<rule>			prs;
-	list<string>			errors;
-	vspace					vars;
-	graph					space;
-	parallel				*prgm;
-
 	int verbosity;
 
 	program &operator=(program p);
@@ -44,7 +38,10 @@ struct program
 	void insert_state_vars();
 	void generate_prs();
 	void factor_prs();
+
+	void print_hse();
 	void print_prs();
+	void print_TS();
 };
 
 #endif

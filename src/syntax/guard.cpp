@@ -172,7 +172,7 @@ int guard::generate_states(graph *g, int init, state filter)
 	temp = estimate(chp, vars);
 	for (int i = 0; i < temp.size(); i++)
 	{
-		if (temp[i].data == "X" && g->states[init][i].data != "X")
+		if (temp[i].data == "X" && (g->states[init][i].data == "0" || g->states[init][i].data == "1"))
 		{
 			vname = vars->get_name(i);
 			k = 0;
@@ -194,12 +194,24 @@ int guard::generate_states(graph *g, int init, state filter)
 	// Choice 3
 	//g->states[init] = g->states[init] && solve(expression("~(" + chp + ")").simple, vars, "", -1);
 
-	s = (g->states[init] || filter) && solve(chp, vars, tab, verbosity);
+	temp = solve(chp, vars, tab, verbosity);
+
+	string edge = "";
+	for (int i = 0; i < temp.values.size(); i++)
+	{
+		vname = vars->get_name(i);
+		if (temp.values[i].data == "1")
+			edge += vname + "+ ";
+		else if (temp.values[i].data == "0")
+			edge += vname + "- ";
+	}
+
+	s = (g->states[init] || filter) && temp;
 
 	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
 		cout << tab << s << endl;
 
-	uid = g->append_state(s, init, CHP_EDGE ? (chp + "->") : "Guard");
+	uid = g->append_state(s, init, edge);//CHP_EDGE ? (chp + "->") : "Guard");
 
 	return uid;
 }

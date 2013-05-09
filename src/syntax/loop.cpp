@@ -108,9 +108,9 @@ instruction *loop::duplicate(instruction *parent, vspace *vars, map<string, stri
 			k = instr->chp.npos;
 	}
 
-	list<pair<block*, guard*> >::iterator l;
+	list<pair<sequential*, guard*> >::iterator l;
 	for (l = instrs.begin(); l != instrs.end(); l++)
-		instr->instrs.push_back(pair<block*, guard*>((block*)l->first->duplicate(instr, vars, convert, tab+"\t", verbosity), (guard*)l->second->duplicate(instr, vars, convert, tab+"\t", verbosity)));
+		instr->instrs.push_back(pair<sequential*, guard*>((sequential*)l->first->duplicate(instr, vars, convert, tab+"\t", verbosity), (guard*)l->second->duplicate(instr, vars, convert, tab+"\t", verbosity)));
 
 	return instr;
 }
@@ -119,7 +119,7 @@ state loop::variant()
 {
 	state result(value("_"), vars->global.size());
 
-	list<pair<block*, guard*> >::iterator i;
+	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		result = result || i->first->variant();
@@ -132,7 +132,7 @@ state loop::active_variant()
 {
 	state result(value("_"), vars->global.size());
 
-	list<pair<block*, guard*> >::iterator i;
+	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		result = result || i->first->active_variant();
@@ -145,7 +145,7 @@ state loop::passive_variant()
 {
 	state result(value("_"), vars->global.size());
 
-	list<pair<block*, guard*> >::iterator i;
+	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		result = result || i->first->passive_variant();
@@ -183,7 +183,7 @@ void loop::expand_shortcuts()
 
 void loop::parse()
 {
-	string guardstr, blockstr;
+	string guardstr, sequentialstr;
 
 	string::iterator i, j, k;
 
@@ -214,12 +214,12 @@ void loop::parse()
 			else if (type == mutex)
 				cout << "Error: A loop can either be mutually exclusive or choice, but not both." << endl;
 
-			blockstr = chp.substr(j-chp.begin(), i-j);
-			k = blockstr.find("->") + blockstr.begin();
-			guardstr = blockstr.substr(0, k-blockstr.begin());
-			blockstr = blockstr.substr(k-blockstr.begin()+2);
+			sequentialstr = chp.substr(j-chp.begin(), i-j);
+			k = sequentialstr.find("->") + sequentialstr.begin();
+			guardstr = sequentialstr.substr(0, k-sequentialstr.begin());
+			sequentialstr = sequentialstr.substr(k-sequentialstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block(this, blockstr, vars, tab+"\t", verbosity), new guard(this, guardstr, vars, tab+"\t", verbosity)));
+			instrs.push_back(pair<sequential*, guard*>(new sequential(this, sequentialstr, vars, tab+"\t", verbosity), new guard(this, guardstr, vars, tab+"\t", verbosity)));
 			j = i+1;
 			guarded = true;
 		}
@@ -232,12 +232,12 @@ void loop::parse()
 			else if (type == choice)
 				cout << "Error: A loop can either be mutually exclusive or choice, but not both." << endl;
 
-			blockstr = chp.substr(j-chp.begin(), i-j);
-			k = blockstr.find("->") + blockstr.begin();
-			guardstr = blockstr.substr(0, k-blockstr.begin());
-			blockstr = blockstr.substr(k-blockstr.begin()+2);
+			sequentialstr = chp.substr(j-chp.begin(), i-j);
+			k = sequentialstr.find("->") + sequentialstr.begin();
+			guardstr = sequentialstr.substr(0, k-sequentialstr.begin());
+			sequentialstr = sequentialstr.substr(k-sequentialstr.begin()+2);
 
-			instrs.push_back(pair<block*, guard*>(new block(this, blockstr, vars, tab+"\t", verbosity), new guard(this, guardstr, vars, tab+"\t", verbosity)));
+			instrs.push_back(pair<sequential*, guard*>(new sequential(this, sequentialstr, vars, tab+"\t", verbosity), new guard(this, guardstr, vars, tab+"\t", verbosity)));
 			j = i+2;
 			guarded = true;
 		}
@@ -248,7 +248,7 @@ void loop::parse()
 
 void loop::merge()
 {
-	list<pair<block*, guard*> >::iterator i;
+	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		i->second->merge();
@@ -258,7 +258,7 @@ void loop::merge()
 
 int loop::generate_states(graph *g, int init, state filter)
 {
-	list<pair<block*, guard*> >::iterator instr_iter;
+	list<pair<sequential*, guard*> >::iterator instr_iter;
 	vector<int> state_catcher;
 	vector<string> chp_catcher;
 	int guardresult;
@@ -305,7 +305,7 @@ int loop::generate_states(graph *g, int init, state filter)
 
 state loop::simulate_states(state init, state filter)
 {
-	list<pair<block*, guard*> >::iterator instr_iter;
+	list<pair<sequential*, guard*> >::iterator instr_iter;
 	string exp = "";
 	state s, v;
 
@@ -329,7 +329,7 @@ state loop::simulate_states(state init, state filter)
 
 void loop::generate_scribes()
 {
-	list<pair<block*, guard*> >::iterator i;
+	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		i->second->generate_scribes();
@@ -342,7 +342,7 @@ void loop::insert_instr(int uid, int nid, instruction *instr)
 	instr->uid = nid;
 	instr->from = uid;
 
-	list<pair<block*, guard*> >::iterator i, k;
+	list<pair<sequential*, guard*> >::iterator i, k;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		if (i->second->uid == uid)
@@ -366,7 +366,7 @@ void loop::insert_instr(int uid, int nid, instruction *instr)
 void loop::print_hse(string t)
 {
 	cout << "\n" << t << "*[";
-	list<pair<block*, guard*> >::iterator i;
+	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		if (i != instrs.begin() && type == mutex)

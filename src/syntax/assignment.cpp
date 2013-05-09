@@ -5,6 +5,8 @@
 #include "../data.h"
 
 #include "assignment.h"
+#include "parallel.h"
+#include "conditional.h"
 
 assignment::assignment()
 {
@@ -165,6 +167,15 @@ instruction *assignment::duplicate(instruction *parent, vspace *vars, map<string
 		}
 	}
 
+	list<pair<string, string> >::iterator ei;
+	variable *ev;
+	for (ei = instr->expr.begin(); ei != instr->expr.end(); ei++)
+	{
+		ev = vars->find(ei->first);
+		if (ev != NULL)
+			ev->driven = true;
+	}
+
 	return instr;
 }
 
@@ -245,7 +256,7 @@ void assignment::parse()
 	string left, right;
 	variable *v;
 
-	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
+	if ((verbosity & VERB_BASE_HSE) && (verbosity & VERB_DEBUG))
 		cout << tab << "Assignment:\t" + chp << endl;
 
 	// Identify that this instruction is an assign.
@@ -292,7 +303,7 @@ int assignment::generate_states(graph *g, int init, state filter)
 	state s;
 	int i;
 
-	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
+	if ((verbosity & VERB_BASE_STATE_SPACE) && (verbosity & VERB_DEBUG))
 		cout << tab << "Assignment " << chp << endl;
 
 	if (filter.size() == 0)
@@ -326,10 +337,14 @@ int assignment::generate_states(graph *g, int init, state filter)
 			cout << "Error: Undefined variable " << ei->first << "." << endl;
 	}
 
-	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
+	if ((verbosity & VERB_BASE_STATE_SPACE) && (verbosity & VERB_DEBUG))
 		cout << tab << s << endl;
 
-	uid	= g->append_state(s, init, CHP_EDGE ? chp : "Assign");
+	string edge = "";
+	for (ei = expr.begin(); ei != expr.end(); ei++)
+		edge += ei->first + (ei->second == "1" ? "+ " : "- ");
+
+	uid	= g->append_state(s, init, edge);
 
 	return uid;
 }
@@ -400,7 +415,8 @@ instruction *expand_assignment(instruction *parent, string chp, vspace *vars, st
 		}
 		else if (v != NULL)
 		{
-			cout << "LOOKHERE " << v->name << " " << v->width << endl;
+			p->push(new conditional(p, "[" + i->second + "->" + i->first + "+[]~" + i->second + "->" + i->first + "-]", vars, tab, verbosity));
+			remove.push_back(*i);
 		}
 	}
 
@@ -423,7 +439,7 @@ instruction *expand_assignment(instruction *parent, string chp, vspace *vars, st
 
 pair<string, instruction*> expand_expression(string chp, vspace *vars, string top, string tab, int verbosity)
 {
-	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
+	if ((verbosity & VERB_BASE_HSE) && (verbosity & VERB_DEBUG))
 		cout << tab << "Decompose: " << chp << endl;
 
 	map<string, variable>::iterator v;
@@ -679,7 +695,7 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 		return pair<string, instruction*>(chp, NULL);
 	}
 
-	block* ret = new block();
+	sequential* ret = new sequential();
 	parallel *sub = new parallel();
 
 	string name = vars->unique_name("_fn");
@@ -689,7 +705,7 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 	name += "(";
 	if (top == "")
 	{
-		C = add_unique_variable(ret, "_op", "", proc->vars.get_info(proc->input.front()), vars, tab+"\t", verbosity);
+		C = add_unique_variable(ret, "_op", "", proc->vars.get_info(proc->args.front()), vars, tab+"\t", verbosity);
 		//cout << "YO DUERFEW EWFFEW EFWEFEWF " << proc->vars.get_info(proc->input.front()) << endl;
 		name += C.first;
 	}
