@@ -622,6 +622,26 @@ void graph::print_dot()
 	outputGraph.close();
 }
 
+void graph::print_TS(vspace *v)
+{
+	ofstream fout;
+	fout.open("graph.g");
+
+	fout << ".inputs " << endl;
+	fout << ".outputs " << endl;
+
+	fout << ".graph" << endl;
+	for (int i = 0; i < front_edges.size(); i++)
+		for (int j = 0; j < front_edges[i].size(); j++)
+			for (int k = 0; k < )
+
+	fout << ".marking {<";
+	fout << ">}" << endl;
+	fout << ".end" << endl;
+
+	fout.close();
+}
+
 //TODO: Is it proper that we are printing a statespace as the default << of a graph,
 //given all the info it contains?
 ostream &operator<<(ostream &os, graph g)

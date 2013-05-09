@@ -66,6 +66,7 @@ struct graph
 	void print_conflicts();
 	void print_firings(vspace *v);
 	void print_dot();
+	void print_TS(vspace *v);
 };
 
 ostream &operator<<(ostream &os, graph g);
