@@ -1,7 +1,5 @@
-#include "ref.h"
-#include <vector>
-
-using namespace std;
+#include "ptr.h"
+#include "../common.h"
 
 #ifndef matrix_h
 #define matrix_h
@@ -11,32 +9,38 @@ struct matrix
 {
 	matrix()
 	{
+		this->h = 0;
+		this->v = 0;
 	}
 
 	matrix(int h)
 	{
-		data.resize(h);
+		this->h = h;
+		this->v = 0;
+		data.resize(h, vector<t>());
 	}
 
 	matrix(int h, int v)
 	{
-		data.resize(h);
-		for (int i = 0; i < h; i++)
-			data[i].resize(v);
+		this->h = h;
+		this->v = v;
+		data.resize(h, vector<t>(v, (t)0));
 	}
 
 	~matrix()
 	{
-
 	}
 
 	vector<vector<t> > data;
+	int h, v;
 
 	template <class t2>
 	matrix<t> &operator=(matrix<t2> m)
 	{
 		data.clear();
 		data = m.data;
+		h = m.h;
+		v = m.v;
 		return *this;
 	}
 
@@ -59,9 +63,9 @@ struct matrix
 		return data[index];
 	}
 
-	vector<ref<t> > operator()(int index)
+	vector<ptr<t> > operator()(int index)
 	{
-		vector<ref<t> > result(data.size());
+		vector<ptr<t> > result(data.size());
 
 		for (int i = 0; i < data.size(); i++)
 			result[i].value = &(data[i][index]);
@@ -69,34 +73,22 @@ struct matrix
 		return result;
 	}
 
-	matrix<ref<t> > operator()(int a, int b)
+	matrix<ptr<t> > operator()(int a, int b)
 	{
-		matrix<ref<t> > result(b-a+1);
+		matrix<ptr<t> > result(b-a+1);
 
 		for (int i = a; i <= b; i++)
 			result.data[i-a] = data[i];
 		return result;
 	}
 
-	matrix<ref<t> > operator()(int a, int b, int c, int d)
+	matrix<ptr<t> > operator()(int a, int b, int c, int d)
 	{
-		matrix<ref<t> > result(b-a+1, c-d+1);
+		matrix<ptr<t> > result(b-a+1, c-d+1);
 
 		for (int i = a; i <= b; i++)
 			for (int j = c; j <= d; j++)
 				result.data[i-a][j-c] = data[i][j];
-
-		return result;
-	}
-
-	matrix<t> remove(int y, int x)
-	{
-		matrix<t> result(data.size(), data[0].size());
-		int i, j, a, b;
-
-		for (i = 0, a = 0; i < data.size(); i == y ? i+=2 : i++, a++)
-			for (j = 0, b = 0; j < data[i].size(); j == x ? j+=2 : i++, b++)
-				result[a][b] = data[i][j];
 
 		return result;
 	}
@@ -106,6 +98,19 @@ struct matrix
 		vector<t> temp = data[a];
 		data[a] = data[b];
 		data[b] = temp;
+		return *this;
+	}
+
+	matrix<t> &remr(int r)
+	{
+		typename vector<t>::iterator i;
+		int j, k;
+		for (k = 0; k < (int)data.size(); k++)
+		{
+			for (i = data[k].begin(), j = 0; i != data[k].end() && j < r; i++, j++);
+
+			data[k].erase(i);
+		}
 		return *this;
 	}
 
@@ -121,10 +126,45 @@ struct matrix
 		return *this;
 	}
 
+	matrix<t> &remc(int c)
+	{
+		typename vector<vector<t> >::iterator i;
+		int j;
+		for (i = data.begin(), j = 0; i != data.end() && j < c; i++, j++);
+		data.erase(i);
+		return *this;
+	}
+
+	matrix<t> &addr()
+	{
+		v++;
+		for (size_t i = 0; i < data.size(); i++)
+			data[i].resize(v+1, (t)0);
+
+		return *this;
+	}
+
+	matrix<t> &addc()
+	{
+		h++;
+		data.resize(h+1, vector<t>(v, (t)0));
+		return *this;
+	}
+
+	size_t size()
+	{
+		return data.size();
+	}
+
 	void print(FILE *file)
 	{
-		for (int i = 0; i < data.size(); i++)
-			data[i].print(file);
+		for (int i = 0; i < (int)data.size(); i++)
+		{
+			fprintf(file, "[");
+			for (int j = 0; j < (int)data[i].size(); j++)
+				fprintf(file, "%d ", data[i][j]);
+			fprintf(file, "]\n");
+		}
 		fprintf(file, "\n");
 	}
 

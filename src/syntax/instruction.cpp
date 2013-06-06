@@ -17,10 +17,8 @@
 instruction::instruction()
 {
 	parent = NULL;
-	from = -1;
-	uid = -1;
 	vars = NULL;
-	space = NULL;
+	net = NULL;
 	chp = "";
 	tab = "";
 	_kind = "instruction";

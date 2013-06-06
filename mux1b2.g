@@ -1,66 +1,264 @@
 .model mux1b2
-.inputs A.r.f A.r.t B.r.f B.r.t O.a S.r.f S.r.t call.r
-.outputs A.a B.a O.r.f O.r.t S.a call.a
+.inputs A.r.f A.r.t B.r.f B.r.t O.a S.r.f S.r.t
+.outputs A.a B.a O.r.f O.r.t S.a
 .internal o s
+.dummy T0 T1 T3 T4 T6 T8 T9 T10 T12 T13 T14 T15 T17 T18 T19 T21 T23 T24 T25 T27 T28 T31 T32 T35 T36 T37 T40 T41 T42 T43 T44 T45 T47 T48 T49 T51 T53 T54 T55 T57 T58 T61 T62 T65 T66 T67 T70 T71 T72 T73 T74
 .graph
-call.r+ call.a+ 
-call.a+ 
-
-1->
-S.r.f- S.r.t+ 
-S.r.f- S.r.t+ s+ 
-s+ s+
-s- 
-s- s-
-s+S.a+ 
-s-S.a+ 
-S.a+ S.r.f- S.r.t- 
-S.r.f- S.r.t- S.a- 
-S.a- s- s+ 
-s- 
-A.r.f- A.r.t+ 
-A.r.f- A.r.t+ o+ 
-o+ o+
-o- 
-o- o-
-o+A.a+ 
-o-A.a+ 
-A.a+ A.r.f- A.r.t- 
-A.r.f- A.r.t- A.a- 
-A.a- o+ o- 
-o+ O.r.t+ O.r.f- 
-O.r.t+ O.r.f- O.r.t,O.r.f:=1,0
-o- O.r.t- O.r.f+ 
-O.r.t- O.r.f+ O.r.t,O.r.f:=0,1
-O.r.t,O.r.f:=1,0O.a+ 
-O.r.t,O.r.f:=0,1O.a+ 
-O.a+ O.r.t- O.r.f- 
-O.r.t- O.r.f- O.a- 
-O.a- A?o;O!o
-s+ 
-B.r.f- B.r.t+ 
-B.r.f- B.r.t+ o+ 
-o+ o+
-o- 
-o- o-
-o+B.a+ 
-o-B.a+ 
-B.a+ B.r.f- B.r.t- 
-B.r.f- B.r.t- B.a- 
-B.a- o+ o- 
-o+ O.r.t+ O.r.f- 
-O.r.t+ O.r.f- O.r.t,O.r.f:=1,0
-o- O.r.t- O.r.f+ 
-O.r.t- O.r.f+ O.r.t,O.r.f:=0,1
-O.r.t,O.r.f:=1,0O.a+ 
-O.r.t,O.r.f:=0,1O.a+ 
-O.a+ O.r.t- O.r.f- 
-O.r.t- O.r.f- O.a- 
-O.a- B?o;O!o
-A?o;O!o1->Block
-B?o;O!o1->Block
-1->Block1->call.r- 
-call.r- call.a- 
-call.a- [call.r];call.a+;(int<1>s;int<1>o;*[S?s;[~s->A?o;O!o[]s->B?o;O!o];]);[~call.r];call.a-
-.marking {<>}
+T15 S2
+T24 S2
+A.r.f- S2
+T14 S3
+T19 S3
+A.r.f+ S3
+T18 S4
+T24 S4
+A.r.t- S4
+T13 S5
+T15 S5
+A.r.t+ S5
+T45 S8
+T54 S8
+B.r.f- S8
+T44 S9
+T49 S9
+B.r.f+ S9
+T48 S10
+T54 S10
+B.r.t- S10
+T43 S11
+T45 S11
+B.r.t+ S11
+T41 S12
+T71 S12
+O.a- S12
+T36 S13
+T66 S13
+O.a+ S13
+T1 S20
+T9 S20
+S.r.f- S20
+T4 S21
+S.r.f+ S21
+T9 S22
+S.r.t- S22
+T1 S23
+S.r.t+ S23
+T32 S24
+T62 S24
+T28 S25
+T58 S25
+T13 S26
+T14 S26
+T43 S27
+T44 S27
+T42 S28
+T72 S28
+T74 S28
+T0 S29
+T1 S30
+s+ S31
+T4 S32
+s- S33
+T3 S34
+T6 S34
+S.a+ S35
+T8 S36
+T9 S37
+T10 S38
+S.a- S39
+T12 S40
+T13 S41
+T14 S41
+T15 S42
+o+ S43
+T18 S44
+T19 S44
+o- S45
+T17 S46
+T21 S46
+A.a+ S47
+T23 S48
+T24 S49
+T25 S50
+A.a- S51
+T27 S52
+T28 S53
+T28 S54
+O.r.t+ S55
+O.r.f- S56
+T32 S57
+T32 S58
+O.r.t- S59
+O.r.f+ S60
+T31 S61
+T35 S61
+T36 S62
+T37 S63
+T37 S64
+O.r.t-/1 S65
+O.r.f-/1 S66
+T40 S67
+T41 S68
+T43 S69
+T44 S69
+T45 S70
+o+/1 S71
+T48 S72
+T49 S72
+o-/1 S73
+T47 S74
+T51 S74
+B.a+ S75
+T53 S76
+T54 S77
+T55 S78
+B.a- S79
+T57 S80
+T58 S81
+T58 S82
+O.r.t+/1 S83
+O.r.f-/2 S84
+T62 S85
+T62 S86
+O.r.t-/2 S87
+O.r.f+/1 S88
+T61 S89
+T65 S89
+T66 S90
+T67 S91
+T67 S92
+O.r.t-/3 S93
+O.r.f-/3 S94
+T70 S95
+T71 S96
+T73 S97
+S2 T15
+S2 T24
+S2 A.r.f+
+S3 T14
+S3 T19
+S3 A.r.f-
+S4 T18
+S4 T24
+S4 A.r.t+
+S5 T13
+S5 T15
+S5 A.r.t-
+S8 T45
+S8 T54
+S8 B.r.f+
+S9 T44
+S9 T49
+S9 B.r.f-
+S10 T48
+S10 T54
+S10 B.r.t+
+S11 T43
+S11 T45
+S11 B.r.t-
+S12 T41
+S12 T71
+S12 O.a+
+S13 T36
+S13 T66
+S13 O.a-
+S20 T1
+S20 T9
+S20 S.r.f+
+S21 T4
+S21 S.r.f-
+S22 T9
+S22 S.r.t+
+S23 T1
+S23 S.r.t-
+S24 T32
+S24 T62
+S25 T28
+S25 T58
+S26 T13
+S26 T14
+S27 T43
+S27 T44
+S28 T0
+S28 T73
+S29 T1
+S29 T4
+S30 s+
+S31 T3
+S32 s-
+S33 T6
+S34 S.a+
+S35 T8
+S36 T9
+S37 T10
+S38 S.a-
+S39 T12
+S40 T13
+S40 T14
+S40 T43
+S40 T44
+S41 T15
+S41 T18
+S41 T19
+S42 o+
+S43 T17
+S44 o-
+S45 T21
+S46 A.a+
+S47 T23
+S48 T24
+S49 T25
+S50 A.a-
+S51 T27
+S52 T28
+S52 T32
+S53 O.r.f-
+S54 O.r.t+
+S55 T31
+S56 T31
+S57 O.r.f+
+S58 O.r.t-
+S59 T35
+S60 T35
+S61 T36
+S62 T37
+S63 O.r.f-/1
+S64 O.r.t-/1
+S65 T40
+S66 T40
+S67 T41
+S68 T42
+S69 T45
+S69 T48
+S69 T49
+S70 o+/1
+S71 T47
+S72 o-/1
+S73 T51
+S74 B.a+
+S75 T53
+S76 T54
+S77 T55
+S78 B.a-
+S79 T57
+S80 T58
+S80 T62
+S81 O.r.f-/2
+S82 O.r.t+/1
+S83 T61
+S84 T61
+S85 O.r.f+/1
+S86 O.r.t-/2
+S87 T65
+S88 T65
+S89 T66
+S90 T67
+S91 O.r.f-/3
+S92 O.r.t-/3
+S93 T70
+S94 T70
+S95 T71
+S96 T72
+S97 T74
+.marking {S2 S4 S8 S10 S12 S20 S22 S24 S26 S28}
 .end

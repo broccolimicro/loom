@@ -1,7 +1,7 @@
 /*
  * sequential.h
  *
- * This structure represents a sequential. An conditional statement
+ * This structure represents a sequential. An condition statement
  * or loop can be considered a sequential. By definition, it is
  * something that we can pull out and analyze independently of
  * every other structure in the program. Within a sequential, there
@@ -14,7 +14,6 @@
 #define sequential_h
 
 #include "instruction.h"
-
 
 struct sequential : instruction
 {
@@ -29,22 +28,21 @@ struct sequential : instruction
 	void init(string chp, vspace *vars, string tab, int verbosity);
 
 	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
-	state variant();
-	state active_variant();
-	state passive_variant();
+	minterm variant();
+	minterm active_variant();
+	minterm passive_variant();
 
 	void expand_shortcuts();
 	void parse();
 	void merge();
-	int generate_states(graph *trans, int init, state filter);
-	state simulate_states(state init, state filter);
-	void generate_scribes();
+	pids generate_states(petri *n, pids f, bids b, minterm filter);
+	place simulate_states(place init, minterm filter);
 
 	void clear();
 
 	void insert_instr(int uid, int nid, instruction *instr);
 
-	void print_hse(string t);
+	void print_hse(string t = "", ostream *fout = &cout);
 
 	void push(instruction *i);
 };

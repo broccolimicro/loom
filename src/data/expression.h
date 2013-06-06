@@ -7,7 +7,8 @@
 
 
 #include "../common.h"
-#include "state.h"
+#include "canonical.h"
+#include "bdd.h"
 #include "vspace.h"
 
 #ifndef expression_h
@@ -17,24 +18,22 @@ struct expression
 {
 	expression();
 	expression(string e);
-	expression(vector<state> t, vspace *v);
+	expression(string e, vspace *v);
+	expression(vector<minterm> t, vspace *v);
 	~expression();
 
 	string simple;
 	vspace *vars;
 	bool internal_vars;
-	vector<state>	implicants;
-	vector<state>	primes;
-	vector<size_t>	essentials;
+	canonical expr;
 
 	void gen_variables(string e);
 	void gen_minterms(string e);
-	void gen_primes();
-	void gen_essentials();
+	void mccluskey();
 	void gen_output();
 
 	expression &operator()(string e);
-	expression &operator()(vector<state> t, vspace *v);
+	expression &operator()(vector<minterm> t, vspace *v);
 };
 
 template <class t>
@@ -75,7 +74,11 @@ t evaluate(string raw, vspace *vars, vector<t> values)
 		return t(dec_to_bin(raw));
 }
 
-state solve(string raw, vspace *vars, string tab, int verbosity);
-state estimate(string e, vspace *vars);
+list<string> extract_vars(string exp);
+string remove_var(string exp, string var);
+
+
+bdd solve(string raw, vspace *vars, string tab, int verbosity);
+minterm estimate(string e, vspace *vars);
 
 #endif

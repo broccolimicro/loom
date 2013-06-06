@@ -21,7 +21,7 @@ rule::rule(int uid)
 	this->name = "";
 }
 
-rule::rule(int uid, graph *g, vspace *v, int verbosity)
+rule::rule(int uid, petri *g, vspace *v, int verbosity)
 {
 	this->uid = uid;
 	this->up.vars = v;
@@ -30,8 +30,7 @@ rule::rule(int uid, graph *g, vspace *v, int verbosity)
 	this->verbosity = verbosity;
 
 	gen_minterms(g);
-	gen_primes();
-	gen_essentials();
+	mccluskey();
 	gen_output(v);
 }
 
@@ -56,9 +55,9 @@ rule &rule::operator=(rule r)
  * added to a given implicant is selected based on which would reduce the number
  * of conflict states the most.
  */
-void rule::gen_minterms(graph *g)
+void rule::gen_minterms(petri *g)
 {
-	list<int> invars;
+	/*list<int> invars;
 	list<int>::iterator vk;
 
 	state implier;
@@ -89,7 +88,7 @@ void rule::gen_minterms(graph *g)
 		 * any variable that is known in the implier. The second is to disallow
 		 * the use of bubbles in the production rules, then let the state variable
 		 * insertion algorithm handle bubble reshuffling.
-		 */
+		 * /
 		invars.clear();
 		for (vj = 0; vj < implier.size(); vj++)
 			if (((BUBBLELESS && implier[vj].data == "0") || !BUBBLELESS) && vj != uid)
@@ -98,7 +97,7 @@ void rule::gen_minterms(graph *g)
 		/* Set the maximum possible conflict count to be the number of zeros
 		 * in the desired trace so that we don't accidentally add an unnecessary
 		 * variable to our implicant
-		 */
+		 * /
 		mcount = conflict_count(implicant_output, g->up[uid]);
 		var = 0;
 		while (invars.size() > 0 && var != -1)
@@ -198,32 +197,16 @@ void rule::gen_minterms(graph *g)
 		cout << "Desired:  " << g->down[uid] << endl;
 		cout << "Obtained: " << final_output << endl;
 		cout << endl;
-	}
+	}*/
 }
 
-// gen_primes takes a list of implicants and reduces them to prime implicants
-// using expression's gen_primes function.
-void rule::gen_primes()
+void rule::mccluskey()
 {
 	if (verbosity & VERB_BASE_PRS && verbosity & VERB_DEBUG)
 		cout << "Generating Prime Implicants for " << uid << endl;
 
-	up.gen_primes();
-	down.gen_primes();
-
-	if (verbosity & VERB_BASE_PRS && verbosity & VERB_DEBUG)
-		cout << endl;
-}
-
-// gen_primes takes a list of prime implicants and reduces them to essential
-// implicants using expression's gen_essentials function.
-void rule::gen_essentials()
-{
-	if (verbosity & VERB_BASE_PRS && verbosity & VERB_DEBUG)
-		cout << "Generating Essential Prime Implicants for " << uid << endl;
-
-	up.gen_essentials();
-	down.gen_essentials();
+	up.mccluskey();
+	down.mccluskey();
 
 	if (verbosity & VERB_BASE_PRS && verbosity & VERB_DEBUG)
 		cout << endl;
@@ -259,11 +242,9 @@ void rule::find_var_usage_down()
 //down left -> down right-
 ostream &operator<<(ostream &os, rule r)
 {
-	list<state>::iterator i;
-
-	if (r.up.implicants.size() > 0)
+	if (r.up.expr.terms.size() > 0)
 		os << r.up.simple << " -> " << r.name << "+" << endl;
-	if (r.down.implicants.size() > 0)
+	if (r.down.expr.terms.size() > 0)
 		os << r.down.simple << " -> " << r.name << "-" << endl;
 
     return os;

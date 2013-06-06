@@ -35,6 +35,8 @@ struct vspace
 	int	   get_uid(string name);
 	int    get_width(string name);
 
+	vector<string> get_names();
+
 	string unique_name(string prefix);
 
 	bool vdef(string str);

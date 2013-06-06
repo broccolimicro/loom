@@ -34,7 +34,7 @@ guard &guard::operator=(guard g)
 	this->uid		= g.uid;
 	this->chp		= g.chp;
 	this->vars		= g.vars;
-	this->space		= g.space;
+	this->net		= g.net;
 	this->tab		= g.tab;
 	this->verbosity	= g.verbosity;
 	this->parent	= g.parent;
@@ -97,17 +97,17 @@ instruction *guard::duplicate(instruction *parent, vspace *vars, map<string, str
 	return instr;
 }
 
-state guard::variant()
+minterm guard::variant()
 {
 	return estimate(chp, vars);
 }
 
-state guard::active_variant()
+minterm guard::active_variant()
 {
-	return state();
+	return nullv(vars->size());
 }
 
-state guard::passive_variant()
+minterm guard::passive_variant()
 {
 	return estimate(chp, vars);
 }
@@ -129,7 +129,66 @@ void guard::merge()
 
 }
 
-int guard::generate_states(graph *g, int init, state filter)
+pids build(petri *net, pids trans, pids root, bids branch, instruction *owner, vspace *vars, vector<string> exp)
+{
+	if (exp.size() == 0)
+	{
+		net->connect(root, trans);
+		return pids();
+	}
+	else
+	{
+		map<list<string>, vector<int> > groups;
+		map<list<string>, vector<int> >::iterator groupi;
+		list<string> group;
+		list<string>::const_iterator vari;
+		vector<string> outexp;
+		pids ret;
+		pids p, t;
+		size_t i;
+		string temp;
+
+		for (i = 0; i < trans.size() && i < exp.size(); i++)
+		{
+			group = extract_vars(exp[i]);
+			groupi = groups.find(group);
+			if (groupi == groups.end())
+				groupi = groups.insert(pair<list<string>, vector<int> >(group, vector<int>())).first;
+
+			groupi->second.push_back(i);
+		}
+
+		for (groupi = groups.begin(); groupi != groups.end(); groupi++)
+		{
+			p.clear();
+			t.clear();
+			p.push_back(pid(net->new_place(branch, owner), PETRI_PLACE));
+			for (i = 0; i < groupi->second.size(); i++)
+				t.push_back(trans[groupi->second[i]]);
+			net->connect(p, t);
+
+			t.clear();
+			for (vari = groupi->first.begin(); vari != groupi->first.end(); vari++)
+			{
+				t.push_back(pid(net->new_transition(net->values.build(expression(*vari, vars).expr), branch, owner), 0));
+				for (i = 0; i < groupi->second.size(); i++)
+				{
+					temp = remove_var(exp[groupi->second[i]], *vari);
+					if (temp != "")
+						outexp.push_back(temp);
+				}
+			}
+			net->connect(t, p);
+			ret.insert(ret.end(), t.begin(), t.end());
+		}
+
+		build(net, ret, root, branch, owner, vars, outexp);
+
+		return ret;
+	}
+}
+
+pids guard::generate_states(petri *n, pids f, bids b, minterm filter)
 {
 	/* TODO If a variable in a guard has a definite value in the previous state (not 'X'), then what do we do?
 	 * Choice 1: replace their occurrence in the guard with their current, constant value
@@ -147,15 +206,15 @@ int guard::generate_states(graph *g, int init, state filter)
 	 * a?			<-- This might happen in the HSE due to HSE optimizations... I suggest choice 3
 	 *
 	 * After executing choice 1, you will be left with a bunch impossible states (underscores). These
-	 * represent the branches of conditionals that will never happen. Since this state space represents
+	 * represent the branches of conditions that will never happen. Since this state space represents
 	 * the union of all execution paths and values, we can say that for sure. This could be a huge optimization,
 	 * removing a bunch of hardware that will always run the same way.
 	 *
-	 * TODO modifying the previous state bypasses the variant x-out system employed by parallel, loop, and conditional.
+	 * TODO modifying the previous state bypasses the variant x-out system employed by parallel, loop, and condition.
 	 */
 
-	if (filter.size() == 0)
-		filter = null(vars->size());
+	/*if (filter.size == 0)
+		filter = nullv(vars->size());
 
 	space = g;
 	from = init;
@@ -164,7 +223,7 @@ int guard::generate_states(graph *g, int init, state filter)
 		cout << tab << "Guard " << chp << endl;
 
 	map<string, variable>::iterator vi;
-	state s, temp;
+	minterm s, temp;
 
 	// Choice 1
 	size_t k = 0, curr;
@@ -186,7 +245,7 @@ int guard::generate_states(graph *g, int init, state filter)
 			}
 		}
 	}
-	chp = expression(chp).simple;
+	chp = expression(chp).simple;*/
 
 	// Choice 2
 	//g->states[init] = g->states[init] || estimate(chp, vars);
@@ -194,31 +253,151 @@ int guard::generate_states(graph *g, int init, state filter)
 	// Choice 3
 	//g->states[init] = g->states[init] && solve(expression("~(" + chp + ")").simple, vars, "", -1);
 
-	temp = solve(chp, vars, tab, verbosity);
 
-	string edge = "";
-	for (int i = 0; i < temp.values.size(); i++)
+	// PETRIFY WORKFLOW - simple
+	/*chp = expression(chp).simple;
+
+	net = n;
+	from = f;
+
+	string minterm, var;
+	pid minterm_trans;
+	variable *vptr;
+	size_t i = 0, j = 0;
+	size_t k = 0, l = 0;
+	while ((i = chp.find_first_of("|", j)) != string::npos)
 	{
-		vname = vars->get_name(i);
-		if (temp.values[i].data == "1")
-			edge += vname + "+ ";
-		else if (temp.values[i].data == "0")
-			edge += vname + "- ";
+		minterm = chp.substr(j, i-j);
+		minterm_trans = net->insert_dummy(from, b, this);
+		uid.push_back(minterm_trans);
+		k = 0;
+		l = 0;
+		while ((k = minterm.find_first_of("&", l)) != string::npos)
+		{
+			if (minterm[l] == '~')
+			{
+				var = minterm.substr(l+1, k-l-1);
+				vptr = vars->find(var);
+				if (vptr != NULL)
+				{
+					net->connect(vptr->state0, minterm_trans);
+					net->connect(minterm_trans, vptr->state0);
+				}
+			}
+			else
+			{
+				var = minterm.substr(l, k-l);
+				vptr = vars->find(var);
+				if (vptr != NULL)
+				{
+					net->connect(vptr->state1, minterm_trans);
+					net->connect(minterm_trans, vptr->state1);
+				}
+			}
+			l = k+1;
+		}
+
+		if (minterm[l] == '~')
+		{
+			var = minterm.substr(l+1);
+			vptr = vars->find(var);
+			if (vptr != NULL)
+			{
+				net->connect(vptr->state0, minterm_trans);
+				net->connect(minterm_trans, vptr->state0);
+			}
+		}
+		else
+		{
+			var = minterm.substr(l);
+			vptr = vars->find(var);
+			if (vptr != NULL)
+			{
+				net->connect(vptr->state1, minterm_trans);
+				net->connect(minterm_trans, vptr->state1);
+			}
+		}
+
+		j = i+1;
 	}
 
-	s = (g->states[init] || filter) && temp;
+	minterm = chp.substr(j);
+	minterm_trans = net->insert_dummy(from, b, this);
+	uid.push_back(minterm_trans);
+	k = 0;
+	l = 0;
+	while ((k = minterm.find_first_of("&", l)) != string::npos)
+	{
+		if (minterm[l] == '~')
+		{
+			var = minterm.substr(l+1, k-l-1);
+			vptr = vars->find(var);
+			if (vptr != NULL)
+			{
+				net->connect(vptr->state0, minterm_trans);
+				net->connect(minterm_trans, vptr->state0);
+			}
+		}
+		else
+		{
+			var = minterm.substr(l, k-l);
+			vptr = vars->find(var);
+			if (vptr != NULL)
+			{
+				net->connect(vptr->state1, minterm_trans);
+				net->connect(minterm_trans, vptr->state1);
+			}
+		}
+		l = k+1;
+	}
 
-	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
-		cout << tab << s << endl;
+	if (minterm[l] == '~')
+	{
+		var = minterm.substr(l+1);
+		vptr = vars->find(var);
+		if (vptr != NULL)
+		{
+			net->connect(vptr->state0, minterm_trans);
+			net->connect(minterm_trans, vptr->state0);
+		}
+	}
+	else
+	{
+		var = minterm.substr(l);
+		vptr = vars->find(var);
+		if (vptr != NULL)
+		{
+			net->connect(vptr->state1, minterm_trans);
+			net->connect(minterm_trans, vptr->state1);
+		}
+	}*/
 
-	uid = g->append_state(s, init, edge);//CHP_EDGE ? (chp + "->") : "Guard");
 
+	// PETRIFY WORKFLOW - expression
+	/*vector<string> exp;
+	exp.push_back(chp);
+	uid.push_back(pid(net->new_transition(1, b, this), 0));
+
+	build(net, uid, from, b, this, vars, exp);*/
+
+	// NORMAL WORKFLOW
+	cout << "LOOK HERE " << chp << endl;
+	expression e(chp, vars);
+	cout << "BREAKS LATER" << endl;
+	chp = e.simple;
+
+	cout << "NOT HERE" << endl;
+	uid.push_back(net->insert_transition(from, e.expr, b, this));
+
+	cout << "LATER" << endl;
 	return uid;
 }
 
-state guard::simulate_states(state init, state filter)
+
+
+place guard::simulate_states(place init, minterm filter)
 {
-	map<string, variable>::iterator vi;
+	/*map<string, variable>::iterator vi;
 	state s, temp;
 	string temp_chp;
 	size_t k = 0, curr;
@@ -249,34 +428,14 @@ state guard::simulate_states(state init, state filter)
 	}
 	temp_chp = expression(temp_chp).simple;
 
-	return (init || filter) && solve(temp_chp, vars, tab, verbosity);
-}
-
-void guard::generate_scribes()
-{
-	if (chp.find_first_of("|") != chp.npos)
-	{
-		int vi = vars->insert(variable("("+chp+")", "int", 1, false));
-
-		if (vi != -1)
-			space->traces.push_back(evaluate(chp, vars, space->traces.traces));
-		else
-			vi = vars->get_uid("("+chp+")");
-
-		space->traces[vi][uid] = value("1");
-		if (from != -1)
-			space->traces[vi][from] = value("0");
-
-		for (int i = 0; i < space->traces[vi].size(); i++)
-			space->states[i].assign(vi, space->traces[vi][i], value("X"));
-	}
+	return (init || filter) && solve(temp_chp, vars, tab, verbosity);*/
 }
 
 void guard::insert_instr(int uid, int nid, instruction *instr)
 {
 }
 
-void guard::print_hse(string t)
+void guard::print_hse(string t, ostream *fout)
 {
-	cout << chp;
+	(*fout) << chp;
 }

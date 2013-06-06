@@ -49,7 +49,7 @@ loop &loop::operator=(loop l)
 	this->chp		= l.chp;
 	this->instrs	= l.instrs;
 	this->vars		= l.vars;
-	this->space		= l.space;
+	this->net		= l.net;
 	this->tab		= l.tab;
 	this->verbosity	= l.verbosity;
 	this->parent	= l.parent;
@@ -115,9 +115,9 @@ instruction *loop::duplicate(instruction *parent, vspace *vars, map<string, stri
 	return instr;
 }
 
-state loop::variant()
+minterm loop::variant()
 {
-	state result(value("_"), vars->global.size());
+	minterm result(vars->global.size(), v_);
 
 	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
@@ -128,9 +128,9 @@ state loop::variant()
 	return result;
 }
 
-state loop::active_variant()
+minterm loop::active_variant()
 {
-	state result(value("_"), vars->global.size());
+	minterm result(vars->global.size(), v_);
 
 	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
@@ -141,9 +141,9 @@ state loop::active_variant()
 	return result;
 }
 
-state loop::passive_variant()
+minterm loop::passive_variant()
 {
-	state result(value("_"), vars->global.size());
+	minterm result(vars->global.size(), v_);
 
 	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
@@ -256,56 +256,36 @@ void loop::merge()
 	}
 }
 
-int loop::generate_states(graph *g, int init, state filter)
+pids loop::generate_states(petri *n, pids f, bids b, minterm filter)
 {
 	list<pair<sequential*, guard*> >::iterator instr_iter;
-	vector<int> state_catcher;
-	vector<string> chp_catcher;
-	int guardresult;
-	string exp = "";
-	state s, v;
-
-	if (filter.size() == 0)
-		filter = null(vars->size());
+	pids start, end;
+	string antiguard = "";
 
 	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
-		cout << tab << "Loop " << chp << endl;
+		cout << tab << "Conditional " << chp << endl;
 
-	space = g;
-	from = init;
-	v = variant();
-	s = null(vars->size());
-	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
-		s = s || instr_iter->first->simulate_states(instr_iter->second->simulate_states(full(vars->size()), null(vars->size())), filter);
+	net = n;
+	from = f;
 
-	v = filter || (v && s);
-	s = g->states[init] || v;
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
 	{
-		guardresult = instr_iter->second->generate_states(g, init, v);
-		state_catcher.push_back(instr_iter->first->generate_states(g, guardresult, filter));
-
-		chp_catcher.push_back(CHP_EDGE ? (instr_iter->second->chp+"->Block") : "Loop merge");
-
-		exp += (exp != "" ? "&~(" : "~(") + instr_iter->second->chp + ")";
+		start.clear();
+		end.clear();
+		start = instr_iter->second->generate_states(net, from, b, filter);
+		end.push_back(net->insert_place(start, b, this));
+		end = instr_iter->first->generate_states(net, end, b, filter);
+		net->connect(end, from);
+		antiguard += string(antiguard != "" ? "&" : "") + "~(" + instr_iter->second->chp + ")";
 	}
-
-	s = s && solve(expression(exp).simple, vars, tab, verbosity);
-
-	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
-		cout << tab << s << endl;
-
-	uid = g->append_state(s, state_catcher, chp_catcher);
-
-	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
-		g->insert_edge(uid, instr_iter->second->uid, CHP_EDGE ? (instr_iter->second->chp + "->") : "Loopback");
+	uid.push_back(net->insert_transition(f, expression(antiguard, vars).expr, b, this));
 
 	return uid;
 }
 
-state loop::simulate_states(state init, state filter)
+place loop::simulate_states(place init, minterm filter)
 {
-	list<pair<sequential*, guard*> >::iterator instr_iter;
+	/*list<pair<sequential*, guard*> >::iterator instr_iter;
 	string exp = "";
 	state s, v;
 
@@ -324,22 +304,12 @@ state loop::simulate_states(state init, state filter)
 
 	s = s && solve(expression(exp).simple, vars, tab, verbosity);
 
-	return s;
-}
-
-void loop::generate_scribes()
-{
-	list<pair<sequential*, guard*> >::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		i->second->generate_scribes();
-		i->first->generate_scribes();
-	}
+	return s;*/
 }
 
 void loop::insert_instr(int uid, int nid, instruction *instr)
 {
-	instr->uid = nid;
+	/*instr->uid = nid;
 	instr->from = uid;
 
 	list<pair<sequential*, guard*> >::iterator i, k;
@@ -360,27 +330,27 @@ void loop::insert_instr(int uid, int nid, instruction *instr)
 	}
 
 	for (i = instrs.begin(); i != instrs.end(); i++)
-		i->first->insert_instr(uid, nid, instr);
+		i->first->insert_instr(uid, nid, instr);*/
 }
 
-void loop::print_hse(string t)
+void loop::print_hse(string t, ostream *fout)
 {
-	cout << "\n" << t << "*[";
+	(*fout) << "\n" << t << "*[";
 	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		if (i != instrs.begin() && type == mutex)
-			cout << "\n" << t << "[]";
+			(*fout) << "\n" << t << "[]";
 		else if (i != instrs.begin() && type == choice)
-			cout << "\n" << t << "|";
+			(*fout) << "\n" << t << "|";
 		if (instrs.size() > 1 || i->second->chp != "1")
 		{
-			i->second->print_hse(t + "\t");
-			cout << " ->\t";
+			i->second->print_hse(t + "\t", fout);
+			(*fout) << " ->\t";
 		}
 		else
-			cout << "\t";
-		i->first->print_hse(t + "\t");
+			(*fout) << "\t";
+		i->first->print_hse(t + "\t", fout);
 	}
-	cout << endl << t << "]";
+	(*fout) << endl << t << "]";
 }

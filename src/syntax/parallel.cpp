@@ -13,7 +13,7 @@
 #include "../data.h"
 
 #include "parallel.h"
-#include "conditional.h"
+#include "condition.h"
 #include "loop.h"
 
 parallel::parallel()
@@ -49,7 +49,7 @@ parallel &parallel::operator=(parallel p)
 	this->chp		= p.chp;
 	this->instrs	= p.instrs;
 	this->vars		= p.vars;
-	this->space		= p.space;
+	this->net		= p.net;
 	this->tab		= p.tab;
 	this->verbosity	= p.verbosity;
 	this->parent	= p.parent;
@@ -114,9 +114,9 @@ instruction *parallel::duplicate(instruction *parent, vspace *vars, map<string, 
 	return instr;
 }
 
-state parallel::variant()
+minterm parallel::variant()
 {
-	state result(value("_"), vars->global.size());
+	minterm result(vars->global.size(), v_);
 
 	list<instruction*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
@@ -125,9 +125,9 @@ state parallel::variant()
 	return result;
 }
 
-state parallel::active_variant()
+minterm parallel::active_variant()
 {
-	state result(value("_"), vars->global.size());
+	minterm result(vars->global.size(), v_);
 
 	list<instruction*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
@@ -136,9 +136,9 @@ state parallel::active_variant()
 	return result;
 }
 
-state parallel::passive_variant()
+minterm parallel::passive_variant()
 {
-	state result(value("_"), vars->global.size());
+	minterm result(vars->global.size(), v_);
 
 	list<instruction*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
@@ -196,9 +196,9 @@ void parallel::parse()
 			// This sub sequential is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
 				push(new loop(this, raw_instr, vars, tab+"\t", verbosity));
-			// This sub sequential is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
+			// This sub sequential is a condition. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
-				push(new conditional(this, raw_instr, vars, tab+"\t", verbosity));
+				push(new condition(this, raw_instr, vars, tab+"\t", verbosity));
 			// This sub sequential is a variable definition. keyword<bitwidth> name
 			else if (vars->vdef(raw_instr) && raw_instr.length() > 0)
 				push(expand_instantiation(this, raw_instr, vars, NULL, tab+"\t", verbosity, true));
@@ -206,7 +206,7 @@ void parallel::parse()
 				push(add_unique_variable(this, raw_instr.substr(0, k) + "._fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", vars->get_type(raw_instr.substr(0, k)) + ".operator" + raw_instr[k] + "()", vars, tab+"\t", verbosity).second);
 			// This sub sequential is an assignment instruction.
 			else if ((raw_instr.find(":=") != raw_instr.npos || raw_instr[raw_instr.length()-1] == '+' || raw_instr[raw_instr.length()-1] == '-') && raw_instr.length() > 0)
-				push(expand_assignment(this, raw_instr, vars, tab+"\t", verbosity));
+				push(expand_assignment(this, raw_instr, vars, net, tab+"\t", verbosity));
 			else if (raw_instr.find("skip") == raw_instr.npos && raw_instr.length() > 0)
 				push(new guard(this, raw_instr, vars, tab, verbosity));
 
@@ -228,68 +228,42 @@ void parallel::merge()
 		(*i)->merge();
 }
 
-int parallel::generate_states(graph *g, int init, state filter)
+pids parallel::generate_states(petri *n, pids f, bids b, minterm filter)
 {
-	list<instruction*>::iterator i, j;
-	instruction *instr;
-	map<string, variable>::iterator vi;
-	vector<int> state_catcher;
-	vector<string> chp_catcher;
-	state s;
-	bool first = true;
-	state v;
-	int k;
+	list<instruction*>::iterator i;
+	pids next, end;
+	pids allends;
+	bids branch;
+	size_t k;
 
-	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
+	if ((verbosity & VERB_BASE_STATE_SPACE) && (verbosity & VERB_DEBUG))
 		cout << tab << "Parallel " << chp << endl;
 
-	space = g;
-	from = init;
-	for (i = instrs.begin(); i != instrs.end(); i++)
+	net  = n;
+	from = f;
+
+	if (instrs.size() > 1)
+		net->B++;
+
+	for (i = instrs.begin(), k = instrs.size()-1; i != instrs.end(); i++, k--)
 	{
-		if (filter.size() > 0)
-			v = filter;
-		else
-			v = state(value("_"), vars->global.size());
+		branch = b;
+		if (instrs.size() > 1)
+			branch.insert(pair<int, int>(net->B, k));
 
-		for (j = instrs.begin(); j != instrs.end(); j++)
-			if (i != j)
-				v = v || (*j)->active_variant();
-
-		instr = *i;
-		state_catcher.push_back(instr->generate_states(g, init, v));
-		if(CHP_EDGE)
-			chp_catcher.push_back(instr->chp);
-		else
-			chp_catcher.push_back("Parallel");
-		if (first)
-		{
-			s = g->states[state_catcher.back()];
-			first = false;
-		}
-		else
-			s = s || g->states[state_catcher.back()];
+		next.clear();
+		next = (k == 0 ? from : net->duplicate(from));
+		end = (*i)->generate_states(net, next, branch, filter);
+		allends.push_back(net->insert_place(end, branch, this));
 	}
-
-	if (filter.size() > 0)
-		s = s || filter;
-
-	uid = g->states.size();
-
-	for (k = 0; k < instrs.size(); k++)
-		recursive_branch_set(g, g->front_edges[init][k], pair<int, int>(uid, k));
-
-	g->append_state(s, state_catcher, chp_catcher);
-
-	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
-		cout << tab << s << endl;
+	uid.push_back(net->insert_dummy(allends, b, this));
 
 	return uid;
 }
 
-state parallel::simulate_states(state init, state filter)
+place parallel::simulate_states(place init, minterm filter)
 {
-	list<instruction*>::iterator i, j;
+	/*list<instruction*>::iterator i, j;
 	instruction *instr;
 	state s;
 	state v;
@@ -309,40 +283,54 @@ state parallel::simulate_states(state init, state filter)
 		s = s || instr->simulate_states(init, v);
 	}
 
-	return s;
+	return s;*/
 }
 
-void parallel::recursive_branch_set(graph *g, int from, pair<int, int> id)
+void parallel::branch_place_set(pid from, bid id)
 {
-	int i;
+	/*int i;
 
-	if (g->states[from].branch.find(id.first) != g->states[from].branch.end())
+	if (net->S[from.index].branch.find(id.first) != net->S[from.index].branch.end())
 		return;
-	g->states[from].branch.insert(id);
+	net->S[from.index].branch.insert(id);
 
-	while (g->front_edges[from].size() == 1)
+	while (net->Wp[from.index].size() == 1)
 	{
-		if (g->states[g->front_edges[from].front()].branch.find(id.first) != g->states[g->front_edges[from].front()].branch.end())
+		if (net->S[net->Wp[from.index].front()].branch.find(id.first) != net->S[net->Wp[from.index].front()].branch.end())
 			return;
-		g->states[g->front_edges[from].front()].branch.insert(id);
-		from = g->front_edges[from].front();
+		net->S[net->Wp[from.index].front()].branch.insert(id);
+		from = net->Wp[from.index].front();
 	}
 
-	for (i = 0; from < (int)g->front_edges.size() && i < (int)g->front_edges[from].size(); i++)
-		if (g->states[g->front_edges[from][i]].branch.find(id.first) == g->states[g->front_edges[from][i]].branch.end())
-			recursive_branch_set(g, g->front_edges[from][i], id);
+	for (i = 0; from < (int)net->Wp.size() && i < (int)net->Wp[from.index].size(); i++)
+		if (net->S[net->Wp[from.index][i]].branch.find(id.first) == net->S[net->Wp[from.index][i]].branch.end())
+			branch_trans_set(net->Wp[from.index][i], id);*/
 }
 
-void parallel::generate_scribes()
+void parallel::branch_trans_set(pid from, bid id)
 {
-	list<instruction*>::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-		(*i)->generate_scribes();
+	/*int i;
+
+	if (net->T[from.index].branch.find(id.first) != net->T[from.index].branch.end())
+		return;
+	net->T[from.index].branch.insert(id);
+
+	while (net->Wn[from.index].size() == 1)
+	{
+		if (net->T[net->Wn[from.index].front()].branch.find(id.first) != net->T[net->Wn[from.index].front()].branch.end())
+			return;
+		net->T[net->Wn[from.index].front()].branch.insert(id);
+		from.index = net->Wn[from.index].front();
+	}
+
+	for (i = 0; from.index < (int)net->Wn.size() && i < (int)net->Wn[from.index].size(); i++)
+		if (net->T[net->Wn[from.index][i]].branch.find(id.first) == net->T[net->Wn[from.index][i]].branch.end())
+			branch_place_set(net->Wn[from.index][i], id);*/
 }
 
 void parallel::insert_instr(int uid, int nid, instruction *instr)
 {
-	instr->uid = nid;
+	/*instr->uid = nid;
 	instr->from = uid;
 
 	sequential *b;
@@ -383,35 +371,35 @@ void parallel::insert_instr(int uid, int nid, instruction *instr)
 			((parallel*)j)->insert_instr(uid, nid, instr);
 		else if (j->kind() == "loop")
 			((loop*)j)->insert_instr(uid, nid, instr);
-		else if (j->kind() == "conditional")
-			((conditional*)j)->insert_instr(uid, nid, instr);
+		else if (j->kind() == "condition")
+			((condition*)j)->insert_instr(uid, nid, instr);
 		else if (j->kind() == "guard")
 			((guard*)j)->insert_instr(uid, nid, instr);
 		else if (j->kind() == "sequential")
 			((sequential*)j)->insert_instr(uid, nid, instr);
 		else if (j->kind() == "assignment")
 			((assignment*)j)->insert_instr(uid, nid, instr);
-	}
+	}*/
 }
 
-void parallel::print_hse(string t)
+void parallel::print_hse(string t, ostream *fout)
 {
 	if (instrs.size() > 1)
 	{
-		cout << "\n" << t << "(\n" << t + "\t";
+		(*fout) << "\n" << t << "(\n" << t + "\t";
 		list<instruction*>::iterator i;
 		for (i = instrs.begin(); i != instrs.end(); i++)
 		{
 			if (i != instrs.begin())
-				cout << "||\n\t" << t;
-			(*i)->print_hse(t + "\t");
+				(*fout) << "||\n\t" << t;
+			(*i)->print_hse(t + "\t", fout);
 		}
-		cout << "\n" << t << ")";
+		(*fout) << "\n" << t << ")";
 	}
 	else if (instrs.size() == 1)
 	{
-		cout << t;
-		instrs.front()->print_hse(t);
+		(*fout) << t;
+		instrs.front()->print_hse(t, fout);
 	}
 }
 

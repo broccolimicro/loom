@@ -132,9 +132,9 @@ string vspace::get_info(string name)
 	if (v == NULL)
 		return "";
 
-	if (v->type == "int" && s == name.npos)
+	if (v->type == "node" && s == name.npos)
 		return v->type + "<" + to_string(v->width) + ">";
-	else if (v->type == "int")
+	else if (v->type == "node")
 		return v->type + "<" + to_string(h-l) + ">";
 
 	// TODO Possible bug?
@@ -166,6 +166,17 @@ int vspace::get_width(string name)
 		return i->second.width;
 
 	return 0;
+}
+
+vector<string> vspace::get_names()
+{
+	vector<string> ret(global.size());
+	map<string, variable>::iterator gi;
+
+	for (gi = global.begin(); gi != global.end(); gi++)
+		ret[gi->second.uid] = gi->first;
+
+	return ret;
 }
 
 string vspace::unique_name(string prefix)
@@ -274,7 +285,7 @@ int vspace::insert(variable v)
 	string n;
 	int w;
 
-	if (v.type == "int" && v.width > 1)
+	if (v.type == "node" && v.width > 1)
 	{
 		v.uid = label.size();
 		label.insert(pair<string, variable>(v.name, v));
@@ -288,7 +299,7 @@ int vspace::insert(variable v)
 			global.insert(pair<string, variable>(v.name, v));
 		}
 	}
-	else if (v.type == "int" && v.width == 1)
+	else if (v.type == "node" && v.width == 1)
 	{
 		v.uid = global.size();
 		global.insert(pair<string, variable>(v.name, v));

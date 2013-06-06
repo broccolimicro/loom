@@ -26,7 +26,7 @@
  *  *[g1->s1|g2->s2|...|gn->sn]
  *  *[s1]
  *
- *	Conditionals
+ *	conditions
  *   [g1->s1[]g2->s2[]...[]gn->sn]
  *   [g1->s1|g2->s2|...|gn->sn]
  *   [g1]
@@ -68,8 +68,6 @@
 #include "type.h"
 #include "program.h"
 #include "utility.h"
-
-#include "data/value_array.h"
 
 /* This structure describes a whole program. It contains a record of all
  * of the types described in this program and all of the global variables
@@ -116,7 +114,6 @@ int main(int argc, char **argv)
 	program p(prgm, verbosity);
 
 	cout << endl;
-
 
 	//fclose(log);
 }

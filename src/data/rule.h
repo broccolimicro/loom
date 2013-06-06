@@ -7,11 +7,9 @@
  */
 
 #include "../common.h"
-#include "graph.h"
 #include "vspace.h"
-#include "trace.h"
-#include "state.h"
 #include "expression.h"
+#include "petri.h"
 
 #ifndef rule_h
 #define rule_h
@@ -20,7 +18,7 @@ struct rule
 {
 	rule();
 	rule(int uid);
-	rule(int uid, graph *g, vspace *v, int verbosity);
+	rule(int uid, petri *g, vspace *v, int verbosity);
 	~rule();
 
 	int uid;
@@ -35,9 +33,8 @@ struct rule
 
 	rule &operator=(rule r);
 
-	void gen_minterms(graph *g);
-	void gen_primes();
-	void gen_essentials();
+	void gen_minterms(petri *g);
+	void mccluskey();
 	void gen_output(vspace *v);
 	void find_var_usage_up();
 	void find_var_usage_down();

@@ -32,7 +32,7 @@ struct process : keyword
 	vector<rule>			prs;
 	vspace					vars;
 	list<string>			args;
-	graph					space;
+	petri					space;
 	int						verbosity;
 
 	bool 					is_inline;
@@ -46,13 +46,13 @@ struct process : keyword
 	void reshuffle();
 
 	void generate_states();
-	void insert_scribe_vars();
 	void insert_state_vars();
 	void generate_prs();
 	void factor_prs();
 
-	void print_hse();
-	void print_TS();
+	void print_hse(ostream *fout = &cout);
+	void print_dot(ostream *fout = &cout);
+	void print_petrify();
 	void print_prs();
 };
 

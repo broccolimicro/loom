@@ -380,3 +380,17 @@ size_t find_last_of_l0(string subject, list<string> search, size_t pos, list<str
 
 	return subject.npos;
 }
+
+int powi(int base, int exp)
+{
+    int result = 1;
+    while (exp)
+    {
+        if (exp & 1)
+            result *= base;
+        exp >>= 1;
+        base *= base;
+    }
+
+    return result;
+}

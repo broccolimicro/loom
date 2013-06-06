@@ -12,6 +12,7 @@
 #include "type.h"
 #include "data/variable.h"
 
+
 pair<string, instruction*> add_unique_variable(instruction *parent, string prefix, string postfix, string type, vspace *vars, string tab, int verbosity);
 instruction *expand_instantiation(instruction *parent, string chp, vspace *vars, list<string> *input, string tab, int verbosity, bool allow_process);
 size_t find_name(string subject, string search, size_t pos = 0);

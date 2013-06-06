@@ -22,22 +22,21 @@ struct parallel : sequential
 	parallel &operator=(parallel p);
 
 	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
-	state variant();
-	state active_variant();
-	state passive_variant();
+	minterm variant();
+	minterm active_variant();
+	minterm passive_variant();
 
 	void expand_shortcuts();
 	void parse();
 	void merge();
-	int generate_states(graph *g, int init, state filter);
-	state simulate_states(state init, state filter);
-	void generate_scribes();
+	pids generate_states(petri *n, pids f, bids b, minterm filter);
+	place simulate_states(place init, minterm filter);
 
-
-	void recursive_branch_set(graph *g, int from, pair<int, int> id);
+	void branch_place_set(pid from, bid id);
+	void branch_trans_set(pid from, bid id);
 	void insert_instr(int uid, int nid, instruction *instr);
 
-	void print_hse(string t);
+	void print_hse(string t = "", ostream *fout = &cout);
 
 	void push(instruction *i);
 };

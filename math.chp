@@ -1,64 +1,64 @@
-operator&(int<1> s, int<1> a, int<1> b)
+operator&(node<1> s, node<1> a, node<1> b)
 {
 	[    a & b -> s+
 	[] ~(a & b) -> s-
 	];
 }
 
-operator&(int<2> s, int<2> a, int<2> b)
+operator&(node<2> s, node<2> a, node<2> b)
 {
 	s[0],s[1] := a[0]&b[0],a[1]&b[1];
 }
 
-operator|(int<1> s, int<1> a, int<1> b)
+operator|(node<1> s, node<1> a, node<1> b)
 {
 	[    a | b -> s+
 	[] ~(a | b) -> s-
 	];
 }
 
-operator|(int<2> s, int<2> a, int<2> b)
+operator|(node<2> s, node<2> a, node<2> b)
 {
 	s[0],s[1] := a[0]|b[0],a[1]|b[1];
 }
 
-operator~(int<1> s, int<1> a)
+operator~(node<1> s, node<1> a)
 {
 	[  ~a -> s+
 	[]  a -> s-
 	];
 }
 
-operator~(int<2> s, int<2> a)
+operator~(node<2> s, node<2> a)
 {
 	s[0],s[1] := ~a[0],~a[1];
 }
 
-operator^(int<1> s, int<1> a, int<1> b)
+operator^(node<1> s, node<1> a, node<1> b)
 {
 	s := a&~b | ~a&b;
 }
 
-operator+(int<1> s, int<1> a, int<1> b)
+operator+(node<1> s, node<1> a, node<1> b)
 {
 	s := a^b;
 }
 
-operator+(int<2> s, int<2> a, int<2> b)
+operator+(node<2> s, node<2> a, node<2> b)
 {
-	int<1> c;
+	node<1> c;
 	c := a[0]&b[0];
 	s[0],s[1] := a[0]+b[0],(a[1]+b[1])^c;
 }
 
-operator&(int<4> s, int<4> a, int<4> b)
+operator&(node<4> s, node<4> a, node<4> b)
 {
 	s[0],s[1],s[2],s[3] := a[0]&b[0],a[1]&b[1],a[2]&b[2],a[3]&b[3];
 }
 
-operator+(int<5> s, int<5> a, int<5> b)
+operator+(node<5> s, node<5> a, node<5> b)
 {
-	int<4> c;
+	node<4> c;
 	
 	(s[0] := a[0]+b[0]||
 	c[0] := a[0]&b[0]);

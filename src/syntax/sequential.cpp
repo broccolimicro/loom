@@ -14,7 +14,7 @@
 
 #include "sequential.h"
 #include "parallel.h"
-#include "conditional.h"
+#include "condition.h"
 #include "loop.h"
 
 sequential::sequential()
@@ -57,7 +57,7 @@ sequential &sequential::operator=(sequential b)
 	this->chp		= b.chp;
 	this->instrs	= b.instrs;
 	this->vars		= b.vars;
-	this->space		= b.space;
+	this->net		= b.net;
 	this->tab		= b.tab;
 	this->verbosity	= b.verbosity;
 	this->parent	= b.parent;
@@ -136,9 +136,9 @@ instruction *sequential::duplicate(instruction *parent, vspace *vars, map<string
 	return instr;
 }
 
-state sequential::variant()
+minterm sequential::variant()
 {
-	state result(value("_"), vars->global.size());
+	minterm result(vars->size(), v_);
 
 	list<instruction*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
@@ -147,9 +147,9 @@ state sequential::variant()
 	return result;
 }
 
-state sequential::active_variant()
+minterm sequential::active_variant()
 {
-	state result(value("_"), vars->global.size());
+	minterm result(vars->size(), v_);
 
 	list<instruction*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
@@ -158,9 +158,9 @@ state sequential::active_variant()
 	return result;
 }
 
-state sequential::passive_variant()
+minterm sequential::passive_variant()
 {
-	state result(value("_"), vars->global.size());
+	minterm result(vars->size(), v_);
 
 	list<instruction*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
@@ -220,9 +220,9 @@ void sequential::parse()
 			// This sub sequential is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
 				push(new loop(this, raw_instr, vars, tab+"\t", verbosity));
-			// This sub sequential is a conditional. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
+			// This sub sequential is a condition. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
-				push(new conditional(this, raw_instr, vars, tab+"\t", verbosity));
+				push(new condition(this, raw_instr, vars, tab+"\t", verbosity));
 			// This sub sequential is a variable instantiation.
 			else if (vars->vdef(raw_instr) && raw_instr.length() > 0)
 				push(expand_instantiation(this, raw_instr, vars, NULL, tab+"\t", verbosity, true));
@@ -231,7 +231,7 @@ void sequential::parse()
 				push(add_unique_variable(this, raw_instr.substr(0, k) + "._fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", vars->get_type(raw_instr.substr(0, k)) + ".operator" + raw_instr[k] + "()", vars, tab, verbosity).second);
 			// This sub sequential is an assignment instruction.
 			else if ((raw_instr.find(":=") != raw_instr.npos || raw_instr[raw_instr.length()-1] == '+' || raw_instr[raw_instr.length()-1] == '-') && raw_instr.length() > 0)
-				push(expand_assignment(this, raw_instr, vars, tab+"\t", verbosity));
+				push(expand_assignment(this, raw_instr, vars, net, tab+"\t", verbosity));
 			else if (raw_instr.find("skip") == raw_instr.npos && raw_instr.length() > 0)
 				push(new guard(this, raw_instr, vars, tab, verbosity));
 
@@ -253,29 +253,29 @@ void sequential::merge()
 	list<pair<string, string> >::iterator m, n;
 	i = instrs.begin();
 	j = instrs.begin();
-	conditional *ic, *jc;
+	condition *ic, *jc;
 	assignment *ia, *ja;
 	int conflict_count;
 
 	for (j++; j != instrs.end(); j++)
 	{
-		if ((*i)->kind() == "conditional" && (*j)->kind() == "conditional")
+		if ((*i)->kind() == "condition" && (*j)->kind() == "condition")
 		{
-			ic = (conditional*)*i;
-			jc = (conditional*)*j;
+			ic = (condition*)*i;
+			jc = (condition*)*j;
 
 			if (ic->instrs.size() == 1 && ic->instrs.front().first->instrs.size() == 0)
 			{
 				for (k = jc->instrs.begin(); k != jc->instrs.end(); k++)
 					k->second->chp = expression("(" + ic->instrs.front().second->chp + ")&(" + k->second->chp + ")").simple;
 				instrs.remove(*i);
-				//delete (conditional*)(*i);
+				//delete (condition*)(*i);
 			}
 		}
 		else if ((*i)->kind() == "assignment" && (*j)->kind() == "assignment")
 		{
 			// TODO We need to check to see if one assignment reads a value of a channel that the other is modifying
-			ia = (assignment*)*i;
+			/*ia = (assignment*)*i;
 			ja = (assignment*)*j;
 
 			conflict_count = 0;
@@ -295,7 +295,7 @@ void sequential::merge()
 					ja->chp += (m != ja->expr.begin() ? "," : "") + m->second;
 				instrs.remove(*i);
 				//delete (assignment*)*i;
-			}
+			}*/
 		}
 		i = j;
 	}
@@ -304,30 +304,54 @@ void sequential::merge()
 		(*j)->merge();
 }
 
-int sequential::generate_states(graph *g, int init, state filter)
+pids sequential::generate_states(petri *n, pids f, bids b, minterm filter)
 {
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
+	pids next;
+	size_t i;
+	map<bids, pids> groups;
+	map<bids, pids>::iterator gi;
+	bids::iterator mi, mj;
 
 	if ((verbosity & VERB_BASE_STATE_SPACE) && (verbosity & VERB_DEBUG))
 		cout << tab << "Sequential " << chp << endl;
 
-	space = g;
-	from = init;
-	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+	net  = n;
+	from = f;
+	if (instrs.size() == 0)
 	{
-		instr = *instr_iter;
-		init = instr->generate_states(g, init, filter);
+		/*for (i = 0; i < f.size(); i++)
+		{
+			next = net->input_arcs(f[i]);
+			uid.insert(uid.end(), next.begin(), next.end());
+		}
+		net->remove_place(f);*/
+		uid.push_back(net->insert_dummy(from, b, this));
 	}
+	else
+	{
+		uid  = f;
+		for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+		{
+			next.clear();
+			instr = *instr_iter;
 
-	uid = init;
-
-	return init;
+			if (instr_iter != instrs.begin())
+			{
+				next.push_back(net->insert_place(uid, b, this));
+				uid	= instr->generate_states(net, next, b, filter);
+			}
+			else
+				uid	= instr->generate_states(net, uid, b, filter);
+		}
+	}
+	return uid;
 }
 
-state sequential::simulate_states(state init, state filter)
+place sequential::simulate_states(place init, minterm filter)
 {
-	list<instruction*>::iterator instr_iter;
+	/*list<instruction*>::iterator instr_iter;
 	instruction *instr;
 
 	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
@@ -336,14 +360,7 @@ state sequential::simulate_states(state init, state filter)
 		init = instr->simulate_states(init, filter);
 	}
 
-	return init;
-}
-
-void sequential::generate_scribes()
-{
-	list<instruction*>::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-		(*i)->generate_scribes();
+	return init;*/
 }
 
 /* This function cleans up all of the memory allocated
@@ -367,7 +384,7 @@ void sequential::clear()
 
 void sequential::insert_instr(int uid, int nid, instruction *instr)
 {
-	instr->uid = nid;
+	/*instr->uid = nid;
 	instr->from = uid;
 
 	instruction *j;
@@ -395,25 +412,25 @@ void sequential::insert_instr(int uid, int nid, instruction *instr)
 			((parallel*)j)->insert_instr(uid, nid, instr);
 		else if (j->kind() == "loop")
 			((loop*)j)->insert_instr(uid, nid, instr);
-		else if (j->kind() == "conditional")
-			((conditional*)j)->insert_instr(uid, nid, instr);
+		else if (j->kind() == "condition")
+			((condition*)j)->insert_instr(uid, nid, instr);
 		else if (j->kind() == "guard")
 			((guard*)j)->insert_instr(uid, nid, instr);
 		else if (j->kind() == "sequential")
 			((sequential*)j)->insert_instr(uid, nid, instr);
 		else if (j->kind() == "assignment")
 			((assignment*)j)->insert_instr(uid, nid, instr);
-	}
+	}*/
 }
 
-void sequential::print_hse(string t)
+void sequential::print_hse(string t, ostream *fout)
 {
 	list<instruction*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		if (i != instrs.begin())
-			cout << ";";
-		(*i)->print_hse(t);
+			(*fout) << ";";
+		(*i)->print_hse(t, fout);
 	}
 }
 

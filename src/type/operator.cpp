@@ -109,7 +109,7 @@ void operate::parse(string raw, int verbosity)
 				cout << "Error: Input " << *ii << " driven in " << chp << endl;
 
 			name += tv->type;
-			if (tv->type == "int" && tv->fixed)
+			if (tv->type == "node" && tv->fixed)
 				name += "<" + to_string(tv->width) + ">";
 		}
 	}

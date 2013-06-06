@@ -23,24 +23,23 @@ struct assignment : instruction
 	assignment &operator=(assignment a);
 
 	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
-	state variant();
-	state active_variant();
-	state passive_variant();
-	void x_channel(state *s, string v);
+	minterm variant();
+	minterm active_variant();
+	minterm passive_variant();
+	void x_channel(place *s, string v);
 
 	void expand_shortcuts();
 	void parse();
 	void merge();
-	int generate_states(graph *trans, int init, state filter);
-	state simulate_states(state init, state filter);
-	void generate_scribes();
+	pids generate_states(petri *n, pids f, bids b, minterm filter);
+	place simulate_states(place init, minterm filter);
 
 	void insert_instr(int uid, int nid, instruction *instr);
 
-	void print_hse(string t);
+	void print_hse(string t = "", ostream *fout = &cout);
 };
 
-instruction *expand_assignment(instruction *parent, string chp, vspace *vars, string tab, int verbosity);
-pair<string, instruction*> expand_expression(string chp, vspace *vars, string top, string tab, int verbosity);
+instruction *expand_assignment(instruction *parent, string chp, vspace *vars, petri *net, string tab, int verbosity);
+pair<string, instruction*> expand_expression(string chp, vspace *vars, petri *net, string top, string tab, int verbosity);
 
 #endif

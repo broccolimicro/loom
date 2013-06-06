@@ -60,9 +60,6 @@ void channel::parse(string chp, int verbosity)
 
 	string s = "", r = "", p = "";
 
-	map<string, state> res;
-	map<string, state>::iterator ri;
-
 	map<string, variable> expansion;
 
 	name = chp.substr(name_start, name_end - name_start);

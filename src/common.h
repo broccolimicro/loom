@@ -22,6 +22,7 @@
 #include <sstream>
 #include <algorithm>
 #include <vector>
+#include <stack>
 #include <math.h>
 #include <sys/time.h>
 
@@ -51,6 +52,8 @@ size_t find_first_of_l0(string subject, string search, size_t pos = 0);
 size_t find_first_of_l0(string subject, list<string> search, size_t pos = 0, list<string> exclude = list<string>());
 size_t find_last_of_l0(string subject, string search, size_t pos = string::npos);
 size_t find_last_of_l0(string subject, list<string> search, size_t pos = string::npos, list<string> exclude = list<string>());
+
+int powi(int x, int y);
 
 //In chp.cpp, there is a variable valled verbosity. Set it to one of the following settings to control exactly what is output.
 //(bitmasks)
@@ -93,7 +96,7 @@ size_t find_last_of_l0(string subject, list<string> search, size_t pos = string:
 
 //State space output customization flags
 #define STATE_LONG_NAME 1		//If 1, have the actual state
-#define CHP_EDGE 1				// If 1, output CHP on graph edges. If 0, output functional labels (loop, conditional, etc)
+#define CHP_EDGE 1				// If 1, output CHP on graph edges. If 0, output functional labels (loop, condition, etc)
 #define GRAPH_VERT 1			//If 1, the graph will be high to low. Else, it will be left to right
 #define GRAPH_DPI 300			//DPI of the output graph
 #define SHOW_ALL_DIFF_STATES 0 	// If 0, only the 'effective' edges of the diff graph are shown.

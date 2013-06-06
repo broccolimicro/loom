@@ -34,7 +34,6 @@ struct program
 
 
 	void generate_states();
-	void insert_scribe_vars();
 	void insert_state_vars();
 	void generate_prs();
 	void factor_prs();

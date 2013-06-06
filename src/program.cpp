@@ -3,7 +3,6 @@
 
 program::program()
 {
-	type_space.insert(pair<string, keyword*>("int", new keyword("int")));
 }
 
 program::program(string chp, int verbosity)
@@ -12,7 +11,7 @@ program::program(string chp, int verbosity)
 
 	// CHP to HSE
 	parse(chp, verbosity);
-	//merge();
+	merge();
 	//project();
 	//decompose();
 	//reshuffle();
@@ -64,9 +63,10 @@ void program::parse(string chp, int verbosity)
 	record *r;
 	channel *c;
 
-	// Define the basic types. In this case, 'int'
-	type_space.insert(pair<string, keyword*>("int", new keyword("int")));
-	c = new channel("channel __sync{int<1>r;int<1>a;operator?(){[r];a+;[~r];a-}operator!(){r+;[a];r-;[~a]}operator@(){r}}", &type_space, verbosity);
+	// Define the basic types. In this case, 'wire'
+	type_space.clear();
+	type_space.insert(pair<string, keyword*>("node", new keyword("node")));
+	c = new channel("channel __sync{node<1>r;node<1>a;operator?(){[r];a+;[~r];a-}operator!(){r+;[a];r-;[~a]}operator@(){r}}", &type_space, verbosity);
 	type_space.insert(pair<string, channel*>(c->name, c));
 	type_space.insert(pair<string, operate*>(c->name + "." + c->send->name, c->send));
 	type_space.insert(pair<string, operate*>(c->name + "." + c->recv->name, c->recv));
@@ -126,7 +126,8 @@ void program::parse(string chp, int verbosity)
 			if (i-j+1 > 0)
 			{
 				// Is this a process?
-				if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "process ") == 0)
+				if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "process ") == 0 ||
+					cleaned_chp.compare(j-cleaned_chp.begin(), 15, "inline process ") == 0)
 				{
 					p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, verbosity);
 					type_space.insert(pair<string, process*>(p->name, p));
@@ -163,7 +164,8 @@ void program::parse(string chp, int verbosity)
 					j += error_len;
 
 					// Make sure we don't miss the next record or process though.
-					if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "process ") == 0)
+					if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "process ") == 0 ||
+						cleaned_chp.compare(j-cleaned_chp.begin(), 15, "inline process ") == 0)
 					{
 						p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &type_space, verbosity);
 						type_space.insert(pair<string, process*>(p->name, p));
@@ -237,14 +239,6 @@ void program::generate_states()
 			((process*)i->second)->generate_states();
 }
 
-void program::insert_scribe_vars()
-{
-	map<string, keyword*>::iterator i;
-	for (i = type_space.begin(); i != type_space.end(); i++)
-		if (i->second->kind() == "process")
-			((process*)i->second)->insert_scribe_vars();
-}
-
 void program::insert_state_vars()
 {
 	map<string, keyword*>::iterator i;
@@ -278,7 +272,11 @@ void program::print_hse()
 	map<string, keyword*>::iterator i;
 	for (i = type_space.begin(); i != type_space.end(); i++)
 		if (i->second->kind() == "process")
-			((process*)i->second)->print_hse();
+		{
+			ofstream fout(i->first + ".hse");
+			((process*)i->second)->print_hse(&fout);
+			fout.close();
+		}
 }
 
 void program::print_TS()
@@ -286,7 +284,7 @@ void program::print_TS()
 	map<string, keyword*>::iterator i;
 	for (i = type_space.begin(); i != type_space.end(); i++)
 		if (i->second->kind() == "process")
-			((process*)i->second)->print_TS();
+			((process*)i->second)->print_petrify();
 }
 
 void program::print_prs()

@@ -65,6 +65,8 @@ variable &variable::operator=(variable v)
 	uid = v.uid;
 	driven = v.driven;
 	arg = v.arg;
+	state0 = v.state0;
+	state1 = v.state1;
 
 	return *this;
 }

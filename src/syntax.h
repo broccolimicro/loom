@@ -13,7 +13,7 @@
 #include "syntax/guard.h"
 #include "syntax/sequential.h"
 #include "syntax/parallel.h"
-#include "syntax/conditional.h"
+#include "syntax/condition.h"
 #include "syntax/loop.h"
 
 #endif

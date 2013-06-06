@@ -16,25 +16,24 @@ struct guard : instruction
 	guard(instruction *parent, string chp, vspace *vars, string tab, int verbosity);
 	~guard();
 
-	state solution;
+	bdd solution;
 
 	guard &operator=(guard g);
 
 	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
-	state variant();
-	state active_variant();
-	state passive_variant();
+	minterm variant();
+	minterm active_variant();
+	minterm passive_variant();
 
 	void expand_shortcuts();
 	void parse();
 	void merge();
-	int generate_states(graph *g, int init, state filter);
-	state simulate_states(state init, state filter);
-	void generate_scribes();
+	pids generate_states(petri *n, pids f, bids b, minterm filter);
+	place simulate_states(place init, minterm filter);
 
 	void insert_instr(int uid, int nid, instruction *instr);
 
-	void print_hse(string t);
+	void print_hse(string t = "", ostream *fout = &cout);
 };
 
 #endif

@@ -1,13 +1,13 @@
 record dualrail
 {
-	int<1> t;
-	int<1> f;
+	node<1> t;
+	node<1> f;
 }
 
 channel achan4p0b
 {
-	int<1> r;
-	int<1> a;
+	node<1> r;
+	node<1> a;
 	
 	operator!()
 	{
@@ -28,16 +28,16 @@ channel achan4p0b
 channel achan4p1b
 {
 	dualrail r;
-	int<1> a;
+	node<1> a;
 	
-	operator!(int<1> i)
+	operator!(node<1> i)
 	{
 		[	i  -> r.t,r.f := 1,0
 		[]	~i -> r.t,r.f := 0,1
 		];[a]; r.t,r.f := 0,0; [~a];
 	}
 	
-	operator?(int<1> i)
+	operator?(node<1> i)
 	{
 		[r.t | r.f]; i := r.t & ~r.f; a+; [~r.t & ~r.f]; a-;
 	}
@@ -50,17 +50,17 @@ channel achan4p1b
 
 channel achan2p0b
 {
-	int<1> r;
-	int<1> a;
+	node<1> r;
+	node<1> a;
 	
-	operator!(int<1> i)
+	operator!(node<1> i)
 	{
 		[   r -> r-;[~a]
 		[] ~r -> r+;[ a]
 		]
 	}
 	
-	operator?(int<1> i)
+	operator?(node<1> i)
 	{
 		[   a -> [~r];a-
 		[] ~a -> [ r];a+
@@ -76,16 +76,16 @@ channel achan2p0b
 channel achan2p1b
 {
 	dualrail r;
-	int<1> a;
+	node<1> a;
 	
-	operator!(int<1> i)
+	operator!(node<1> i)
 	{
 		[   r -> r-;[~a]
 		[] ~r -> r+;[ a]
 		]
 	}
 	
-	operator?(int<1> i)
+	operator?(node<1> i)
 	{
 		[   a -> [~r];a-
 		[] ~a -> [ r];a+

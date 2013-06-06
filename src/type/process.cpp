@@ -56,6 +56,13 @@ process &process::operator=(process p)
 
 void process::parse(string raw)
 {
+	if (raw.compare(0, 7, "inline ") == 0)
+	{
+		is_inline = true;
+		raw = raw.substr(7);
+		chp = raw;
+	}
+
 	size_t name_start = chp.find_first_of(" ")+1;
 	size_t name_end = chp.find_first_of("(");
 	size_t input_start = chp.find_first_of("(")+1;
@@ -152,34 +159,42 @@ void process::reshuffle()
 // TODO There is a problem with the interaction of scribe variables with bubbleless reshuffling because scribe variables insert bubbles
 void process::generate_states()
 {
-	space.append_state(state(value("X"), vars.global.size()), -1, "Power On");
+	cout << "Process" << endl;
+
+	map<string, variable>::iterator i;
+	for (i = vars.global.begin(); i != vars.global.end(); i++)
+	{
+		i->second.state0 = pid(space.new_place(map<int, int>(), NULL), PETRI_PLACE);
+		space.M0.push_back(i->second.state0.index);
+		i->second.state1 = pid(space.new_place(map<int, int>(), NULL), PETRI_PLACE);
+	}
+
+	pids start;
+	start.push_back(space.insert_place(start, map<int, int>(), NULL));
+	space.M0.push_back(start[0].index);
 	//TODO: Okay, I am going to say it. I think it is weird that we are passing a list of instructions to parallel to state space.
 	//It does not feel like a syntax structure's job to do that kind of thing.
-	def.generate_states(&space, 0, state());
-	space.merge();
-	space.gen_traces();
-	space.gen_deltas();
-	space.gen_conflicts();
+	space.connect(def.generate_states(&space, start, map<int, int>(), minterm()), start);
 
-	if (verbosity & VERB_BASE_STATE_SPACE)
+	for (i = vars.global.begin(); i != vars.global.end(); i++)
+		if (!i->second.driven && i->second.arg)
+		{
+			space.connect(space.insert_transition(i->second.state0, expression(i->first, &vars).expr, map<int, int>(), NULL), i->second.state1);
+			space.connect(space.insert_transition(i->second.state1, expression("~" + i->first, &vars).expr, map<int, int>(), NULL), i->second.state0);
+		}
+
+	print_dot();
+	space.Wp.print();
+	space.Wn.print();
+	/*if (verbosity & VERB_BASE_STATE_SPACE)
 		space.print_states(&vars);
 	if (verbosity & VERB_BASE_STATE_SPACE_DOT)
-		space.print_dot();
-}
-
-void process::insert_scribe_vars()
-{
-	def.generate_scribes();
-
-	if (verbosity & VERB_SCRIBEVAR_STATE_SPACE)
-		space.print_states(&vars);
-	if (verbosity & VERB_SCRIBEVAR_STATE_SPACE_DOT)
-		space.print_dot();
+		space.print_dot();*/
 }
 
 void process::insert_state_vars()
 {
-	srand(time(0));
+	/*srand(time(0));
 
 	int i, j, k, l, m;
 	int w, h;
@@ -226,11 +241,11 @@ void process::insert_state_vars()
 	 * This algorithms execution time balloons very quickly and becomes very very very fucking slow, BUT! it does indeed calculate the optimal
 	 * state variable insertion points and resulting trace. So... projection + process decomposition to keep the space we are looking at very small?
 	 * or find a less optimal, faster way?
-	 */
+	 * /
 
 	/* Turn this knob to control how many up transitions are allowed and how many down transitions are allowed. For a state space of size 25,
 	 * 1 is instant, 2 takes exactly 1 minute, and 3 takes hours. This is the glory of a brute force method.
-	 */
+	 * /
 	int dimension = 1;
 
 	best_benefit = 1;
@@ -244,14 +259,14 @@ void process::insert_state_vars()
 		space.print_down(&vars);
 		space.print_delta(&vars);
 		space.print_conflicts();
-		space.print_firings(&vars);*/
+		space.print_firings(&vars);* /
 
 		space.gen_deltas();
 		space.gen_conflicts();
 
 		/* Step 1: cache the list of conflict firings already present in the state space. This does not include conflicts between two
 		 * states in which neither states are a firing for a variable.
-		 */
+		 * /
 
 		if ((verbosity & VERB_BASE_HSE) && (verbosity & VERB_DEBUG))
 		{
@@ -381,7 +396,7 @@ void process::insert_state_vars()
 		 * Then, take the element with the max benefit value at address (x0, y0, z0, ...) and (x1, y1, z1, ...), insert into the variable space,
 		 * update the state space, update the conflict list, repeat. Theoretically, we should repeat until the maximum benefit achievable is 0
 		 * (we cannot eliminate any more conflicts). But this doesn't ever seem to happen. It seems to level off at a maximum benefit of 5.
-		 */
+		 * /
 		best_benefit = -9999999;
 		up.assign(dimension, -1);
 		down.assign(dimension, -1);
@@ -610,7 +625,7 @@ void process::insert_state_vars()
 		if (best_benefit != 0)
 		{
 			// Insert new variable
-			vid = vars.insert(variable(vars.unique_name("_sv"), "int", 1, false));
+			vid = vars.insert(variable(vars.unique_name("_sv"), "node", 1, false));
 
 			if ((verbosity & VERB_BASE_HSE) && (verbosity & VERB_DEBUG))
 				cout << "Inserting:      " << *(vars.find(vid)) << "\t\t" << best_values << endl;
@@ -655,12 +670,12 @@ void process::insert_state_vars()
 	if (verbosity & VERB_STATEVAR_STATE)
 		space.print_states(&vars);
 	if (verbosity & VERB_STATEVAR_STATE_DOT)
-		space.print_dot();
+		space.print_dot();*/
 }
 
 void process::generate_prs()
 {
-	for (int vi = 0; vi < space.width(); vi++)
+	for (int vi = 0; vi < vars.size(); vi++)
 		if (vars.get_name(vi).find_first_of("|&~") == string::npos)
 			prs.push_back(rule(vi, &space, &vars, verbosity));
 
@@ -697,60 +712,160 @@ void process::factor_prs()
 		print_prs();
 }
 
-void process::print_hse()
+void process::print_hse(ostream *fout)
 {
-	cout << "Handshaking Expansions for " << name << endl;
-	def.print_hse("");
-	cout << endl << endl;
+	def.print_hse("", fout);
 }
 
-void process::print_TS()
+void process::print_dot(ostream *fout)
 {
-	/*ofstream fout;
+	int i, j;
+	string label;
+	(*fout) << "digraph " << name << endl;
+	(*fout) << "{" << endl;
+
+	for (i = 0; i < (int)space.S.size(); i++)
+		if (!space.dead(pid(i, PETRI_PLACE)))
+			(*fout) << "\tS" << i << ";" << endl;
+
+	for (i = 0; i < (int)space.T.size(); i++)
+	{
+		label = space.values.expr(space.T[i].delta, vars.get_names());
+		if (label != "")
+			(*fout) << "\tT" << i << " [shape=box] [label=\"" << label << "\"];" << endl;
+		else
+			(*fout) << "\tT" << i << " [shape=box];" << endl;
+	}
+
+	for (i = 0; i < (int)space.Wp.size(); i++)
+		for (j = 0; j < (int)space.Wp[i].size(); j++)
+			if (space.Wp[i][j] > 0)
+				(*fout) << "\tT" << j << " -> " << "S" << i << ";" <<  endl;
+
+	for (i = 0; i < (int)space.Wn.size(); i++)
+		for (j = 0; j < (int)space.Wn[i].size(); j++)
+			if (space.Wn[i][j] > 0)
+				(*fout) << "\tS" << i << " -> " << "T" << j << ";" <<  endl;
+
+	(*fout) << "}" << endl;
+}
+
+void process::print_petrify()
+{
+	int i, j;
+	vector<string> labels;
+	map<string, int> labelmap;
+	map<string, int>::iterator li;
+	string label;
+	FILE *file;
 	map<string, variable>::iterator vi;
+	bool first;
 
-	fout.open((name + ".g").c_str());
+	file = fopen((name + ".g").c_str(), "wb");
 
-	fout << ".model " << name << endl;
+	fprintf(file, ".model %s\n", name.c_str());
 
-	fout << ".inputs";
+	first = true;
 	for (vi = vars.global.begin(); vi != vars.global.end(); vi++)
 		if (vi->second.arg && !vi->second.driven)
-			fout << " " << vi->second.name;
-	fout << endl;
+		{
+			if (first)
+			{
+				fprintf(file, ".inputs");
+				first = false;
+			}
+			fprintf(file, " %s", vi->second.name.c_str());
+		}
+	if (!first)
+		fprintf(file, "\n");
 
-	fout << ".outputs";
+	first = true;
 	for (vi = vars.global.begin(); vi != vars.global.end(); vi++)
 		if (vi->second.arg && vi->second.driven)
-			fout << " " << vi->second.name;
-	fout << endl;
+		{
+			if (first)
+			{
+				fprintf(file, ".outputs");
+				first = false;
+			}
+			fprintf(file, " %s", vi->second.name.c_str());
+		}
+	if (!first)
+		fprintf(file, "\n");
 
-	fout << ".internal";
+	first = true;
 	for (vi = vars.global.begin(); vi != vars.global.end(); vi++)
 		if (!vi->second.arg)
-			fout << " " << vi->second.name;
-	fout << endl;
+		{
+			if (first)
+			{
+				fprintf(file, ".internal");
+				first = false;
+			}
+			fprintf(file, " %s", vi->second.name.c_str());
+		}
+	if (!first)
+		fprintf(file, "\n");
+
+	first = true;
+	for (i = 0; i < (int)space.T.size(); i++)
+	{
+		label = space.values.expr(space.T[i].delta, vars.get_names());
+		if (label == "")
+		{
+			if (first)
+			{
+				fprintf(file, ".dummy");
+				first = false;
+			}
+			label = string("T") + to_string(i);
+			fprintf(file, " %s", label.c_str());
+		}
+		li = labelmap.find(label);
+		if (li == labelmap.end())
+			labelmap.insert(pair<string, int>(label, 1));
+		else
+		{
+			label += string("/") + to_string(li->second);
+			li->second++;
+		}
+
+		labels.push_back(label);
+	}
+	if (!first)
+		fprintf(file, "\n");
 
 	string from;
 	vector<string> to;
 
-	// TODO NOT CORRECT
-	fout << ".graph" << endl;
-	int k;
-	for (int i = 0; i < (int)space.transitions.size(); i++)
-		for (int j = 0; j < (int)space.back_edges[i].size(); j++)
-		{
-			for (k = 0; space.front_edges[space.back_edges[i][j]][k] != i && k < space.front_edges[space.back_edges[i][k]].size(); k++);
-			fout << space.transitions[space.back_edges[i][j]][k];
-			for (int l = 0; l < (int)space.front_edges[i].size(); l++)
-				fout << space.transitions[i][l];
-			fout << endl;
-		}
-	fout << ".marking {<";
-	fout << ">}" << endl;
-	fout << ".end" << endl;
+	fprintf(file, ".graph\n");
+	for (i = 0; i < (int)space.Wp.size(); i++)
+		for (j = 0; j < (int)space.Wp[i].size(); j++)
+			if (space.Wp[i][j] > 0)
+				fprintf(file, "%s S%d\n", labels[j].c_str(), i);
 
-	fout.close();*/
+	for (i = 0; i < (int)space.Wn.size(); i++)
+		for (j = 0; j < (int)space.Wn[i].size(); j++)
+			if (space.Wn[i][j] > 0)
+				fprintf(file, "S%d %s\n", i, labels[j].c_str());
+
+	first = true;
+	fprintf(file, ".marking {");
+	for (i = 0; i < (int)space.M0.size(); i++)
+	{
+		if (!space.dead(pid(space.M0[i], PETRI_PLACE)))
+		{
+			if (first)
+				first = false;
+			else
+				fprintf(file, " ");
+			fprintf(file, "S%d", space.M0[i]);
+		}
+	}
+	fprintf(file, "}\n");
+	fprintf(file, ".end\n");
+
+	fclose(file);
 }
 
 void process::print_prs()

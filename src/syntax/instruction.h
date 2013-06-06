@@ -26,13 +26,13 @@ public:
 
 	// The raw CHP of this instruction.
 	instruction *parent;
-	int from;
-	int uid;
+	pids from;
+	pids uid;
 	string chp;
 
 	// Some pointers for good use
 	vspace *vars;
-	graph  *space;
+	petri  *net;
 
 	// For outputting debugging messages
 	string tab;
@@ -41,20 +41,19 @@ public:
 	string kind();
 
 	virtual instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity) = 0;
-	virtual state variant() = 0;
-	virtual state active_variant() = 0;
-	virtual state passive_variant() = 0;
+	virtual minterm variant() = 0;
+	virtual minterm active_variant() = 0;
+	virtual minterm passive_variant() = 0;
 
 	virtual void expand_shortcuts() = 0;
 	virtual void parse() = 0;
 	virtual void merge() = 0;
-	virtual int  generate_states(graph *trans, int init, state filter) = 0;
-	virtual state simulate_states(state init, state filter) = 0;
-	virtual void generate_scribes() = 0;
+	virtual pids generate_states(petri *n, pids f, bids b, minterm filter) = 0;
+	virtual place simulate_states(place init, minterm filter) = 0;
 
 	virtual void insert_instr(int uid, int nid, instruction *instr) = 0;
 
-	virtual void print_hse(string t) = 0;
+	virtual void print_hse(string t, ostream *fout = &cout) = 0;
 };
 
 #endif

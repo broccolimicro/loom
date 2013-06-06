@@ -6,7 +6,7 @@
 
 #include "assignment.h"
 #include "parallel.h"
-#include "conditional.h"
+#include "condition.h"
 
 assignment::assignment()
 {
@@ -37,7 +37,7 @@ assignment &assignment::operator=(assignment a)
 	this->expr		= a.expr;
 	this->chp		= a.chp;
 	this->vars		= a.vars;
-	this->space		= a.space;
+	this->net		= a.net;
 	this->tab		= a.tab;
 	this->verbosity	= a.verbosity;
 	this->parent	= a.parent;
@@ -181,35 +181,35 @@ instruction *assignment::duplicate(instruction *parent, vspace *vars, map<string
 
 //In this context, variant calculates what varied based on this assignment
 //TODO: Technically X to 1 isn't a variant if X was a 1. I'm not sure if this comes into play badly anywhere...
-state assignment::variant()
+minterm assignment::variant()
 {
-	state result(value("_"), vars->global.size());
+	minterm result(vars->size(), v_);
 	list<pair<string, string> >::iterator i;
 	for (i = expr.begin(); i != expr.end(); i++)
-		result.assign(vars->get_uid(i->first), value("X"), value("_"));
+		result.inelastic_set(vars->get_uid(i->first), vX);
 
 	return result;
 }
 
 //TODO: Ask Ned what an active variant is
-state assignment::active_variant()
+minterm assignment::active_variant()
 {
-	state result(value("_"), vars->global.size());
+	minterm result(vars->size(), v_);
 	list<pair<string, string> >::iterator i;
 	for (i = expr.begin(); i != expr.end(); i++)
-		result.assign(vars->get_uid(i->first), value("X"), value("_"));
+		result.inelastic_set(vars->get_uid(i->first), vX);
 
 	return result;
 }
 
-state assignment::passive_variant()
+minterm assignment::passive_variant()
 {
-	return state();
+	return nullv(vars->size());
 }
 
-void assignment::x_channel(state *s, string v)
+void assignment::x_channel(place *s, string v)
 {
-	map<string, variable>::iterator vi;
+	/*map<string, variable>::iterator vi;
 	string search;
 	size_t n;
 
@@ -227,7 +227,7 @@ void assignment::x_channel(state *s, string v)
 	if (vars->get_kind(search) == "channel")
 		for (vi = vars->global.begin(); vi != vars->global.end(); vi++)
 			if (vi->first.substr(0, search.length()) == search && !s->fire(vi->second.uid))
-				s->assign(vi->second.uid, value("X"));
+				s->assign(vi->second.uid, value("X"));*/
 }
 
 /* Expand shortcut handles cases of implied syntax.
@@ -296,62 +296,60 @@ void assignment::merge()
 
 }
 
-int assignment::generate_states(graph *g, int init, state filter)
+pids assignment::generate_states(petri *n, pids f, bids b, minterm filter)
 {
-	variable *v, *v1;
-	list<pair<string, string> >::iterator ei;
-	state s;
-	int i;
+	// PETRIFY WORKFLOW
+	/*list<pair<string, string> >::iterator ei;
+	pids next;
+	pid end;
+	pids allends;
+	bids branch;
+	int k;
 
 	if ((verbosity & VERB_BASE_STATE_SPACE) && (verbosity & VERB_DEBUG))
 		cout << tab << "Assignment " << chp << endl;
 
-	if (filter.size() == 0)
-		filter = null(vars->size());
+	net  = n;
+	from = f;
 
-	// Set up the initial state
-	space	= g;
-	from	= init;
-	s = g->states[init] || filter;
-	for (ei = expr.begin(); ei != expr.end(); ei++)
+	if (expr.size() > 1)
+		net->B++;
+
+	for (ei = expr.begin(), k = expr.size()-1; ei != expr.end(); ei++, k--)
 	{
-		v = vars->find(ei->first);
-		if (v != NULL && v->width == 1 && v->type == "int")
-		{
-			s.drive(v->uid, evaluate(ei->second, vars, s.values));
-			x_channel(&s, ei->first);
-		}
-		else if (v != NULL && v->type == "int")
-			for (i = 0; i < v->width; i++)
-			{
-				v1 = vars->find(ei->first + "[" + to_string(i) + "]");
-				if (v != NULL)
-				{
-					s.drive(v1->uid, evaluate(ei->second, vars, s.values)[i]);
-					x_channel(&s, ei->first);
-				}
-				else
-					cout << "Error: Undefined variable " << ei->first << "." << endl;
-			}
-		else
-			cout << "Error: Undefined variable " << ei->first << "." << endl;
+		branch = b;
+		if (expr.size() > 1)
+			branch.insert(pair<int, int>(net->B, k));
+
+		next.clear();
+		next = (k == 0 ? from : net->duplicate(from));
+		end = net->insert_transition(next, expression(string(ei->second == "0" ? "~" : "") + ei->first, vars).expr, branch, this);
+		allends.push_back(net->insert_place(end, branch, this));
 	}
 
-	if ((verbosity & VERB_BASE_STATE_SPACE) && (verbosity & VERB_DEBUG))
-		cout << tab << s << endl;
+	uid.push_back(net->insert_dummy(allends, b, this));*/
 
-	string edge = "";
+
+
+
+	// NORMAL WORKFLOW
+	string exp;
+	list<pair<string, string> >::iterator ei;
 	for (ei = expr.begin(); ei != expr.end(); ei++)
-		edge += ei->first + (ei->second == "1" ? "+ " : "- ");
+	{
+		if (ei != expr.begin())
+			exp += "&";
+		exp += (ei->second == "0" ? "~" : "") + ei->first;
+	}
 
-	uid	= g->append_state(s, init, edge);
+	uid.push_back(net->insert_transition(from, expression(exp, vars).expr, b, this));
 
 	return uid;
 }
 
-state assignment::simulate_states(state init, state filter)
+place assignment::simulate_states(place init, minterm filter)
 {
-	variable *v, *v1;
+	/*variable *v, *v1;
 	list<pair<string, string> >::iterator ei;
 	state s;
 	int i;
@@ -364,12 +362,12 @@ state assignment::simulate_states(state init, state filter)
 	for (ei = expr.begin(); ei != expr.end(); ei++)
 	{
 		v = vars->find(ei->first);
-		if (v != NULL && v->width == 1 && v->type == "int")
+		if (v != NULL && v->width == 1 && v->type == "node")
 		{
 			s.drive(v->uid, evaluate(ei->second, vars, s.values));
 			x_channel(&s, ei->first);
 		}
-		else if (v != NULL && v->type == "int")
+		else if (v != NULL && v->type == "node")
 			for (i = 0; i < v->width; i++)
 			{
 				v1 = vars->find(ei->first + "[" + to_string(i) + "]");
@@ -385,15 +383,10 @@ state assignment::simulate_states(state init, state filter)
 			cout << "Error: Undefined variable " << ei->first << "." << endl;
 	}
 
-	return s;
+	return s;*/
 }
 
-void assignment::generate_scribes()
-{
-
-}
-
-instruction *expand_assignment(instruction *parent, string chp, vspace *vars, string tab, int verbosity)
+instruction *expand_assignment(instruction *parent, string chp, vspace *vars, petri *net, string tab, int verbosity)
 {
 	parallel *p = new parallel(parent, "", vars, tab, verbosity);
 	assignment *a = new assignment(p, chp, vars, tab, verbosity);
@@ -407,7 +400,7 @@ instruction *expand_assignment(instruction *parent, string chp, vspace *vars, st
 		v = vars->find(i->second);
 		if (i->second.find_first_of("&|~^=<>/+-*?@()") != i->second.npos)
 		{
-			result = expand_expression(i->second, vars, i->first, tab, verbosity);
+			result = expand_expression(i->second, vars, net, i->first, tab, verbosity);
 			i->second = result.first;
 			result.second->parent = p;
 			p->push(result.second);
@@ -415,7 +408,7 @@ instruction *expand_assignment(instruction *parent, string chp, vspace *vars, st
 		}
 		else if (v != NULL)
 		{
-			p->push(new conditional(p, "[" + i->second + "->" + i->first + "+[]~" + i->second + "->" + i->first + "-]", vars, tab, verbosity));
+			p->push(new condition(p, "[" + i->second + "->" + i->first + "+[]~" + i->second + "->" + i->first + "-]", vars, tab, verbosity));
 			remove.push_back(*i);
 		}
 	}
@@ -437,7 +430,7 @@ instruction *expand_assignment(instruction *parent, string chp, vspace *vars, st
 	return p;
 }
 
-pair<string, instruction*> expand_expression(string chp, vspace *vars, string top, string tab, int verbosity)
+pair<string, instruction*> expand_expression(string chp, vspace *vars, petri *net, string top, string tab, int verbosity)
 {
 	if ((verbosity & VERB_BASE_HSE) && (verbosity & VERB_DEBUG))
 		cout << tab << "Decompose: " << chp << endl;
@@ -634,7 +627,7 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 	C = pair<string, instruction*>("", NULL);
 	if (chp[0] == '(' && chp[chp.length()-1] == ')' && op == "")
 	{
-		C = expand_expression(chp.substr(1, chp.length()-2), vars, top, tab+"\t", verbosity);
+		C = expand_expression(chp.substr(1, chp.length()-2), vars, net, top, tab+"\t", verbosity);
 		if (C.first.find_first_of("&|^=<>/+-*?!@()") != C.first.npos)
 			C.first = "(" + C.first + ")";
 		return C;
@@ -643,9 +636,9 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 	A = pair<string, instruction*>(left, NULL);
 	B = pair<string, instruction*>(right, NULL);
 	if (left.find_first_of("&|~^=<>/+-*?!@()") != left.npos)
-		A = expand_expression(left, vars, "", tab+"\t", verbosity);
+		A = expand_expression(left, vars, net, "", tab+"\t", verbosity);
 	if (right.find_first_of("&|~^=<>/+-*?!@()") != right.npos)
-		B = expand_expression(right, vars, "", tab+"\t", verbosity);
+		B = expand_expression(right, vars, net, "", tab+"\t", verbosity);
 
 	if (top != "" && A.first.find_first_of("&|~^=<>/+-*?!@()") != A.first.npos)
 		A.first = "(" + A.first + ")";
@@ -653,8 +646,8 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 		B.first = "(" + B.first + ")";
 
 	if (A.second == NULL && B.second == NULL && (op == "&" || op == "|" || op == "~") && top == "" &&
-	   (A.first.find_first_of("&|~") != A.first.npos || (vars->get_type(A.first) == "int" && vars->get_width(A.first) == 1) || A.first == "") &&
-	   (B.first.find_first_of("&|~") != B.first.npos || (vars->get_type(B.first) == "int" && vars->get_width(B.first) == 1) || B.first == ""))
+	   (A.first.find_first_of("&|~") != A.first.npos || (vars->get_type(A.first) == "node" && vars->get_width(A.first) == 1) || A.first == "") &&
+	   (B.first.find_first_of("&|~") != B.first.npos || (vars->get_type(B.first) == "node" && vars->get_width(B.first) == 1) || B.first == ""))
 		return pair<string, instruction*>(A.first + op + B.first, NULL);
 
 	string type = "operator" + op + "(";
@@ -664,7 +657,7 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 	if (A.first != "")
 	{
 		if (A.first.find_first_of("|&~") != A.first.npos)
-			type += "int<1>";
+			type += "node<1>";
 		else
 			type += vars->get_info(A.first);
 	}
@@ -675,7 +668,7 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, string to
 			type += ",";
 
 		if (B.first.find_first_of("|&~") != B.first.npos)
-			type += "int<1>";
+			type += "node<1>";
 		else
 			type += vars->get_info(B.first);
 	}
@@ -742,29 +735,22 @@ void assignment::insert_instr(int uid, int nid, instruction *instr)
 {
 }
 
-void assignment::print_hse(string t)
+void assignment::print_hse(string t, ostream *fout)
 {
-	if (expr.size() == 1 && expr.begin()->second == "0")
-		cout << expr.begin()->first << "-";
-	else if (expr.size() == 1 && expr.begin()->second == "1")
-		cout << expr.begin()->first << "+";
-	else
+	if (expr.size() > 1)
+		(*fout) << "(";
+
+	list<pair<string, string> >::iterator i;
+	for (i = expr.begin(); i != expr.end(); i++)
 	{
-		list<pair<string, string> >::iterator i;
-		for (i = expr.begin(); i != expr.end(); i++)
-		{
-			if (i != expr.begin())
-				cout << ",";
-			cout << i->first;
-		}
-
-		cout << ":=";
-
-		for (i = expr.begin(); i != expr.end(); i++)
-		{
-			if (i != expr.begin())
-				cout << ",";
-			cout << i->second;
-		}
+		if (i != expr.begin())
+			(*fout) << ",";
+		if (i->second == "0")
+			(*fout) << i->first << "-";
+		else if (i->second == "1")
+			(*fout) << i->first << "+";
 	}
+
+	if (expr.size() > 1)
+		(*fout) << ")";
 }
