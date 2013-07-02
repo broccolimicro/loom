@@ -39,8 +39,9 @@ struct program
 	void factor_prs();
 
 	void print_hse();
+	void print_dot();
+	void print_petrify();
 	void print_prs();
-	void print_TS();
 };
 
 #endif

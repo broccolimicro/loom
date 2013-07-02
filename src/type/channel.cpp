@@ -100,7 +100,7 @@ void channel::parse(string chp, int verbosity)
 				s = raw;
 			else if (raw.find("operator?") != raw.npos)
 				r = raw;
-			else if (raw.find("operator@") != raw.npos)
+			else if (raw.find("operator#") != raw.npos)
 				p = raw;
 
 			j = i+1;

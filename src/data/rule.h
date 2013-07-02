@@ -21,23 +21,17 @@ struct rule
 	rule(int uid, petri *g, vspace *v, int verbosity);
 	~rule();
 
+	petri *net;
+	vspace *vars;
+
 	int uid;
-	string name;
-	expression up, down;
+	int up, down;
 
 	int verbosity;
 
-	//I had a vector of bools, an int, and a string here. No clue what I actually want.
-	int var_usage_up;
-	int var_usage_down;
-
 	rule &operator=(rule r);
 
-	void gen_minterms(petri *g);
-	void mccluskey();
-	void gen_output(vspace *v);
-	void find_var_usage_up();
-	void find_var_usage_down();
+	void gen_minterms();
 };
 
 ostream &operator<<(ostream &os, rule r);

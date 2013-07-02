@@ -39,7 +39,7 @@ instruction *expand_instantiation(instruction *parent, string chp, vspace *vars,
 				{
 					rename = vars->instantiate(v.name, !allow_process, &(p->vars), false);
 
-					if (v.type.find_first_of("!?@") != v.type.npos && v.name.find_first_of(".") != v.name.npos)
+					if (v.type.find_first_of("!?#") != v.type.npos && v.name.find_first_of(".") != v.name.npos)
 					{
 						string chname = v.name.substr(0, v.name.find_first_of("."));
 						string chtype = v.type.substr(0, v.type.find_first_of("."));

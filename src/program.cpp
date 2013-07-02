@@ -18,16 +18,17 @@ program::program(string chp, int verbosity)
 
 	// HSE to State Space
 	generate_states();
-	//insert_scribe_vars();
-	//insert_state_vars();
+	insert_state_vars();
 
 	// State Space to PRS
-	//generate_prs();
+	generate_prs();
 	//factor_prs();
 
 
 	print_hse();
-	print_TS();
+	print_dot();
+	print_petrify();
+	print_prs();
 }
 
 program::~program()
@@ -66,7 +67,7 @@ void program::parse(string chp, int verbosity)
 	// Define the basic types. In this case, 'wire'
 	type_space.clear();
 	type_space.insert(pair<string, keyword*>("node", new keyword("node")));
-	c = new channel("channel __sync{node<1>r;node<1>a;operator?(){[r];a+;[~r];a-}operator!(){r+;[a];r-;[~a]}operator@(){r}}", &type_space, verbosity);
+	c = new channel("channel __sync{node<1>r;node<1>a;operator?(){[r];a+;[~r];a-}operator!(){r+;[a];r-;[~a]}operator#(){r}}", &type_space, verbosity);
 	type_space.insert(pair<string, channel*>(c->name, c));
 	type_space.insert(pair<string, operate*>(c->name + "." + c->send->name, c->send));
 	type_space.insert(pair<string, operate*>(c->name + "." + c->recv->name, c->recv));
@@ -279,7 +280,19 @@ void program::print_hse()
 		}
 }
 
-void program::print_TS()
+void program::print_dot()
+{
+	map<string, keyword*>::iterator i;
+	for (i = type_space.begin(); i != type_space.end(); i++)
+		if (i->second->kind() == "process")
+		{
+			ofstream fout(i->first + ".dot");
+			((process*)i->second)->print_dot(&fout);
+			fout.close();
+		}
+}
+
+void program::print_petrify()
 {
 	map<string, keyword*>::iterator i;
 	for (i = type_space.begin(); i != type_space.end(); i++)
@@ -293,7 +306,8 @@ void program::print_prs()
 	for (i = type_space.begin(); i != type_space.end(); i++)
 		if (i->second->kind() == "process")
 		{
-			cout << "Production Rules for " << ((process*)i->second)->name << endl;
-			((process*)i->second)->print_prs();
+			ofstream fout(i->first + ".prs");
+			((process*)i->second)->print_prs(&fout);
+			fout.close();
 		}
 }

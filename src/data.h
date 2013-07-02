@@ -12,6 +12,8 @@
 #include "data/matrix.h"
 #include "data/minterm.h"
 #include "data/canonical.h"
+#include "data/space.h"
+#include "data/bdd.h"
 #include "data/petri.h"
 #include "data/expression.h"
 #include "data/variable.h"

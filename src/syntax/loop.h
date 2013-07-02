@@ -23,15 +23,11 @@ struct loop : condition
 	loop &operator=(loop l);
 
 	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
-	minterm variant();
-	minterm active_variant();
-	minterm passive_variant();
 
 	void expand_shortcuts();
 	void parse();
 	void merge();
-	pids generate_states(petri *n, pids f, bids b, minterm filter);
-	place simulate_states(place init, minterm filter);
+	vector<int> generate_states(petri *n, vector<int> f, map<int, int> branch, vector<int> filter);
 
 	void insert_instr(int uid, int nid, instruction *instr);
 

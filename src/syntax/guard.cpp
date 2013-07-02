@@ -97,19 +97,19 @@ instruction *guard::duplicate(instruction *parent, vspace *vars, map<string, str
 	return instr;
 }
 
-minterm guard::variant()
+vector<int> guard::variant()
 {
-	return estimate(chp, vars);
+	return extract_ids(chp, vars);
 }
 
-minterm guard::active_variant()
+vector<int> guard::active_variant()
 {
-	return nullv(vars->size());
+	return vector<int>();
 }
 
-minterm guard::passive_variant()
+vector<int> guard::passive_variant()
 {
-	return estimate(chp, vars);
+	return extract_ids(chp, vars);
 }
 
 void guard::expand_shortcuts()
@@ -129,31 +129,33 @@ void guard::merge()
 
 }
 
-pids build(petri *net, pids trans, pids root, bids branch, instruction *owner, vspace *vars, vector<string> exp)
+vector<int> build(petri *net, vector<int> transout, vector<int> transin, vector<int> root, instruction *owner, vspace *vars, vector<string> exp, map<int, int> branch, vector<int> filter)
 {
 	if (exp.size() == 0)
 	{
-		net->connect(root, trans);
-		return pids();
+		net->connect(root, transout);
+		net->connect(transin, root);
+		return vector<int>();
 	}
 	else
 	{
-		map<list<string>, vector<int> > groups;
-		map<list<string>, vector<int> >::iterator groupi;
-		list<string> group;
-		list<string>::const_iterator vari;
+		map<vector<string>, vector<int> > groups;
+		map<vector<string>, vector<int> >::iterator groupi;
+		vector<string> group;
+		vector<string>::const_iterator vari;
 		vector<string> outexp;
-		pids ret;
-		pids p, t;
+		vector<int> retout, retin;
+		vector<int> intlist;
+		vector<int> p, t, t1;
 		size_t i;
 		string temp;
 
-		for (i = 0; i < trans.size() && i < exp.size(); i++)
+		for (i = 0; i < transout.size() && i < exp.size(); i++)
 		{
-			group = extract_vars(exp[i]);
+			group = extract_names(exp[i]);
 			groupi = groups.find(group);
 			if (groupi == groups.end())
-				groupi = groups.insert(pair<list<string>, vector<int> >(group, vector<int>())).first;
+				groupi = groups.insert(pair<vector<string>, vector<int> >(group, vector<int>())).first;
 
 			groupi->second.push_back(i);
 		}
@@ -162,15 +164,26 @@ pids build(petri *net, pids trans, pids root, bids branch, instruction *owner, v
 		{
 			p.clear();
 			t.clear();
-			p.push_back(pid(net->new_place(branch, owner), PETRI_PLACE));
+			t1.clear();
+			p.push_back(net->new_place(0, filter, branch, owner));
+			cout << "guard?" << endl;
 			for (i = 0; i < groupi->second.size(); i++)
-				t.push_back(trans[groupi->second[i]]);
+			{
+				t.push_back(transout[groupi->second[i]]);
+				if (transin.size() == transout.size())
+					t1.push_back(transin[groupi->second[i]]);
+			}
 			net->connect(p, t);
+			net->connect(t1, p);
 
 			t.clear();
+			t1.clear();
 			for (vari = groupi->first.begin(); vari != groupi->first.end(); vari++)
 			{
-				t.push_back(pid(net->new_transition(net->values.build(expression(*vari, vars).expr), branch, owner), 0));
+				intlist = net->new_transitions(net->values->build(expression(*vari, vars).expr), false, branch, owner);
+				t.insert(t.end(), intlist.begin(), intlist.end());
+				intlist = net->new_transitions(net->values->build(expression("~(" + *vari + ")", vars).expr), false, branch, owner);
+				t1.insert(t1.end(), intlist.begin(), intlist.end());
 				for (i = 0; i < groupi->second.size(); i++)
 				{
 					temp = remove_var(exp[groupi->second[i]], *vari);
@@ -179,16 +192,18 @@ pids build(petri *net, pids trans, pids root, bids branch, instruction *owner, v
 				}
 			}
 			net->connect(t, p);
-			ret.insert(ret.end(), t.begin(), t.end());
+			net->connect(p, t1);
+			retout.insert(retout.end(), t.begin(), t.end());
+			retin.insert(retin.end(), t1.begin(), t1.end());
 		}
 
-		build(net, ret, root, branch, owner, vars, outexp);
+		build(net, retout, retin, root, owner, vars, outexp, branch, filter);
 
-		return ret;
+		return retout;
 	}
 }
 
-pids guard::generate_states(petri *n, pids f, bids b, minterm filter)
+vector<int> guard::generate_states(petri *n, vector<int> f, map<int, int> branch, vector<int> filter)
 {
 	/* TODO If a variable in a guard has a definite value in the previous state (not 'X'), then what do we do?
 	 * Choice 1: replace their occurrence in the guard with their current, constant value
@@ -254,14 +269,17 @@ pids guard::generate_states(petri *n, pids f, bids b, minterm filter)
 	//g->states[init] = g->states[init] && solve(expression("~(" + chp + ")").simple, vars, "", -1);
 
 
-	// PETRIFY WORKFLOW - simple
-	/*chp = expression(chp).simple;
+#ifdef METHOD_PETRIFY_SIMPLE
+	chp = expression(chp).simple;
+
+	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
+		cout << tab << "Guard " << chp << endl;
 
 	net = n;
 	from = f;
 
 	string minterm, var;
-	pid minterm_trans;
+	int minterm_trans;
 	variable *vptr;
 	size_t i = 0, j = 0;
 	size_t k = 0, l = 0;
@@ -370,65 +388,38 @@ pids guard::generate_states(petri *n, pids f, bids b, minterm filter)
 			net->connect(vptr->state1, minterm_trans);
 			net->connect(minterm_trans, vptr->state1);
 		}
-	}*/
+	}
+#endif
 
+#ifdef METHOD_PETRIFY_EXP
+	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
+		cout << tab << "Guard " << chp << endl;
 
-	// PETRIFY WORKFLOW - expression
-	/*vector<string> exp;
+	from = f;
+	net = n;
+	vector<string> exp;
 	exp.push_back(chp);
-	uid.push_back(pid(net->new_transition(1, b, this), 0));
+	uid.push_back(net->new_transition(1, b, this));
 
-	build(net, uid, from, b, this, vars, exp);*/
+	build(net, uid, vector<int>(), from, b, this, vars, exp, filter);
+#endif
 
-	// NORMAL WORKFLOW
-	cout << "LOOK HERE " << chp << endl;
+#ifdef METHOD_NORMAL
+	vector<int> temp;
+	from = f;
+	net = n;
 	expression e(chp, vars);
-	cout << "BREAKS LATER" << endl;
 	chp = e.simple;
 
-	cout << "NOT HERE" << endl;
-	uid.push_back(net->insert_transition(from, e.expr, b, this));
+	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
+		cout << tab << "Guard " << chp << endl;
 
-	cout << "LATER" << endl;
+	temp = net->insert_transitions(from, net->values->build(e.expr), branch, this);
+	uid.insert(uid.end(), temp.begin(), temp.end());
+#endif
+
+
 	return uid;
-}
-
-
-
-place guard::simulate_states(place init, minterm filter)
-{
-	/*map<string, variable>::iterator vi;
-	state s, temp;
-	string temp_chp;
-	size_t k = 0, curr;
-	string vname;
-
-	if (filter.size() == 0)
-		filter = null(vars->size());
-
-	// Choice 1
-	temp_chp = chp;
-
-	temp = estimate(temp_chp, vars);
-	for (int i = 0; i < temp.size(); i++)
-	{
-		if (temp[i].data == "X" && init[i].data != "X")
-		{
-			vname = vars->get_name(i);
-			k = 0;
-			while (k < temp_chp.length())
-			{
-				curr = find_name(temp_chp, vname, k);
-				if (curr == temp_chp.npos)
-					break;
-				temp_chp.replace(curr, vname.length(), init[i].data);
-				k = curr + init[i].data.length();
-			}
-		}
-	}
-	temp_chp = expression(temp_chp).simple;
-
-	return (init || filter) && solve(temp_chp, vars, tab, verbosity);*/
 }
 
 void guard::insert_instr(int uid, int nid, instruction *instr)

@@ -39,39 +39,3 @@ operator^(node<1> s, node<1> a, node<1> b)
 	s := a&~b | ~a&b;
 }
 
-operator+(node<1> s, node<1> a, node<1> b)
-{
-	s := a^b;
-}
-
-operator+(node<2> s, node<2> a, node<2> b)
-{
-	node<1> c;
-	c := a[0]&b[0];
-	s[0],s[1] := a[0]+b[0],(a[1]+b[1])^c;
-}
-
-operator&(node<4> s, node<4> a, node<4> b)
-{
-	s[0],s[1],s[2],s[3] := a[0]&b[0],a[1]&b[1],a[2]&b[2],a[3]&b[3];
-}
-
-operator+(node<5> s, node<5> a, node<5> b)
-{
-	node<4> c;
-	
-	(s[0] := a[0]+b[0]||
-	c[0] := a[0]&b[0]);
-	
-	(s[1] := (a[1]+b[1])^c[0]||
-	c[1] := a[1]&b[1] | a[1]&c[0] | b[1]&c[0]); 
-	
-	(s[2] := (a[2]+b[2])^c[1]||
-	c[2] := a[2]&b[2] | a[2]&c[1] | b[2]&c[1]);
-	
-	(s[3] := (a[3]+b[3])^c[2]||
-	c[3] := a[3]&b[3] | a[3]&c[2] | b[3]&c[2]);
-	
-	s[4] := (a[4]+b[4])^c[3];
-}
-

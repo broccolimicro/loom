@@ -6,6 +6,7 @@
  */
 
 #include "vspace.h"
+#include "../type/channel.h"
 
 int vspace::size()
 {
@@ -177,6 +178,55 @@ vector<string> vspace::get_names()
 		ret[gi->second.uid] = gi->first;
 
 	return ret;
+}
+
+/* x_channel()
+ *
+ * av is a list of indices to one bit variables located in the globals list
+ * node is an index to the place in which we want to existentially quantify these variables
+ */
+vector<int> vspace::x_channel(vector<int> av)
+{
+	map<string, variable>::iterator vi;
+	string name, vkind;
+	size_t n;
+	variable *v;
+	variable *g;
+	keyword *k;
+	channel *c;
+	int id;
+	vector<int> result;
+	for (int i = 0; i < (int)av.size(); i++)
+	{
+		name = get_name(av[i]);
+
+		for (n = name.find_last_of("."); n != name.npos; n = name.substr(0, n).find_last_of("."))
+		{
+			v = find(name.substr(0, n));
+			if (v != NULL)
+			{
+				k = find_type(v->type);
+
+				if (k != NULL && k->kind() == "channel")
+				{
+					c = (channel*)k;
+
+					for (vi = c->vars.global.begin(); vi != c->vars.global.end(); vi++)
+					{
+						g = find(v->name + "." + vi->second.name);
+						if (g == NULL)
+							cout << "Error: Could not find " << v->name + "." + vi->second.name << endl;
+						else if (!g->driven && std::find(av.begin(), av.end(), id) == av.end())
+							result.push_back(g->uid);
+					}
+				}
+			}
+		}
+	}
+
+	unique(&result);
+
+	return result;
 }
 
 string vspace::unique_name(string prefix)

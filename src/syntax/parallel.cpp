@@ -114,39 +114,6 @@ instruction *parallel::duplicate(instruction *parent, vspace *vars, map<string, 
 	return instr;
 }
 
-minterm parallel::variant()
-{
-	minterm result(vars->global.size(), v_);
-
-	list<instruction*>::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-		result = result || (*i)->variant();
-
-	return result;
-}
-
-minterm parallel::active_variant()
-{
-	minterm result(vars->global.size(), v_);
-
-	list<instruction*>::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-		result = result || (*i)->active_variant();
-
-	return result;
-}
-
-minterm parallel::passive_variant()
-{
-	minterm result(vars->global.size(), v_);
-
-	list<instruction*>::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-		result = result || (*i)->passive_variant();
-
-	return result;
-}
-
 void parallel::expand_shortcuts()
 {
 
@@ -202,7 +169,7 @@ void parallel::parse()
 			// This sub sequential is a variable definition. keyword<bitwidth> name
 			else if (vars->vdef(raw_instr) && raw_instr.length() > 0)
 				push(expand_instantiation(this, raw_instr, vars, NULL, tab+"\t", verbosity, true));
-			else if ((k = raw_instr.find_first_of("?!@")) != raw_instr.npos && raw_instr.find(":=") == raw_instr.npos && raw_instr.length() > 0)
+			else if ((k = raw_instr.find_first_of("?!#")) != raw_instr.npos && raw_instr.find(":=") == raw_instr.npos && raw_instr.length() > 0)
 				push(add_unique_variable(this, raw_instr.substr(0, k) + "._fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", vars->get_type(raw_instr.substr(0, k)) + ".operator" + raw_instr[k] + "()", vars, tab+"\t", verbosity).second);
 			// This sub sequential is an assignment instruction.
 			else if ((raw_instr.find(":=") != raw_instr.npos || raw_instr[raw_instr.length()-1] == '+' || raw_instr[raw_instr.length()-1] == '-') && raw_instr.length() > 0)
@@ -228,12 +195,13 @@ void parallel::merge()
 		(*i)->merge();
 }
 
-pids parallel::generate_states(petri *n, pids f, bids b, minterm filter)
+vector<int> parallel::generate_states(petri *n, vector<int> f, map<int, int> branch, vector<int> filter)
 {
-	list<instruction*>::iterator i;
-	pids next, end;
-	pids allends;
-	bids branch;
+	list<instruction*>::iterator i, j;
+	vector<int> next, end;
+	vector<int> allends;
+	map<int, int> nbranch;
+	int nbranch_count;
 	size_t k;
 
 	if ((verbosity & VERB_BASE_STATE_SPACE) && (verbosity & VERB_DEBUG))
@@ -242,51 +210,33 @@ pids parallel::generate_states(petri *n, pids f, bids b, minterm filter)
 	net  = n;
 	from = f;
 
-	if (instrs.size() > 1)
-		net->B++;
+	vector<int> mutables, temp;
 
+	nbranch_count = net->branch_count;
+	net->branch_count++;
 	for (i = instrs.begin(), k = instrs.size()-1; i != instrs.end(); i++, k--)
 	{
-		branch = b;
-		if (instrs.size() > 1)
-			branch.insert(pair<int, int>(net->B, k));
+		nbranch = branch;
+		nbranch.insert(pair<int, int>(nbranch_count, (int)k));
+		mutables = filter;
+		for (j = instrs.begin(); j != instrs.end(); j++)
+			if (i != j)
+			{
+				temp = (*j)->active_variant();
+				mutables.insert(mutables.end(), temp.begin(), temp.end());
+			}
 
 		next.clear();
 		next = (k == 0 ? from : net->duplicate(from));
-		end = (*i)->generate_states(net, next, branch, filter);
-		allends.push_back(net->insert_place(end, branch, this));
+		end = (*i)->generate_states(net, next, nbranch, mutables);
+		allends.push_back(net->insert_place(end, mutables, nbranch, this));
 	}
-	uid.push_back(net->insert_dummy(allends, b, this));
+	uid.push_back(net->insert_dummy(allends, branch, this));
 
 	return uid;
 }
 
-place parallel::simulate_states(place init, minterm filter)
-{
-	/*list<instruction*>::iterator i, j;
-	instruction *instr;
-	state s;
-	state v;
-
-	if (filter.size() == 0)
-		filter = null(vars->size());
-
-	s = filter;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		v = filter;
-		for (j = instrs.begin(); j != instrs.end(); j++)
-			if (i != j)
-				v = v || (*j)->active_variant();
-
-		instr = *i;
-		s = s || instr->simulate_states(init, v);
-	}
-
-	return s;*/
-}
-
-void parallel::branch_place_set(pid from, bid id)
+void parallel::branch_place_set(int from, pair<int, int> id)
 {
 	/*int i;
 
@@ -307,7 +257,7 @@ void parallel::branch_place_set(pid from, bid id)
 			branch_trans_set(net->Wp[from.index][i], id);*/
 }
 
-void parallel::branch_trans_set(pid from, bid id)
+void parallel::branch_trans_set(int from, pair<int, int> id)
 {
 	/*int i;
 

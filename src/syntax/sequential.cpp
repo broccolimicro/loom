@@ -136,37 +136,49 @@ instruction *sequential::duplicate(instruction *parent, vspace *vars, map<string
 	return instr;
 }
 
-minterm sequential::variant()
+vector<int> sequential::variant()
 {
-	minterm result(vars->size(), v_);
+	vector<int> result;
+	vector<int> temp;
 
 	list<instruction*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
-		result = result || (*i)->variant();
+	{
+		temp = (*i)->variant();
+		result.insert(result.end(), temp.begin(), temp.end());
+	}
 
-	return result;
+	return unique(&result);
 }
 
-minterm sequential::active_variant()
+vector<int> sequential::active_variant()
 {
-	minterm result(vars->size(), v_);
+	vector<int> result;
+	vector<int> temp;
 
 	list<instruction*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
-		result = result || (*i)->active_variant();
+	{
+		temp = (*i)->active_variant();
+		result.insert(result.end(), temp.begin(), temp.end());
+	}
 
-	return result;
+	return unique(&result);
 }
 
-minterm sequential::passive_variant()
+vector<int> sequential::passive_variant()
 {
-	minterm result(vars->size(), v_);
+	vector<int> result;
+	vector<int> temp;
 
 	list<instruction*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
-		result = result || (*i)->passive_variant();
+	{
+		temp = (*i)->passive_variant();
+		result.insert(result.end(), temp.begin(), temp.end());
+	}
 
-	return result;
+	return unique(&result);
 }
 
 void sequential::expand_shortcuts()
@@ -227,7 +239,7 @@ void sequential::parse()
 			else if (vars->vdef(raw_instr) && raw_instr.length() > 0)
 				push(expand_instantiation(this, raw_instr, vars, NULL, tab+"\t", verbosity, true));
 			// This sub sequential is a communication instantiation.
-			else if ((k = raw_instr.find_first_of("?!@")) != raw_instr.npos && raw_instr.find(":=") == raw_instr.npos && raw_instr.length() > 0)
+			else if ((k = raw_instr.find_first_of("?!#")) != raw_instr.npos && raw_instr.find(":=") == raw_instr.npos && raw_instr.length() > 0)
 				push(add_unique_variable(this, raw_instr.substr(0, k) + "._fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", vars->get_type(raw_instr.substr(0, k)) + ".operator" + raw_instr[k] + "()", vars, tab, verbosity).second);
 			// This sub sequential is an assignment instruction.
 			else if ((raw_instr.find(":=") != raw_instr.npos || raw_instr[raw_instr.length()-1] == '+' || raw_instr[raw_instr.length()-1] == '-') && raw_instr.length() > 0)
@@ -304,15 +316,14 @@ void sequential::merge()
 		(*j)->merge();
 }
 
-pids sequential::generate_states(petri *n, pids f, bids b, minterm filter)
+vector<int> sequential::generate_states(petri *n, vector<int> f, map<int, int> branch, vector<int> filter)
 {
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
-	pids next;
-	size_t i;
-	map<bids, pids> groups;
-	map<bids, pids>::iterator gi;
-	bids::iterator mi, mj;
+	vector<int> next;
+	map<map<int, int>, vector<int> > groups;
+	map<map<int, int>, vector<int> >::iterator gi;
+	map<int, int>::iterator mi, mj;
 
 	if ((verbosity & VERB_BASE_STATE_SPACE) && (verbosity & VERB_DEBUG))
 		cout << tab << "Sequential " << chp << endl;
@@ -320,15 +331,7 @@ pids sequential::generate_states(petri *n, pids f, bids b, minterm filter)
 	net  = n;
 	from = f;
 	if (instrs.size() == 0)
-	{
-		/*for (i = 0; i < f.size(); i++)
-		{
-			next = net->input_arcs(f[i]);
-			uid.insert(uid.end(), next.begin(), next.end());
-		}
-		net->remove_place(f);*/
-		uid.push_back(net->insert_dummy(from, b, this));
-	}
+		uid.push_back(net->insert_dummy(from, branch, this));
 	else
 	{
 		uid  = f;
@@ -339,28 +342,14 @@ pids sequential::generate_states(petri *n, pids f, bids b, minterm filter)
 
 			if (instr_iter != instrs.begin())
 			{
-				next.push_back(net->insert_place(uid, b, this));
-				uid	= instr->generate_states(net, next, b, filter);
+				next.push_back(net->insert_place(uid, filter, branch, this));
+				uid	= instr->generate_states(net, next, branch, filter);
 			}
 			else
-				uid	= instr->generate_states(net, uid, b, filter);
+				uid	= instr->generate_states(net, uid, branch, filter);
 		}
 	}
 	return uid;
-}
-
-place sequential::simulate_states(place init, minterm filter)
-{
-	/*list<instruction*>::iterator instr_iter;
-	instruction *instr;
-
-	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
-	{
-		instr = *instr_iter;
-		init = instr->simulate_states(init, filter);
-	}
-
-	return init;*/
 }
 
 /* This function cleans up all of the memory allocated

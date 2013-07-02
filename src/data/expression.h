@@ -74,11 +74,12 @@ t evaluate(string raw, vspace *vars, vector<t> values)
 		return t(dec_to_bin(raw));
 }
 
-list<string> extract_vars(string exp);
+vector<string> extract_names(string exp);
+vector<int> extract_ids(string exp, vspace *vars);
 string remove_var(string exp, string var);
 
 
-bdd solve(string raw, vspace *vars, string tab, int verbosity);
+minterm solve(string raw, vspace *vars, string tab, int verbosity);
 minterm estimate(string e, vspace *vars);
 
 #endif

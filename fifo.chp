@@ -1,4 +1,0 @@
-process fifo4p0b(chan4p0b l, chan4p0b r)
-{
-	*[l?;r!]
-}

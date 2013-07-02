@@ -30,8 +30,8 @@ struct variable
 	bool		driven;		// keep track of whether or not this variable is driven within this process
 	bool		arg;		// Is this variable an argument variable into a process?
 
-	pid state0;
-	pid state1;
+	int state0;
+	int state1;
 
 	list<string> inputs;
 

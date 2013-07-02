@@ -112,8 +112,8 @@ void expression::gen_minterms(string e)
 	vector<minterm> values(vars->global.size());
 	vector<int> exists;
 
-	for (i = 0; i < vars->global.size(); i++)
-		if (find_name(e, vars->get_name(i)) != -1)
+	for (i = 0; i < (int)vars->global.size(); i++)
+		if (find_name(e, vars->get_name(i)) != string::npos)
 			exists.push_back(i);
 
 	m = pow(2, exists.size())/2;
@@ -198,9 +198,9 @@ expression &expression::operator()(vector<minterm> t, vspace *v)
 	return *this;
 }
 
-list<string> extract_vars(string exp)
+vector<string> extract_names(string exp)
 {
-	list<string> ret;
+	vector<string> ret;
 	size_t i = string::npos, j = 0;
 	while ((i = exp.find_first_of("&|", i+1)) != string::npos)
 	{
@@ -210,9 +210,22 @@ list<string> extract_vars(string exp)
 
 	ret.push_back(exp.substr(j));
 
-	ret.sort();
-	ret.unique();
-	return ret;
+	return unique(&ret);
+}
+
+vector<int> extract_ids(string exp, vspace *vars)
+{
+	vector<int> ret;
+	size_t i = string::npos, j = 0;
+	while ((i = exp.find_first_of("&|", i+1)) != string::npos)
+	{
+		ret.push_back(vars->get_uid(exp.substr(j, i-j)));
+		j = i+1;
+	}
+
+	ret.push_back(vars->get_uid(exp.substr(j)));
+
+	return unique(&ret);
 }
 
 string remove_var(string exp, string var)
@@ -255,18 +268,12 @@ string remove_var(string exp, string var)
 	return ret;
 }
 
-bdd solve(string raw, vspace *vars, string tab, int verbosity)
+minterm solve(string raw, vspace *vars, string tab, int verbosity)
 {
-	/*int id;
-	state outcomes;
+	int id;
+	minterm outcomes(vars->global.size(), v_);
 	string::iterator i, j;
 	int depth;
-
-	if (vars->global.size() != 0)
-		outcomes.assign(vars->global.size()-1, value("?"), value("?"));
-
-	//if (verbosity >= VERB_PARSE)
-	//	cout << tab << "Solve: " << raw << endl;
 
 	depth = 0;
 	for (i = raw.begin(), j = raw.begin(); i != raw.end()+1; i++)
@@ -277,15 +284,8 @@ bdd solve(string raw, vspace *vars, string tab, int verbosity)
 			depth--;
 
 		if (depth == 0 && *i == '|')
-		{
-			outcomes = (solve(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity) ||
+			return (solve(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity) ||
 						solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity));
-
-			//if (verbosity >= VERB_PARSE)
-			//	cout << tab << outcomes << endl;
-
-			return outcomes;
-		}
 	}
 
 	depth = 0;
@@ -297,15 +297,8 @@ bdd solve(string raw, vspace *vars, string tab, int verbosity)
 			depth--;
 
 		if (depth == 0 && *i == '&')
-		{
-			outcomes = (solve(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity) &&
+			return (solve(raw.substr(j-raw.begin(), i-j), vars, tab+"\t", verbosity) &&
 						solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity));
-
-			//if (verbosity >= VERB_PARSE)
-			//	cout << tab << outcomes << endl;
-
-			return outcomes;
-		}
 	}
 
 	depth = 0;
@@ -317,44 +310,28 @@ bdd solve(string raw, vspace *vars, string tab, int verbosity)
 			depth--;
 
 		if (depth == 0 && *i == '~')
-		{
-			outcomes = ~solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
-
-			//if (verbosity >= VERB_PARSE)
-			//	cout << tab << outcomes << endl;
-
-			return outcomes;
-		}
+			return ~solve(raw.substr(i+1-raw.begin()), vars, tab+"\t", verbosity);
 	}
 
 	unsigned long s = raw.find_first_of("(");
 	unsigned long e = raw.find_last_of(")");
 	if (s != raw.npos && e != raw.npos)
-	{
-		outcomes = solve(raw.substr(s+1, e-s-1), vars, tab+"\t", verbosity);
-
-		//if (verbosity >= VERB_PARSE)
-		//	cout << tab << outcomes << endl;
-
-		return outcomes;
-	}
+		return solve(raw.substr(s+1, e-s-1), vars, tab+"\t", verbosity);
 
 	id = vars->get_uid(raw);
 	if (id != -1)
-		outcomes.assign(id, value("1"), value("?"));
+		outcomes.inelastic_set(id, v1);
 	// TODO This is important for constants within guards such as a & 1 or a & 0, but breaks guards that are constants like 1 or 0
 	else if (raw == "1")
 		for (map<string, variable>::iterator vi = vars->global.begin(); vi != vars->global.end(); vi++)
-			outcomes.assign(vi->second.uid, value("X"), value("?"));
+			outcomes.inelastic_set(vi->second.uid, vX);
 	else if (raw == "0")
 		for (map<string, variable>::iterator vi = vars->global.begin(); vi != vars->global.end(); vi++)
-			outcomes.assign(vi->second.uid, value("_"), value("?"));
+			outcomes.inelastic_set(vi->second.uid, v_);
 	else
 		cout << "Error: Undefined variable " << raw << "." << endl;
-	//if (verbosity >= VERB_PARSE)
-	//	cout << tab << outcomes << endl;
 
-	return outcomes;*/
+	return outcomes;
 }
 
 minterm estimate(string e, vspace *vars)

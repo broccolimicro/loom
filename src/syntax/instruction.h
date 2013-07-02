@@ -26,8 +26,8 @@ public:
 
 	// The raw CHP of this instruction.
 	instruction *parent;
-	pids from;
-	pids uid;
+	vector<int> from;
+	vector<int> uid;
 	string chp;
 
 	// Some pointers for good use
@@ -41,15 +41,14 @@ public:
 	string kind();
 
 	virtual instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity) = 0;
-	virtual minterm variant() = 0;
-	virtual minterm active_variant() = 0;
-	virtual minterm passive_variant() = 0;
+	virtual vector<int> variant() = 0;
+	virtual vector<int> active_variant() = 0;
+	virtual vector<int> passive_variant() = 0;
 
 	virtual void expand_shortcuts() = 0;
 	virtual void parse() = 0;
 	virtual void merge() = 0;
-	virtual pids generate_states(petri *n, pids f, bids b, minterm filter) = 0;
-	virtual place simulate_states(place init, minterm filter) = 0;
+	virtual vector<int> generate_states(petri *n, vector<int> f, map<int, int> branch, vector<int> filter) = 0;
 
 	virtual void insert_instr(int uid, int nid, instruction *instr) = 0;
 

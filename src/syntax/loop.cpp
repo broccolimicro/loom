@@ -115,45 +115,6 @@ instruction *loop::duplicate(instruction *parent, vspace *vars, map<string, stri
 	return instr;
 }
 
-minterm loop::variant()
-{
-	minterm result(vars->global.size(), v_);
-
-	list<pair<sequential*, guard*> >::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		result = result || i->first->variant();
-		result = result || i->second->variant();
-	}
-	return result;
-}
-
-minterm loop::active_variant()
-{
-	minterm result(vars->global.size(), v_);
-
-	list<pair<sequential*, guard*> >::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		result = result || i->first->active_variant();
-		result = result || i->second->active_variant();
-	}
-	return result;
-}
-
-minterm loop::passive_variant()
-{
-	minterm result(vars->global.size(), v_);
-
-	list<pair<sequential*, guard*> >::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		result = result || i->first->passive_variant();
-		result = result || i->second->passive_variant();
-	}
-	return result;
-}
-
 void loop::expand_shortcuts()
 {
 	//Check for the shorthand *[S] and replace it with *[1 -> S]
@@ -256,14 +217,14 @@ void loop::merge()
 	}
 }
 
-pids loop::generate_states(petri *n, pids f, bids b, minterm filter)
+vector<int> loop::generate_states(petri *n, vector<int> f, map<int, int> branch, vector<int> filter)
 {
 	list<pair<sequential*, guard*> >::iterator instr_iter;
-	pids start, end;
+	vector<int> start, end;
 	string antiguard = "";
 
 	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
-		cout << tab << "Conditional " << chp << endl;
+		cout << tab << "Loop " << chp << endl;
 
 	net = n;
 	from = f;
@@ -272,39 +233,16 @@ pids loop::generate_states(petri *n, pids f, bids b, minterm filter)
 	{
 		start.clear();
 		end.clear();
-		start = instr_iter->second->generate_states(net, from, b, filter);
-		end.push_back(net->insert_place(start, b, this));
-		end = instr_iter->first->generate_states(net, end, b, filter);
+		start = instr_iter->second->generate_states(net, from, branch, filter);
+		end.push_back(net->insert_place(start, filter, branch, this));
+		end = instr_iter->first->generate_states(net, end, branch, filter);
 		net->connect(end, from);
 		antiguard += string(antiguard != "" ? "&" : "") + "~(" + instr_iter->second->chp + ")";
 	}
-	uid.push_back(net->insert_transition(f, expression(antiguard, vars).expr, b, this));
+	end = net->insert_transitions(f, net->values->build(expression(antiguard, vars).expr), branch, this);
+	uid.insert(uid.end(), end.begin(), end.end());
 
 	return uid;
-}
-
-place loop::simulate_states(place init, minterm filter)
-{
-	/*list<pair<sequential*, guard*> >::iterator instr_iter;
-	string exp = "";
-	state s, v;
-
-	if (filter.size() == 0)
-		filter = null(vars->size());
-
-	v = variant();
-	s = null(vars->size());
-	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
-	{
-		s = s || instr_iter->first->simulate_states(instr_iter->second->simulate_states(full(vars->size()), null(vars->size())), filter);
-		exp += (exp != "" ? "&~(" : "~(") + instr_iter->second->chp + ")";
-	}
-	v = filter || (v && s);
-	s = init || v;
-
-	s = s && solve(expression(exp).simple, vars, tab, verbosity);
-
-	return s;*/
 }
 
 void loop::insert_instr(int uid, int nid, instruction *instr)

@@ -25,6 +25,7 @@
 #include <stack>
 #include <math.h>
 #include <sys/time.h>
+#include <unordered_map>
 
 using namespace std;
 
@@ -32,7 +33,6 @@ bool ac(char c);
 bool nc(char c);
 bool oc(char c);
 bool sc(char c);
-
 
 template <typename T>
 string to_string(T n)
@@ -54,6 +54,76 @@ size_t find_last_of_l0(string subject, string search, size_t pos = string::npos)
 size_t find_last_of_l0(string subject, list<string> search, size_t pos = string::npos, list<string> exclude = list<string>());
 
 int powi(int x, int y);
+
+int bitwise_or(int a, int b);
+int bitwise_and(int a, int b);
+int bitwise_not(int a);
+
+template <class t>
+vector<t> unique(vector<t> *v)
+{
+	sort(v->begin(), v->end());
+	v->resize(unique(v->begin(), v->end()) - v->begin());
+	return *v;
+}
+
+template <class t>
+vector<t> intersect(vector<t> v1, vector<t> v2)
+{
+	vector<t> result;
+	typename vector<t>::iterator i, j;
+	for (i = v1.begin(), j = v2.begin(); i != v1.end() && j != v2.end();)
+	{
+		if (*j > *i)
+			i++;
+		else if (*i > *j)
+			j++;
+		else
+		{
+			result.push_back(*i);
+			i++;
+			j++;
+		}
+	}
+
+	return result;
+}
+
+template <class t>
+void unique(vector<t> *v1, vector<t> *v2)
+{
+	vector<t> result;
+	typename vector<t>::iterator i, j;
+	for (i = v1->begin(), j = v2->begin(); i != v1->end() && j != v2->end();)
+	{
+		if (*j > *i)
+			i++;
+		else if (*i > *j)
+			j++;
+		else
+		{
+			i = v1->erase(i);
+			j = v2->erase(j);
+		}
+	}
+}
+
+inline int hash_pair(int i, int j)
+{
+	return (i+j)*(i+j+1)/2 + i;
+}
+
+namespace std
+{
+	template<typename i, typename j>
+	struct hash<pair<i, j> >
+	{
+		inline size_t operator()(const pair<i, j> &v) const
+		{
+			return hash_pair(v.first, v.second);
+		}
+	};
+}
 
 //In chp.cpp, there is a variable valled verbosity. Set it to one of the following settings to control exactly what is output.
 //(bitmasks)
@@ -100,5 +170,9 @@ int powi(int x, int y);
 #define GRAPH_VERT 1			//If 1, the graph will be high to low. Else, it will be left to right
 #define GRAPH_DPI 300			//DPI of the output graph
 #define SHOW_ALL_DIFF_STATES 0 	// If 0, only the 'effective' edges of the diff graph are shown.
+
+#define METHOD_NORMAL
+//#define METHOD_PETRIFY_SIMPLE
+//#define METHOD_PETRIFY_EXP
 
 #endif

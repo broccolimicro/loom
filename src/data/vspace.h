@@ -36,6 +36,7 @@ struct vspace
 	int    get_width(string name);
 
 	vector<string> get_names();
+	vector<int> x_channel(vector<int> av);
 
 	string unique_name(string prefix);
 

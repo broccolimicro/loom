@@ -32,7 +32,8 @@ struct process : keyword
 	vector<rule>			prs;
 	vspace					vars;
 	list<string>			args;
-	petri					space;
+	petri					net;
+	bdd						values;
 	int						verbosity;
 
 	bool 					is_inline;
@@ -53,7 +54,7 @@ struct process : keyword
 	void print_hse(ostream *fout = &cout);
 	void print_dot(ostream *fout = &cout);
 	void print_petrify();
-	void print_prs();
+	void print_prs(ostream *fout = &cout);
 };
 
 #endif

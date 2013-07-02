@@ -44,7 +44,9 @@ assignment &assignment::operator=(assignment a)
 	return *this;
 }
 
-/* This copies a guard to another process and replaces
+/* duplicate()
+ *
+ * This copies a guard to another process and replaces
  * all of the specified variables.
  */
 instruction *assignment::duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity)
@@ -179,55 +181,41 @@ instruction *assignment::duplicate(instruction *parent, vspace *vars, map<string
 	return instr;
 }
 
-//In this context, variant calculates what varied based on this assignment
-//TODO: Technically X to 1 isn't a variant if X was a 1. I'm not sure if this comes into play badly anywhere...
-minterm assignment::variant()
+/* variant()
+ *
+ * This returns a union of the passive and active variants.
+ */
+vector<int> assignment::variant()
 {
-	minterm result(vars->size(), v_);
+	vector<int> result;
 	list<pair<string, string> >::iterator i;
 	for (i = expr.begin(); i != expr.end(); i++)
-		result.inelastic_set(vars->get_uid(i->first), vX);
+		result.push_back(vars->get_uid(i->first));
 
 	return result;
 }
 
-//TODO: Ask Ned what an active variant is
-minterm assignment::active_variant()
+/* active_variant()
+ *
+ * This returns a list of the variables that are modified during this assignment.
+ */
+vector<int> assignment::active_variant()
 {
-	minterm result(vars->size(), v_);
+	vector<int> result;
 	list<pair<string, string> >::iterator i;
 	for (i = expr.begin(); i != expr.end(); i++)
-		result.inelastic_set(vars->get_uid(i->first), vX);
+		result.push_back(vars->get_uid(i->first));
 
 	return result;
 }
 
-minterm assignment::passive_variant()
+/* passive_variant()
+ *
+ * This function is a stub. Assignments don't have a passive variant.
+ */
+vector<int> assignment::passive_variant()
 {
-	return nullv(vars->size());
-}
-
-void assignment::x_channel(place *s, string v)
-{
-	/*map<string, variable>::iterator vi;
-	string search;
-	size_t n;
-
-	// Search for this channel's other variables and X them out.
-	n = v.find_last_of(".");
-
-	if (n != v.npos)
-	{
-		search = v.substr(0, n);
-		x_channel(s, search);
-	}
-	else
-		search = v;
-
-	if (vars->get_kind(search) == "channel")
-		for (vi = vars->global.begin(); vi != vars->global.end(); vi++)
-			if (vi->first.substr(0, search.length()) == search && !s->fire(vi->second.uid))
-				s->assign(vi->second.uid, value("X"));*/
+	return vector<int>();
 }
 
 /* Expand shortcut handles cases of implied syntax.
@@ -296,14 +284,18 @@ void assignment::merge()
 
 }
 
-pids assignment::generate_states(petri *n, pids f, bids b, minterm filter)
+vector<int> assignment::generate_states(petri *n, vector<int> f, map<int, int> branch, vector<int> filter)
 {
 	// PETRIFY WORKFLOW
-	/*list<pair<string, string> >::iterator ei;
-	pids next;
-	pid end;
-	pids allends;
-	bids branch;
+	variable *v;
+
+#if defined METHOD_PETRIFY_SIMPLE || defined METHOD_PETRIFY_EXP
+	list<pair<string, string> >::iterator ei;
+	vector<int> next;
+	vector<int> end;
+	vector<int> allends;
+	map<int, int> branch;
+	variable *vptr;
 	int k;
 
 	if ((verbosity & VERB_BASE_STATE_SPACE) && (verbosity & VERB_DEBUG))
@@ -323,16 +315,40 @@ pids assignment::generate_states(petri *n, pids f, bids b, minterm filter)
 
 		next.clear();
 		next = (k == 0 ? from : net->duplicate(from));
-		end = net->insert_transition(next, expression(string(ei->second == "0" ? "~" : "") + ei->first, vars).expr, branch, this);
+		end = net->insert_transitions(next, net->values->build(expression(string(ei->second == "0" ? "~" : "") + ei->first, vars).expr), branch, this);
+#if defined METHOD_PETRIFY_SIMPLE
+		vptr = vars->find(ei->first);
+		if (ei->second == "0")
+		{
+			net->connect(vptr->state1, end);
+			net->connect(end, vptr->state0);
+		}
+		else
+		{
+			net->connect(vptr->state0, end);
+			net->connect(end, vptr->state1);
+		}
+#endif
 		allends.push_back(net->insert_place(end, branch, this));
+
+		v = vars->find(ei->first);
+		if (v != NULL)
+			v->driven = true;
 	}
 
-	uid.push_back(net->insert_dummy(allends, b, this));*/
-
-
-
+	uid.push_back(net->insert_dummy(allends, b, this));
+#endif
 
 	// NORMAL WORKFLOW
+#ifdef METHOD_NORMAL
+	vector<int> temp;
+
+	if ((verbosity & VERB_BASE_STATE_SPACE) && (verbosity & VERB_DEBUG))
+		cout << tab << "Assignment " << chp << endl;
+
+	from = f;
+	net = n;
+
 	string exp;
 	list<pair<string, string> >::iterator ei;
 	for (ei = expr.begin(); ei != expr.end(); ei++)
@@ -340,50 +356,17 @@ pids assignment::generate_states(petri *n, pids f, bids b, minterm filter)
 		if (ei != expr.begin())
 			exp += "&";
 		exp += (ei->second == "0" ? "~" : "") + ei->first;
+
+		v = vars->find(ei->first);
+		if (v != NULL)
+			v->driven = true;
 	}
 
-	uid.push_back(net->insert_transition(from, expression(exp, vars).expr, b, this));
+	temp = net->insert_transitions(from, net->values->build(expression(exp, vars).expr), branch, this);
+	uid.insert(uid.end(), temp.begin(), temp.end());
+#endif
 
 	return uid;
-}
-
-place assignment::simulate_states(place init, minterm filter)
-{
-	/*variable *v, *v1;
-	list<pair<string, string> >::iterator ei;
-	state s;
-	int i;
-
-	if (filter.size() == 0)
-		filter = null(vars->size());
-
-	// Set up the initial state
-	s = init || filter;
-	for (ei = expr.begin(); ei != expr.end(); ei++)
-	{
-		v = vars->find(ei->first);
-		if (v != NULL && v->width == 1 && v->type == "node")
-		{
-			s.drive(v->uid, evaluate(ei->second, vars, s.values));
-			x_channel(&s, ei->first);
-		}
-		else if (v != NULL && v->type == "node")
-			for (i = 0; i < v->width; i++)
-			{
-				v1 = vars->find(ei->first + "[" + to_string(i) + "]");
-				if (v != NULL)
-				{
-					s.drive(v1->uid, evaluate(ei->second, vars, s.values)[i]);
-					x_channel(&s, ei->first);
-				}
-				else
-					cout << "Error: Undefined variable " << ei->first << "." << endl;
-			}
-		else
-			cout << "Error: Undefined variable " << ei->first << "." << endl;
-	}
-
-	return s;*/
 }
 
 instruction *expand_assignment(instruction *parent, string chp, vspace *vars, petri *net, string tab, int verbosity)
@@ -398,7 +381,7 @@ instruction *expand_assignment(instruction *parent, string chp, vspace *vars, pe
 	for (i = a->expr.begin(); i != a->expr.end(); i++)
 	{
 		v = vars->find(i->second);
-		if (i->second.find_first_of("&|~^=<>/+-*?@()") != i->second.npos)
+		if (i->second.find_first_of("&|~^=<>/+-*?#()") != i->second.npos)
 		{
 			result = expand_expression(i->second, vars, net, i->first, tab, verbosity);
 			i->second = result.first;
@@ -628,21 +611,21 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, petri *ne
 	if (chp[0] == '(' && chp[chp.length()-1] == ')' && op == "")
 	{
 		C = expand_expression(chp.substr(1, chp.length()-2), vars, net, top, tab+"\t", verbosity);
-		if (C.first.find_first_of("&|^=<>/+-*?!@()") != C.first.npos)
+		if (C.first.find_first_of("&|^=<>/+-*?!#()") != C.first.npos)
 			C.first = "(" + C.first + ")";
 		return C;
 	}
 
 	A = pair<string, instruction*>(left, NULL);
 	B = pair<string, instruction*>(right, NULL);
-	if (left.find_first_of("&|~^=<>/+-*?!@()") != left.npos)
+	if (left.find_first_of("&|~^=<>/+-*?!#()") != left.npos)
 		A = expand_expression(left, vars, net, "", tab+"\t", verbosity);
-	if (right.find_first_of("&|~^=<>/+-*?!@()") != right.npos)
+	if (right.find_first_of("&|~^=<>/+-*?!#()") != right.npos)
 		B = expand_expression(right, vars, net, "", tab+"\t", verbosity);
 
-	if (top != "" && A.first.find_first_of("&|~^=<>/+-*?!@()") != A.first.npos)
+	if (top != "" && A.first.find_first_of("&|~^=<>/+-*?!#()") != A.first.npos)
 		A.first = "(" + A.first + ")";
-	if (top != "" && B.first.find_first_of("&|~^=<>/+-*?!@()") != B.first.npos)
+	if (top != "" && B.first.find_first_of("&|~^=<>/+-*?!#()") != B.first.npos)
 		B.first = "(" + B.first + ")";
 
 	if (A.second == NULL && B.second == NULL && (op == "&" || op == "|" || op == "~") && top == "" &&

@@ -103,14 +103,8 @@ struct matrix
 
 	matrix<t> &remr(int r)
 	{
-		typename vector<t>::iterator i;
-		int j, k;
-		for (k = 0; k < (int)data.size(); k++)
-		{
-			for (i = data[k].begin(), j = 0; i != data[k].end() && j < r; i++, j++);
-
-			data[k].erase(i);
-		}
+		for (int k = 0; k < (int)data.size(); k++)
+			data[k].erase(data[k].begin() + r);
 		return *this;
 	}
 
@@ -128,10 +122,7 @@ struct matrix
 
 	matrix<t> &remc(int c)
 	{
-		typename vector<vector<t> >::iterator i;
-		int j;
-		for (i = data.begin(), j = 0; i != data.end() && j < c; i++, j++);
-		data.erase(i);
+		data.erase(data.begin() + c);
 		return *this;
 	}
 
