@@ -180,9 +180,9 @@ vector<int> build(petri *net, vector<int> transout, vector<int> transin, vector<
 			t1.clear();
 			for (vari = groupi->first.begin(); vari != groupi->first.end(); vari++)
 			{
-				intlist = net->new_transitions(net->values->build(expression(*vari, vars).expr), false, branch, owner);
+				intlist = net->new_transitions(net->values.build(expression(*vari, vars).expr), false, branch, owner);
 				t.insert(t.end(), intlist.begin(), intlist.end());
-				intlist = net->new_transitions(net->values->build(expression("~(" + *vari + ")", vars).expr), false, branch, owner);
+				intlist = net->new_transitions(net->values.build(expression("~(" + *vari + ")", vars).expr), false, branch, owner);
 				t1.insert(t1.end(), intlist.begin(), intlist.end());
 				for (i = 0; i < groupi->second.size(); i++)
 				{
@@ -414,7 +414,7 @@ vector<int> guard::generate_states(petri *n, vector<int> f, map<int, int> branch
 	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
 		cout << tab << "Guard " << chp << endl;
 
-	temp = net->insert_transitions(from, net->values->build(e.expr), branch, this);
+	temp = net->insert_transitions(from, net->values.build(e.expr), branch, this);
 	uid.insert(uid.end(), temp.begin(), temp.end());
 #endif
 

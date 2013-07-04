@@ -61,35 +61,34 @@ void rule::gen_minterms()
 	for (i = 0; i < (int)net->T.size(); i++)
 	{
 		vl.clear();
-		net->values->variable_list(net->T[i].index, &vl);
+		net->values.variable_list(net->T[i].index, &vl);
 		if (net->T[i].active && find(vl.begin(), vl.end(), uid) != vl.end())
 		{
-			if (((bdd*)net->values)->restrict(net->T[i].index, uid, 1) > 0)
+			if (net->values.restrict(net->T[i].index, uid, 1) > 0)
 			{
 				ia = net->input_arcs(net->trans_id(i));
 				t = net->S[ia[0]].index;
 				for (j = 1; j < (int)ia.size(); j++)
-					t = net->values->apply_and(t, net->S[ia[j]].index);
+					t = net->values.apply_and(t, net->S[ia[j]].index);
 
-				up = (up == -1) ? t : net->values->apply_or(up, t);
+				t = net->values.smooth(t, vl);
+
+				up = (up == -1) ? t : net->values.apply_or(up, t);
 			}
 
-			if (((bdd*)net->values)->restrict(net->T[i].index, uid, 0) > 0)
+			if (net->values.restrict(net->T[i].index, uid, 0) > 0)
 			{
 				ia = net->input_arcs(net->trans_id(i));
 				t = net->S[ia[0]].index;
 				for (j = 1; j < (int)ia.size(); j++)
-					t = net->values->apply_and(t, net->S[ia[j]].index);
+					t = net->values.apply_and(t, net->S[ia[j]].index);
 
-				down = (down == -1) ? t : net->values->apply_or(down, t);
+				t = net->values.smooth(t, vl);
+
+				down = (down == -1) ? t : net->values.apply_or(down, t);
 			}
 		}
 	}
-
-	if (up != -1)
-		up = net->values->smooth(up, uid);
-	if (down != -1)
-		down = net->values->smooth(down, uid);
 }
 
 //Print the rule in the following format:
@@ -98,9 +97,9 @@ void rule::gen_minterms()
 ostream &operator<<(ostream &os, rule r)
 {
 	if (r.up != -1)
-		os << r.net->values->expr(r.up, r.vars->get_names()) << " -> " << r.vars->get_name(r.uid) << "+" << endl;
+		os << r.net->values.expr(r.up, r.vars->get_names()) << " -> " << r.vars->get_name(r.uid) << "+" << endl;
 	if (r.down != -1)
-		os << r.net->values->expr(r.down, r.vars->get_names()) << " -> " << r.vars->get_name(r.uid) << "-" << endl;
+		os << r.net->values.expr(r.down, r.vars->get_names()) << " -> " << r.vars->get_name(r.uid) << "-" << endl;
 
     return os;
 }

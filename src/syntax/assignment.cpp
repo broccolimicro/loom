@@ -21,6 +21,7 @@ assignment::assignment(instruction *parent, string chp, vspace *vars, string tab
 	this->verbosity = verbosity;
 	this->vars		= vars;
 	this->parent	= parent;
+	this->branch_id = -1;
 
 	expand_shortcuts();
 	parse();
@@ -41,6 +42,7 @@ assignment &assignment::operator=(assignment a)
 	this->tab		= a.tab;
 	this->verbosity	= a.verbosity;
 	this->parent	= a.parent;
+	this->branch_id = a.branch_id;
 	return *this;
 }
 
@@ -60,6 +62,7 @@ instruction *assignment::duplicate(instruction *parent, vspace *vars, map<string
 	instr->verbosity	= verbosity;
 	instr->expr			= this->expr;
 	instr->parent		= parent;
+	instr->branch_id	= branch_id;
 
 	size_t idx;
 	string rep;
@@ -286,17 +289,13 @@ void assignment::merge()
 
 vector<int> assignment::generate_states(petri *n, vector<int> f, map<int, int> branch, vector<int> filter)
 {
-	// PETRIFY WORKFLOW
-	variable *v;
-
-#if defined METHOD_PETRIFY_SIMPLE || defined METHOD_PETRIFY_EXP
-	list<pair<string, string> >::iterator ei;
-	vector<int> next;
-	vector<int> end;
+	list<pair<string, string> >::iterator ei, ej;
+	vector<int> next, end;
 	vector<int> allends;
-	map<int, int> branch;
-	variable *vptr;
-	int k;
+	map<int, int> nbranch;
+	variable *v;
+	size_t k;
+	int l;
 
 	if ((verbosity & VERB_BASE_STATE_SPACE) && (verbosity & VERB_DEBUG))
 		cout << tab << "Assignment " << chp << endl;
@@ -304,67 +303,39 @@ vector<int> assignment::generate_states(petri *n, vector<int> f, map<int, int> b
 	net  = n;
 	from = f;
 
-	if (expr.size() > 1)
-		net->B++;
+	vector<int> mutables, temp;
 
+	branch_id = net->branch_count;
+	net->branch_count++;
 	for (ei = expr.begin(), k = expr.size()-1; ei != expr.end(); ei++, k--)
 	{
-		branch = b;
-		if (expr.size() > 1)
-			branch.insert(pair<int, int>(net->B, k));
+		v = vars->find(ei->first);
+		if (v != NULL)
+			v->driven = true;
+
+		nbranch = branch;
+		nbranch.insert(pair<int, int>(branch_id, (int)k));
+		mutables = filter;
+		for (ej = expr.begin(); ej != expr.end(); ej++)
+			if (ei != ej)
+			{
+				mutables.push_back(vars->get_uid(ej->first));
+				merge_vectors(&mutables, vars->x_channel(vector<int>(1, vars->get_uid(ej->first))));
+			}
 
 		next.clear();
 		next = (k == 0 ? from : net->duplicate(from));
-		end = net->insert_transitions(next, net->values->build(expression(string(ei->second == "0" ? "~" : "") + ei->first, vars).expr), branch, this);
-#if defined METHOD_PETRIFY_SIMPLE
-		vptr = vars->find(ei->first);
-		if (ei->second == "0")
+		for (l = 0; l < (int)next.size(); l++)
 		{
-			net->connect(vptr->state1, end);
-			net->connect(end, vptr->state0);
+			net->S[next[l]].mutables.insert(net->S[next[l]].mutables.end(), mutables.begin(), mutables.end());
+			unique(&net->S[next[l]].mutables);
 		}
-		else
-		{
-			net->connect(vptr->state0, end);
-			net->connect(end, vptr->state1);
-		}
-#endif
-		allends.push_back(net->insert_place(end, branch, this));
 
-		v = vars->find(ei->first);
-		if (v != NULL)
-			v->driven = true;
+		end.clear();
+		end.push_back(net->insert_transition(next, net->values.mk(v->uid, ei->second == "0", ei->second == "1"), nbranch, this));
+		allends.push_back(net->insert_place(end, mutables, nbranch, this));
 	}
-
-	uid.push_back(net->insert_dummy(allends, b, this));
-#endif
-
-	// NORMAL WORKFLOW
-#ifdef METHOD_NORMAL
-	vector<int> temp;
-
-	if ((verbosity & VERB_BASE_STATE_SPACE) && (verbosity & VERB_DEBUG))
-		cout << tab << "Assignment " << chp << endl;
-
-	from = f;
-	net = n;
-
-	string exp;
-	list<pair<string, string> >::iterator ei;
-	for (ei = expr.begin(); ei != expr.end(); ei++)
-	{
-		if (ei != expr.begin())
-			exp += "&";
-		exp += (ei->second == "0" ? "~" : "") + ei->first;
-
-		v = vars->find(ei->first);
-		if (v != NULL)
-			v->driven = true;
-	}
-
-	temp = net->insert_transitions(from, net->values->build(expression(exp, vars).expr), branch, this);
-	uid.insert(uid.end(), temp.begin(), temp.end());
-#endif
+	uid.push_back(net->insert_dummy(allends, branch, this));
 
 	return uid;
 }

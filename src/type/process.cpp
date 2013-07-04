@@ -160,7 +160,6 @@ void process::reshuffle()
 void process::generate_states()
 {
 	cout << "Process" << endl;
-	net.values = &values;
 	net.vars = &vars;
 
 #ifdef METHOD_PETRIFY_SIMPLE
@@ -193,16 +192,16 @@ void process::generate_states()
 
 void process::insert_state_vars()
 {
-	map<int, list<vector<int> > > c = net.conflicts();
+	net.gen_conflicts();
 	map<int, list<vector<int> > >::iterator i;
 	list<vector<int> >::iterator lj;
 	map<int, int>::iterator m, n;
-	int j, k, l;
+	int j, k;
 	list<path>::iterator li;
 
 	cout << "Conflicts: " << name << endl;
 
-	for (i = c.begin(); i != c.end(); i++)
+	for (i = net.indistinguishable.begin(); i != net.indistinguishable.end(); i++)
 	{
 		cout << i->first << ": ";
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
@@ -253,7 +252,7 @@ void process::insert_state_vars()
 	vector<pair<vector<int>, vector<int> > > ip;
 	int um, dm;
 	int ium, idm;
-	for (i = c.begin(); i != c.end(); i++)
+	for (i = net.indistinguishable.begin(); i != net.indistinguishable.end(); i++)
 	{
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
@@ -306,43 +305,20 @@ void process::insert_state_vars()
 	unique(&ip);
 
 	string vname;
+	vector<int> dupfrom;
 	int vid;
 	for (j = 0; j < (int)ip.size(); j++)
 	{
-		string vname = vars.unique_name("_sv");
-		vid = vars.insert(variable(vname, "node", 1, false));
+		vname = vars.unique_name("_sv");
+		vid   = vars.insert(variable(vname, "node", 1, false));
 
-		um = values.mk(vid, 0, 1);
-		dm = values.mk(vid, 1, 0);
+		um = net.values.mk(vid, 0, 1);
+		dm = net.values.mk(vid, 1, 0);
 
 		for (k = 0; k < (int)ip[j].first.size(); k++)
-		{
-			net.T[net.index(ip[j].first[k])].index = values.apply_and(net.T[net.index(ip[j].first[k])].index, um);
-			for (l = 0; l < (int)net.S.size(); l++)
-			{
-				for (m = net.T[net.index(ip[j].first[k])].branch.begin(); m != net.T[net.index(ip[j].first[k])].branch.end(); m++)
-				{
-					n = net.S[l].branch.find(m->first);
-					if (n != net.S[l].branch.end() && n->second != m->second)
-						net.S[l].mutables.push_back(vid);
-				}
-				unique(&net.S[l].mutables);
-			}
-		}
+			net.insert_sv_before(ip[j].first[k], um);
 		for (k = 0; k < (int)ip[j].second.size(); k++)
-		{
-			net.T[net.index(ip[j].second[k])].index = values.apply_and(net.T[net.index(ip[j].second[k])].index, dm);
-			for (l = 0; l < (int)net.S.size(); l++)
-			{
-				for (m = net.T[net.index(ip[j].second[k])].branch.begin(); m != net.T[net.index(ip[j].second[k])].branch.end(); m++)
-				{
-					n = net.S[l].branch.find(m->first);
-					if (n != net.S[l].branch.end() && n->second != m->second)
-						net.S[l].mutables.push_back(vid);
-				}
-				unique(&net.S[l].mutables);
-			}
-		}
+			net.insert_sv_before(ip[j].second[k], dm);
 	}
 
 	for (k = 0; k < (int)net.S.size(); k++)
@@ -389,166 +365,12 @@ void process::print_hse(ostream *fout)
 
 void process::print_dot(ostream *fout)
 {
-	int i, j;
-	string label;
-	(*fout) << "digraph " << name << endl;
-	(*fout) << "{" << endl;
-
-	for (i = 0; i < (int)net.S.size(); i++)
-		if (!net.dead(i))
-		{
-			if (net.S[i].index >= 0)
-				label = values.expr(net.S[i].index, vars.get_names());//values.trace(net.S[i].index, vars.get_names());
-			else
-				label = "";
-
-			for (j = 0; j < (int)label.size(); j++)
-				if (label[j] == '|')
-					label = label.substr(0, j+1) + "\\n" + label.substr(j+1);
-
-			label = to_string(i) + " " + label;
-
-			(*fout) << "\tS" << i << " [label=\"" << label << "\"];" << endl;
-		}
-
-	for (i = 0; i < (int)net.T.size(); i++)
-	{
-		label = values.expr(net.T[i].index, vars.get_names());
-		if (label != "")
-			(*fout) << "\tT" << i << " [shape=box] [label=\"" << label << "\"];" << endl;
-		else
-			(*fout) << "\tT" << i << " [shape=box];" << endl;
-	}
-
-	for (i = 0; i < (int)net.Wp.size(); i++)
-		for (j = 0; j < (int)net.Wp[i].size(); j++)
-			if (net.Wp[i][j] > 0)
-				(*fout) << "\tT" << j << " -> " << "S" << i << ";" <<  endl;
-
-	for (i = 0; i < (int)net.Wn.size(); i++)
-		for (j = 0; j < (int)net.Wn[i].size(); j++)
-			if (net.Wn[i][j] > 0)
-				(*fout) << "\tS" << i << " -> " << "T" << j << ";" <<  endl;
-
-	(*fout) << "}" << endl;
+	net.print_dot(fout, name);
 }
 
 void process::print_petrify()
 {
-	int i, j;
-	vector<string> labels;
-	map<string, int> labelmap;
-	map<string, int>::iterator li;
-	string label;
-	FILE *file;
-	map<string, variable>::iterator vi;
-	bool first;
-
-	file = fopen((name + ".g").c_str(), "wb");
-
-	fprintf(file, ".model %s\n", name.c_str());
-
-	first = true;
-	for (vi = vars.global.begin(); vi != vars.global.end(); vi++)
-		if (vi->second.arg && !vi->second.driven)
-		{
-			if (first)
-			{
-				fprintf(file, ".inputs");
-				first = false;
-			}
-			fprintf(file, " %s", vi->second.name.c_str());
-		}
-	if (!first)
-		fprintf(file, "\n");
-
-	first = true;
-	for (vi = vars.global.begin(); vi != vars.global.end(); vi++)
-		if (vi->second.arg && vi->second.driven)
-		{
-			if (first)
-			{
-				fprintf(file, ".outputs");
-				first = false;
-			}
-			fprintf(file, " %s", vi->second.name.c_str());
-		}
-	if (!first)
-		fprintf(file, "\n");
-
-	first = true;
-	for (vi = vars.global.begin(); vi != vars.global.end(); vi++)
-		if (!vi->second.arg)
-		{
-			if (first)
-			{
-				fprintf(file, ".internal");
-				first = false;
-			}
-			fprintf(file, " %s", vi->second.name.c_str());
-		}
-	if (!first)
-		fprintf(file, "\n");
-
-	first = true;
-	for (i = 0; i < (int)net.T.size(); i++)
-	{
-		label = values.expr(net.T[i].index, vars.get_names());
-		if (label == "0" || label == "1")
-		{
-			if (first)
-			{
-				fprintf(file, ".dummy");
-				first = false;
-			}
-			label = string("T") + to_string(i);
-			fprintf(file, " %s", label.c_str());
-		}
-		li = labelmap.find(label);
-		if (li == labelmap.end())
-			labelmap.insert(pair<string, int>(label, 1));
-		else
-		{
-			label += string("/") + to_string(li->second);
-			li->second++;
-		}
-
-		labels.push_back(label);
-	}
-	if (!first)
-		fprintf(file, "\n");
-
-	string from;
-	vector<string> to;
-
-	fprintf(file, ".graph\n");
-	for (i = 0; i < (int)net.Wp.size(); i++)
-		for (j = 0; j < (int)net.Wp[i].size(); j++)
-			if (net.Wp[i][j] > 0)
-				fprintf(file, "%s S%d\n", labels[j].c_str(), i);
-
-	for (i = 0; i < (int)net.Wn.size(); i++)
-		for (j = 0; j < (int)net.Wn[i].size(); j++)
-			if (net.Wn[i][j] > 0)
-				fprintf(file, "S%d %s\n", i, labels[j].c_str());
-
-	first = true;
-	fprintf(file, ".marking {");
-	for (i = 0; i < (int)net.M0.size(); i++)
-	{
-		if (!net.dead(net.M0[i]))
-		{
-			if (first)
-				first = false;
-			else
-				fprintf(file, " ");
-			fprintf(file, "S%d", net.M0[i]);
-		}
-	}
-	fprintf(file, "}\n");
-	fprintf(file, ".end\n");
-
-	fclose(file);
+	net.print_petrify(name);
 }
 
 void process::print_prs(ostream *fout)

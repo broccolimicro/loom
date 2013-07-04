@@ -108,6 +108,12 @@ void unique(vector<t> *v1, vector<t> *v2)
 	}
 }
 
+template <class t>
+void merge_vectors(vector<t> *v1, vector<t> v2)
+{
+	v1->insert(v1->end(), v2.begin(), v2.end());
+}
+
 inline int hash_pair(int i, int j)
 {
 	return (i+j)*(i+j+1)/2 + i;

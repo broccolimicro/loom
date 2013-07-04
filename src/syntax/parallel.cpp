@@ -203,6 +203,7 @@ vector<int> parallel::generate_states(petri *n, vector<int> f, map<int, int> bra
 	map<int, int> nbranch;
 	int nbranch_count;
 	size_t k;
+	int l;
 
 	if ((verbosity & VERB_BASE_STATE_SPACE) && (verbosity & VERB_DEBUG))
 		cout << tab << "Parallel " << chp << endl;
@@ -228,6 +229,12 @@ vector<int> parallel::generate_states(petri *n, vector<int> f, map<int, int> bra
 
 		next.clear();
 		next = (k == 0 ? from : net->duplicate(from));
+		for (l = 0; l < (int)next.size(); l++)
+		{
+			net->S[next[l]].mutables.insert(net->S[next[l]].mutables.end(), mutables.begin(), mutables.end());
+			unique(&net->S[next[l]].mutables);
+		}
+
 		end = (*i)->generate_states(net, next, nbranch, mutables);
 		allends.push_back(net->insert_place(end, mutables, nbranch, this));
 	}

@@ -33,7 +33,6 @@ struct process : keyword
 	vspace					vars;
 	list<string>			args;
 	petri					net;
-	bdd						values;
 	int						verbosity;
 
 	bool 					is_inline;

@@ -19,6 +19,7 @@ struct assignment : instruction
 	~assignment();
 
 	list<pair<string, string> > expr;
+	int branch_id;
 
 	assignment &operator=(assignment a);
 
