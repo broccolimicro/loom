@@ -23,6 +23,7 @@ process::process()
 	verbosity = 0;
 	chp = "";
 	is_inline = false;
+	net.vars = &vars;
 }
 
 process::process(string raw, map<string, keyword*> *types, int verbosity)
@@ -32,6 +33,7 @@ process::process(string raw, map<string, keyword*> *types, int verbosity)
 	this->verbosity = verbosity;
 	this->chp = raw;
 	is_inline = false;
+	net.vars = &vars;
 
 	parse(raw);
 }
@@ -62,6 +64,8 @@ void process::parse(string raw)
 		raw = raw.substr(7);
 		chp = raw;
 	}
+	else
+		is_inline = false;
 
 	size_t name_start = chp.find_first_of(" ")+1;
 	size_t name_end = chp.find_first_of("(");
@@ -101,6 +105,7 @@ void process::parse(string raw)
 	{
 		expand_instantiation(NULL, "__sync call", &vars, &args, "\t", verbosity, false);
 		sequential = "[call.r];call.a+;(" + sequential + ");[~call.r];call.a-";
+		cout << "LOOK " << sequential << endl;
 	}
 
 	def.init(sequential, &vars, "\t", verbosity);
@@ -162,45 +167,32 @@ void process::generate_states()
 	cout << "Process" << endl;
 	net.vars = &vars;
 
-#ifdef METHOD_PETRIFY_SIMPLE
-	map<string, variable>::iterator i;
-	for (i = vars.global.begin(); i != vars.global.end(); i++)
-	{
-		i->second.state0 = net.new_place(map<int, int>(), NULL);
-		net.M0.push_back(i->second.state0);
-		i->second.state1 = net.new_place(map<int, int>(), NULL);
-	}
-#endif
-
 	vector<int> start;
-	start.push_back(net.insert_place(start, vector<int>(), map<int, int>(), NULL));
+	start.push_back(net.insert_place(start, map<int, int>(), NULL));
 	net.M0.push_back(start[0]);
-	net.connect(def.generate_states(&net, start,  map<int, int>(), vector<int>()), start);
+	net.connect(def.generate_states(&net, start,  map<int, int>()), start);
 
-#ifdef METHOD_PETRIFY_SIMPLE
-	for (i = vars.global.begin(); i != vars.global.end(); i++)
-		if (!i->second.driven && i->second.arg)
-		{
-			net.connect(net.insert_transitions(i->second.state0, values.build(expression(i->first, &vars).expr), map<int, int>(), NULL), i->second.state1);
-			net.connect(net.insert_transitions(i->second.state1, values.build(expression("~" + i->first, &vars).expr), map<int, int>(), NULL), i->second.state0);
-		}
-#endif
+	do
+	{
+		net.gen_mutables();
+		net.update();
+	} while(net.trim());
+	net.gen_tails();
 
-	net.trim();
-	net.tails();
+	cout << "BRANCHES " << name << endl;
+	net.print_branch_ids();
 }
 
 void process::insert_state_vars()
 {
-	net.gen_conflicts();
 	map<int, list<vector<int> > >::iterator i;
 	list<vector<int> >::iterator lj;
 	map<int, int>::iterator m, n;
 	int j, k;
 	list<path>::iterator li;
 
+	net.gen_conflicts();
 	cout << "Conflicts: " << name << endl;
-
 	for (i = net.indistinguishable.begin(); i != net.indistinguishable.end(); i++)
 	{
 		cout << i->first << ": ";
@@ -213,6 +205,8 @@ void process::insert_state_vars()
 		}
 		cout << endl;
 	}
+
+	net.gen_conditional_places();
 
 	vector<int> implicants;
 	vector<int> arcs;
@@ -257,32 +251,46 @@ void process::insert_state_vars()
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
 			up_paths = net.get_paths(i->first, *lj, path(net.S.size()));
-			up = net.restrict_path(up_paths.total, implicants);
 			down_paths = net.get_paths(*lj, i->first, path(net.S.size()));
-			down = net.restrict_path(down_paths.total, implicants);
+
+			/**
+			 * After identifying paths, start at every conditional merge and
+			 * check to make sure that there is a path coming from each branch.
+			 * If not iterate backwards from the conditional merge along the
+			 * paths that do come from a branch until a conflict or a conditional
+			 * split is reached and set the paths' values along that part of the
+			 * branch to zero. This will prevent cases where you have two
+			 * conflicting places on sibling branches and the state variable
+			 * insertion algorithm puts transitions after the conflicting places.
+			 */
+			net.filter_path_space(&up_paths);
+			net.filter_path_space(&down_paths);
+
+			up = net.conjugate_path(up_paths.total, implicants);
+			down = net.conjugate_path(down_paths.total, implicants);
 
 			cout << "Up:" << endl;
 			uptrans.clear();
-			while ((ium = up.max()) != -1)
+			while (up_paths.size() > 0 && (ium = net.closest_transition(sample(implicants, up.max()), up.to.front(), path(net.T.size())).second) != -1)
 			{
 				cout << up << endl;
-				uptrans.push_back(implicants[ium]);
-				arcs = net.input_arcs(implicants[ium]);
+				uptrans.push_back(ium);
+				arcs = net.input_arcs(ium);
 				for (j = 0; j < (int)arcs.size(); j++)
 					up_paths = up_paths.avoidance(arcs[j]);
-				up = net.restrict_path(up_paths.total, implicants);
+				up = net.conjugate_path(up_paths.total, implicants);
 			}
 
 			cout << "Down:" << endl;
 			downtrans.clear();
-			while ((idm = down.max()) != -1)
+			while (down_paths.size() > 0 && (idm = net.closest_transition(sample(implicants, down.max()), down.to.front(), path(net.T.size())).second) != -1)
 			{
 				cout << down << endl;
-				downtrans.push_back(implicants[idm]);
-				arcs = net.input_arcs(implicants[idm]);
+				downtrans.push_back(idm);
+				arcs = net.input_arcs(idm);
 				for (j = 0; j < (int)arcs.size(); j++)
 					down_paths = down_paths.avoidance(arcs[j]);
-				down = net.restrict_path(down_paths.total, implicants);
+				down = net.conjugate_path(down_paths.total, implicants);
 			}
 			cout << endl;
 
@@ -321,10 +329,14 @@ void process::insert_state_vars()
 			net.insert_sv_before(ip[j].second[k], dm);
 	}
 
-	for (k = 0; k < (int)net.S.size(); k++)
-		net.S[k].index = 1;
-	for (k = 0; k < (int)net.S.size(); k++)
-		net.update(k);
+	net.trim_branch_ids();
+	net.gen_mutables();
+	net.update();
+
+	cout << "BRANCHES " << name << endl;
+	net.print_branch_ids();
+
+
 }
 
 void process::generate_prs()
@@ -358,6 +370,120 @@ void process::factor_prs()
 		print_prs();
 }
 
+void process::parse_prs(string raw)
+{
+	int i, j, k;
+	string r, e, v;
+	map<string, pair<string, string> > pairs;
+	map<string, pair<string, string> >::iterator pi;
+
+	raw = remove_comments(raw);
+
+	for (i = raw.find_first_of("\n\r"), j = 0; i != (int)raw.npos; j = i+1, i = raw.find_first_of("\n\r", j))
+	{
+		r = raw.substr(j, i-j);
+		k = r.find(" -> ");
+		if (k != (int)r.npos)
+		{
+			e = r.substr(0, k);
+			v = r.substr(k+4);
+
+			pi = pairs.find(v.substr(0, v.length()-1));
+			if (pi != pairs.end())
+			{
+				if (v[v.length()-1] == '+')
+					pi->second.first = e;
+				else
+					pi->second.second = e;
+			}
+			else
+			{
+				if (v[v.length()-1] == '+')
+					pairs.insert(pair<string, pair<string, string> >(v.substr(0, v.length()-1), pair<string, string>(e, "")));
+				else
+					pairs.insert(pair<string, pair<string, string> >(v.substr(0, v.length()-1), pair<string, string>("", e)));
+			}
+		}
+	}
+
+	for (pi = pairs.begin(); pi != pairs.end(); pi++)
+	{
+		cout << pi->first << ",{" << pi->second.first << ", " << pi->second.second << "}" << endl;
+		prs.push_back(rule(pi->second.first, pi->second.second, pi->first, &vars, &net));
+	}
+}
+
+void process::elaborate_prs()
+{
+	int ufrom, dfrom;
+	int utrans, dtrans;
+	int uto, dto;
+	vector<int> ot, op;
+	vector<int> vl;
+	list<list<pair<int, int> > > sat;
+	list<list<pair<int, int> > >::iterator si;
+	int i, j;
+
+	for (i = 0; i < (int)prs.size(); i++)
+	{
+		sat = net.values.allsat(net.values.apply_and(prs[i].up, net.values.mk(prs[i].uid, 1, 0)));
+		//sat = net.values.allsat(prs[i].up);
+		for (si = sat.begin(); si != sat.end(); si++)
+		{
+			ufrom  = net.new_place(net.values.build(*si), map<int, int>(), NULL);
+			utrans = net.insert_transition(ufrom, net.values.mk(prs[i].uid, 0, 1), map<int, int>(), NULL);
+			uto    = net.insert_place(utrans, map<int, int>(), NULL);
+			net.S[uto].index = net.values.transition(net.S[ufrom].index, net.T[utrans].index);
+			net.S[ufrom].active = true;
+			net.T[utrans].active = true;
+		}
+
+		sat = net.values.allsat(net.values.apply_and(prs[i].down, net.values.mk(prs[i].uid, 0, 1)));
+		//sat = net.values.allsat(prs[i].down);
+		for (si = sat.begin(); si != sat.end(); si++)
+		{
+			dfrom  = net.new_place(net.values.build(*si), map<int, int>(), NULL);
+			dtrans = net.insert_transition(dfrom, net.values.mk(prs[i].uid, 1, 0), map<int, int>(), NULL);
+			dto    = net.insert_place(dtrans, map<int, int>(), NULL);
+			net.S[dto].index = net.values.transition(net.S[dfrom].index, net.T[dtrans].index);
+			net.S[dfrom].active = true;
+			net.T[dtrans].active = true;
+		}
+	}
+
+	net.merge_conflicts();
+
+	// Try to guess the environment's behavior
+	/*vector<int> inactive;
+	vector<int> active;
+	map<string, variable>::iterator vi;
+	for (vi = vars.global.begin(); vi != vars.global.end(); vi++)
+	{
+		if (!vi->second.driven)
+			inactive.push_back(vi->second.uid);
+		else
+			active.push_back(vi->second.uid);
+	}
+
+	for (i = 0; i < (int)net.S.size(); i++)
+		for (j = 0; j < (int)net.S.size(); j++)
+			if (i != j && !net.connected(i, j) && net.values.apply_and(net.values.smooth(net.S[i].index, inactive), net.S[j].index) > 1)
+			{
+				ufrom = net.values.smooth(net.S[j].index, active);
+				utrans = net.insert_transition(i, ufrom, map<int, int>(), NULL);
+				net.connect(utrans, j);
+			}*/
+
+	net.zip();
+
+	for (int i = 0; i < (int)net.S.size(); i++)
+		if (net.output_arcs(i).size() == 0)
+		{
+			net.remove_place(i);
+			i--;
+		}
+}
+
 void process::print_hse(ostream *fout)
 {
 	def.print_hse("", fout);
@@ -375,7 +501,20 @@ void process::print_petrify()
 
 void process::print_prs(ostream *fout)
 {
+	(*fout) << "/* Process " << name << " */" << endl;
+	map<string, variable>::iterator vi;
+	map<string, keyword*>::iterator ki;
 	for (size_t i = 0; i < prs.size(); i++)
 		(*fout) << prs[i];
-	(*fout) << endl;
+
+	(*fout) << "/* Environment */" << endl;
+	for (vi = vars.label.begin(); vi != vars.label.end(); vi++)
+	{
+		ki = vars.types->find(vi->second.type);
+		if (ki != vars.types->end() && ki->second != NULL && ki->second->kind() == "channel")
+		{
+			((channel*)ki->second)->send->print_prs(fout, vi->first + ".", vars.get_driven());
+			((channel*)ki->second)->recv->print_prs(fout, vi->first + ".", vars.get_driven());
+		}
+	}
 }

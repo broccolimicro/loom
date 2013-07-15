@@ -43,6 +43,86 @@ minterm::minterm(string str)
 	}
 }
 
+minterm::minterm(string str, vspace *vars)
+{
+	string var;
+	uint32_t value;
+	int uid;
+	size_t k, l;
+	uint32_t s = vars->size();
+	uint32_t w = s >> 4, i;
+
+	for (i = 0; i < w; i++)
+		values.push_back(vX);
+	if (((16 - (s & 0x000000F)) << 1) < 32)
+		values.push_back(vX << ((16 - (s & 0x000000F)) << 1));
+	size = s;
+
+	for (k = 0, l = 0; k <= str.size(); k++)
+	{
+		if (k == str.size() || str[k] == '&')
+		{
+			if (str[l] == '~')
+			{
+				value = v0;
+				var = str.substr(l+1, k-l-1);
+			}
+			else
+			{
+				value = v1;
+				var = str.substr(l, k-l);
+			}
+
+			uid = vars->get_uid(var);
+
+			if (uid >= 0)
+				sv_intersect(uid, value);
+
+			l = k+1;
+		}
+	}
+}
+
+minterm::minterm(string str, vector<string> vars)
+{
+	string var;
+	uint32_t value;
+	int uid;
+	size_t k, l;
+	uint32_t s = vars.size();
+	uint32_t w = s >> 4, i;
+
+	for (i = 0; i < w; i++)
+		values.push_back(vX);
+	if (((16 - (s & 0x000000F)) << 1) < 32)
+		values.push_back(vX << ((16 - (s & 0x000000F)) << 1));
+	size = s;
+
+	for (k = 0, l = 0; k <= str.size(); k++)
+	{
+		if (k == str.size() || str[k] == '&')
+		{
+			if (str[l] == '~')
+			{
+				value = v0;
+				var = str.substr(l+1, k-l-1);
+			}
+			else
+			{
+				value = v1;
+				var = str.substr(l, k-l);
+			}
+
+			uid = (find(vars.begin(), vars.end(), var) - vars.begin());
+
+			if (uid >= 0)
+				sv_intersect(uid, value);
+
+			l = k+1;
+		}
+	}
+}
+
 minterm::minterm(int s, uint32_t v)
 {
 	uint32_t w = s >> 4,
@@ -88,6 +168,7 @@ void minterm::inelastic_set(int uid, uint32_t v)
 	values[w] = (values[w] & ~mask) | (v & mask);
 }
 
+// TODO Broken
 void minterm::elastic_set(int uid, uint32_t v, uint32_t r)
 {
 	int w = uid >> 4, l = 30 - ((uid & 0x0000000F)<<1);

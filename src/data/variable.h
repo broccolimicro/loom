@@ -12,7 +12,6 @@
 #define variable_h
 
 #include "../common.h"
-#include "petri.h"
 
 struct variable
 {
@@ -29,9 +28,6 @@ struct variable
 	bool		fixed;		// is the bit width of this variable fixed or variable?
 	bool		driven;		// keep track of whether or not this variable is driven within this process
 	bool		arg;		// Is this variable an argument variable into a process?
-
-	int state0;
-	int state1;
 
 	list<string> inputs;
 

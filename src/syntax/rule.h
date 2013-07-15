@@ -7,9 +7,7 @@
  */
 
 #include "../common.h"
-#include "vspace.h"
-#include "expression.h"
-#include "petri.h"
+#include "../data.h"
 
 #ifndef rule_h
 #define rule_h
@@ -19,6 +17,7 @@ struct rule
 	rule();
 	rule(int uid);
 	rule(int uid, petri *g, vspace *v, int verbosity);
+	rule(string u, string d, string v, vspace *vars, petri *net);
 	~rule();
 
 	petri *net;
@@ -32,6 +31,8 @@ struct rule
 	rule &operator=(rule r);
 
 	void gen_minterms();
+
+	void print(ostream &os, string prefix = "");
 };
 
 ostream &operator<<(ostream &os, rule r);

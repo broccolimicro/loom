@@ -169,6 +169,16 @@ int vspace::get_width(string name)
 	return 0;
 }
 
+vector<string> vspace::get_driven()
+{
+	vector<string> result;
+	map<string, variable>::iterator i;
+	for (i = global.begin(); i != global.end(); i++)
+		if (i->second.driven)
+			result.push_back(i->first);
+	return result;
+}
+
 vector<string> vspace::get_names()
 {
 	vector<string> ret(global.size());
@@ -227,6 +237,21 @@ vector<int> vspace::x_channel(vector<int> av)
 	unique(&result);
 
 	return result;
+}
+
+void vspace::x_channel(vector<int> av, map<int, int> *result)
+{
+	vector<int> temp = x_channel(av);
+	map<int, int>::iterator ri;
+	int i;
+	for (i = 0; i < (int)temp.size(); i++)
+	{
+		ri = result->find(temp[i]);
+		if (ri == result->end())
+			result->insert(pair<int, int>(temp[i], 0));
+		else
+			ri->second = 0;
+	}
 }
 
 string vspace::unique_name(string prefix)

@@ -124,3 +124,13 @@ void operate::parse(string raw, int verbosity)
 		cout << endl << endl;
 	}
 }
+
+void operate::print_prs(ostream *fout, string prefix, vector<string> driven)
+{
+	map<string, variable>::iterator vi;
+	map<string, keyword*>::iterator ki;
+	for (size_t i = 0; i < prs.size(); i++)
+		if (find(driven.begin(), driven.end(), prefix + vars.get_name(i)) == driven.end())
+			prs[i].print(*fout, prefix);
+}
+

@@ -6,6 +6,7 @@
  */
 
 #include "../common.h"
+#include "vspace.h"
 
 #ifndef minterm_h
 #define minterm_h
@@ -19,6 +20,8 @@ struct minterm
 {
 	minterm();
 	minterm(string str);
+	minterm(string str, vspace *vars);
+	minterm(string str, vector<string> vars);
 	minterm(int s, uint32_t v);
 	minterm(int s, int i, uint32_t v);
 	~minterm();

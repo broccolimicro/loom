@@ -195,7 +195,7 @@ void parallel::merge()
 		(*i)->merge();
 }
 
-vector<int> parallel::generate_states(petri *n, vector<int> f, map<int, int> branch, vector<int> filter)
+vector<int> parallel::generate_states(petri *n, vector<int> f, map<int, int> branch)
 {
 	list<instruction*>::iterator i, j;
 	vector<int> next, end;
@@ -211,32 +211,21 @@ vector<int> parallel::generate_states(petri *n, vector<int> f, map<int, int> bra
 	net  = n;
 	from = f;
 
-	vector<int> mutables, temp;
-
 	nbranch_count = net->branch_count;
 	net->branch_count++;
 	for (i = instrs.begin(), k = instrs.size()-1; i != instrs.end(); i++, k--)
 	{
 		nbranch = branch;
-		nbranch.insert(pair<int, int>(nbranch_count, (int)k));
-		mutables = filter;
-		for (j = instrs.begin(); j != instrs.end(); j++)
-			if (i != j)
-			{
-				temp = (*j)->active_variant();
-				mutables.insert(mutables.end(), temp.begin(), temp.end());
-			}
+		if (instrs.size() > 1)
+			nbranch.insert(pair<int, int>(nbranch_count, (int)k));
 
 		next.clear();
-		next = (k == 0 ? from : net->duplicate(from));
+		next = (k == 0 ? from : net->duplicate_nodes(from));
 		for (l = 0; l < (int)next.size(); l++)
-		{
-			net->S[next[l]].mutables.insert(net->S[next[l]].mutables.end(), mutables.begin(), mutables.end());
-			unique(&net->S[next[l]].mutables);
-		}
+			net->S[next[l]].branch = nbranch;
 
-		end = (*i)->generate_states(net, next, nbranch, mutables);
-		allends.push_back(net->insert_place(end, mutables, nbranch, this));
+		end = (*i)->generate_states(net, next, nbranch);
+		allends.push_back(net->insert_place(end, nbranch, this));
 	}
 	uid.push_back(net->insert_dummy(allends, branch, this));
 

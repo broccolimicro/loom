@@ -114,6 +114,27 @@ void merge_vectors(vector<t> *v1, vector<t> v2)
 	v1->insert(v1->end(), v2.begin(), v2.end());
 }
 
+template <class t>
+vector<t> sample(vector<t> a, vector<t> b)
+{
+	vector<t> result;
+	for (int i = 0; i < (int)b.size(); i++)
+		result.push_back(a[b[i]]);
+	return result;
+}
+
+template <class t, class u>
+void intersect(map<t, u> x, map<t, u> y, map<t, u> *result)
+{
+	result->clear();
+	typename map<t, u>::iterator i, j;
+
+	for (i = x.begin(); i != x.end(); i++)
+		for (j = y.begin(); j != y.end(); j++)
+			if (i->first == j->first && i->second == j->second)
+				result->insert(pair<t, u>(i->first, i->second));
+}
+
 inline int hash_pair(int i, int j)
 {
 	return (i+j)*(i+j+1)/2 + i;
@@ -176,9 +197,5 @@ namespace std
 #define GRAPH_VERT 1			//If 1, the graph will be high to low. Else, it will be left to right
 #define GRAPH_DPI 300			//DPI of the output graph
 #define SHOW_ALL_DIFF_STATES 0 	// If 0, only the 'effective' edges of the diff graph are shown.
-
-#define METHOD_NORMAL
-//#define METHOD_PETRIFY_SIMPLE
-//#define METHOD_PETRIFY_EXP
 
 #endif

@@ -34,9 +34,11 @@ struct vspace
 	string get_info(string name);
 	int	   get_uid(string name);
 	int    get_width(string name);
+	vector<string> get_driven();
 
 	vector<string> get_names();
 	vector<int> x_channel(vector<int> av);
+	void x_channel(vector<int> av, map<int, int> *result);
 
 	string unique_name(string prefix);
 

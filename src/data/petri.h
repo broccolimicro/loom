@@ -19,11 +19,11 @@ struct vspace;
 struct node
 {
 	node();
-	node(int index, bool active, vector<int> mutables, map<int, int> branch, instruction *owner);
+	node(int index, bool active, map<int, int> branch, instruction *owner);
 	~node();
 
 	instruction *owner;
-	vector<int> mutables;	// The set of variables whose value we cannot know
+	map<int, int> mutables;	// The set of variables whose value we cannot know
 	vector<int> tail;		// The set of inactive states preceding an active state
 	map<int, int> branch;
 	bool active;
@@ -46,10 +46,11 @@ struct petri
 
 	map<int, list<vector<int> > > conflicts;
 	map<int, list<vector<int> > > indistinguishable;
+	map<int, int> conditional_places;
 
 	int new_transition(int root, bool active, map<int, int> branch, instruction *owner);
 	vector<int> new_transitions(vector<int> root, bool active, map<int, int> branch, instruction *owner);
-	int new_place(int root, vector<int> mutables, map<int, int> branch, instruction *owner);
+	int new_place(int root, map<int, int> branch, instruction *owner);
 
 	int insert_transition(int from, int root, map<int, int> branch, instruction *owner);
 	int insert_transition(vector<int> from, int root, map<int, int> branch, instruction *owner);
@@ -64,20 +65,26 @@ struct petri
 	int insert_dummy(int from, map<int, int> branch, instruction *owner);
 	int insert_dummy(vector<int> from, map<int, int> branch, instruction *owner);
 
-	int insert_place(int from, vector<int> mutables, map<int, int> branch, instruction *owner);
-	int insert_place(vector<int> from, vector<int> mutables, map<int, int> branch, instruction *owner);
+	int insert_place(int from, map<int, int> branch, instruction *owner);
+	int insert_place(vector<int> from, map<int, int> branch, instruction *owner);
 
-	vector<int> insert_places(vector<int> from, vector<int> mutables, map<int, int> branch, instruction *owner);
+	vector<int> insert_places(vector<int> from, map<int, int> branch, instruction *owner);
 
 	void remove_place(int from);
 	void remove_place(vector<int> from);
 
-	void update(int p);
+	void propogate_marking_forward(int from);
+	void propogate_marking_backward(int from);
+
+	void updateplace(int p);
+	bool update(int p, vector<bool> *covered);
+	void update();
 	void update_tail(int p);
 	void connect(vector<int> from, vector<int> to);
 	void connect(vector<int> from, int to);
 	void connect(int from, vector<int> to);
 	void connect(int from, int to);
+	pair<int, int> closest_transition(vector<int> from, int to, path p);
 
 	bool dead(int from);
 	bool is_place(int from);
@@ -87,16 +94,55 @@ struct petri
 	int  trans_id(int idx);
 	int base(vector<int> idx);
 	bool connected(int from, int to);
+	bool siblings(int p0, int p1);
+	bool same_inputs(int p0, int p1);
+	bool same_outputs(int p0, int p1);
 
-	vector<int> duplicate(vector<int> from);
+	vector<int> duplicate_nodes(vector<int> from);
+	int duplicate_node(int from);
+	int merge_places(vector<int> from);
+	int merge_places(int a, int b);
 
+	int get_split_place(int merge_place, vector<bool> *covered);
+
+	void gen_mutables();
+	void gen_conditional_places();
 	void gen_conflicts();
+	void trim_branch_ids();
+	void gen_tails();
 
+	/**
+	 * \brief	Removes vacuous branches, unreachable places, and dangling, vacuous, and impossible transitions.
+	 * \sa		merge_conflicts() and zip()
+	 */
+	bool trim();
+
+	/**
+	 * \brief	Groups places that have indistinguishable state encodings, then merges each group into one place.
+	 * \pre		This function assumes that it is given a petri-net in which every transition
+	 * 			has a single input place and a single output place which are only connected
+	 * 			to that transition.
+	 * \sa		trim() and zip()
+	 */
+	void merge_conflicts();
+
+	/**
+	 * \brief	Groups places and groups transitions based upon their neighborhood, then merges each group into one place or transition.
+	 * \sa		trim() and merge_conflicts()
+	 */
+	void zip();
+
+	/**
+	 * \brief	If "from" is a transition this returns it's input places, and if "from" is a place this returns it's input transitions.
+	 * \sa		output_arcs()
+	 */
 	vector<int> input_arcs(int from);
-	vector<int> output_arcs(int from);
 
-	void trim();
-	void tails();
+	/**
+	 * \brief	If "from" is a transition this returns it's output places, and if "from" is a place this returns it's output transitions.
+	 * \sa		input_arcs()
+	 */
+	vector<int> output_arcs(int from);
 
 	path_space get_paths(int t1, int t2, path p);
 	path_space get_paths(int t1, vector<int> t2, path p);
@@ -104,12 +150,16 @@ struct petri
 	path_space get_paths(int t1, vector<int> t2, vector<int> ex, path p);
 	path_space get_paths(vector<int> t1, int t2, path p);
 	path_space get_paths(vector<int> t1, vector<int> t2, path p);
-	path restrict_path(path p, vector<int> implicants);
+	path conjugate_path(path p, vector<int> implicants);
+	void filter_path_space(path_space *p);
+	void filter_path(int from, int to, path *p);
 
 	node &operator[](int i);
 
 	void print_dot(ostream *fout, string name);
 	void print_petrify(string name);
+
+	void print_branch_ids();
 };
 
 #endif

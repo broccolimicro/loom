@@ -297,12 +297,13 @@ void condition::merge()
 				copy->instrs.clear();
 				delete copy;
 				nguard = j->second;
-				nguard->chp = expression("(" + i->second->chp + ")&(" + nguard->chp + ")").simple;
+
+				nguard->chp = canonical("(" + i->second->chp + ")&(" + nguard->chp + ")", vars).print(vars->get_names());
 				add.push_back(pair<sequential*, guard*>(nsequential, nguard));
 			}
 			j = front->instrs.begin();
 
-			i->second->chp = expression("(" + i->second->chp + ")&(" + j->second->chp + ")").simple;
+			i->second->chp = canonical("(" + i->second->chp + ")&(" + j->second->chp + ")", vars).print(vars->get_names());
 			for (ii = j->first->instrs.begin(); ii != j->first->instrs.end(); ii++)
 				i->first->instrs.push_front(*ii);
 			j->first->instrs.clear();
@@ -324,7 +325,7 @@ void condition::merge()
 	}
 }
 
-vector<int> condition::generate_states(petri *n, vector<int> f, map<int, int> branch, vector<int> filter)
+vector<int> condition::generate_states(petri *n, vector<int> f, map<int, int> branch)
 {
 	list<pair<sequential*, guard*> >::iterator instr_iter;
 	vector<int> start, end;
@@ -339,9 +340,9 @@ vector<int> condition::generate_states(petri *n, vector<int> f, map<int, int> br
 	{
 		end.clear();
 		start.clear();
-		start = instr_iter->second->generate_states(net, from, branch, filter);
-		end.push_back(net->insert_place(start, filter, branch, this));
-		start = instr_iter->first->generate_states(net, end, branch, filter);
+		start = instr_iter->second->generate_states(net, from, branch);
+		end.push_back(net->insert_place(start, branch, this));
+		start = instr_iter->first->generate_states(net, end, branch);
 		uid.insert(uid.end(), start.begin(), start.end());
 	}
 

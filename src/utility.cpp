@@ -104,52 +104,43 @@ string demorgan(string exp, int depth, bool invert)
 {
 	list<string> ops, ex;
 
-	string left, right, op = "";
+	string left, right;
 	size_t p;
 
 	if (depth != 0)
 	{
-		if (op == "")
+		p = find_first_of_l0(exp, "|");
+		if (p != exp.npos)
 		{
-			p = find_first_of_l0(exp, "|");
-			if (p != exp.npos)
-			{
-				left = exp.substr(0, p);
-				right = exp.substr(p+1);
-				if (invert)
-					return demorgan(left, depth-1, true) + "&" + demorgan(right, depth-1, true);
-				else
-					return "(" + demorgan(left, depth-1, false) + "|" + demorgan(right, depth-1, false) + ")";
-			}
+			left = exp.substr(0, p);
+			right = exp.substr(p+1);
+			if (invert)
+				return demorgan(left, depth-1, true) + "&" + demorgan(right, depth-1, true);
+			else
+				return "(" + demorgan(left, depth-1, false) + "|" + demorgan(right, depth-1, false) + ")";
 		}
 
-		if (op == "")
+		p = find_first_of_l0(exp, "&");
+		if (p != exp.npos)
 		{
-			p = find_first_of_l0(exp, "&");
-			if (p != exp.npos)
-			{
-				left = exp.substr(0, p);
-				right = exp.substr(p+1);
-				if (invert)
-					return "(" + demorgan(left, depth-1, true) + "|" + demorgan(right, depth-1, true) + ")";
-				else
-					return demorgan(left, depth-1, false) + "&" + demorgan(right, depth-1, false);
-			}
+			left = exp.substr(0, p);
+			right = exp.substr(p+1);
+			if (invert)
+				return "(" + demorgan(left, depth-1, true) + "|" + demorgan(right, depth-1, true) + ")";
+			else
+				return demorgan(left, depth-1, false) + "&" + demorgan(right, depth-1, false);
 		}
 
-		if (op == "")
+		p = find_first_of_l0(exp, "~");
+		if (p != exp.npos)
 		{
-			p = find_first_of_l0(exp, "~");
-			if (p != exp.npos)
-			{
-				if (invert)
-					return demorgan(exp.substr(p+1), depth, false);
-				else
-					return demorgan(exp.substr(p+1), depth, true);
-			}
+			if (invert)
+				return demorgan(exp.substr(p+1), depth, false);
+			else
+				return demorgan(exp.substr(p+1), depth, true);
 		}
 
-		if (exp[0] == '(' && exp[exp.length()-1] == ')' && op == "")
+		if (exp[0] == '(' && exp[exp.length()-1] == ')')
 			return demorgan(exp.substr(1, exp.length()-2), depth, invert);
 	}
 
@@ -166,63 +157,62 @@ string strip(string e)
 	return e;
 }
 
-string distribute(string exp, string sib)
+vector<string> distribute(string exp)
 {
-	list<string> ops, ex;
-
-	string left, right, op = "";
-	size_t p;
-
-	if (op == "")
+	vector<string> result;
+	vector<string> terms;
+	vector<string> temp0, temp1;
+	string term, tempstr;
+	size_t i, j, k, l, m, n;
+	int count, count1;
+	for (i = 0, j = 0, count = 0; i <= exp.length(); i++)
 	{
-		p = find_first_of_l0(exp, "|");
-		if (p != exp.npos)
-		{
-			op = "|";
-			left = exp.substr(0, p);
-			right = exp.substr(p+1);
-			cout << left << " " << right << endl;
+		if (i < exp.length() && exp[i] == '(')
+			count++;
+		else if (i < exp.length() && exp[i] == ')')
+			count--;
 
-			if (sib == "")
-				return distribute(left, "") + "|" + distribute(right, "");
-			else
-				return distribute(left + "&" + sib, "") + "|" + distribute(right + "&" + sib, "");
+		if (i == exp.length() || (count == 0 && exp[i] == '|'))
+		{
+			terms.clear();
+			term = exp.substr(j, i-j);
+			for (k = 0, l = 0, count1 = 0; k <= term.size(); k++)
+			{
+				if (k < term.size() && term[k] == '(')
+					count1++;
+				else if (k < term.size() && term[k] == ')')
+					count1--;
+
+				if (k == term.size() || (count1 == 0 && term[k] == '&'))
+				{
+					temp0 = terms;
+					temp1.clear();
+					terms.clear();
+					tempstr = term.substr(l, k-l);
+					if (tempstr.find_first_of("|&()") == tempstr.npos)
+						temp1.push_back(tempstr);
+					else
+						temp1 = distribute(strip(tempstr));
+
+					if (temp0.size() == 0)
+						terms = temp1;
+					else if (temp1.size() == 0)
+						terms = temp0;
+					else
+						for (m = 0; m < temp0.size(); m++)
+							for (n = 0; n < temp1.size(); n++)
+								terms.push_back(temp0[m] + "&" + temp1[n]);
+					l = k+1;
+				}
+			}
+
+			result.insert(result.end(), terms.begin(), terms.end());
+
+			j = i+1;
 		}
 	}
 
-	if (op == "")
-	{
-		p = find_first_of_l0(exp, "&");
-		if (p != exp.npos)
-		{
-			op = "&";
-			left = exp.substr(0, p);
-			right = exp.substr(p+1);
-			cout << left << " " << right << endl;
-
-			return distribute(left, right);
-		}
-	}
-
-	if (op == "")
-	{
-		p = find_first_of_l0(exp, "~");
-		if (p != exp.npos)
-		{
-			op = "~";
-			left = "";
-			right = exp.substr(p+1);
-			cout << left << " " << right << endl;
-		}
-	}
-
-	if (exp[0] == '(' && exp[exp.length()-1] == ')' && op == "")
-		return distribute(exp.substr(1, exp.length()-2), sib);
-
-	if (sib == "")
-		return exp;
-	else
-		return exp + "&" + sib;
+	return result;
 }
 
 string flatten_slice(string slices)
@@ -263,4 +253,200 @@ string flatten_slice(string slices)
 
 	ret += "]";
 	return ret;
+}
+
+string restrict_exp(string exp, string var, int val)
+{
+	string left, right;
+	string leftres, rightres;
+	size_t p;
+
+	p = find_first_of_l0(exp, "|");
+	if (p != exp.npos)
+	{
+		left = exp.substr(0, p);
+		right = exp.substr(p+1);
+		leftres = restrict_exp(left, var, val);
+		rightres = restrict_exp(right, var, val);
+
+		if (leftres == "1" || rightres == "1")
+			return "1";
+		else if (leftres == "0")
+			return rightres;
+		else if (rightres == "0")
+			return leftres;
+		else
+			return leftres + "|" + rightres;
+	}
+
+	p = find_first_of_l0(exp, "&");
+	if (p != exp.npos)
+	{
+		left = exp.substr(0, p);
+		right = exp.substr(p+1);
+		leftres = restrict_exp(left, var, val);
+		rightres = restrict_exp(right, var, val);
+
+		if (leftres == "0" || rightres == "0")
+			return "0";
+		else if (leftres == "1")
+			return rightres;
+		else if (rightres == "1")
+			return leftres;
+		else
+			return leftres + "&" + rightres;
+	}
+
+	p = find_first_of_l0(exp, "~");
+	if (p != exp.npos)
+	{
+		leftres = restrict_exp(exp.substr(p+1), var, val);
+
+		if (leftres == "1")
+			return "0";
+		else if (leftres == "0")
+			return "1";
+		else
+			return "~" + leftres;
+	}
+
+	if (exp[0] == '(' && exp[exp.length()-1] == ')')
+		return restrict_exp(exp.substr(1, exp.length()-2), var, val);
+
+	if (exp == var)
+		return to_string(val);
+	else
+		return exp;
+}
+
+void gen_variables(string exp, vspace *vars)
+{
+	string name;
+	int id;
+	size_t i, j;
+	for (i = exp.find_first_of("&|~()"), j = 0; i != exp.npos; j = i+1, i = exp.find_first_of("&|~()", j))
+	{
+		name = exp.substr(j, i-j);
+		if (name.size() != 0)
+		{
+			id = vars->get_uid(name);
+			if (id < 0 && name.substr(0, 2) != "0x" && name.substr(0, 2) != "0b" && name.find_first_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_") != name.npos)
+				vars->insert(variable(name, "node", 1, false));
+		}
+	}
+
+	name = exp.substr(j);
+	if (name.size() != 0)
+	{
+		id = vars->get_uid(name);
+		if (id < 0 && name.substr(0, 2) != "0x" && name.substr(0, 2) != "0b" && name.find_first_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_") != name.npos)
+			vars->insert(variable(name, "node", 1, false));
+	}
+}
+
+vector<string> extract_names(string exp)
+{
+	vector<string> ret;
+	size_t i = string::npos, j = 0;
+	while ((i = exp.find_first_of("&|", i+1)) != string::npos)
+	{
+		ret.push_back(exp.substr(j, i-j));
+		j = i+1;
+	}
+
+	ret.push_back(exp.substr(j));
+
+	return unique(&ret);
+}
+
+vector<int> extract_ids(string exp, vspace *vars)
+{
+	vector<int> ret;
+	size_t i = string::npos, j = 0;
+	while ((i = exp.find_first_of("&|", i+1)) != string::npos)
+	{
+		ret.push_back(vars->get_uid(exp.substr(j, i-j)));
+		j = i+1;
+	}
+
+	ret.push_back(vars->get_uid(exp.substr(j)));
+
+	return unique(&ret);
+}
+
+string remove_var(string exp, string var)
+{
+	string ret = "", test;
+	size_t i = string::npos, j = 0, k;
+	while ((i = exp.find_first_of("|", i+1)) != string::npos)
+	{
+		test = exp.substr(j, i-j);
+		k = test.find(var);
+		if (k != string::npos)
+		{
+			test = test.substr(0, k) + test.substr(k + var.length());
+			if (test[0] == '&')
+				test = test.substr(1);
+			else if (test[test.length() - 1] == '&')
+				test = test.substr(0, test.length()-1);
+			else if ((k = test.find("&&")) != string::npos)
+				test = test.substr(0, k) + test.substr(k+2);
+
+			ret += (ret == "" ? test : "|" + test);
+		}
+		j = i+1;
+	}
+
+	test = exp.substr(j);
+	k = test.find(var);
+	if (k != string::npos)
+	{
+		test = test.substr(0, k) + test.substr(k + var.length());
+		if (test[0] == '&')
+			test = test.substr(1);
+		else if (test[test.length() - 1] == '&')
+			test = test.substr(0, test.length()-1);
+		else if ((k = test.find("&&")) != string::npos)
+			test = test.substr(0, k) + test.substr(k+2);
+		ret += (ret == "" ? test : "|" + test);
+	}
+
+	return ret;
+}
+
+string remove_comments(string str)
+{
+	// Remove line comments:
+	size_t comment_begin = str.find("//");
+	size_t comment_end = str.find("\n", comment_begin);
+	while (comment_begin != str.npos && comment_end != str.npos){
+		str = str.substr(0,comment_begin) + str.substr(comment_end);
+		comment_begin = str.find("//");
+		comment_end = str.find("\n", comment_begin);
+	}
+
+	// Remove block comments:
+	comment_begin = str.find("/*");
+	comment_end = str.find("*/");
+	while (comment_begin != str.npos && comment_end != str.npos){
+		str = str.substr(0,comment_begin) + str.substr(comment_end+2);
+		comment_begin = str.find("/*");
+		comment_end = str.find("*/");
+	}
+	return str;
+}
+
+string remove_whitespace(string str)
+{
+	string cleaned_str;
+	// Remove extraneous whitespace
+	for (string::iterator i = str.begin(); i != str.end(); i++)
+	{
+		if (!sc(*i))
+			cleaned_str += *i;
+		else if (nc(*(i-1)) && (i == str.end()-1 || nc(*(i+1))))
+			cleaned_str += ' ';
+	}
+
+	return cleaned_str;
 }

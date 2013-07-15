@@ -23,7 +23,8 @@ struct path
 	void clear();
 	bool contains(int n);
 	void set(int n);
-	int max();
+	vector<int> max();
+	path inverse();
 	vector<int>::iterator begin();
 	vector<int>::iterator end();
 

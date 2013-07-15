@@ -26,7 +26,7 @@ struct parallel : sequential
 	void expand_shortcuts();
 	void parse();
 	void merge();
-	vector<int> generate_states(petri *n, vector<int> f, map<int, int> branch, vector<int> filter);
+	vector<int> generate_states(petri *n, vector<int> f, map<int, int> branch);
 
 	void branch_place_set(int from, pair<int, int> id);
 	void branch_trans_set(int from, pair<int, int> id);

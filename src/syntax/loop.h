@@ -27,7 +27,7 @@ struct loop : condition
 	void expand_shortcuts();
 	void parse();
 	void merge();
-	vector<int> generate_states(petri *n, vector<int> f, map<int, int> branch, vector<int> filter);
+	vector<int> generate_states(petri *n, vector<int> f, map<int, int> branch);
 
 	void insert_instr(int uid, int nid, instruction *instr);
 

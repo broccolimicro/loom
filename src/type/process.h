@@ -50,6 +50,9 @@ struct process : keyword
 	void generate_prs();
 	void factor_prs();
 
+	void parse_prs(string raw);
+	void elaborate_prs();
+
 	void print_hse(ostream *fout = &cout);
 	void print_dot(ostream *fout = &cout);
 	void print_petrify();

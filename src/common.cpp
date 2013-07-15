@@ -397,15 +397,15 @@ int powi(int base, int exp)
 
 int bitwise_or(int a, int b)
 {
-	return a|b;
+	return a||b;
 }
 
 int bitwise_and(int a, int b)
 {
-	return a&b;
+	return a&&b;
 }
 
 int bitwise_not(int a)
 {
-	return ~a;
+	return !a;
 }

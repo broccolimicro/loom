@@ -79,9 +79,40 @@ int path_space::coverage_count(int n)
 	return total.nodes[n];
 }
 
-int path_space::coverage_max()
+vector<int> path_space::coverage_max()
 {
 	return total.max();
+}
+
+path path_space::get_mask()
+{
+	path result;
+	for (int i = 0; i < (int)total.nodes.size(); i++)
+		result.nodes.push_back((int)(total.nodes[i] > 0));
+	result.from = total.from;
+	result.to = total.to;
+	return result;
+}
+
+path path_space::apply_mask(path m)
+{
+	path result;
+	for (int i = 0; i < total.nodes.size(); i++)
+		result.nodes.push_back(total.nodes[i]*m.nodes[i]);
+	result.from = total.from;
+	result.to = total.to;
+	return result;
+}
+
+path_space path_space::inverse()
+{
+	list<path>::iterator i;
+	path_space result(total.size());
+
+	for (i = paths.begin(); i != paths.end(); i++)
+		result.push_back(i->inverse());
+
+	return result;
 }
 
 path_space path_space::coverage(int n)

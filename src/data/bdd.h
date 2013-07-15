@@ -6,6 +6,7 @@
  */
 
 #include "../common.h"
+#include "vspace.h"
 #include "canonical.h"
 
 using namespace std;
@@ -53,12 +54,18 @@ struct bdd
 	int high(int u);
 
 	int mk(int i, int l, int h);
+	int build(string e, vspace *vars, int i = 0);
 	int build(minterm t, int i = 0);
+	int build(list<pair<int, int> > t);
 	vector<int> build(canonical t, int i = 0);
 	int apply(int (*op)(int, int), int u1, int u2, unordered_map<pair<int, int>, int> *G);
 	int apply(int (*op)(int), int u1, unordered_map<int, int> *G);
 	int restrict(int u, int j, int b);
 	int smooth(int u, int j);
+	int smart_smooth(int u, int j, int u1);
+	int smart_smooth(int u, map<int, int> j);
+	int extract(int u, int j);
+	void extract(int u, map<int, int> *result);
 	int smooth(int u, vector<int> j);
 	void variable_list(int u, vector<int> *l);
 	int transition(int u0, int u1);
@@ -70,6 +77,7 @@ struct bdd
 	void print(int u, string tab = "");
 	string expr(int u, vector<string> vars);
 	string trace(int u, vector<string> vars);
+	int invert(int u);
 
 	int apply_or(int u0, int u1);
 	int apply_and(int u0, int u1);

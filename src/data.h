@@ -14,9 +14,7 @@
 #include "data/canonical.h"
 #include "data/bdd.h"
 #include "data/petri.h"
-#include "data/expression.h"
 #include "data/variable.h"
 #include "data/vspace.h"
-#include "data/rule.h"
 
 #endif

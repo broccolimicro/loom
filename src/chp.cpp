@@ -69,14 +69,6 @@
 #include "program.h"
 #include "utility.h"
 
-/* This structure describes a whole program. It contains a record of all
- * of the types described in this program and all of the global variables
- * defined in this program. It also contains a list of all of the errors
- * produced during the compilation and a list of all of the production rules
- * that result from this compilation. This is the top level of the compiler,
- * if you will. It contains all the information used throughout the entire
- * program's compilation. */
-
 int main(int argc, char **argv)
 {
 	int verbosity = VERB_ALL;
@@ -116,4 +108,17 @@ int main(int argc, char **argv)
 	cout << endl;
 
 	//fclose(log);
+
+	/*ifstream t("fifo1b.prs");
+	string prgm((istreambuf_iterator<char>(t)),
+				 istreambuf_iterator<char>());
+
+	process p;
+
+	p.parse_prs(prgm);
+	p.elaborate_prs();
+
+	ofstream f("verify_fifo1b.dot");
+	p.net.print_dot(&f, "verify_fifo1b");
+	f.close();*/
 }

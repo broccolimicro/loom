@@ -28,7 +28,10 @@ struct path_space
 	void clear();
 
 	int coverage_count(int n);
-	int coverage_max();
+	vector<int> coverage_max();
+	path get_mask();
+	path apply_mask(path m);
+	path_space inverse();
 	path_space coverage(int n);
 	path_space avoidance(int n);
 

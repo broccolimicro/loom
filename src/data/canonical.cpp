@@ -6,6 +6,7 @@
  */
 
 #include "canonical.h"
+#include "../utility.h"
 
 canonical::canonical()
 {
@@ -25,6 +26,32 @@ canonical::canonical(minterm m)
 canonical::canonical(vector<minterm> m)
 {
 	terms = m;
+	mccluskey();
+}
+
+canonical::canonical(string s, vspace *vars)
+{
+	vector<string> t = distribute(demorgan(s, -1, false));
+
+	for (int i = 0; i < (int)t.size(); i++)
+	{
+		minterm m(t[i], vars);
+		if (!has_(m))
+			terms.push_back(m);
+	}
+	mccluskey();
+}
+
+canonical::canonical(string s, vector<string> vars)
+{
+	vector<string> t = distribute(demorgan(s, -1, false));
+
+	for (int i = 0; i < (int)t.size(); i++)
+	{
+		minterm m(t[i], vars);
+		if (!has_(m))
+			terms.push_back(m);
+	}
 	mccluskey();
 }
 

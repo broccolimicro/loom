@@ -73,32 +73,8 @@ void program::parse(string chp, int verbosity)
 	type_space.insert(pair<string, operate*>(c->name + "." + c->recv->name, c->recv));
 	type_space.insert(pair<string, operate*>(c->name + "." + c->probe->name, c->probe));
 
-	// Remove line comments:
-	size_t comment_begin = chp.find("//");
-	size_t comment_end = chp.find("\n", comment_begin);
-	while (comment_begin != chp.npos && comment_end != chp.npos){
-		chp = chp.substr(0,comment_begin) + chp.substr(comment_end);
-		comment_begin = chp.find("//");
-		comment_end = chp.find("\n", comment_begin);
-	}
-
-	// Remove block comments:
-	comment_begin = chp.find("/*");
-	comment_end = chp.find("*/");
-	while (comment_begin != chp.npos && comment_end != chp.npos){
-		chp = chp.substr(0,comment_begin) + chp.substr(comment_end+2);
-		comment_begin = chp.find("/*");
-		comment_end = chp.find("*/");
-	}
-
-	// Remove extraneous whitespace
-	for (i = chp.begin(); i != chp.end(); i++)
-	{
-		if (!sc(*i))
-			cleaned_chp += *i;
-		else if (nc(*(i-1)) && (i == chp.end()-1 || nc(*(i+1))))
-			cleaned_chp += ' ';
-	}
+	chp			= remove_comments(chp);
+	cleaned_chp = remove_whitespace(chp);
 
 	if (verbosity & VERB_PRECOMPILED_CHP)
 		cout << chp << endl;
@@ -200,7 +176,7 @@ void program::merge()
 {
 	map<string, keyword*>::iterator i;
 	for (i = type_space.begin(); i != type_space.end(); i++)
-		if (i->second->kind() == "process")
+		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
 			((process*)i->second)->merge();
 }
 
@@ -209,7 +185,7 @@ void program::project()
 {
 	map<string, keyword*>::iterator i;
 	for (i = type_space.begin(); i != type_space.end(); i++)
-		if (i->second->kind() == "process")
+		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
 			((process*)i->second)->project();
 }
 
@@ -218,7 +194,7 @@ void program::decompose()
 {
 	map<string, keyword*>::iterator i;
 	for (i = type_space.begin(); i != type_space.end(); i++)
-		if (i->second->kind() == "process")
+		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
 			((process*)i->second)->decompose();
 }
 
@@ -227,7 +203,7 @@ void program::reshuffle()
 {
 	map<string, keyword*>::iterator i;
 	for (i = type_space.begin(); i != type_space.end(); i++)
-		if (i->second->kind() == "process")
+		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
 			((process*)i->second)->reshuffle();
 }
 
@@ -236,7 +212,7 @@ void program::generate_states()
 {
 	map<string, keyword*>::iterator i;
 	for (i = type_space.begin(); i != type_space.end(); i++)
-		if (i->second->kind() == "process")
+		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
 			((process*)i->second)->generate_states();
 }
 
@@ -244,7 +220,7 @@ void program::insert_state_vars()
 {
 	map<string, keyword*>::iterator i;
 	for (i = type_space.begin(); i != type_space.end(); i++)
-		if (i->second->kind() == "process")
+		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
 			((process*)i->second)->insert_state_vars();
 }
 
@@ -252,7 +228,7 @@ void program::generate_prs()
 {
 	map<string, keyword*>::iterator i;
 	for (i = type_space.begin(); i != type_space.end(); i++)
-		if (i->second->kind() == "process")
+		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
 			((process*)i->second)->generate_prs();
 }
 

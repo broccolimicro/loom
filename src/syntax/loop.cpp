@@ -217,7 +217,7 @@ void loop::merge()
 	}
 }
 
-vector<int> loop::generate_states(petri *n, vector<int> f, map<int, int> branch, vector<int> filter)
+vector<int> loop::generate_states(petri *n, vector<int> f, map<int, int> branch)
 {
 	list<pair<sequential*, guard*> >::iterator instr_iter;
 	vector<int> start, end;
@@ -233,14 +233,13 @@ vector<int> loop::generate_states(petri *n, vector<int> f, map<int, int> branch,
 	{
 		start.clear();
 		end.clear();
-		start = instr_iter->second->generate_states(net, from, branch, filter);
-		end.push_back(net->insert_place(start, filter, branch, this));
-		end = instr_iter->first->generate_states(net, end, branch, filter);
+		start = instr_iter->second->generate_states(net, from, branch);
+		end.push_back(net->insert_place(start, branch, this));
+		end = instr_iter->first->generate_states(net, end, branch);
 		net->connect(end, from);
 		antiguard += string(antiguard != "" ? "&" : "") + "~(" + instr_iter->second->chp + ")";
 	}
-	end = net->insert_transitions(f, net->values.build(expression(antiguard, vars).expr), branch, this);
-	uid.insert(uid.end(), end.begin(), end.end());
+	uid.push_back(net->insert_transition(f, net->values.build(antiguard, vars), branch, this));
 
 	return uid;
 }

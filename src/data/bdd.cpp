@@ -6,6 +6,7 @@
  */
 
 #include "bdd.h"
+#include "../utility.h"
 
 triple::triple()
 {
@@ -78,6 +79,38 @@ int bdd::mk(int i, int l, int h)
 	return H.insert(pair<triple, int>(triple(i, l, h), T.size()-1)).first->second;
 }
 
+int bdd::build(string e, vspace *vars, int i)
+{
+	if (i == 0)
+		e = demorgan(e, -1, false);
+
+	int u0, u1;
+	if (e == "0")
+	{
+		if (i >= T[0].i || i >= T[1].i)
+		{
+			T[0].i = i;
+			T[1].i = i;
+		}
+		return 0;
+	}
+	else if (e == "1")
+	{
+		if (i >= T[0].i || i >= T[1].i)
+		{
+			T[0].i = i;
+			T[1].i = i;
+		}
+		return 1;
+	}
+	else
+	{
+		u0 = build(restrict_exp(e, vars->get_name(i), 0), vars, i+1);
+		u1 = build(restrict_exp(e, vars->get_name(i), 1), vars, i+1);
+		return mk(i, u0, u1);
+	}
+}
+
 int bdd::build(minterm t, int i)
 {
 	for (; i < t.size && t[i] == vX; i++);
@@ -140,6 +173,25 @@ vector<int> bdd::build(canonical t, int i)
 	}
 }
 
+int bdd::build(list<pair<int, int> > t)
+{
+	t.sort();
+	t.reverse();
+	list<pair<int, int> >::iterator it;
+	int p = 1;
+	for (it = t.begin(); it != t.end(); it++)
+	{
+		if (it->first >= T[0].i || it->first >= T[1].i)
+		{
+			T[0].i = it->first;
+			T[1].i = it->first;
+		}
+		p = mk(it->first, (1-it->second)*p, it->second*p);
+	}
+
+	return p;
+}
+
 int bdd::apply(int (*op)(int, int), int u1, int u2, unordered_map<pair<int, int>, int> *G)
 {
 	unordered_map<pair<int, int>, int>::iterator g;
@@ -196,6 +248,56 @@ int bdd::smooth(int u, vector<int> j)
 		u = smooth(u, j[i]);
 
 	return u;
+}
+
+int bdd::smart_smooth(int u, int j, int u1)
+{
+	if (apply_and(u, u1) != u)
+		u = smooth(u, j);
+
+	return u;
+}
+
+int bdd::smart_smooth(int u, map<int, int> j)
+{
+	map<int, int>::iterator ji;
+	for (ji = j.begin(); ji != j.end(); ji++)
+		u = smart_smooth(u, ji->first, ji->second);
+
+	return u;
+}
+
+int bdd::extract(int u, int j)
+{
+	vector<int> vl;
+	variable_list(u, &vl);
+	for (int i = 0; i < (int)vl.size(); i++)
+		if (vl[i] != j)
+			u = smooth(u, vl[i]);
+	return u;
+}
+
+void bdd::extract(int u, map<int, int> *result)
+{
+	vector<int> vl;
+	int i, j;
+	int t;
+	map<int, int>::iterator ri;
+
+	variable_list(u, &vl);
+	for (i = 0; i < (int)vl.size(); i++)
+	{
+		t = u;
+		for (j = 0; j < (int)vl.size(); j++)
+			if (vl[j] != vl[i])
+				t = smooth(t, vl[j]);
+
+		ri = result->find(vl[i]);
+		if (ri == result->end())
+			result->insert(pair<int, int>(vl[i], t));
+		else
+			ri->second = apply_and(ri->second, t);
+	}
 }
 
 void bdd::variable_list(int u, vector<int> *l)
@@ -376,6 +478,11 @@ string bdd::trace(int u, vector<string> vars)
 	}
 
 	return ret;
+}
+
+int bdd::invert(int u)
+{
+	return u < 2 ? u : mk(var(u), invert(high(u)), invert(low(u)));
 }
 
 int bdd::apply_or(int u0, int u1)

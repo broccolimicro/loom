@@ -8,6 +8,7 @@
  */
 
 #include "rule.h"
+#include "../utility.h"
 
 rule::rule()
 {
@@ -27,6 +28,24 @@ rule::rule(int uid, petri *g, vspace *v, int verbosity)
 	this->verbosity = verbosity;
 
 	gen_minterms();
+}
+
+rule::rule(string u, string d, string v, vspace *vars, petri *net)
+{
+	this->net = net;
+	this->vars = vars;
+
+	gen_variables(u, vars);
+	gen_variables(d, vars);
+
+	if ((uid = vars->get_uid(v)) < 0)
+		uid = vars->insert(variable(v, "node", 1, false));
+	vars->find(uid)->driven = true;
+
+	this->up = net->values.build(u, vars);
+	this->down = net->values.build(d, vars);
+	cout << u << endl << net->values.expr(this->up, vars->get_names()) << endl << endl;
+	cout << d << endl << net->values.expr(this->down, vars->get_names()) << endl << endl << endl;
 }
 
 rule::~rule()
@@ -94,12 +113,28 @@ void rule::gen_minterms()
 //Print the rule in the following format:
 //up left -> up right+
 //down left -> down right-
+void rule::print(ostream &os, string prefix)
+{
+	vector<string> names = vars->get_names();
+	for (int i = 0; i < (int)names.size(); i++)
+		names[i] = prefix + names[i];
+
+	if (up != -1)
+		os << net->values.expr(up, names) << " -> " << names[uid] << "+" << endl;
+	if (down != -1)
+		os << net->values.expr(down, names) << " -> " << names[uid] << "-" << endl;
+}
+
+//Print the rule in the following format:
+//up left -> up right+
+//down left -> down right-
 ostream &operator<<(ostream &os, rule r)
 {
+	vector<string> names = r.vars->get_names();
 	if (r.up != -1)
-		os << r.net->values.expr(r.up, r.vars->get_names()) << " -> " << r.vars->get_name(r.uid) << "+" << endl;
+		os << r.net->values.expr(r.up, names) << " -> " << names[r.uid] << "+" << endl;
 	if (r.down != -1)
-		os << r.net->values.expr(r.down, r.vars->get_names()) << " -> " << r.vars->get_name(r.uid) << "-" << endl;
+		os << r.net->values.expr(r.down, names) << " -> " << names[r.uid] << "-" << endl;
 
     return os;
 }

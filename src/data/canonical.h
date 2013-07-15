@@ -17,6 +17,8 @@ struct canonical
 	canonical(int s);
 	canonical(minterm m);
 	canonical(vector<minterm> m);
+	canonical(string s, vspace *vars);
+	canonical(string s, vector<string> vars);
 	~canonical();
 
 	vector<minterm> terms;

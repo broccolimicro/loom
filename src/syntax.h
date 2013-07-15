@@ -15,5 +15,6 @@
 #include "syntax/parallel.h"
 #include "syntax/condition.h"
 #include "syntax/loop.h"
+#include "syntax/rule.h"
 
 #endif

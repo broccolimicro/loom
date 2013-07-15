@@ -30,6 +30,8 @@ struct operate : process
 	operate &operator=(operate p);
 
 	void parse(string raw, int verbosity);
+
+	void print_prs(ostream *fout, string prefix, vector<string> driven);
 };
 
 #endif

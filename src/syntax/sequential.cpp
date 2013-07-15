@@ -279,7 +279,7 @@ void sequential::merge()
 			if (ic->instrs.size() == 1 && ic->instrs.front().first->instrs.size() == 0)
 			{
 				for (k = jc->instrs.begin(); k != jc->instrs.end(); k++)
-					k->second->chp = expression("(" + ic->instrs.front().second->chp + ")&(" + k->second->chp + ")").simple;
+					k->second->chp = canonical("(" + ic->instrs.front().second->chp + ")&(" + k->second->chp + ")", vars).print(vars->get_names());
 				instrs.remove(*i);
 				//delete (condition*)(*i);
 			}
@@ -316,7 +316,7 @@ void sequential::merge()
 		(*j)->merge();
 }
 
-vector<int> sequential::generate_states(petri *n, vector<int> f, map<int, int> branch, vector<int> filter)
+vector<int> sequential::generate_states(petri *n, vector<int> f, map<int, int> branch)
 {
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
@@ -342,11 +342,11 @@ vector<int> sequential::generate_states(petri *n, vector<int> f, map<int, int> b
 
 			if (instr_iter != instrs.begin())
 			{
-				next.push_back(net->insert_place(uid, filter, branch, this));
-				uid	= instr->generate_states(net, next, branch, filter);
+				next.push_back(net->insert_place(uid, branch, this));
+				uid	= instr->generate_states(net, next, branch);
 			}
 			else
-				uid	= instr->generate_states(net, uid, branch, filter);
+				uid	= instr->generate_states(net, uid, branch);
 		}
 	}
 	return uid;
