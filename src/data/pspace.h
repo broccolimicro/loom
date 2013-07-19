@@ -26,11 +26,15 @@ struct path_space
 	list<path>::iterator begin();
 	list<path>::iterator end();
 	void clear();
+	void zero(int i);
+	void zero(vector<int> i);
 
 	int coverage_count(int n);
-	vector<int> coverage_max();
+	int coverage_count(vector<int> n);
+	vector<int> coverage_maxes();
+	int coverage_max();
 	path get_mask();
-	path apply_mask(path m);
+	void apply_mask(path m);
 	path_space inverse();
 	path_space coverage(int n);
 	path_space avoidance(int n);

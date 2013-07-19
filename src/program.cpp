@@ -221,7 +221,7 @@ void program::insert_state_vars()
 	map<string, keyword*>::iterator i;
 	for (i = type_space.begin(); i != type_space.end(); i++)
 		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
-			((process*)i->second)->insert_state_vars();
+			for (int j = 0; j < 10 && ((process*)i->second)->insert_state_vars(); j++);
 }
 
 void program::generate_prs()

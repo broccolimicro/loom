@@ -13,9 +13,9 @@
 #ifndef sequential_h
 #define sequential_h
 
-#include "instruction.h"
+#include "composition.h"
 
-struct sequential : instruction
+struct sequential : composition
 {
 	sequential();
 	sequential(instruction *parent, string chp, vspace *vars, string tab, int verbosity);
@@ -23,21 +23,12 @@ struct sequential : instruction
 
 	list<instruction*>			instrs;		// an ordered list of instructions in sequential
 
-	sequential &operator=(sequential b);
-
-	void init(string chp, vspace *vars, string tab, int verbosity);
-
 	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
-	vector<int> variant();
-	vector<int> active_variant();
-	vector<int> passive_variant();
 
 	void expand_shortcuts();
 	void parse();
 	void merge();
-	vector<int> generate_states(petri *n, vector<int> f, map<int, int> branch);
-
-	void clear();
+	vector<int> generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch);
 
 	void insert_instr(int uid, int nid, instruction *instr);
 

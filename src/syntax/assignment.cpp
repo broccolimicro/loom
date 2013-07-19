@@ -21,7 +21,6 @@ assignment::assignment(instruction *parent, string chp, vspace *vars, string tab
 	this->verbosity = verbosity;
 	this->vars		= vars;
 	this->parent	= parent;
-	this->branch_id = -1;
 
 	expand_shortcuts();
 	parse();
@@ -30,20 +29,6 @@ assignment::assignment(instruction *parent, string chp, vspace *vars, string tab
 assignment::~assignment()
 {
 	_kind = "assignment";
-}
-
-assignment &assignment::operator=(assignment a)
-{
-	this->uid		= a.uid;
-	this->expr		= a.expr;
-	this->chp		= a.chp;
-	this->vars		= a.vars;
-	this->net		= a.net;
-	this->tab		= a.tab;
-	this->verbosity	= a.verbosity;
-	this->parent	= a.parent;
-	this->branch_id = a.branch_id;
-	return *this;
 }
 
 /* duplicate()
@@ -62,7 +47,6 @@ instruction *assignment::duplicate(instruction *parent, vspace *vars, map<string
 	instr->verbosity	= verbosity;
 	instr->expr			= this->expr;
 	instr->parent		= parent;
-	instr->branch_id	= branch_id;
 
 	size_t idx;
 	string rep;
@@ -287,12 +271,13 @@ void assignment::merge()
 
 }
 
-vector<int> assignment::generate_states(petri *n, vector<int> f, map<int, int> branch)
+vector<int> assignment::generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
 {
 	list<pair<string, string> >::iterator ei, ej;
 	vector<int> next, end;
 	vector<int> allends;
-	map<int, int> nbranch;
+	int pbranch_id;
+	map<int, int> npbranch;
 	variable *v;
 	size_t k;
 	int l;
@@ -303,28 +288,28 @@ vector<int> assignment::generate_states(petri *n, vector<int> f, map<int, int> b
 	net  = n;
 	from = f;
 
-	branch_id = net->branch_count;
-	net->branch_count++;
+	pbranch_id = net->pbranch_count;
+	net->pbranch_count++;
 	for (ei = expr.begin(), k = expr.size()-1; ei != expr.end(); ei++, k--)
 	{
 		v = vars->find(ei->first);
 		if (v != NULL)
 			v->driven = true;
 
-		nbranch = branch;
+		npbranch = pbranch;
 		if (expr.size() > 1)
-			nbranch.insert(pair<int, int>(branch_id, (int)k));
+			npbranch.insert(pair<int, int>(pbranch_id, (int)k));
 
 		next.clear();
 		next = (k == 0 ? from : net->duplicate_nodes(from));
 		for (l = 0; l < (int)next.size(); l++)
-			net->S[next[l]].branch = nbranch;
+			net->S[next[l]].pbranch = npbranch;
 
 		end.clear();
-		end.push_back(net->insert_transition(next, net->values.mk(v->uid, ei->second == "0", ei->second == "1"), nbranch, this));
-		allends.push_back(net->insert_place(end, nbranch, this));
+		end.push_back(net->insert_transition(next, net->values.mk(v->uid, ei->second == "0", ei->second == "1"), npbranch, cbranch, this));
+		allends.push_back(net->insert_place(end, npbranch, cbranch, this));
 	}
-	uid.push_back(net->insert_dummy(allends, branch, this));
+	uid.push_back(net->insert_dummy(allends, pbranch, cbranch, this));
 
 	return uid;
 }
@@ -663,6 +648,7 @@ pair<string, instruction*> expand_expression(string chp, vspace *vars, petri *ne
 		B.second->parent = sub;
 	sub->push(A.second);
 	sub->push(B.second);
+	sub->parent = ret;
 
 
 	ret->tab = tab;

@@ -42,20 +42,6 @@ loop::~loop()
 	instrs.clear();
 }
 
-loop &loop::operator=(loop l)
-{
-	this->type		= l.type;
-	this->uid		= l.uid;
-	this->chp		= l.chp;
-	this->instrs	= l.instrs;
-	this->vars		= l.vars;
-	this->net		= l.net;
-	this->tab		= l.tab;
-	this->verbosity	= l.verbosity;
-	this->parent	= l.parent;
-	return *this;
-}
-
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
@@ -217,7 +203,7 @@ void loop::merge()
 	}
 }
 
-vector<int> loop::generate_states(petri *n, vector<int> f, map<int, int> branch)
+vector<int> loop::generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
 {
 	list<pair<sequential*, guard*> >::iterator instr_iter;
 	vector<int> start, end;
@@ -233,13 +219,13 @@ vector<int> loop::generate_states(petri *n, vector<int> f, map<int, int> branch)
 	{
 		start.clear();
 		end.clear();
-		start = instr_iter->second->generate_states(net, from, branch);
-		end.push_back(net->insert_place(start, branch, this));
-		end = instr_iter->first->generate_states(net, end, branch);
+		start = instr_iter->second->generate_states(net, from, pbranch, cbranch);
+		end.push_back(net->insert_place(start, pbranch, cbranch, this));
+		end = instr_iter->first->generate_states(net, end, pbranch, cbranch);
 		net->connect(end, from);
 		antiguard += string(antiguard != "" ? "&" : "") + "~(" + instr_iter->second->chp + ")";
 	}
-	uid.push_back(net->insert_transition(f, net->values.build(antiguard, vars), branch, this));
+	uid.push_back(net->insert_transition(f, net->values.build(antiguard, vars), pbranch, cbranch, this));
 
 	return uid;
 }

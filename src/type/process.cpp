@@ -24,6 +24,7 @@ process::process()
 	chp = "";
 	is_inline = false;
 	net.vars = &vars;
+	def.parent = NULL;
 }
 
 process::process(string raw, map<string, keyword*> *types, int verbosity)
@@ -34,6 +35,7 @@ process::process(string raw, map<string, keyword*> *types, int verbosity)
 	this->chp = raw;
 	is_inline = false;
 	net.vars = &vars;
+	def.parent = NULL;
 
 	parse(raw);
 }
@@ -44,6 +46,7 @@ process::~process()
 	_kind = "process";
 	verbosity = 0;
 	chp = "";
+	def.parent = NULL;
 
 	vars.clear();
 }
@@ -168,32 +171,32 @@ void process::generate_states()
 	net.vars = &vars;
 
 	vector<int> start;
-	start.push_back(net.insert_place(start, map<int, int>(), NULL));
+	start.push_back(net.insert_place(start, map<int, int>(), map<int, int>(), NULL));
 	net.M0.push_back(start[0]);
-	net.connect(def.generate_states(&net, start,  map<int, int>()), start);
+	net.connect(def.generate_states(&net, start,  map<int, int>(), map<int, int>()), start);
 
 	do
 	{
 		net.gen_mutables();
 		net.update();
 	} while(net.trim());
-	net.gen_tails();
 
 	cout << "BRANCHES " << name << endl;
 	net.print_branch_ids();
 }
 
-void process::insert_state_vars()
+bool process::insert_state_vars()
 {
 	map<int, list<vector<int> > >::iterator i;
 	list<vector<int> >::iterator lj;
 	map<int, int>::iterator m, n;
-	int j, k;
+	int j, k, l, a;
 	list<path>::iterator li;
 
+	net.gen_tails();
 	net.gen_conflicts();
 	cout << "Conflicts: " << name << endl;
-	for (i = net.indistinguishable.begin(); i != net.indistinguishable.end(); i++)
+	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
 	{
 		cout << i->first << ": ";
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
@@ -238,59 +241,88 @@ void process::insert_state_vars()
 	}
 	cout << endl;
 
-	path up;
 	path_space up_paths;
-	path down;
+	path_space up_temp;
+	path_space up_inv;
 	path_space down_paths;
-	vector<int> uptrans, downtrans;
+	path_space down_temp;
+	path_space down_inv;
+	path up_mask;
+	path down_mask;
+	vector<int> uptrans, downtrans, ia, oa;
 	vector<pair<vector<int>, vector<int> > > ip;
 	int um, dm;
 	int ium, idm;
-	for (i = net.indistinguishable.begin(); i != net.indistinguishable.end(); i++)
+	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
 	{
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
-			up_paths = net.get_paths(i->first, *lj, path(net.S.size()));
-			down_paths = net.get_paths(*lj, i->first, path(net.S.size()));
+			up_paths = net.get_paths(i->first, *lj, path(net.T.size()));
+			down_paths = net.get_paths(*lj, i->first, path(net.T.size()));
 
 			/**
 			 * After identifying paths, start at every conditional merge and
-			 * check to make sure that there is a path coming from each branch.
+			 * check to make sure that there is a path coming from each pbranch.
 			 * If not iterate backwards from the conditional merge along the
-			 * paths that do come from a branch until a conflict or a conditional
+			 * paths that do come from a pbranch until a conflict or a conditional
 			 * split is reached and set the paths' values along that part of the
-			 * branch to zero. This will prevent cases where you have two
-			 * conflicting places on sibling branches and the state variable
+			 * pbranch to zero. This will prevent cases where you have two
+			 * conflicting places on sibling pbranches and the state variable
 			 * insertion algorithm puts transitions after the conflicting places.
 			 */
 			net.filter_path_space(&up_paths);
 			net.filter_path_space(&down_paths);
 
-			up = net.conjugate_path(up_paths.total, implicants);
-			down = net.conjugate_path(down_paths.total, implicants);
+			up_inv = up_paths.inverse();
+			down_inv = down_paths.inverse();
 
-			cout << "Up:" << endl;
-			uptrans.clear();
-			while (up_paths.size() > 0 && (ium = net.closest_transition(sample(implicants, up.max()), up.to.front(), path(net.T.size())).second) != -1)
+			up_mask = up_inv.get_mask();
+			down_mask = down_inv.get_mask();
+
+			up_paths.apply_mask(down_mask);
+			down_paths.apply_mask(up_mask);
+
+			//if (up_paths.coverage_count(i->first) + down_paths.coverage_count(i->first) < up_paths.coverage_count(*lj) + down_paths.coverage_count(*lj))
+			//{
+				net.zero_paths(&up_paths, i->first);
+				net.zero_paths(&down_paths, i->first);
+			//}
+			//else
+			//{
+				net.zero_paths(&up_paths, *lj);
+				net.zero_paths(&down_paths, *lj);
+			//}
+
+			cout << "Up: {" << i->first << "} -> {";
+			for (um = 0; um < (int)lj->size(); um++)
 			{
-				cout << up << endl;
-				uptrans.push_back(ium);
-				arcs = net.input_arcs(ium);
-				for (j = 0; j < (int)arcs.size(); j++)
-					up_paths = up_paths.avoidance(arcs[j]);
-				up = net.conjugate_path(up_paths.total, implicants);
+				if (um != 0)
+					cout << ", ";
+				cout << (*lj)[um];
+			}
+			cout << "}" << endl;
+			uptrans.clear();
+			while (up_paths.size() > 0 && (ium = up_paths.total.max()) != -1)//(ium = net.closest_transition(sample(implicants, up_paths.total.max()), up_paths.total.to.front(), path(net.T.size())).second) != -1)
+			{
+				cout << up_paths.total << endl;
+				uptrans.push_back(net.trans_id(ium));
+				up_paths = up_paths.avoidance(ium);
 			}
 
-			cout << "Down:" << endl;
-			downtrans.clear();
-			while (down_paths.size() > 0 && (idm = net.closest_transition(sample(implicants, down.max()), down.to.front(), path(net.T.size())).second) != -1)
+			cout << "Down: " << "{";
+			for (um = 0; um < (int)lj->size(); um++)
 			{
-				cout << down << endl;
-				downtrans.push_back(idm);
-				arcs = net.input_arcs(idm);
-				for (j = 0; j < (int)arcs.size(); j++)
-					down_paths = down_paths.avoidance(arcs[j]);
-				down = net.conjugate_path(down_paths.total, implicants);
+				if (um != 0)
+					cout << ", ";
+				cout << (*lj)[um];
+			}
+			cout << "}  -> {" << i->first << "}" << endl;
+			downtrans.clear();
+			while (down_paths.size() > 0 && (idm = down_paths.total.max()) != -1)//(idm = net.closest_transition(sample(implicants, down_paths.total.max()), down_paths.total.to.front(), path(net.T.size())).second) != -1)
+			{
+				cout << down_paths.total << endl;
+				downtrans.push_back(net.trans_id(idm));
+				down_paths = down_paths.avoidance(idm);
 			}
 			cout << endl;
 
@@ -315,6 +347,7 @@ void process::insert_state_vars()
 	string vname;
 	vector<int> dupfrom;
 	int vid;
+	bool conditional_split;
 	for (j = 0; j < (int)ip.size(); j++)
 	{
 		vname = vars.unique_name("_sv");
@@ -324,19 +357,71 @@ void process::insert_state_vars()
 		dm = net.values.mk(vid, 1, 0);
 
 		for (k = 0; k < (int)ip[j].first.size(); k++)
-			net.insert_sv_before(ip[j].first[k], um);
+		{
+			ia = net.input_arcs(ip[j].first[k]);
+			conditional_split = false;
+			for (l = 0; l < (int)ia.size() && !conditional_split; l++)
+				if (net.output_arcs(ia[l]).size() > 1)
+					conditional_split = true;
+
+			if (!conditional_split)
+				net.insert_sv_before(ip[j].first[k], um);
+			else
+			{
+				for (l = 0; l < (int)ia.size(); l++)
+				{
+					arcs = net.input_arcs(ia[l]);
+					for (a = 0; a < (int)arcs.size(); a++)
+						net.insert_sv_after(arcs[a], um);
+				}
+			}
+		}
 		for (k = 0; k < (int)ip[j].second.size(); k++)
-			net.insert_sv_before(ip[j].second[k], dm);
+		{
+			ia = net.input_arcs(ip[j].second[k]);
+			conditional_split = false;
+			for (l = 0; l < (int)ia.size() && !conditional_split; l++)
+				if (net.output_arcs(ia[l]).size() > 1)
+					conditional_split = true;
+
+			if (!conditional_split)
+				net.insert_sv_before(ip[j].second[k], dm);
+			else
+			{
+				for (l = 0; l < (int)ia.size(); l++)
+				{
+					arcs = net.input_arcs(ia[l]);
+					for (a = 0; a < (int)arcs.size(); a++)
+						net.insert_sv_after(arcs[a], dm);
+				}
+			}
+		}
 	}
 
 	net.trim_branch_ids();
 	net.gen_mutables();
 	net.update();
 
+	net.gen_tails();
+	net.gen_conflicts();
+	cout << "Conflicts: " << name << endl;
+	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
+	{
+		cout << i->first << ": ";
+		for (lj = i->second.begin(); lj != i->second.end(); lj++)
+		{
+			cout << "{";
+			for (j = 0; j < (int)lj->size(); j++)
+				cout << (*lj)[j] << " ";
+			cout << "} ";
+		}
+		cout << endl;
+	}
+
 	cout << "BRANCHES " << name << endl;
 	net.print_branch_ids();
 
-
+	return (ip.size() > 0);
 }
 
 void process::generate_prs()
@@ -430,9 +515,9 @@ void process::elaborate_prs()
 		//sat = net.values.allsat(prs[i].up);
 		for (si = sat.begin(); si != sat.end(); si++)
 		{
-			ufrom  = net.new_place(net.values.build(*si), map<int, int>(), NULL);
-			utrans = net.insert_transition(ufrom, net.values.mk(prs[i].uid, 0, 1), map<int, int>(), NULL);
-			uto    = net.insert_place(utrans, map<int, int>(), NULL);
+			ufrom  = net.new_place(net.values.build(*si), map<int, int>(), map<int, int>(), NULL);
+			utrans = net.insert_transition(ufrom, net.values.mk(prs[i].uid, 0, 1), map<int, int>(), map<int, int>(), NULL);
+			uto    = net.insert_place(utrans, map<int, int>(), map<int, int>(), NULL);
 			net.S[uto].index = net.values.transition(net.S[ufrom].index, net.T[utrans].index);
 			net.S[ufrom].active = true;
 			net.T[utrans].active = true;
@@ -442,9 +527,9 @@ void process::elaborate_prs()
 		//sat = net.values.allsat(prs[i].down);
 		for (si = sat.begin(); si != sat.end(); si++)
 		{
-			dfrom  = net.new_place(net.values.build(*si), map<int, int>(), NULL);
-			dtrans = net.insert_transition(dfrom, net.values.mk(prs[i].uid, 1, 0), map<int, int>(), NULL);
-			dto    = net.insert_place(dtrans, map<int, int>(), NULL);
+			dfrom  = net.new_place(net.values.build(*si), map<int, int>(), map<int, int>(), NULL);
+			dtrans = net.insert_transition(dfrom, net.values.mk(prs[i].uid, 1, 0), map<int, int>(), map<int, int>(), NULL);
+			dto    = net.insert_place(dtrans, map<int, int>(), map<int, int>(), NULL);
 			net.S[dto].index = net.values.transition(net.S[dfrom].index, net.T[dtrans].index);
 			net.S[dfrom].active = true;
 			net.T[dtrans].active = true;

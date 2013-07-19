@@ -43,19 +43,6 @@ parallel::~parallel()
 	instrs.clear();
 }
 
-parallel &parallel::operator=(parallel p)
-{
-	this->uid		= p.uid;
-	this->chp		= p.chp;
-	this->instrs	= p.instrs;
-	this->vars		= p.vars;
-	this->net		= p.net;
-	this->tab		= p.tab;
-	this->verbosity	= p.verbosity;
-	this->parent	= p.parent;
-	return *this;
-}
-
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
@@ -195,13 +182,13 @@ void parallel::merge()
 		(*i)->merge();
 }
 
-vector<int> parallel::generate_states(petri *n, vector<int> f, map<int, int> branch)
+vector<int> parallel::generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
 {
 	list<instruction*>::iterator i, j;
 	vector<int> next, end;
 	vector<int> allends;
-	map<int, int> nbranch;
-	int nbranch_count;
+	map<int, int> npbranch;
+	int npbranch_count;
 	size_t k;
 	int l;
 
@@ -211,67 +198,67 @@ vector<int> parallel::generate_states(petri *n, vector<int> f, map<int, int> bra
 	net  = n;
 	from = f;
 
-	nbranch_count = net->branch_count;
-	net->branch_count++;
+	npbranch_count = net->pbranch_count;
+	net->pbranch_count++;
 	for (i = instrs.begin(), k = instrs.size()-1; i != instrs.end(); i++, k--)
 	{
-		nbranch = branch;
+		npbranch = pbranch;
 		if (instrs.size() > 1)
-			nbranch.insert(pair<int, int>(nbranch_count, (int)k));
+			npbranch.insert(pair<int, int>(npbranch_count, (int)k));
 
 		next.clear();
 		next = (k == 0 ? from : net->duplicate_nodes(from));
 		for (l = 0; l < (int)next.size(); l++)
-			net->S[next[l]].branch = nbranch;
+			net->S[next[l]].pbranch = npbranch;
 
-		end = (*i)->generate_states(net, next, nbranch);
-		allends.push_back(net->insert_place(end, nbranch, this));
+		end = (*i)->generate_states(net, next, npbranch, cbranch);
+		allends.push_back(net->insert_place(end, npbranch, cbranch, this));
 	}
-	uid.push_back(net->insert_dummy(allends, branch, this));
+	uid.push_back(net->insert_dummy(allends, pbranch, cbranch, this));
 
 	return uid;
 }
 
-void parallel::branch_place_set(int from, pair<int, int> id)
+void parallel::pbranch_place_set(int from, pair<int, int> id)
 {
 	/*int i;
 
-	if (net->S[from.index].branch.find(id.first) != net->S[from.index].branch.end())
+	if (net->S[from.index].pbranch.find(id.first) != net->S[from.index].pbranch.end())
 		return;
-	net->S[from.index].branch.insert(id);
+	net->S[from.index].pbranch.insert(id);
 
 	while (net->Wp[from.index].size() == 1)
 	{
-		if (net->S[net->Wp[from.index].front()].branch.find(id.first) != net->S[net->Wp[from.index].front()].branch.end())
+		if (net->S[net->Wp[from.index].front()].pbranch.find(id.first) != net->S[net->Wp[from.index].front()].pbranch.end())
 			return;
-		net->S[net->Wp[from.index].front()].branch.insert(id);
+		net->S[net->Wp[from.index].front()].pbranch.insert(id);
 		from = net->Wp[from.index].front();
 	}
 
 	for (i = 0; from < (int)net->Wp.size() && i < (int)net->Wp[from.index].size(); i++)
-		if (net->S[net->Wp[from.index][i]].branch.find(id.first) == net->S[net->Wp[from.index][i]].branch.end())
-			branch_trans_set(net->Wp[from.index][i], id);*/
+		if (net->S[net->Wp[from.index][i]].pbranch.find(id.first) == net->S[net->Wp[from.index][i]].pbranch.end())
+			pbranch_trans_set(net->Wp[from.index][i], id);*/
 }
 
-void parallel::branch_trans_set(int from, pair<int, int> id)
+void parallel::pbranch_trans_set(int from, pair<int, int> id)
 {
 	/*int i;
 
-	if (net->T[from.index].branch.find(id.first) != net->T[from.index].branch.end())
+	if (net->T[from.index].pbranch.find(id.first) != net->T[from.index].pbranch.end())
 		return;
-	net->T[from.index].branch.insert(id);
+	net->T[from.index].pbranch.insert(id);
 
 	while (net->Wn[from.index].size() == 1)
 	{
-		if (net->T[net->Wn[from.index].front()].branch.find(id.first) != net->T[net->Wn[from.index].front()].branch.end())
+		if (net->T[net->Wn[from.index].front()].pbranch.find(id.first) != net->T[net->Wn[from.index].front()].pbranch.end())
 			return;
-		net->T[net->Wn[from.index].front()].branch.insert(id);
+		net->T[net->Wn[from.index].front()].pbranch.insert(id);
 		from.index = net->Wn[from.index].front();
 	}
 
 	for (i = 0; from.index < (int)net->Wn.size() && i < (int)net->Wn[from.index].size(); i++)
-		if (net->T[net->Wn[from.index][i]].branch.find(id.first) == net->T[net->Wn[from.index][i]].branch.end())
-			branch_place_set(net->Wn[from.index][i], id);*/
+		if (net->T[net->Wn[from.index][i]].pbranch.find(id.first) == net->T[net->Wn[from.index][i]].pbranch.end())
+			pbranch_place_set(net->Wn[from.index][i], id);*/
 }
 
 void parallel::insert_instr(int uid, int nid, instruction *instr)
@@ -368,7 +355,10 @@ void parallel::push(instruction *i)
 			delete (sequential*)i;
 		}
 		else
+		{
+			i->parent = this;
 			instrs.push_back(i);
+		}
 	}
 	else if (i->kind() == "parallel")
 	{
@@ -381,6 +371,9 @@ void parallel::push(instruction *i)
 		delete (parallel*)i;
 	}
 	else
+	{
+		i->parent = this;
 		instrs.push_back(i);
+	}
 }
 

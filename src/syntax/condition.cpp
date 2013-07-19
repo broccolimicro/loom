@@ -32,6 +32,7 @@ condition::condition(instruction *parent, string chp, vspace *vars, string tab, 
 	expand_shortcuts();
 	parse();
 }
+
 condition::~condition()
 {
 	_kind = "condition";
@@ -49,20 +50,6 @@ condition::~condition()
 	}
 
 	instrs.clear();
-}
-
-condition &condition::operator=(condition c)
-{
-	this->type		= c.type;
-	this->uid		= c.uid;
-	this->chp		= c.chp;
-	this->instrs	= c.instrs;
-	this->vars		= c.vars;
-	this->net		= c.net;
-	this->tab		= c.tab;
-	this->verbosity	= c.verbosity;
-	this->parent	= c.parent;
-	return *this;
 }
 
 /* This copies a guard to another process and replaces
@@ -122,57 +109,6 @@ instruction *condition::duplicate(instruction *parent, vspace *vars, map<string,
 		instr->instrs.push_back(pair<sequential*, guard*>((sequential*)l->first->duplicate(instr, vars, convert, tab+"\t", verbosity), (guard*)l->second->duplicate(instr, vars, convert, tab+"\t", verbosity)));
 
 	return instr;
-}
-
-vector<int> condition::variant()
-{
-	vector<int> result;
-	vector<int> temp;
-
-	list<pair<sequential*, guard*> >::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		temp = i->first->variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-		temp = i->second->variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-	}
-
-	return unique(&result);
-}
-
-vector<int> condition::active_variant()
-{
-	vector<int> result;
-	vector<int> temp;
-
-	list<pair<sequential*, guard*> >::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		temp = i->first->active_variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-		temp = i->second->active_variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-	}
-
-	return unique(&result);
-}
-
-vector<int> condition::passive_variant()
-{
-	vector<int> result;
-	vector<int> temp;
-
-	list<pair<sequential*, guard*> >::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		temp = i->first->passive_variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-		temp = i->second->passive_variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-	}
-
-	return unique(&result);
 }
 
 void condition::expand_shortcuts()
@@ -325,10 +261,13 @@ void condition::merge()
 	}
 }
 
-vector<int> condition::generate_states(petri *n, vector<int> f, map<int, int> branch)
+vector<int> condition::generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
 {
 	list<pair<sequential*, guard*> >::iterator instr_iter;
 	vector<int> start, end;
+	map<int, int> ncbranch;
+	int ncbranch_count;
+	int k;
 
 	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
 		cout << tab << "Conditional " << chp << endl;
@@ -336,13 +275,19 @@ vector<int> condition::generate_states(petri *n, vector<int> f, map<int, int> br
 	net = n;
 	from = f;
 
-	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+	ncbranch_count = net->cbranch_count;
+	net->cbranch_count++;
+	for (instr_iter = instrs.begin(), k = instrs.size()-1; instr_iter != instrs.end(); instr_iter++, k--)
 	{
+		ncbranch = cbranch;
+		if (instrs.size() > 1)
+			ncbranch.insert(pair<int, int>(ncbranch_count, (int)k));
+
 		end.clear();
 		start.clear();
-		start = instr_iter->second->generate_states(net, from, branch);
-		end.push_back(net->insert_place(start, branch, this));
-		start = instr_iter->first->generate_states(net, end, branch);
+		start = instr_iter->second->generate_states(net, from, pbranch, ncbranch);
+		end.push_back(net->insert_place(start, pbranch, ncbranch, this));
+		start = instr_iter->first->generate_states(net, end, pbranch, ncbranch);
 		uid.insert(uid.end(), start.begin(), start.end());
 	}
 

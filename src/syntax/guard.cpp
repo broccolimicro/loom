@@ -29,18 +29,6 @@ guard::~guard()
 	_kind = "guard";
 }
 
-guard &guard::operator=(guard g)
-{
-	this->uid		= g.uid;
-	this->chp		= g.chp;
-	this->vars		= g.vars;
-	this->net		= g.net;
-	this->tab		= g.tab;
-	this->verbosity	= g.verbosity;
-	this->parent	= g.parent;
-	return *this;
-}
-
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
@@ -129,7 +117,7 @@ void guard::merge()
 
 }
 
-vector<int> guard::generate_states(petri *n, vector<int> f, map<int, int> branch)
+vector<int> guard::generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
 {
 	from = f;
 	net = n;
@@ -138,7 +126,7 @@ vector<int> guard::generate_states(petri *n, vector<int> f, map<int, int> branch
 	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
 		cout << tab << "Guard " << chp << endl;
 
-	uid.push_back(net->insert_transition(from, net->values.build(chp, vars), branch, this));
+	uid.push_back(net->insert_transition(from, net->values.build(chp, vars), pbranch, cbranch, this));
 
 	return uid;
 }

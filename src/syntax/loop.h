@@ -12,22 +12,20 @@
 #ifndef loop_h
 #define loop_h
 
-#include "condition.h"
+#include "control.h"
 
-struct loop : condition
+struct loop : control
 {
 	loop();
 	loop(instruction *parent, string raw, vspace *vars, string tab, int verbosity);
 	~loop();
-
-	loop &operator=(loop l);
 
 	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
 
 	void expand_shortcuts();
 	void parse();
 	void merge();
-	vector<int> generate_states(petri *n, vector<int> f, map<int, int> branch);
+	vector<int> generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch);
 
 	void insert_instr(int uid, int nid, instruction *instr);
 

@@ -52,32 +52,6 @@ sequential::~sequential()
 	instrs.clear();
 }
 
-sequential &sequential::operator=(sequential b)
-{
-	this->chp		= b.chp;
-	this->instrs	= b.instrs;
-	this->vars		= b.vars;
-	this->net		= b.net;
-	this->tab		= b.tab;
-	this->verbosity	= b.verbosity;
-	this->parent	= b.parent;
-	return *this;
-}
-
-void sequential::init(string chp, vspace *vars, string tab, int verbosity)
-{
-	clear();
-
-	this->_kind = "sequential";
-	this->chp = chp;
-	this->tab = tab;
-	this->verbosity = verbosity;
-	this->vars = vars;
-
-	expand_shortcuts();
-	parse();
-}
-
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
@@ -134,51 +108,6 @@ instruction *sequential::duplicate(instruction *parent, vspace *vars, map<string
 		instr->instrs.push_back((*l)->duplicate(instr, vars, convert, tab+"\t", verbosity));
 
 	return instr;
-}
-
-vector<int> sequential::variant()
-{
-	vector<int> result;
-	vector<int> temp;
-
-	list<instruction*>::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		temp = (*i)->variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-	}
-
-	return unique(&result);
-}
-
-vector<int> sequential::active_variant()
-{
-	vector<int> result;
-	vector<int> temp;
-
-	list<instruction*>::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		temp = (*i)->active_variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-	}
-
-	return unique(&result);
-}
-
-vector<int> sequential::passive_variant()
-{
-	vector<int> result;
-	vector<int> temp;
-
-	list<instruction*>::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		temp = (*i)->passive_variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-	}
-
-	return unique(&result);
 }
 
 void sequential::expand_shortcuts()
@@ -316,7 +245,7 @@ void sequential::merge()
 		(*j)->merge();
 }
 
-vector<int> sequential::generate_states(petri *n, vector<int> f, map<int, int> branch)
+vector<int> sequential::generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
 {
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
@@ -331,7 +260,7 @@ vector<int> sequential::generate_states(petri *n, vector<int> f, map<int, int> b
 	net  = n;
 	from = f;
 	if (instrs.size() == 0)
-		uid.push_back(net->insert_dummy(from, branch, this));
+		uid.push_back(net->insert_dummy(from, pbranch, cbranch, this));
 	else
 	{
 		uid  = f;
@@ -342,33 +271,14 @@ vector<int> sequential::generate_states(petri *n, vector<int> f, map<int, int> b
 
 			if (instr_iter != instrs.begin())
 			{
-				next.push_back(net->insert_place(uid, branch, this));
-				uid	= instr->generate_states(net, next, branch);
+				next.push_back(net->insert_place(uid, pbranch, cbranch, this));
+				uid	= instr->generate_states(net, next, pbranch, cbranch);
 			}
 			else
-				uid	= instr->generate_states(net, uid, branch);
+				uid	= instr->generate_states(net, uid, pbranch, cbranch);
 		}
 	}
 	return uid;
-}
-
-/* This function cleans up all of the memory allocated
- * during parsing, and prepares for the next parsing.
- */
-void sequential::clear()
-{
-	chp = "";
-	_kind = "sequential";
-
-	list<instruction*>::iterator j;
-	for (j = instrs.begin(); j != instrs.end(); j++)
-	{
-		if (*j != NULL)
-			delete *j;
-		*j = NULL;
-	}
-
-	instrs.clear();
 }
 
 void sequential::insert_instr(int uid, int nid, instruction *instr)
@@ -442,7 +352,10 @@ void sequential::push(instruction *i)
 			delete (parallel*)i;
 		}
 		else
+		{
+			i->parent = this;
 			instrs.push_back(i);
+		}
 	}
 	else if (i->kind() == "sequential")
 	{
@@ -455,5 +368,8 @@ void sequential::push(instruction *i)
 		delete (sequential*)i;
 	}
 	else
+	{
+		i->parent = this;
 		instrs.push_back(i);
+	}
 }

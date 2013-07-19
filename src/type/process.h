@@ -46,7 +46,7 @@ struct process : keyword
 	void reshuffle();
 
 	void generate_states();
-	void insert_state_vars();
+	bool insert_state_vars();
 	void generate_prs();
 	void factor_prs();
 

@@ -19,13 +19,14 @@ struct vspace;
 struct node
 {
 	node();
-	node(int index, bool active, map<int, int> branch, instruction *owner);
+	node(int index, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
 	~node();
 
 	instruction *owner;
 	map<int, int> mutables;	// The set of variables whose value we cannot know
 	vector<int> tail;		// The set of inactive states preceding an active state
-	map<int, int> branch;
+	map<int, int> pbranch;
+	map<int, int> cbranch;
 	bool active;
 	int index;
 };
@@ -42,33 +43,35 @@ struct petri
 	matrix<int> Wp;		// <s, t> from t to s
 	matrix<int> Wn;		// <s, t> from s to t
 	vector<int> M0;		// Wp - Wn
-	int branch_count;
+	int pbranch_count;
+	int cbranch_count;
+	vector<pair<int, int> > arcs;
 
 	map<int, list<vector<int> > > conflicts;
 	map<int, list<vector<int> > > indistinguishable;
-	map<int, int> conditional_places;
+	map<int, pair<int, int> > conditional_places;
 
-	int new_transition(int root, bool active, map<int, int> branch, instruction *owner);
-	vector<int> new_transitions(vector<int> root, bool active, map<int, int> branch, instruction *owner);
-	int new_place(int root, map<int, int> branch, instruction *owner);
+	int new_transition(int root, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	vector<int> new_transitions(vector<int> root, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	int new_place(int root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
 
-	int insert_transition(int from, int root, map<int, int> branch, instruction *owner);
-	int insert_transition(vector<int> from, int root, map<int, int> branch, instruction *owner);
+	int insert_transition(int from, int root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	int insert_transition(vector<int> from, int root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
 
 	void insert_sv_before(int from, int root);
 	void insert_sv_parallel(int from, int root);
 	void insert_sv_after(int from, int root);
 
-	vector<int> insert_transitions(int from, vector<int> root, map<int, int> branch, instruction *owner);
-	vector<int> insert_transitions(vector<int> from, vector<int> root, map<int, int> branch, instruction *owner);
+	vector<int> insert_transitions(int from, vector<int> root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	vector<int> insert_transitions(vector<int> from, vector<int> root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
 
-	int insert_dummy(int from, map<int, int> branch, instruction *owner);
-	int insert_dummy(vector<int> from, map<int, int> branch, instruction *owner);
+	int insert_dummy(int from, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	int insert_dummy(vector<int> from, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
 
-	int insert_place(int from, map<int, int> branch, instruction *owner);
-	int insert_place(vector<int> from, map<int, int> branch, instruction *owner);
+	int insert_place(int from, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	int insert_place(vector<int> from, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
 
-	vector<int> insert_places(vector<int> from, map<int, int> branch, instruction *owner);
+	vector<int> insert_places(vector<int> from, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
 
 	void remove_place(int from);
 	void remove_place(vector<int> from);
@@ -94,7 +97,8 @@ struct petri
 	int  trans_id(int idx);
 	int base(vector<int> idx);
 	bool connected(int from, int to);
-	bool siblings(int p0, int p1);
+	int psiblings(int p0, int p1);
+	int csiblings(int p0, int p1);
 	bool same_inputs(int p0, int p1);
 	bool same_outputs(int p0, int p1);
 
@@ -112,7 +116,7 @@ struct petri
 	void gen_tails();
 
 	/**
-	 * \brief	Removes vacuous branches, unreachable places, and dangling, vacuous, and impossible transitions.
+	 * \brief	Removes vacuous pbranches, unreachable places, and dangling, vacuous, and impossible transitions.
 	 * \sa		merge_conflicts() and zip()
 	 */
 	bool trim();
@@ -144,15 +148,16 @@ struct petri
 	 */
 	vector<int> output_arcs(int from);
 
-	path_space get_paths(int t1, int t2, path p);
-	path_space get_paths(int t1, vector<int> t2, path p);
-	path_space get_paths(int t1, int t2, vector<int> ex, path p);
-	path_space get_paths(int t1, vector<int> t2, vector<int> ex, path p);
-	path_space get_paths(vector<int> t1, int t2, path p);
-	path_space get_paths(vector<int> t1, vector<int> t2, path p);
-	path conjugate_path(path p, vector<int> implicants);
+	path_space get_paths(int from, int to, path p);
+	path_space get_paths(int from, vector<int> to, path p);
+	path_space get_paths(int from, int to, vector<int> ex, path p);
+	path_space get_paths(int from, vector<int> to, vector<int> ex, path p);
+	path_space get_paths(vector<int> from, int to, path p);
+	path_space get_paths(vector<int> from, vector<int> to, path p);
 	void filter_path_space(path_space *p);
 	void filter_path(int from, int to, path *p);
+	void zero_paths(path_space *paths, int from);
+	void zero_paths(path_space *paths, vector<int> from);
 
 	node &operator[](int i);
 

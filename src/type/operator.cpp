@@ -22,6 +22,7 @@ operate::operate()
 	name = "";
 	_kind = "operate";
 	is_inline = true;
+	def.parent = NULL;
 }
 
 operate::operate(string raw, map<string, keyword*> *types, int verbosity)
@@ -29,6 +30,7 @@ operate::operate(string raw, map<string, keyword*> *types, int verbosity)
 	_kind = "operate";
 	vars.types = types;
 	is_inline = true;
+	def.parent = NULL;
 
 	parse(raw, verbosity);
 }
@@ -38,6 +40,7 @@ operate::~operate()
 	name = "";
 	_kind = "operate";
 	is_inline = true;
+	def.parent = NULL;
 
 	vars.clear();
 }

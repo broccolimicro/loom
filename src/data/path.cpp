@@ -42,7 +42,15 @@ void path::set(int n)
 	nodes[n] = 1;
 }
 
-vector<int> path::max()
+bool path::empty()
+{
+	for (int i = 0; i < (int)nodes.size(); i++)
+		if (nodes[i] > 0)
+			return false;
+	return true;
+}
+
+vector<int> path::maxes()
 {
 	vector<int> r;
 	int t = -1;
@@ -58,6 +66,21 @@ vector<int> path::max()
 	return r;
 }
 
+int path::max()
+{
+	int r;
+	int t = -1;
+	int i;
+	for (i = 0; i < (int)nodes.size(); i++)
+		if (nodes[i] > t)
+		{
+			t = nodes[i];
+			r = i;
+		}
+
+	return r;
+}
+
 path path::inverse()
 {
 	path result;
@@ -65,6 +88,20 @@ path path::inverse()
 
 	for (i = 0; i < nodes.size(); i++)
 		result.nodes.push_back(1 - nodes[i]);
+
+	result.from = from;
+	result.to = to;
+
+	return result;
+}
+
+path path::mask()
+{
+	path result;
+	int i;
+
+	for (i = 0; i < nodes.size(); i++)
+		result.nodes.push_back(nodes[i] > 0);
 
 	result.from = from;
 	result.to = to;

@@ -19,9 +19,6 @@ struct assignment : instruction
 	~assignment();
 
 	list<pair<string, string> > expr;
-	int branch_id;
-
-	assignment &operator=(assignment a);
 
 	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
 	vector<int> variant();
@@ -32,7 +29,7 @@ struct assignment : instruction
 	void expand_shortcuts();
 	void parse();
 	void merge();
-	vector<int> generate_states(petri *n, vector<int> f, map<int, int> branch);
+	vector<int> generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch);
 
 	void insert_instr(int uid, int nid, instruction *instr);
 
