@@ -559,8 +559,6 @@ void petri::update()
 				ret = ret || update(ia[j], &covered);
 		}
 	}
-
-	cout << endl << endl;
 }
 
 void petri::update_tail(int p)
@@ -1063,7 +1061,7 @@ void petri::gen_mutables()
 
 void petri::gen_conditional_places()
 {
-	cout << "CONDITIONAL PLACES" << endl;
+	//cout << "CONDITIONAL PLACES" << endl;
 	vector<int> it, ip;
 	int sibs[2];
 	vector<bool> covered(S.size(), false);
@@ -1087,12 +1085,12 @@ void petri::gen_conditional_places()
 			if ((int)(ip = input_arcs(it[0])).size() > 0 && j >= 2)
 				if ((r = get_split_place(ip[0], &covered)) != -1)
 				{
-					cout << csiblings(sibs[0], sibs[1]) << "(" << sibs[0] << ", " << sibs[1] << ")" << ":{" << i << ", " << r << "}" << endl;
+	//				cout << csiblings(sibs[0], sibs[1]) << "(" << sibs[0] << ", " << sibs[1] << ")" << ":{" << i << ", " << r << "}" << endl;
 					conditional_places.insert(pair<int, pair<int, int>>(csiblings(sibs[0], sibs[1]), pair<int, int>(i, r)));
 				}
 		}
 	}
-	cout << endl;
+	//cout << endl;
 }
 
 void petri::gen_conflicts()

@@ -107,14 +107,13 @@ void guard::expand_shortcuts()
 void guard::parse()
 {
 	// TODO Expand multi-bit guard expressions using operators
-	chp = canonical(chp, vars).print(vars->get_names());
 	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
 		cout << tab << "Guard:\t" + chp << endl;
 }
 
 void guard::merge()
 {
-
+	chp = canonical(chp, vars).print(vars->get_names());
 }
 
 vector<int> guard::generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)

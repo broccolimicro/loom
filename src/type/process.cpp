@@ -231,7 +231,7 @@ bool process::insert_state_vars()
 	net.gen_arcs();
 	net.gen_conditional_places();
 
-	cout << "PROCESS " << name << endl;
+	//cout << "PROCESS " << name << endl;
 	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
 	{
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
@@ -277,7 +277,7 @@ bool process::insert_state_vars()
 					down_paths.zero(j);
 				}
 
-			cout << "Up: {";
+			/*cout << "Up: {";
 			for (j = 0; j < (int)up_paths.total.from.size(); j++)
 			{
 				if (j != 0)
@@ -291,16 +291,16 @@ bool process::insert_state_vars()
 					cout << ", ";
 				cout << up_paths.total.to[j];
 			}
-			cout << "}" << endl;
+			cout << "}" << endl;*/
 			uptrans.clear();
 			while (up_paths.size() > 0 && (ium = up_paths.total.max()) != -1)//(ium = net.closest_transition(sample(implicants, up_paths.total.max()), up_paths.total.to.front(), path(net.T.size())).second) != -1)
 			{
-				cout << up_paths.total << endl;
+			//	cout << up_paths.total << endl;
 				uptrans.push_back(net.trans_id(ium));
 				up_paths = up_paths.avoidance(ium);
 			}
 
-			cout << "Down: {";
+			/*cout << "Down: {";
 			for (j = 0; j < (int)down_paths.total.from.size(); j++)
 			{
 				if (j != 0)
@@ -314,15 +314,15 @@ bool process::insert_state_vars()
 					cout << ", ";
 				cout << down_paths.total.to[j];
 			}
-			cout << "}" << endl;
+			cout << "}" << endl;*/
 			downtrans.clear();
 			while (down_paths.size() > 0 && (idm = down_paths.total.max()) != -1)//(idm = net.closest_transition(sample(implicants, down_paths.total.max()), down_paths.total.to.front(), path(net.T.size())).second) != -1)
 			{
-				cout << down_paths.total << endl;
+			//	cout << down_paths.total << endl;
 				downtrans.push_back(net.trans_id(idm));
 				down_paths = down_paths.avoidance(idm);
 			}
-			cout << endl;
+			//cout << endl;
 
 			unique(&uptrans, &downtrans);
 
@@ -360,7 +360,7 @@ bool process::insert_state_vars()
 	net.update();
 	net.gen_tails();
 	net.gen_conflicts();
-	cout << "Conflicts: " << name << endl;
+	/*cout << "Conflicts: " << name << endl;
 	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
 	{
 		cout << i->first << ": ";
@@ -372,7 +372,7 @@ bool process::insert_state_vars()
 			cout << "} ";
 		}
 		cout << endl;
-	}
+	}*/
 
 	return (net.conflicts.size() > 0);
 }

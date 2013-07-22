@@ -71,7 +71,7 @@
 
 int main(int argc, char **argv)
 {
-	/*int verbosity = VERB_ALL;
+	int verbosity = VERB_ALL;
 
 	//FILE *log = fopen("log.txt", "w");
 	//*stdout = *log;
@@ -107,9 +107,9 @@ int main(int argc, char **argv)
 
 	cout << endl;
 
-	//fclose(log);*/
+	//fclose(log);
 
-	ifstream t("fifo1b.prs");
+	/*ifstream t("fifo1b.prs");
 	string prgm((istreambuf_iterator<char>(t)),
 				 istreambuf_iterator<char>());
 
@@ -120,5 +120,5 @@ int main(int argc, char **argv)
 
 	ofstream f("verify_fifo1b.dot");
 	p.net.print_dot(&f, "verify_fifo1b");
-	f.close();
+	f.close();*/
 }

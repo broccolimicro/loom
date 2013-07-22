@@ -24,16 +24,15 @@ inline process fifo1b(achan4p1b L, achan4p1b R)
 	*[L?i;R!i]
 }
 
+operator^(node<1> s, node<1> a, node<1> b)
+{
+	s := a&~b | ~a&b;
+}
+
 inline process test(achan4p0b L, achan4p0b R)
 {
 	node<1> x;
 	node<1> y;
 	node<1> z;
-	node<1> w;
-	
-	*[z-; w-; [ L.r -> L.a+; [R.r]; R.a+; x+; [~L.r]; L.a-; [~R.r]; R.a-
-	  		 []R.r -> R.a+; [L.r]; L.r+; y+; [~R.r]; R.a-; [~L.r]; L.a-
-	 		 ]; 
-	  z+; w+
-	 ]
+	*[[x^y -> z+[]~(x^y) -> z-]]
 }

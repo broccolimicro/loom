@@ -53,6 +53,8 @@ public:
 	virtual void insert_instr(int uid, int nid, instruction *instr) = 0;
 
 	virtual void print_hse(string t, ostream *fout = &cout) = 0;
+
+	pair<string, instruction*> expand_expression(string expr, string top);
 };
 
 #endif

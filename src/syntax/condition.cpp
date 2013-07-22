@@ -10,6 +10,7 @@
 #include "../data.h"
 
 #include "condition.h"
+#include "parallel.h"
 
 condition::condition()
 {

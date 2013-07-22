@@ -26,6 +26,10 @@ struct composition : instruction
 
 	virtual void insert_instr(int uid, int nid, instruction *instr) = 0;
 	virtual void push(instruction *i) = 0;
+
+	instruction *expand_assignment(string chp);
+	instruction *expand_condition(string chp);
+	instruction *expand_loop(string chp);
 };
 
 #endif

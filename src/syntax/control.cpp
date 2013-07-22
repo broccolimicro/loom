@@ -6,6 +6,8 @@
  */
 
 #include "control.h"
+#include "sequential.h"
+#include "parallel.h"
 
 control::control()
 {
@@ -100,4 +102,9 @@ vector<int> control::passive_variant()
 	}
 
 	return unique(&result);
+}
+
+pair<string, instruction*> control::expand_guard(string chp)
+{
+	return expand_expression(chp, "");
 }

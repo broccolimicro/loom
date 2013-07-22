@@ -149,10 +149,10 @@ void parallel::parse()
 				push(new sequential(this, raw_instr.substr(1, raw_instr.length()-2), vars, tab+"\t", verbosity));
 			// This sub sequential is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
-				push(new loop(this, raw_instr, vars, tab+"\t", verbosity));
+				push(expand_loop(raw_instr));
 			// This sub sequential is a condition. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
-				push(new condition(this, raw_instr, vars, tab+"\t", verbosity));
+				push(expand_condition(raw_instr));
 			// This sub sequential is a variable definition. keyword<bitwidth> name
 			else if (vars->vdef(raw_instr) && raw_instr.length() > 0)
 				push(expand_instantiation(this, raw_instr, vars, NULL, tab+"\t", verbosity, true));
@@ -160,7 +160,7 @@ void parallel::parse()
 				push(add_unique_variable(this, raw_instr.substr(0, k) + "._fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", vars->get_type(raw_instr.substr(0, k)) + ".operator" + raw_instr[k] + "()", vars, tab+"\t", verbosity).second);
 			// This sub sequential is an assignment instruction.
 			else if ((raw_instr.find(":=") != raw_instr.npos || raw_instr[raw_instr.length()-1] == '+' || raw_instr[raw_instr.length()-1] == '-') && raw_instr.length() > 0)
-				push(expand_assignment(this, raw_instr, vars, net, tab+"\t", verbosity));
+				push(expand_assignment(raw_instr));
 			else if (raw_instr.find("skip") == raw_instr.npos && raw_instr.length() > 0)
 				push(new guard(this, raw_instr, vars, tab, verbosity));
 

@@ -36,7 +36,4 @@ struct assignment : instruction
 	void print_hse(string t = "", ostream *fout = &cout);
 };
 
-instruction *expand_assignment(instruction *parent, string chp, vspace *vars, petri *net, string tab, int verbosity);
-pair<string, instruction*> expand_expression(string chp, vspace *vars, petri *net, string top, string tab, int verbosity);
-
 #endif
