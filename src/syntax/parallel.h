@@ -26,8 +26,6 @@ struct parallel : composition
 	void merge();
 	vector<int> generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch);
 
-	void pbranch_place_set(int from, pair<int, int> id);
-	void pbranch_trans_set(int from, pair<int, int> id);
 	void insert_instr(int uid, int nid, instruction *instr);
 
 	void print_hse(string t = "", ostream *fout = &cout);

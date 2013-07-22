@@ -58,6 +58,7 @@ struct petri
 	int insert_transition(int from, int root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
 	int insert_transition(vector<int> from, int root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
 
+	void insert_sv_at(int a, int root);
 	void insert_sv_before(int from, int root);
 	void insert_sv_parallel(int from, int root);
 	void insert_sv_after(int from, int root);
@@ -114,6 +115,7 @@ struct petri
 	void gen_conflicts();
 	void trim_branch_ids();
 	void gen_tails();
+	void gen_arcs();
 
 	/**
 	 * \brief	Removes vacuous pbranches, unreachable places, and dangling, vacuous, and impossible transitions.

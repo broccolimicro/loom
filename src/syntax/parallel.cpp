@@ -219,48 +219,6 @@ vector<int> parallel::generate_states(petri *n, vector<int> f, map<int, int> pbr
 	return uid;
 }
 
-void parallel::pbranch_place_set(int from, pair<int, int> id)
-{
-	/*int i;
-
-	if (net->S[from.index].pbranch.find(id.first) != net->S[from.index].pbranch.end())
-		return;
-	net->S[from.index].pbranch.insert(id);
-
-	while (net->Wp[from.index].size() == 1)
-	{
-		if (net->S[net->Wp[from.index].front()].pbranch.find(id.first) != net->S[net->Wp[from.index].front()].pbranch.end())
-			return;
-		net->S[net->Wp[from.index].front()].pbranch.insert(id);
-		from = net->Wp[from.index].front();
-	}
-
-	for (i = 0; from < (int)net->Wp.size() && i < (int)net->Wp[from.index].size(); i++)
-		if (net->S[net->Wp[from.index][i]].pbranch.find(id.first) == net->S[net->Wp[from.index][i]].pbranch.end())
-			pbranch_trans_set(net->Wp[from.index][i], id);*/
-}
-
-void parallel::pbranch_trans_set(int from, pair<int, int> id)
-{
-	/*int i;
-
-	if (net->T[from.index].pbranch.find(id.first) != net->T[from.index].pbranch.end())
-		return;
-	net->T[from.index].pbranch.insert(id);
-
-	while (net->Wn[from.index].size() == 1)
-	{
-		if (net->T[net->Wn[from.index].front()].pbranch.find(id.first) != net->T[net->Wn[from.index].front()].pbranch.end())
-			return;
-		net->T[net->Wn[from.index].front()].pbranch.insert(id);
-		from.index = net->Wn[from.index].front();
-	}
-
-	for (i = 0; from.index < (int)net->Wn.size() && i < (int)net->Wn[from.index].size(); i++)
-		if (net->T[net->Wn[from.index][i]].pbranch.find(id.first) == net->T[net->Wn[from.index][i]].pbranch.end())
-			pbranch_place_set(net->Wn[from.index][i], id);*/
-}
-
 void parallel::insert_instr(int uid, int nid, instruction *instr)
 {
 	/*instr->uid = nid;
