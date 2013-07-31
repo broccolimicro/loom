@@ -19,14 +19,13 @@ loop::loop()
 	_kind = "loop";
 }
 
-loop::loop(instruction *parent, string chp, vspace *vars, string tab, int verbosity)
+loop::loop(instruction *parent, string chp, variable_space *vars, flag_space *flags)
 {
 	clear();
 
 	_kind = "loop";
 	this->chp = chp.substr(2, chp.length()-3);
-	this->tab = tab;
-	this->verbosity = verbosity;
+	this->flags = flags;
 	this->type = unknown;
 	this->vars = vars;
 	this->parent = parent;
@@ -45,15 +44,14 @@ loop::~loop()
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *loop::duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity)
+instruction *loop::duplicate(instruction *parent, variable_space *vars, map<string, string> convert)
 {
 	loop *instr;
 
 	instr 				= new loop();
 	instr->chp			= this->chp;
 	instr->vars			= vars;
-	instr->tab			= tab;
-	instr->verbosity	= verbosity;
+	instr->flags		= flags;
 	instr->type			= this->type;
 	instr->parent		= parent;
 
@@ -96,7 +94,7 @@ instruction *loop::duplicate(instruction *parent, vspace *vars, map<string, stri
 
 	list<pair<sequential*, guard*> >::iterator l;
 	for (l = instrs.begin(); l != instrs.end(); l++)
-		instr->instrs.push_back(pair<sequential*, guard*>((sequential*)l->first->duplicate(instr, vars, convert, tab+"\t", verbosity), (guard*)l->second->duplicate(instr, vars, convert, tab+"\t", verbosity)));
+		instr->instrs.push_back(pair<sequential*, guard*>((sequential*)l->first->duplicate(instr, vars, convert), (guard*)l->second->duplicate(instr, vars, convert)));
 
 	return instr;
 }
@@ -134,6 +132,8 @@ void loop::parse()
 
 	string::iterator i, j, k;
 
+	flags->inc();
+
 	//Parse instructions!
 	bool guarded = true;
 	int depth[3] = {0};
@@ -154,8 +154,8 @@ void loop::parse()
 
 		if (!guarded && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) != '|' && *(i-1) != '|') || (i == chp.end() && type == choice)))
 		{
-			if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
-				cout << tab << "Choice\n";
+			if (flags->log_base_hse())
+				(*flags->log_file) << flags->tab << "Choice\n";
 			if (type == unknown)
 				type = choice;
 			else if (type == mutex)
@@ -166,14 +166,14 @@ void loop::parse()
 			guardstr = sequentialstr.substr(0, k-sequentialstr.begin());
 			sequentialstr = sequentialstr.substr(k-sequentialstr.begin()+2);
 
-			instrs.push_back(pair<sequential*, guard*>(new sequential(this, sequentialstr, vars, tab+"\t", verbosity), new guard(this, guardstr, vars, tab+"\t", verbosity)));
+			instrs.push_back(pair<sequential*, guard*>(new sequential(this, sequentialstr, vars, flags), new guard(this, guardstr, vars, flags)));
 			j = i+1;
 			guarded = true;
 		}
 		else if (!guarded && depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '[' && *(i+1) == ']') || i == chp.end()))
 		{
-			if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
-				cout << tab << "Mutex\n";
+			if (flags->log_base_hse())
+				(*flags->log_file) << flags->tab << "Mutex\n";
 			if (type == unknown)
 				type = mutex;
 			else if (type == choice)
@@ -184,13 +184,15 @@ void loop::parse()
 			guardstr = sequentialstr.substr(0, k-sequentialstr.begin());
 			sequentialstr = sequentialstr.substr(k-sequentialstr.begin()+2);
 
-			instrs.push_back(pair<sequential*, guard*>(new sequential(this, sequentialstr, vars, tab+"\t", verbosity), new guard(this, guardstr, vars, tab+"\t", verbosity)));
+			instrs.push_back(pair<sequential*, guard*>(new sequential(this, sequentialstr, vars, flags), new guard(this, guardstr, vars, flags)));
 			j = i+2;
 			guarded = true;
 		}
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '-' && *(i+1) == '>') || i == chp.end()))
 			guarded = false;
 	}
+
+	flags->dec();
 }
 
 void loop::merge()
@@ -209,8 +211,9 @@ vector<int> loop::generate_states(petri *n, vector<int> f, map<int, int> pbranch
 	vector<int> start, end;
 	string antiguard = "";
 
-	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
-		cout << tab << "Loop " << chp << endl;
+	flags->inc();
+	if (flags->log_base_state_space())
+		(*flags->log_file) << flags->tab << "Loop " << chp << endl;
 
 	net = n;
 	from = f;
@@ -226,6 +229,7 @@ vector<int> loop::generate_states(petri *n, vector<int> f, map<int, int> pbranch
 		antiguard += string(antiguard != "" ? "&" : "") + "~(" + instr_iter->second->chp + ")";
 	}
 	uid.push_back(net->insert_transition(f, net->values.build(antiguard, vars), pbranch, cbranch, this));
+	flags->dec();
 
 	return uid;
 }

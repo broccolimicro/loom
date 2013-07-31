@@ -13,6 +13,7 @@
 #include "../common.h"
 #include "../data.h"
 #include "../syntax.h"
+#include "../flag_space.h"
 #include "keyword.h"
 
 /* This structure represents a process. Processes act in parallel
@@ -24,16 +25,16 @@
 struct process : keyword
 {
 	process();
-	process(string raw, map<string, keyword*> *types, int verbosity);
+	process(string raw, type_space *types, flag_space *flags);
 	~process();
 
 	string					chp;	// the raw process definition
 	parallel				def;	// the chp that defined this process
 	vector<rule>			prs;
-	vspace					vars;
+	variable_space			vars;
 	list<string>			args;
 	petri					net;
-	int						verbosity;
+	flag_space				*flags;
 
 	bool 					is_inline;
 
@@ -47,7 +48,9 @@ struct process : keyword
 
 	void generate_states();
 	bool insert_state_vars();
+	bool insert_bubbleless_state_vars();
 	void generate_prs();
+	void generate_bubbleless_prs();
 	void factor_prs();
 
 	void parse_prs(string raw);

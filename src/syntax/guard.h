@@ -13,12 +13,12 @@
 struct guard : instruction
 {
 	guard();
-	guard(instruction *parent, string chp, vspace *vars, string tab, int verbosity);
+	guard(instruction *parent, string chp, variable_space *vars, flag_space *flags);
 	~guard();
 
 	bdd solution;
 
-	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
+	instruction *duplicate(instruction *parent, variable_space *vars, map<string, string> convert);
 	vector<int> variant();
 	vector<int> active_variant();
 	vector<int> passive_variant();

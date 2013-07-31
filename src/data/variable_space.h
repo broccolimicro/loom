@@ -1,22 +1,22 @@
 /*
- * vspace.h
+ * variable_space.h
  *
  * A variable space collects information about all the variables in a given program.
  * It includes a list variables, as well as types and labels for those variables.
- * The concept behind vspace is to consolidate information about variables into one
- * easy to access place. vspace is primarily used in program.
+ * The concept behind variable_space is to consolidate information about variables into one
+ * easy to access place. variable_space is primarily used in program.
  */
 
-#ifndef vspace_h
-#define vspace_h
+#ifndef variable_space_h
+#define variable_space_h
 
 #include "../common.h"
 #include "../type/keyword.h"
 #include "variable.h"
 
-struct vspace
+struct variable_space
 {
-	map<string, keyword*> *types;
+	type_space *types;
 	map<string, variable> global;
 	map<string, variable> label;
 
@@ -44,17 +44,17 @@ struct vspace
 
 	bool vdef(string str);
 
-	map<string, string> instantiate(string parent, bool parent_arg, vspace* s, bool arg);
-	map<string, string> call(string parent, bool parent_arg, vspace* s);
+	map<string, string> instantiate(string parent, bool parent_arg, variable_space* s, bool arg);
+	map<string, string> call(string parent, bool parent_arg, variable_space* s);
 
 	int insert(variable v);
 	void clear();
 
-	vspace &operator=(vspace s);
+	variable_space &operator=(variable_space s);
 
-	void print(string t);
+	void print(string t, ostream *fout = (&cout));
 };
 
-ostream &operator<<(ostream &os, vspace s);
+ostream &operator<<(ostream &os, variable_space s);
 
 #endif

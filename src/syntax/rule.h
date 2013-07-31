@@ -16,21 +16,22 @@ struct rule
 {
 	rule();
 	rule(int uid);
-	rule(int uid, petri *g, vspace *v, int verbosity);
-	rule(string u, string d, string v, vspace *vars, petri *net);
+	rule(int uid, petri *g, variable_space *v, flag_space *flags, bool bubble);
+	rule(string u, string d, string v, variable_space *vars, petri *net, flag_space *flags);
 	~rule();
 
 	petri *net;
-	vspace *vars;
+	variable_space *vars;
 
 	int uid;
 	int up, down;
 
-	int verbosity;
+	flag_space *flags;
 
 	rule &operator=(rule r);
 
 	void gen_minterms();
+	void gen_bubbleless_minterms();
 
 	void print(ostream &os, string prefix = "");
 };

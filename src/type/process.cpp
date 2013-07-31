@@ -20,19 +20,18 @@ process::process()
 {
 	name = "";
 	_kind = "process";
-	verbosity = 0;
 	chp = "";
 	is_inline = false;
 	net.vars = &vars;
 	def.parent = NULL;
+	flags = NULL;
 }
 
-process::process(string raw, map<string, keyword*> *types, int verbosity)
+process::process(string raw, type_space *types, flag_space *flags)
 {
 	_kind = "process";
 	vars.types = types;
-	this->verbosity = verbosity;
-	this->chp = raw;
+	this->flags = flags;
 	is_inline = false;
 	net.vars = &vars;
 	def.parent = NULL;
@@ -44,7 +43,6 @@ process::~process()
 {
 	name = "";
 	_kind = "process";
-	verbosity = 0;
 	chp = "";
 	def.parent = NULL;
 
@@ -56,6 +54,7 @@ process &process::operator=(process p)
 	def = p.def;
 	prs = p.prs;
 	vars = p.vars;
+	flags = p.flags;
 	return *this;
 }
 
@@ -81,23 +80,23 @@ void process::parse(string raw)
 
 	map<string, variable> temp;
 	map<string, variable>::iterator vi, vj;
-	map<string, keyword*>::iterator ti;
+	type_space::iterator ti;
 
 	name = chp.substr(name_start, name_end - name_start);
 	io_sequential = chp.substr(input_start, input_end - input_start);
 
-	if ((verbosity & VERB_BASE_HSE) && (verbosity & VERB_DEBUG))
+	if (flags->log_base_hse())
 	{
-		cout << "Process:\t" << chp << endl;
-		cout << "\tName:\t" << name << endl;
-		cout << "\tArgs:\t" << io_sequential << endl;
+		(*flags->log_file) << "Process:\t" << chp << endl;
+		(*flags->log_file) << "\tName:\t" << name << endl;
+		(*flags->log_file) << "\tArgs:\t" << io_sequential << endl;
 	}
 
 	for (i = io_sequential.begin(), j = io_sequential.begin(); i != io_sequential.end(); i++)
 	{
 		if (*(i+1) == ',' || i+1 == io_sequential.end())
 		{
-			expand_instantiation(NULL, io_sequential.substr(j-io_sequential.begin(), i+1 - j), &vars, &args, "\t", verbosity, false);
+			expand_instantiation(NULL, io_sequential.substr(j-io_sequential.begin(), i+1 - j), &vars, &args, flags, false);
 			j = i+2;
 		}
 	}
@@ -106,20 +105,20 @@ void process::parse(string raw)
 
 	if (!is_inline)
 	{
-		expand_instantiation(NULL, "__sync call", &vars, &args, "\t", verbosity, false);
+		expand_instantiation(NULL, "__sync call", &vars, &args, flags, false);
 		sequential = "[call.r];call.a+;(" + sequential + ");[~call.r];call.a-";
 		cout << "LOOK " << sequential << endl;
 	}
 
-	def.init(sequential, &vars, "\t", verbosity);
+	def.init(sequential, &vars, flags);
 
-	if ((verbosity & VERB_BASE_HSE) && (verbosity & VERB_DEBUG))
+	if (flags->log_base_hse())
 	{
-		cout << "\tVariables:" << endl;
-		vars.print("\t\t");
-		cout << "\tHSE:" << endl;
-		def.print_hse("\t\t");
-		cout << endl << endl;
+		(*flags->log_file) << "\tVariables:" << endl;
+		vars.print("\t\t", flags->log_file);
+		(*flags->log_file) << "\tHSE:" << endl;
+		def.print_hse("\t\t", flags->log_file);
+		(*flags->log_file) << endl << endl;
 	}
 }
 
@@ -127,40 +126,43 @@ void process::merge()
 {
 	def.merge();
 
-	if (verbosity & VERB_MERGED_HSE)
+	if (flags->log_merged_hse())
 	{
-		def.print_hse("");
-		cout << endl;
+		def.print_hse("", flags->log_file);
+		(*flags->log_file) << endl;
 	}
 }
 
 // TODO Projection algorithm - when do we need to do projection? when shouldn't we do projection?
 void process::project()
 {
-	if (verbosity & VERB_PROJECTED_HSE)
+	if (flags->log_projected_hse())
 	{
-		def.print_hse("");
-		cout << endl;
+		def.print_hse("", flags->log_file);
+		(*flags->log_file) << endl;
 	}
 }
 
 // TODO Process decomposition - How big should we make processes?
 void process::decompose()
 {
-	if (verbosity & VERB_DECOMPOSED_HSE)
+	if (flags->log_decomposed_hse())
 	{
-		def.print_hse("");
-		cout << endl;
+		def.print_hse("", flags->log_file);
+		(*flags->log_file) << endl;
 	}
 }
 
 // TODO Handshaking Reshuffling
 void process::reshuffle()
 {
-	if (verbosity & VERB_RESHUFFLED_HSE)
+	// Build a dependency tree
+	// Examine synchronization actions as a dependency relation
+	// Reorder instructions to mass information before active assignments
+	if (flags->log_reshuffled_hse())
 	{
-		def.print_hse("");
-		cout << endl;
+		def.print_hse("", flags->log_file);
+		(*flags->log_file) << endl;
 	}
 }
 
@@ -182,12 +184,30 @@ void process::generate_states()
 	} while(net.trim());
 
 	net.gen_tails();
-	net.gen_conflicts();
 
-	cout << "Conflicts: " << name << endl;
+	cout << "BRANCHES " << name << endl;
+	net.print_branch_ids();
+}
+
+bool process::insert_state_vars()
+{
 	map<int, list<vector<int> > >::iterator i;
 	list<vector<int> >::iterator lj;
-	int j;
+	map<int, int>::iterator m, n;
+	list<path>::iterator li;
+	path_space up_paths, up_temp, up_inv, down_paths, down_temp, down_inv;
+	path up_mask, down_mask;
+	vector<int> arcs, uptrans, downtrans, ia, oa;
+	vector<pair<vector<int>, vector<int> > > ip;
+	int um, dm, ium, idm, vid, j, k;
+	string vname;
+
+	net.gen_tails();
+	net.gen_conflicts();
+	net.gen_arcs();
+	net.gen_conditional_places();
+
+	cout << "Conflicts: " << name << endl;
 	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
 	{
 		cout << i->first << ": ";
@@ -201,37 +221,10 @@ void process::generate_states()
 		cout << endl;
 	}
 
-	cout << "BRANCHES " << name << endl;
-	net.print_branch_ids();
-}
+	if (net.conflicts.size() == 0)
+		return false;
 
-bool process::insert_state_vars()
-{
-	map<int, list<vector<int> > >::iterator i;
-	list<vector<int> >::iterator lj;
-	map<int, int>::iterator m, n;
-	int j, k, l, a;
-	list<path>::iterator li;
-	vector<int> arcs;
-	path_space up_paths;
-	path_space up_temp;
-	path_space up_inv;
-	path_space down_paths;
-	path_space down_temp;
-	path_space down_inv;
-	path up_mask;
-	path down_mask;
-	vector<int> uptrans, downtrans, ia, oa;
-	vector<pair<vector<int>, vector<int> > > ip;
-	int um, dm;
-	int ium, idm;
-	string vname;
-	int vid;
-
-	net.gen_arcs();
-	net.gen_conditional_places();
-
-	//cout << "PROCESS " << name << endl;
+	cout << "PROCESS " << name << endl;
 	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
 	{
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
@@ -247,10 +240,10 @@ bool process::insert_state_vars()
 			 * After identifying paths, start at every conditional merge and
 			 * check to make sure that there is a path coming from each pbranch.
 			 * If not iterate backwards from the conditional merge along the
-			 * paths that do come from a pbranch until a conflict or a conditional
+			 * paths that do come from a branch until a conflict or a conditional
 			 * split is reached and set the paths' values along that part of the
-			 * pbranch to zero. This will prevent cases where you have two
-			 * conflicting places on sibling pbranches and the state variable
+			 * branch to zero. This will prevent cases where you have two
+			 * conflicting places on sibling branches and the state variable
 			 * insertion algorithm puts transitions after the conflicting places.
 			 */
 			net.filter_path_space(&up_paths);
@@ -265,10 +258,10 @@ bool process::insert_state_vars()
 			up_paths.apply_mask(down_mask);
 			down_paths.apply_mask(up_mask);
 
-			net.zero_paths(&up_paths, i->first);
+			net.zero_outs(&up_paths, i->first);
 			net.zero_paths(&down_paths, i->first);
 			net.zero_paths(&up_paths, *lj);
-			net.zero_paths(&down_paths, *lj);
+			net.zero_outs(&down_paths, *lj);
 
 			for (j = 0; j < (int)net.arcs.size(); j++)
 				if (net.is_place(net.arcs[j].first) && net.output_arcs(net.arcs[j].first).size() > 1)
@@ -277,7 +270,7 @@ bool process::insert_state_vars()
 					down_paths.zero(j);
 				}
 
-			/*cout << "Up: {";
+			cout << "Up: {";
 			for (j = 0; j < (int)up_paths.total.from.size(); j++)
 			{
 				if (j != 0)
@@ -291,16 +284,17 @@ bool process::insert_state_vars()
 					cout << ", ";
 				cout << up_paths.total.to[j];
 			}
-			cout << "}" << endl;*/
+			cout << "}" << endl;
 			uptrans.clear();
-			while (up_paths.size() > 0 && (ium = up_paths.total.max()) != -1)//(ium = net.closest_transition(sample(implicants, up_paths.total.max()), up_paths.total.to.front(), path(net.T.size())).second) != -1)
+			cout << up_paths.total << endl;
+			while (up_paths.size() > 0 && (ium = net.closest_input(up_paths.total.maxes(), up_paths.total.to, path(net.arcs.size())).second) != -1)
 			{
-			//	cout << up_paths.total << endl;
-				uptrans.push_back(net.trans_id(ium));
+				uptrans.push_back(ium);
 				up_paths = up_paths.avoidance(ium);
+				cout << up_paths.total << endl;
 			}
 
-			/*cout << "Down: {";
+			cout << "Down: {";
 			for (j = 0; j < (int)down_paths.total.from.size(); j++)
 			{
 				if (j != 0)
@@ -314,15 +308,16 @@ bool process::insert_state_vars()
 					cout << ", ";
 				cout << down_paths.total.to[j];
 			}
-			cout << "}" << endl;*/
+			cout << "}" << endl;
 			downtrans.clear();
-			while (down_paths.size() > 0 && (idm = down_paths.total.max()) != -1)//(idm = net.closest_transition(sample(implicants, down_paths.total.max()), down_paths.total.to.front(), path(net.T.size())).second) != -1)
+			cout << down_paths.total << endl;
+			while (down_paths.size() > 0 && (idm = net.closest_input(down_paths.total.maxes(), down_paths.total.to, path(net.arcs.size())).second) != -1)
 			{
-			//	cout << down_paths.total << endl;
-				downtrans.push_back(net.trans_id(idm));
+				downtrans.push_back(idm);
 				down_paths = down_paths.avoidance(idm);
+				cout << down_paths.total << endl;
 			}
-			//cout << endl;
+			cout << endl;
 
 			unique(&uptrans, &downtrans);
 
@@ -344,7 +339,8 @@ bool process::insert_state_vars()
 	for (j = 0; j < (int)ip.size(); j++)
 	{
 		vname = vars.unique_name("_sv");
-		vid   = vars.insert(variable(vname, "node", 1, false));
+		vid   = vars.insert(variable(vname, "node", 1, false, flags));
+		vars.find(vname)->driven = true;
 
 		um = net.values.mk(vid, 0, 1);
 		dm = net.values.mk(vid, 1, 0);
@@ -358,10 +354,47 @@ bool process::insert_state_vars()
 	net.trim_branch_ids();
 	net.gen_mutables();
 	net.update();
+
+	return (ip.size() > 0);
+}
+
+bool process::insert_bubbleless_state_vars()
+{
+	map<int, list<vector<int> > >::iterator i;
+	list<vector<int> >::iterator lj;
+	map<int, int>::iterator m, n;
+	list<path>::iterator li;
+	path_space up_paths, up_temp, up_inv, down_paths, down_temp, down_inv;
+	path up_mask, down_mask;
+	vector<int> arcs, uptrans, downtrans, ia, oa;
+	vector<pair<vector<int>, vector<int> > > ip;
+	int um, dm, ium, idm, vid, j, k;
+	string vname;
+
+	timeval timing;
+	double tim1, tim2;
+
+	gettimeofday(&timing, NULL);
+	tim1 = timing.tv_sec+(timing.tv_usec/1000000.0);
+
+	cout << "Preparing" << endl;
 	net.gen_tails();
-	net.gen_conflicts();
-	/*cout << "Conflicts: " << name << endl;
-	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
+	cout << "Tails" << endl;
+	net.gen_senses();
+	cout << "Senses" << endl;
+	net.gen_bubbleless_conflicts();
+	cout << "Conflicts" << endl;
+	net.gen_arcs();
+	cout << "Arcs " << net.arcs.size() << endl;
+	net.gen_conditional_places();
+	cout << "Conditional Places" << endl;
+
+	gettimeofday(&timing, NULL);
+	tim2 = timing.tv_sec+(timing.tv_usec/1000000.0);
+	cout << "Prepare " << (tim2-tim1) << endl;
+
+	cout << "Positive Conflicts: " << name << endl;
+	for (i = net.positive_conflicts.begin(); i != net.positive_conflicts.end(); i++)
 	{
 		cout << i->first << ": ";
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
@@ -372,21 +405,343 @@ bool process::insert_state_vars()
 			cout << "} ";
 		}
 		cout << endl;
-	}*/
+	}
 
-	return (net.conflicts.size() > 0);
+	cout << "Negative Conflicts: " << name << endl;
+	for (i = net.negative_conflicts.begin(); i != net.negative_conflicts.end(); i++)
+	{
+		cout << i->first << ": ";
+		for (lj = i->second.begin(); lj != i->second.end(); lj++)
+		{
+			cout << "{";
+			for (j = 0; j < (int)lj->size(); j++)
+				cout << (*lj)[j] << " ";
+			cout << "} ";
+		}
+		cout << endl;
+	}
+
+	cout << "Positive Indistinguishables: " << name << endl;
+	for (i = net.positive_indistinguishable.begin(); i != net.positive_indistinguishable.end(); i++)
+	{
+		cout << i->first << ": ";
+		for (lj = i->second.begin(); lj != i->second.end(); lj++)
+		{
+			cout << "{";
+			for (j = 0; j < (int)lj->size(); j++)
+				cout << (*lj)[j] << " ";
+			cout << "} ";
+		}
+		cout << endl;
+	}
+
+	cout << "Negative Indistinguishables: " << name << endl;
+	for (i = net.negative_indistinguishable.begin(); i != net.negative_indistinguishable.end(); i++)
+	{
+		cout << i->first << ": ";
+		for (lj = i->second.begin(); lj != i->second.end(); lj++)
+		{
+			cout << "{";
+			for (j = 0; j < (int)lj->size(); j++)
+				cout << (*lj)[j] << " ";
+			cout << "} ";
+		}
+		cout << endl;
+	}
+
+	if (net.positive_conflicts.size() == 0 && net.negative_conflicts.size() == 0)
+		return false;
+
+	cout << "PROCESS " << name << endl;
+	for (i = net.positive_conflicts.begin(); i != net.positive_conflicts.end(); i++)
+	{
+		for (lj = i->second.begin(); lj != i->second.end(); lj++)
+		{
+			gettimeofday(&timing, NULL);
+			tim1 = timing.tv_sec+(timing.tv_usec/1000000.0);
+			up_paths = net.get_paths(*lj, i->first, path(net.arcs.size()));
+			down_paths = net.get_paths(i->first, *lj, path(net.arcs.size()));
+			unique(&up_paths.total.from);
+			unique(&up_paths.total.to);
+			unique(&down_paths.total.from);
+			unique(&down_paths.total.to);
+
+			gettimeofday(&timing, NULL);
+			tim2 = timing.tv_sec+(timing.tv_usec/1000000.0);
+			cout << "Get Paths " << (tim2-tim1) << endl;
+
+			/**
+			 * After identifying paths, start at every conditional merge and
+			 * check to make sure that there is a path coming from each pbranch.
+			 * If not iterate backwards from the conditional merge along the
+			 * paths that do come from a branch until a conflict or a conditional
+			 * split is reached and set the paths' values along that part of the
+			 * branch to zero. This will prevent cases where you have two
+			 * conflicting places on sibling branches and the state variable
+			 * insertion algorithm puts transitions after the conflicting places.
+			 */
+			net.filter_path_space(&up_paths);
+			net.filter_path_space(&down_paths);
+
+			gettimeofday(&timing, NULL);
+			tim1 = timing.tv_sec+(timing.tv_usec/1000000.0);
+			cout << "Filter Paths " << (tim1-tim2) << endl;
+
+			up_inv = up_paths.inverse();
+			down_inv = down_paths.inverse();
+
+			up_mask = up_inv.get_mask();
+			down_mask = down_inv.get_mask();
+
+			up_paths.apply_mask(down_mask);
+			down_paths.apply_mask(up_mask);
+
+			gettimeofday(&timing, NULL);
+			tim2 = timing.tv_sec+(timing.tv_usec/1000000.0);
+			cout << "Mask Paths " << (tim2-tim1) << endl;
+
+			net.zero_paths(&up_paths, i->first);
+			net.zero_ins(&down_paths, i->first);
+			net.zero_ins(&up_paths, *lj);
+			net.zero_paths(&down_paths, *lj);
+
+			for (j = 0; j < (int)net.arcs.size(); j++)
+				if (net.is_place(net.arcs[j].first) && net.output_arcs(net.arcs[j].first).size() > 1)
+				{
+					up_paths.zero(j);
+					down_paths.zero(j);
+				}
+
+			gettimeofday(&timing, NULL);
+			tim1 = timing.tv_sec+(timing.tv_usec/1000000.0);
+			cout << "Zero Paths " << (tim1-tim2) << endl;
+
+			cout << "Up: {";
+			for (j = 0; j < (int)up_paths.total.from.size(); j++)
+			{
+				if (j != 0)
+					cout << ", ";
+				cout << up_paths.total.from[j];
+			}
+			cout << "} -> {";
+			for (j = 0; j < (int)up_paths.total.to.size(); j++)
+			{
+				if (j != 0)
+					cout << ", ";
+				cout << up_paths.total.to[j];
+			}
+			cout << "}" << endl;
+			uptrans.clear();
+			while (up_paths.size() > 0 && (ium = net.closest_input(up_paths.total.maxes(), up_paths.total.to, path(net.arcs.size())).second) != -1)
+			{
+				cout << up_paths.total << endl;
+				uptrans.push_back(ium);
+				up_paths = up_paths.avoidance(ium);
+			}
+
+			cout << "Down: {";
+			for (j = 0; j < (int)down_paths.total.from.size(); j++)
+			{
+				if (j != 0)
+					cout << ", ";
+				cout << down_paths.total.from[j];
+			}
+			cout << "} -> {";
+			for (j = 0; j < (int)down_paths.total.to.size(); j++)
+			{
+				if (j != 0)
+					cout << ", ";
+				cout << down_paths.total.to[j];
+			}
+			cout << "}" << endl;
+			downtrans.clear();
+			while (down_paths.size() > 0 && (idm = net.closest_input(down_paths.total.maxes(), down_paths.total.to, path(net.arcs.size())).second) != -1)
+			{
+				cout << down_paths.total << endl;
+				downtrans.push_back(idm);
+				down_paths = down_paths.avoidance(idm);
+			}
+			cout << endl;
+
+			unique(&uptrans, &downtrans);
+			gettimeofday(&timing, NULL);
+			tim2 = timing.tv_sec+(timing.tv_usec/1000000.0);
+			cout << "Get Trans " << (tim2-tim1) << endl;
+			if (uptrans.size() == 0 || downtrans.size() == 0)
+			{
+				cout << "Error: No solution for the conflict set: " << i->first << " -> {";
+				for (j = 0; j < (int)lj->size(); j++)
+					cout << (*lj)[j] << " ";
+				cout << "}." << endl;
+			}
+			else
+				ip.push_back(pair<vector<int>, vector<int> >(uptrans, downtrans));
+		}
+	}
+
+	for (i = net.negative_conflicts.begin(); i != net.negative_conflicts.end(); i++)
+	{
+		for (lj = i->second.begin(); lj != i->second.end(); lj++)
+		{
+			up_paths = net.get_paths(i->first, *lj, path(net.arcs.size()));
+			down_paths = net.get_paths(*lj, i->first, path(net.arcs.size()));
+			unique(&up_paths.total.from);
+			unique(&up_paths.total.to);
+			unique(&down_paths.total.from);
+			unique(&down_paths.total.to);
+
+			/**
+			 * After identifying paths, start at every conditional merge and
+			 * check to make sure that there is a path coming from each pbranch.
+			 * If not iterate backwards from the conditional merge along the
+			 * paths that do come from a branch until a conflict or a conditional
+			 * split is reached and set the paths' values along that part of the
+			 * branch to zero. This will prevent cases where you have two
+			 * conflicting places on sibling branches and the state variable
+			 * insertion algorithm puts transitions after the conflicting places.
+			 */
+			net.filter_path_space(&up_paths);
+			net.filter_path_space(&down_paths);
+
+			up_inv = up_paths.inverse();
+			down_inv = down_paths.inverse();
+
+			up_mask = up_inv.get_mask();
+			down_mask = down_inv.get_mask();
+
+			up_paths.apply_mask(down_mask);
+			down_paths.apply_mask(up_mask);
+
+			net.zero_ins(&up_paths, i->first);
+			net.zero_paths(&down_paths, i->first);
+			net.zero_paths(&up_paths, *lj);
+			net.zero_ins(&down_paths, *lj);
+
+			for (j = 0; j < (int)net.arcs.size(); j++)
+				if (net.is_place(net.arcs[j].first) && net.output_arcs(net.arcs[j].first).size() > 1)
+				{
+					up_paths.zero(j);
+					down_paths.zero(j);
+				}
+
+			cout << "Up: {";
+			for (j = 0; j < (int)up_paths.total.from.size(); j++)
+			{
+				if (j != 0)
+					cout << ", ";
+				cout << up_paths.total.from[j];
+			}
+			cout << "} -> {";
+			for (j = 0; j < (int)up_paths.total.to.size(); j++)
+			{
+				if (j != 0)
+					cout << ", ";
+				cout << up_paths.total.to[j];
+			}
+			cout << "}" << endl;
+			uptrans.clear();
+			while (up_paths.size() > 0 && (ium = net.closest_input(up_paths.total.maxes(), up_paths.total.to, path(net.arcs.size())).second) != -1)
+			{
+				cout << up_paths.total << endl;
+				uptrans.push_back(ium);
+				up_paths = up_paths.avoidance(ium);
+			}
+
+			cout << "Down: {";
+			for (j = 0; j < (int)down_paths.total.from.size(); j++)
+			{
+				if (j != 0)
+					cout << ", ";
+				cout << down_paths.total.from[j];
+			}
+			cout << "} -> {";
+			for (j = 0; j < (int)down_paths.total.to.size(); j++)
+			{
+				if (j != 0)
+					cout << ", ";
+				cout << down_paths.total.to[j];
+			}
+			cout << "}" << endl;
+			downtrans.clear();
+			while (down_paths.size() > 0 && (idm = net.closest_input(down_paths.total.maxes(), down_paths.total.to, path(net.arcs.size())).second) != -1)
+			{
+				cout << down_paths.total << endl;
+				downtrans.push_back(idm);
+				down_paths = down_paths.avoidance(idm);
+			}
+			cout << endl;
+
+			unique(&uptrans, &downtrans);
+
+			if (uptrans.size() == 0 || downtrans.size() == 0)
+			{
+				cout << "Error: No solution for the conflict set: " << i->first << " -> {";
+				for (j = 0; j < (int)lj->size(); j++)
+					cout << (*lj)[j] << " ";
+				cout << "}." << endl;
+			}
+			else
+				ip.push_back(pair<vector<int>, vector<int> >(uptrans, downtrans));
+		}
+	}
+
+	gettimeofday(&timing, NULL);
+	tim1 = timing.tv_sec+(timing.tv_usec/1000000.0);
+	unique(&ip);
+	for (j = 0; j < (int)ip.size(); j++)
+	{
+		vname = vars.unique_name("_sv");
+		vid   = vars.insert(variable(vname, "node", 1, false, flags));
+		vars.find(vname)->driven = true;
+
+		um = net.values.mk(vid, 0, 1);
+		dm = net.values.mk(vid, 1, 0);
+
+		for (k = 0; k < (int)ip[j].first.size(); k++)
+			net.insert_sv_at(ip[j].first[k], um);
+		for (k = 0; k < (int)ip[j].second.size(); k++)
+			net.insert_sv_at(ip[j].second[k], dm);
+	}
+	gettimeofday(&timing, NULL);
+	tim2 = timing.tv_sec+(timing.tv_usec/1000000.0);
+	cout << "Insert State Var " << (tim2-tim1) << endl;
+
+	net.trim_branch_ids();
+	net.gen_mutables();
+	net.update();
+
+	gettimeofday(&timing, NULL);
+	tim1 = timing.tv_sec+(timing.tv_usec/1000000.0);
+	cout << "Update " << (tim1-tim2) << endl;
+
+	return (ip.size() > 0);
 }
 
 void process::generate_prs()
 {
-	for (int vi = 0; vi < vars.size(); vi++)
-		if (vars.get_name(vi).find_first_of("|&~") == string::npos)
-			prs.push_back(rule(vi, &net, &vars, verbosity));
+	net.gen_senses();
+	for (map<string, variable>::iterator vi = vars.global.begin(); vi != vars.global.end(); vi++)
+		if (vi->second.driven)
+			prs.push_back(rule(vi->second.uid, &net, &vars, flags, true));
 
-	if (verbosity & VERB_BASE_PRS)
+	if (flags->log_base_prs())
 	{
-		cout << "Production Rules: " << name << endl;
-		print_prs();
+		(*flags->log_file) << "Production Rules: " << name << endl;
+		print_prs(flags->log_file);
+	}
+}
+
+void process::generate_bubbleless_prs()
+{
+	net.gen_senses();
+	for (map<string, variable>::iterator vi = vars.global.begin(); vi != vars.global.end(); vi++)
+		if (vi->second.driven)
+			prs.push_back(rule(vi->second.uid, &net, &vars, flags, false));
+
+	if (flags->log_base_prs())
+	{
+		(*flags->log_file) << "Production Rules: " << name << endl;
+		print_prs(flags->log_file);
 	}
 }
 
@@ -404,8 +759,8 @@ void process::factor_prs()
 	//Prioritize longer rules to reduce capacitive driving (i.e. not every 'factor removed' is equal)
 	//MUST factor if over cap in series/parallel
 
-	if (verbosity & VERB_FACTORED_PRS)
-		print_prs();
+	if (flags->log_factored_prs())
+		print_prs(flags->log_file);
 }
 
 void process::parse_prs(string raw)
@@ -447,7 +802,7 @@ void process::parse_prs(string raw)
 	for (pi = pairs.begin(); pi != pairs.end(); pi++)
 	{
 		cout << pi->first << ",{" << pi->second.first << ", " << pi->second.second << "}" << endl;
-		prs.push_back(rule(pi->second.first, pi->second.second, pi->first, &vars, &net));
+		prs.push_back(rule(pi->second.first, pi->second.second, pi->first, &vars, &net, flags));
 	}
 }
 
@@ -541,7 +896,7 @@ void process::print_prs(ostream *fout)
 {
 	(*fout) << "/* Process " << name << " */" << endl;
 	map<string, variable>::iterator vi;
-	map<string, keyword*>::iterator ki;
+	type_space::iterator ki;
 	for (size_t i = 0; i < prs.size(); i++)
 		(*fout) << prs[i];
 

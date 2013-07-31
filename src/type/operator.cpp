@@ -25,14 +25,15 @@ operate::operate()
 	def.parent = NULL;
 }
 
-operate::operate(string raw, map<string, keyword*> *types, int verbosity)
+operate::operate(string raw, type_space *types, flag_space *flags)
 {
 	_kind = "operate";
 	vars.types = types;
 	is_inline = true;
 	def.parent = NULL;
+	this->flags = flags;
 
-	parse(raw, verbosity);
+	parse(raw);
 }
 
 operate::~operate()
@@ -50,10 +51,11 @@ operate &operate::operator=(operate p)
 	def = p.def;
 	prs = p.prs;
 	vars = p.vars;
+	flags = p.flags;
 	return *this;
 }
 
-void operate::parse(string raw, int verbosity)
+void operate::parse(string raw)
 {
 	chp = raw;
 
@@ -68,24 +70,24 @@ void operate::parse(string raw, int verbosity)
 
 	map<string, variable> temp;
 	map<string, variable>::iterator vi, vj;
-	map<string, keyword*>::iterator ti;
+	type_space::iterator ti;
 	list<string>::iterator ii, ij;
 
 	name = chp.substr(name_start, name_end - name_start);
 	io_sequential = chp.substr(input_start, input_end - input_start);
 
-	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
+	if (flags->log_base_hse())
 	{
-		cout << "Operator:\t" << chp << endl;
-		cout << "\tName:\t" << name << endl;
-		cout << "\tInputs:\t" << io_sequential << endl;
+		(*flags->log_file) << "Operator:\t" << chp << endl;
+		(*flags->log_file) << "\tName:\t" << name << endl;
+		(*flags->log_file) << "\tInputs:\t" << io_sequential << endl;
 	}
 
 	for (i = io_sequential.begin(), j = io_sequential.begin(); i != io_sequential.end(); i++)
 	{
 		if (*(i+1) == ',' || i+1 == io_sequential.end())
 		{
-			expand_instantiation(NULL, io_sequential.substr(j-io_sequential.begin(), i+1 - j), &vars, &args, "\t", verbosity, false);
+			expand_instantiation(NULL, io_sequential.substr(j-io_sequential.begin(), i+1 - j), &vars, &args, flags, false);
 			j = i+2;
 		}
 	}
@@ -93,7 +95,7 @@ void operate::parse(string raw, int verbosity)
 	if (args.size() > 3)
 		cout << "Error: Operators can have at most two inputs and one output." << endl;
 
-	def.init(chp.substr(sequential_start, sequential_end - sequential_start), &vars, "\t", verbosity);
+	def.init(chp.substr(sequential_start, sequential_end - sequential_start), &vars, flags);
 
 	variable *tv;
 
@@ -118,20 +120,20 @@ void operate::parse(string raw, int verbosity)
 	}
 	name += ")";
 
-	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
+	if (flags->log_base_hse())
 	{
-		cout << "\tVariables:" << endl;
-		vars.print("\t\t");
-		cout << "\tHSE:" << endl;
-		def.print_hse("\t\t");
-		cout << endl << endl;
+		(*flags->log_file) << "\tVariables:" << endl;
+		vars.print("\t\t", flags->log_file);
+		(*flags->log_file) << "\tHSE:" << endl;
+		def.print_hse("\t\t", flags->log_file);
+		(*flags->log_file) << endl << endl;
 	}
 }
 
 void operate::print_prs(ostream *fout, string prefix, vector<string> driven)
 {
 	map<string, variable>::iterator vi;
-	map<string, keyword*>::iterator ki;
+	type_space::iterator ki;
 	for (size_t i = 0; i < prs.size(); i++)
 		if (find(driven.begin(), driven.end(), prefix + vars.get_name(i)) == driven.end())
 			prs[i].print(*fout, prefix);

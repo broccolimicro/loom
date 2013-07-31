@@ -8,11 +8,11 @@
 #include "utility.h"
 #include "common.h"
 
-instruction *expand_instantiation(instruction *parent, string chp, vspace *vars, list<string> *input, string tab, int verbosity, bool allow_process)
+instruction *expand_instantiation(instruction *parent, string chp, variable_space *vars, list<string> *input, flag_space *flags, bool allow_process)
 {
 	keyword* type;
 	map<string, variable>::iterator mem_var;
-	variable v = variable(chp, !allow_process, tab, verbosity);
+	variable v = variable(chp, !allow_process, flags);
 	variable v2;
 
 	map<string, string> rename;
@@ -54,12 +54,12 @@ instruction *expand_instantiation(instruction *parent, string chp, vspace *vars,
 					for (i = v.inputs.begin(), j = p->args.begin(); i != v.inputs.end() && j != p->args.end(); i++, j++)
 						rename.insert(pair<string, string>(*j, *i));
 
-					return p->def.duplicate(parent, vars, rename, tab, verbosity);
+					return p->def.duplicate(parent, vars, rename);
 				}
 				else
 				{
 					rename = vars->call(v.name, !allow_process, &(p->vars));
-					return new sequential(parent, v.name + ".call.r+;[" + v.name + ".call.a];" + v.name + ".call.r-;[~" + v.name + ".call.a];", vars, tab, verbosity);
+					return new sequential(parent, v.name + ".call.r+;[" + v.name + ".call.a];" + v.name + ".call.r-;[~" + v.name + ".call.a];", vars, flags);
 				}
 			}
 			else
@@ -72,7 +72,7 @@ instruction *expand_instantiation(instruction *parent, string chp, vspace *vars,
 	return NULL;
 }
 
-pair<string, instruction*> add_unique_variable(instruction *parent, string prefix, string postfix, string type, vspace *vars, string tab, int verbosity)
+pair<string, instruction*> add_unique_variable(instruction *parent, string prefix, string postfix, string type, variable_space *vars, flag_space *flags)
 {
 	string name = vars->unique_name(prefix);
 
@@ -81,7 +81,7 @@ pair<string, instruction*> add_unique_variable(instruction *parent, string prefi
 		dec += " ";
 	dec += name;
 
-	return pair<string, instruction*>(name, expand_instantiation(parent, dec + postfix, vars, NULL, tab, verbosity, true));
+	return pair<string, instruction*>(name, expand_instantiation(parent, dec + postfix, vars, NULL, flags, true));
 }
 
 size_t find_name(string subject, string search, size_t pos)
@@ -319,7 +319,7 @@ string restrict_exp(string exp, string var, int val)
 		return exp;
 }
 
-void gen_variables(string exp, vspace *vars)
+void gen_variables(string exp, variable_space *vars, flag_space *flags)
 {
 	string name;
 	int id;
@@ -331,7 +331,7 @@ void gen_variables(string exp, vspace *vars)
 		{
 			id = vars->get_uid(name);
 			if (id < 0 && name.substr(0, 2) != "0x" && name.substr(0, 2) != "0b" && name.find_first_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_") != name.npos)
-				vars->insert(variable(name, "node", 1, false));
+				vars->insert(variable(name, "node", 1, false, flags));
 		}
 	}
 
@@ -340,7 +340,7 @@ void gen_variables(string exp, vspace *vars)
 	{
 		id = vars->get_uid(name);
 		if (id < 0 && name.substr(0, 2) != "0x" && name.substr(0, 2) != "0b" && name.find_first_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_") != name.npos)
-			vars->insert(variable(name, "node", 1, false));
+			vars->insert(variable(name, "node", 1, false, flags));
 	}
 }
 
@@ -359,7 +359,7 @@ vector<string> extract_names(string exp)
 	return unique(&ret);
 }
 
-vector<int> extract_ids(string exp, vspace *vars)
+vector<int> extract_ids(string exp, variable_space *vars)
 {
 	vector<int> ret;
 	size_t i = string::npos, j = 0;

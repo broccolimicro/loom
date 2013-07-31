@@ -12,6 +12,7 @@
 
 #include "../common.h"
 #include "../data.h"
+#include "../flag_space.h"
 #include "keyword.h"
 #include "record.h"
 #include "operator.h"
@@ -29,7 +30,7 @@
 struct channel : record
 {
 	channel();
-	channel(string chp, map<string, keyword*> *types, int verbosity);
+	channel(string chp, type_space *types, flag_space *flags);
 	~channel();
 
 	operate *send;
@@ -37,7 +38,7 @@ struct channel : record
 	operate *probe;
 
 	channel &operator=(channel r);
-	void parse(string chp, int verbosity);
+	void parse(string chp);
 };
 
 ostream &operator<<(ostream &os, channel s);

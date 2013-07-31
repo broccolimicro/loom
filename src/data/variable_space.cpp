@@ -1,19 +1,19 @@
 /*
- * vspace.cpp
+ * variable_space.cpp
  *
  *  Created on: Feb 9, 2013
  *      Author: nbingham
  */
 
-#include "vspace.h"
+#include "variable_space.h"
 #include "../type/channel.h"
 
-int vspace::size()
+int variable_space::size()
 {
 	return (int)global.size();
 }
 
-variable *vspace::find(int uid)
+variable *variable_space::find(int uid)
 {
 	map<string, variable>::iterator i;
 	for (i = global.begin(); i != global.end(); i++)
@@ -25,7 +25,7 @@ variable *vspace::find(int uid)
 	return NULL;
 }
 
-variable *vspace::find(string name)
+variable *variable_space::find(string name)
 {
 	map<string, variable>::iterator i;
 	i = global.find(name);
@@ -38,16 +38,16 @@ variable *vspace::find(string name)
 	return NULL;
 }
 
-keyword	 *vspace::find_type(string name)
+keyword	 *variable_space::find_type(string name)
 {
-	map<string, keyword*>::iterator i = types->find(name);
+	type_space::iterator i = types->find(name);
 	if (i == types->end())
 		return NULL;
 
 	return i->second;
 }
 
-string vspace::get_name(int uid)
+string variable_space::get_name(int uid)
 {
 	map<string, variable>::iterator i;
 	for (i = global.begin(); i != global.end(); i++)
@@ -61,7 +61,7 @@ string vspace::get_name(int uid)
 
 
 
-string vspace::get_type(int uid)
+string variable_space::get_type(int uid)
 {
 	map<string, variable>::iterator i;
 	for (i = global.begin(); i != global.end(); i++)
@@ -73,7 +73,7 @@ string vspace::get_type(int uid)
 	return "";
 }
 
-string vspace::get_type(string name)
+string variable_space::get_type(string name)
 {
 	map<string, variable>::iterator i;
 	i = global.find(name);
@@ -86,10 +86,10 @@ string vspace::get_type(string name)
 	return "Error";
 }
 
-string vspace::get_kind(string name)
+string variable_space::get_kind(string name)
 {
 	string type = get_type(name);
-	map<string, keyword*>::iterator i;
+	type_space::iterator i;
 	i = types->find(type);
 	if (i == types->end())
 		return "";
@@ -97,7 +97,7 @@ string vspace::get_kind(string name)
 	return i->second->kind();
 }
 
-string vspace::get_info(string name)
+string variable_space::get_info(string name)
 {
 	size_t s = name.npos;
 	size_t d = name.npos;
@@ -143,7 +143,7 @@ string vspace::get_info(string name)
 	return v->type;
 }
 
-int vspace::get_uid(string name)
+int variable_space::get_uid(string name)
 {
 	map<string, variable>::iterator i;
 	i = global.find(name);
@@ -156,7 +156,7 @@ int vspace::get_uid(string name)
 	return -1;
 }
 
-int vspace::get_width(string name)
+int variable_space::get_width(string name)
 {
 	map<string, variable>::iterator i;
 	i = global.find(name);
@@ -169,7 +169,7 @@ int vspace::get_width(string name)
 	return 0;
 }
 
-vector<string> vspace::get_driven()
+vector<string> variable_space::get_driven()
 {
 	vector<string> result;
 	map<string, variable>::iterator i;
@@ -179,7 +179,7 @@ vector<string> vspace::get_driven()
 	return result;
 }
 
-vector<string> vspace::get_names()
+vector<string> variable_space::get_names()
 {
 	vector<string> ret(global.size());
 	map<string, variable>::iterator gi;
@@ -195,7 +195,7 @@ vector<string> vspace::get_names()
  * av is a list of indices to one bit variables located in the globals list
  * node is an index to the place in which we want to existentially quantify these variables
  */
-vector<int> vspace::x_channel(vector<int> av)
+vector<int> variable_space::x_channel(vector<int> av)
 {
 	map<string, variable>::iterator vi;
 	string name, vkind;
@@ -239,7 +239,7 @@ vector<int> vspace::x_channel(vector<int> av)
 	return result;
 }
 
-void vspace::x_channel(vector<int> av, map<int, int> *result)
+void variable_space::x_channel(vector<int> av, map<int, int> *result)
 {
 	vector<int> temp = x_channel(av);
 	map<int, int>::iterator ri;
@@ -254,7 +254,7 @@ void vspace::x_channel(vector<int> av, map<int, int> *result)
 	}
 }
 
-string vspace::unique_name(string prefix)
+string variable_space::unique_name(string prefix)
 {
 	int id = 0;
 	while (global.find(prefix + to_string(id)) != global.end() || label.find(prefix + to_string(id)) != label.end())
@@ -263,9 +263,9 @@ string vspace::unique_name(string prefix)
 	return prefix + to_string(id);
 }
 
-bool vspace::vdef(string s)
+bool variable_space::vdef(string s)
 {
-	map<string, keyword*>::iterator i;
+	type_space::iterator i;
 	for (i = types->begin(); i != types->end(); i++)
 		if (s.find(i->first) != s.npos)
 			return true;
@@ -273,7 +273,7 @@ bool vspace::vdef(string s)
 	return false;
 }
 
-map<string, string> vspace::instantiate(string parent, bool parent_arg, vspace* s, bool arg)
+map<string, string> variable_space::instantiate(string parent, bool parent_arg, variable_space* s, bool arg)
 {
 	if (s == NULL)
 		return map<string, string>();
@@ -311,7 +311,7 @@ map<string, string> vspace::instantiate(string parent, bool parent_arg, vspace* 
 	return rename;
 }
 
-map<string, string> vspace::call(string parent, bool parent_arg, vspace* s)
+map<string, string> variable_space::call(string parent, bool parent_arg, variable_space* s)
 {
 	if (s == NULL)
 		return map<string, string>();
@@ -349,7 +349,7 @@ map<string, string> vspace::call(string parent, bool parent_arg, vspace* s)
 	return rename;
 }
 
-int vspace::insert(variable v)
+int variable_space::insert(variable v)
 {
 	if (global.find(v.name) != global.end() || label.find(v.name) != label.end())
 	{
@@ -388,13 +388,13 @@ int vspace::insert(variable v)
 	return v.uid;
 }
 
-void vspace::clear()
+void variable_space::clear()
 {
 	global.clear();
 	label.clear();
 }
 
-vspace &vspace::operator=(vspace s)
+variable_space &variable_space::operator=(variable_space s)
 {
 	global.clear();
 	label.clear();
@@ -404,22 +404,22 @@ vspace &vspace::operator=(vspace s)
 	return *this;
 }
 
-void vspace::print(string t)
+void variable_space::print(string t, ostream *fout)
 {
 	size_t i;
 	variable *v;
 	for (i = 0; i < global.size(); i++)
 	{
 		v = find((int)i);
-		cout << t << v->type << " " << v->name << " UID:" << v->uid << " Arg:" << v->arg << "\n";
+		(*fout) << t << v->type << " " << v->name << " UID:" << v->uid << " Arg:" << v->arg << "\n";
 	}
 
 	map<string, variable>::iterator vi;
 	for (vi = label.begin(); vi != label.end(); vi++)
-		cout << t << vi->second.type << " " << vi->first << "\n";
+		(*fout) << t << vi->second.type << " " << vi->first << "\n";
 }
 
-ostream &operator<<(ostream &os, vspace s)
+ostream &operator<<(ostream &os, variable_space s)
 {
 	size_t i;
 	variable *v;

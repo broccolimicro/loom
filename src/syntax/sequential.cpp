@@ -22,14 +22,13 @@ sequential::sequential()
 	_kind = "sequential";
 }
 
-sequential::sequential(instruction *parent, string chp, vspace *vars, string tab, int verbosity)
+sequential::sequential(instruction *parent, string chp, variable_space *vars, flag_space *flags)
 {
 	clear();
 
 	this->_kind = "sequential";
 	this->chp = chp;
-	this->tab = tab;
-	this->verbosity = verbosity;
+	this->flags = flags;
 	this->vars = vars;
 	this->parent = parent;
 
@@ -55,15 +54,14 @@ sequential::~sequential()
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *sequential::duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity)
+instruction *sequential::duplicate(instruction *parent, variable_space *vars, map<string, string> convert)
 {
 	sequential *instr;
 
 	instr 				= new sequential();
 	instr->chp			= this->chp;
 	instr->vars			= vars;
-	instr->tab			= tab;
-	instr->verbosity	= verbosity;
+	instr->flags		= flags;
 	instr->parent		= parent;
 
 	size_t idx;
@@ -105,7 +103,7 @@ instruction *sequential::duplicate(instruction *parent, vspace *vars, map<string
 
 	list<instruction*>::iterator l;
 	for (l = instrs.begin(); l != instrs.end(); l++)
-		instr->instrs.push_back((*l)->duplicate(instr, vars, convert, tab+"\t", verbosity));
+		instr->instrs.push_back((*l)->duplicate(instr, vars, convert));
 
 	return instr;
 }
@@ -116,14 +114,15 @@ void sequential::expand_shortcuts()
 
 void sequential::parse()
 {
-	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
-		cout << tab << "Sequential: " << chp << endl;
-
 	string				raw_instr;	// chp of a sub sequential
 	string::iterator	i, j;
 	bool				para = false;
 	int					depth[3] = {0};
 	size_t				k;
+
+	flags->inc();
+	if (flags->log_base_hse())
+		(*flags->log_file) << flags->tab << "Sequential: " << chp << endl;
 
 	// Parse the instructions, making sure to stay in the current scope (outside of any bracket/parenthesis)
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()+1; i++)
@@ -154,10 +153,10 @@ void sequential::parse()
 
 			// This sub sequential is a set of parallel sub sub sequentials. s0 || s1 || ... || sn
 			if (para && raw_instr.length() > 0)
-				push(new parallel(this, raw_instr, vars, tab+"\t", verbosity));
+				push(new parallel(this, raw_instr, vars, flags));
 			// This sub sequential has a specific order of operations. (s)
 			else if (raw_instr[0] == '(' && raw_instr[raw_instr.length()-1] == ')' && raw_instr.length() > 0)
-				push(new sequential(this, raw_instr.substr(1, raw_instr.length()-2), vars, tab+"\t", verbosity));
+				push(new sequential(this, raw_instr.substr(1, raw_instr.length()-2), vars, flags));
 			// This sub sequential is a loop. *[g0->s0[]g1->s1[]...[]gn->sn] or *[g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '*' && raw_instr[1] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
 				push(expand_loop(raw_instr));
@@ -166,15 +165,15 @@ void sequential::parse()
 				push(expand_condition(raw_instr));
 			// This sub sequential is a variable instantiation.
 			else if (vars->vdef(raw_instr) && raw_instr.length() > 0)
-				push(expand_instantiation(this, raw_instr, vars, NULL, tab+"\t", verbosity, true));
+				push(expand_instantiation(this, raw_instr, vars, NULL, flags, true));
 			// This sub sequential is a communication instantiation.
 			else if ((k = raw_instr.find_first_of("?!#")) != raw_instr.npos && raw_instr.find(":=") == raw_instr.npos && raw_instr.length() > 0)
-				push(add_unique_variable(this, raw_instr.substr(0, k) + "._fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", vars->get_type(raw_instr.substr(0, k)) + ".operator" + raw_instr[k] + "()", vars, tab, verbosity).second);
+				push(add_unique_variable(this, raw_instr.substr(0, k) + "._fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", vars->get_type(raw_instr.substr(0, k)) + ".operator" + raw_instr[k] + "()", vars, flags).second);
 			// This sub sequential is an assignment instruction.
 			else if ((raw_instr.find(":=") != raw_instr.npos || raw_instr[raw_instr.length()-1] == '+' || raw_instr[raw_instr.length()-1] == '-') && raw_instr.length() > 0)
 				push(expand_assignment(raw_instr));
 			else if (raw_instr.find("skip") == raw_instr.npos && raw_instr.length() > 0)
-				push(new guard(this, raw_instr, vars, tab, verbosity));
+				push(new guard(this, raw_instr, vars, flags));
 
 			j = i+1;
 			para = false;
@@ -185,6 +184,8 @@ void sequential::parse()
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) == '|') || i == chp.end()))
 			para = true;
 	}
+
+	flags->dec();
 }
 
 void sequential::merge()
@@ -254,8 +255,9 @@ vector<int> sequential::generate_states(petri *n, vector<int> f, map<int, int> p
 	map<map<int, int>, vector<int> >::iterator gi;
 	map<int, int>::iterator mi, mj;
 
-	if ((verbosity & VERB_BASE_STATE_SPACE) && (verbosity & VERB_DEBUG))
-		cout << tab << "Sequential " << chp << endl;
+	flags->inc();
+	if (flags->log_base_state_space())
+		(*flags->log_file) << flags->tab << "Sequential " << chp << endl;
 
 	net  = n;
 	from = f;
@@ -278,6 +280,7 @@ vector<int> sequential::generate_states(petri *n, vector<int> f, map<int, int> p
 				uid	= instr->generate_states(net, uid, pbranch, cbranch);
 		}
 	}
+	flags->dec();
 	return uid;
 }
 

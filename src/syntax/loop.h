@@ -17,10 +17,10 @@
 struct loop : control
 {
 	loop();
-	loop(instruction *parent, string raw, vspace *vars, string tab, int verbosity);
+	loop(instruction *parent, string raw, variable_space *vars, flag_space *flags);
 	~loop();
 
-	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
+	instruction *duplicate(instruction *parent, variable_space *vars, map<string, string> convert);
 
 	void expand_shortcuts();
 	void parse();

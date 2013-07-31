@@ -18,12 +18,12 @@
 struct sequential : composition
 {
 	sequential();
-	sequential(instruction *parent, string chp, vspace *vars, string tab, int verbosity);
+	sequential(instruction *parent, string chp, variable_space *vars, flag_space *flags);
 	~sequential();
 
 	list<instruction*>			instrs;		// an ordered list of instructions in sequential
 
-	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
+	instruction *duplicate(instruction *parent, variable_space *vars, map<string, string> convert);
 
 	void expand_shortcuts();
 	void parse();
@@ -41,7 +41,7 @@ struct sequential : composition
 
 size_t search_back(string s, size_t offset);
 size_t search_front(string s, size_t offset);
-//list<size_t> state_variable_positions(space left, space right, string tab, int verbosity);
-//bool production_rule_check(string *raw, sequential *b, string tab, int verbosity);
+//list<size_t> state_variable_positions(space left, space right, flag_space *flags);
+//bool production_rule_check(string *raw, sequential *b, flag_space *flags);
 
 #endif

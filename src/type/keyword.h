@@ -8,6 +8,7 @@
  */
 
 #include "../common.h"
+#include "../flag_space.h"
 
 #ifndef keyword_h
 #define keyword_h
@@ -35,6 +36,8 @@ public:
 	keyword &operator=(keyword k);
 };
 
-bool contains(string s, map<string, keyword*> m);
+typedef map<string, keyword*> type_space;
+
+bool contains(string s, type_space m);
 
 #endif

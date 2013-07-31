@@ -8,6 +8,7 @@
 #include "syntax.h"
 #include "data.h"
 #include "utility.h"
+#include "flag_space.h"
 
 #ifndef program_h
 #define program_h
@@ -23,26 +24,26 @@
 struct program
 {
 	program();
-
-	program(string chp, int verbosity);
-
 	~program();
 
-	map<string, keyword*>	type_space;
-	int verbosity;
+	type_space	types;
+	flag_space	flags;
 
 	program &operator=(program p);
 
-	void parse(string chp, int verbosity);
+	void compile();
+
+	void parse(string chp);
 	void merge();
 	void project();
 	void decompose();
 	void reshuffle();
 
-
 	void generate_states();
 	void insert_state_vars();
+	void insert_bubbleless_state_vars();
 	void generate_prs();
+	void generate_bubbleless_prs();
 	void factor_prs();
 
 	void print_hse();

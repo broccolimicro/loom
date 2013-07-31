@@ -19,10 +19,10 @@ variable::variable()
 	uid = -1;
 	driven = false;
 	arg = false;
-	verbosity = 0;
+	flags = NULL;
 }
 
-variable::variable(string name, string type, uint16_t width, bool arg)
+variable::variable(string name, string type, uint16_t width, bool arg, flag_space *flags)
 {
 	this->chp = type + "<" + to_string(width) + ">" + name;
 	this->name = name;
@@ -32,16 +32,15 @@ variable::variable(string name, string type, uint16_t width, bool arg)
 	this->uid = -1;
 	this->driven = false;
 	this->arg = arg;
-	this->verbosity = 0;
+	this->flags = flags;
 }
 
-variable::variable(string chp, bool arg, string tab, int verbosity)
+variable::variable(string chp, bool arg, flag_space *flags)
 {
 	this->chp = chp;
 	this->uid = -1;
 	this->arg = arg;
-	this->tab = tab;
-	this->verbosity = verbosity;
+	this->flags = flags;
 	this->driven = false;
 
 	parse(chp);
@@ -65,6 +64,7 @@ variable &variable::operator=(variable v)
 	uid = v.uid;
 	driven = v.driven;
 	arg = v.arg;
+	flags = v.flags;
 
 	return *this;
 }
@@ -80,8 +80,8 @@ void variable::parse(string chp)
 	size_t input_start = find_first_of_l0(chp, "(", name_start);
 	size_t input_end = find_first_of_l0(chp, ")", input_start);
 
-	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
-		cout << tab << "Variable: " << chp << endl;
+	if (flags->log_base_hse())
+		(*flags->log_file) << flags->tab << "Variable: " << chp << endl;
 
 	if (input_start != chp.npos)
 	{
@@ -104,13 +104,13 @@ void variable::parse(string chp)
 	else
 		fixed = false;
 
-	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
+	if (flags->log_base_hse())
 	{
-		cout << tab << "\tName:  " << name << endl;
-		cout << tab << "\tArg:    " << input << endl;
-		cout << tab << "\tType:  " << type << endl;
-		cout << tab << "\tWidth: " << width << endl;
-		cout << tab << "\tArg:    " << arg << endl;
+		(*flags->log_file) << flags->tab << "\tName:  " << name << endl;
+		(*flags->log_file) << flags->tab << "\tArg:    " << input << endl;
+		(*flags->log_file) << flags->tab << "\tType:  " << type << endl;
+		(*flags->log_file) << flags->tab << "\tWidth: " << width << endl;
+		(*flags->log_file) << flags->tab << "\tArg:    " << arg << endl;
 	}
 }
 

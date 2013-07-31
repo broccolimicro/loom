@@ -10,6 +10,7 @@
 #include "../common.h"
 #include "../data.h"
 #include "../type/keyword.h"
+#include "../flag_space.h"
 
 /* This structure describes an instruction in the chp program, namely what lies between
  * two semicolons in a sequential of. This has not been expanded to ;S1||S2; type of composition.
@@ -31,16 +32,15 @@ public:
 	string chp;
 
 	// Some pointers for good use
-	vspace *vars;
+	variable_space *vars;
 	petri  *net;
 
 	// For outputting debugging messages
-	string tab;
-	int verbosity;
+	flag_space *flags;
 
 	string kind();
 
-	virtual instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity) = 0;
+	virtual instruction *duplicate(instruction *parent, variable_space *vars, map<string, string> convert) = 0;
 	virtual vector<int> variant() = 0;
 	virtual vector<int> active_variant() = 0;
 	virtual vector<int> passive_variant() = 0;

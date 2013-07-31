@@ -22,15 +22,15 @@ instruction::instruction()
 	vars = NULL;
 	net = NULL;
 	chp = "";
-	tab = "";
 	_kind = "instruction";
-	verbosity = VERB_NONE;
+	flags = NULL;
 }
 
 instruction::~instruction()
 {
 	_kind = "instruction";
 	parent = NULL;
+	flags = NULL;
 }
 
 string instruction::kind()
@@ -40,11 +40,11 @@ string instruction::kind()
 
 pair<string, instruction*> instruction::expand_expression(string expr, string top)
 {
-	if ((verbosity & VERB_BASE_HSE) && (verbosity & VERB_DEBUG))
-		cout << tab << "Decompose: " << expr << endl;
+	if (flags->log_base_hse())
+		(*flags->log_file) << flags->tab << "Decompose: " << expr << endl;
 
 	map<string, variable>::iterator v;
-	map<string, keyword*>::iterator k;
+	type_space::iterator k;
 	map<string, string>::iterator c;
 	list<string>::iterator s;
 	list<instruction*>::iterator i;
@@ -306,7 +306,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 	name += "(";
 	if (top == "")
 	{
-		C = add_unique_variable(ret, "_op", "", proc->vars.get_info(proc->args.front()), vars, tab+"\t", verbosity);
+		C = add_unique_variable(ret, "_op", "", proc->vars.get_info(proc->args.front()), vars, flags);
 		//cout << "YO DUERFEW EWFFEW EFWEFEWF " << proc->vars.get_info(proc->input.front()) << endl;
 		name += C.first;
 	}
@@ -319,8 +319,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 		name += "," + B.first;
 	name += ")";
 
-	sub->tab = tab;
-	sub->verbosity = verbosity;
+	sub->flags = flags;
 	sub->vars = vars;
 	if (A.second != NULL)
 		A.second->parent = sub;
@@ -331,11 +330,10 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 	sub->parent = ret;
 
 
-	ret->tab = tab;
-	ret->verbosity = verbosity;
+	ret->flags = flags;
 	ret->vars = vars;
 	ret->push(sub);
-	ret->push(expand_instantiation(ret, type + " " + name, vars, NULL, tab, verbosity, true));
+	ret->push(expand_instantiation(ret, type + " " + name, vars, NULL, flags, true));
 
 	return pair<string, instruction*>(C.first, ret);
 }

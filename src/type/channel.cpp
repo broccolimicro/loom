@@ -24,14 +24,15 @@ channel::channel()
 	probe = NULL;
 }
 
-channel::channel(string chp, map<string, keyword*> *types, int verbosity)
+channel::channel(string chp, type_space *types, flag_space *flags)
 {
 	_kind = "channel";
 	vars.types = types;
 	send = NULL;
 	recv = NULL;
 	probe = NULL;
-	parse(chp, verbosity);
+	this->flags = flags;
+	parse(chp);
 }
 
 channel::~channel()
@@ -45,10 +46,11 @@ channel::~channel()
 channel &channel::operator=(channel r)
 {
 	vars = r.vars;
+	flags = r.flags;
 	return *this;
 }
 
-void channel::parse(string chp, int verbosity)
+void channel::parse(string chp)
 {
 	int name_start = chp.find_first_of(" ")+1;
 	int name_end = chp.find_first_of("{");
@@ -65,11 +67,11 @@ void channel::parse(string chp, int verbosity)
 	name = chp.substr(name_start, name_end - name_start);
 	io_sequential = chp.substr(sequential_start, sequential_end - sequential_start);
 
-	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
+	if (flags->log_base_hse())
 	{
-		cout << "Channel: " << chp << endl;
-		cout << "\tName:  " << name << endl;
-		cout << "\tSequential: " << io_sequential << endl;
+		(*flags->log_file) << "Channel: " << chp << endl;
+		(*flags->log_file) << "\tName:  " << name << endl;
+		(*flags->log_file) << "\tSequential: " << io_sequential << endl;
 	}
 
 	int depth[3] = {0};
@@ -90,7 +92,7 @@ void channel::parse(string chp, int verbosity)
 
 		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == ';')
 		{
-			expand_instantiation(NULL, io_sequential.substr(j-io_sequential.begin(), i - j), &vars, NULL, "\t", verbosity, false);
+			expand_instantiation(NULL, io_sequential.substr(j-io_sequential.begin(), i - j), &vars, NULL, flags, false);
 			j = i+1;
 		}
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == '}')
@@ -107,9 +109,9 @@ void channel::parse(string chp, int verbosity)
 		}
 	}
 
-	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
+	if (flags->log_base_hse())
 	{
-		cout << endl;
+		(*flags->log_file) << endl;
 	}
 
 	/* These variables won't automatically be instantiated as
@@ -123,14 +125,15 @@ void channel::parse(string chp, int verbosity)
 	probe = new operate();
 
 	send->vars = vars;
+	send->flags = flags;
 	recv->vars = vars;
+	recv->flags = flags;
 	probe->vars = vars;
+	probe->flags = flags;
 
-	send->parse(s, verbosity);
-	recv->parse(r, verbosity);
-	probe->parse(p, verbosity);
-
-
+	send->parse(s);
+	recv->parse(r);
+	probe->parse(p);
 }
 
 ostream &operator<<(ostream &os, channel s)

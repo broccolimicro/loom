@@ -6,6 +6,7 @@
  */
 
 #include "minterm.h"
+#include "canonical.h"
 #include "../common.h"
 
 minterm::minterm()
@@ -43,7 +44,7 @@ minterm::minterm(string str)
 	}
 }
 
-minterm::minterm(string str, vspace *vars)
+minterm::minterm(string str, variable_space *vars)
 {
 	string var;
 	uint32_t value;
@@ -202,17 +203,23 @@ void minterm::sv_invert(int uid)
 
 void minterm::sv_or(int uid, uint32_t v)
 {
-
+	uint32_t m = (0x00000003 << (30 - ((uid & 0x0000000F)<<1)));
+	v = (v & m) | (v0 & ~m);
+	values[uid >> 4] = (((values[uid >> 4]&(v << 1)) | (values[uid >> 4]&v) | (v&(values[uid >> 4] << 1))) & v1) | (values[uid >> 4] & v & v0);
 }
 
 void minterm::sv_and(int uid, uint32_t v)
 {
-
+	uint32_t m = (0x00000003 << (30 - ((uid & 0x0000000F)<<1)));
+	v = (v & m) | (v1 & ~m);
+	values[uid >> 4] = (values[uid >> 4] & v & v1) | (((values[uid >> 4]&(v >> 1)) | (values[uid >> 4]&v) | (v&(values[uid >> 4] >> 1))) & v0);
 }
 
 void minterm::sv_not(int uid)
 {
-
+	uint32_t m0 = (0x00000001 << (30 - ((uid & 0x0000000F)<<1)));
+	uint32_t m1 = (0x00000002 << (30 - ((uid & 0x0000000F)<<1)));
+	values[uid >> 4] = (values[uid >> 4] & ~(m0 | m1)) | (((values[uid >> 4] & m0) << 1) & 0xFFFFFFFE) | (((values[uid >> 4] & m1) >> 1) & 0x7FFFFFFF);
 }
 
 bool minterm::always_0()
@@ -225,7 +232,7 @@ bool minterm::always_1()
 	return allX(*this);
 }
 
-vector<int> minterm::variable_list()
+vector<int> minterm::allvars()
 {
 	vector<int> result;
 	for (int i = 0; i < size; i++)
@@ -233,6 +240,62 @@ vector<int> minterm::variable_list()
 			result.push_back(i);
 
 	return result;
+}
+
+minterm minterm::mask()
+{
+	minterm result;
+	int i;
+	for (i = 0; i < values.size(); i++)
+		result.values.push_back(((values[i]>>1)&v0)^(values[i]&v0) | (values[i]&v1)^((values[i]<<1)&v1));
+	result.size = size;
+	return result;
+}
+
+minterm minterm::inverse()
+{
+	minterm result;
+	for (size_t i = 0; i < values.size(); i++)
+		result.values.push_back((((values[i] << 1) & v1) | ((values[i] >> 1) & v0)));
+	result.size = size;
+	return result;
+}
+
+minterm minterm::get_pos()
+{
+	minterm result;
+	int i;
+	for (i = 0; i < (int)values.size(); i++)
+		result.push_back(values[i] | v1);
+	result.size = size;
+	result.values[i-1] &= (vX << (32 - ((size&0x0000000F)<<1)));
+	return result;
+}
+
+minterm minterm::get_neg()
+{
+	minterm result;
+	int i;
+	for (i = 0; i < (int)values.size(); i++)
+		result.push_back(values[i] | v0);
+	result.size = size;
+	result.values[i-1] &= (vX << (32 - ((size&0x0000000F)<<1)));
+	return result;
+}
+
+minterm minterm::combine(minterm m)
+{
+	minterm result;
+	for (size_t i = 0; i < values.size(); i++)
+		result.values.push_back((((values[i]&(m.values[i] << 1)) | (values[i]&m.values[i]) | (m.values[i]&(values[i] << 1))) & v1) | (values[i] & m.values[i] & v0));
+	result.size = size;
+	return result;
+}
+
+void minterm::extract(map<int, uint32_t> *result)
+{
+	for (int i = 0; i < size; i++)
+		result->insert(pair<int, uint32_t>(i, (*this)[i]));
 }
 
 void minterm::push_back(uint32_t v)
@@ -322,7 +385,7 @@ string minterm::print_trace()
 	{
 		v = values[i];
 		for (int j = 15; j >= 0; j--)
-			if (((v>>(2*j))&3) != 3 && ((int)i*16 + (15-j)) < size)
+			if (/*((v>>(2*j))&3) != 3 && */((int)i*16 + (15-j)) < size)
 				res << tbl[(v>>(2*j))&3];
 	}
 
@@ -331,12 +394,12 @@ string minterm::print_trace()
 
 minterm nullv(int s)
 {
-	return minterm(s, 0x00000000);
+	return minterm(s, v_);
 }
 
 minterm fullv(int s)
 {
-	return minterm(s, 0xFFFFFFFF);
+	return minterm(s, vX);
 }
 
 bool all_(minterm s)
@@ -347,8 +410,8 @@ bool all_(minterm s)
 	bool result = true;
 	size_t i;
 	for (i = 0; i < s.values.size()-1; i++)
-		result = result && ((((s.values[i]>>1) | (s.values[i])) & 0x55555555) == 0);
-	result = result && ((((s.values[i]>>1) | (s.values[i])) & (0x55555555 << (32 - ((s.size&0x0000000F) << 1)))) == 0);
+		result = result && ((((s.values[i]>>1) | (s.values[i])) & v0) == 0);
+	result = result && ((((s.values[i]>>1) | (s.values[i])) & (v0 << (32 - ((s.size&0x0000000F) << 1)))) == 0);
 	return result;
 }
 
@@ -360,8 +423,8 @@ bool all0(minterm s)
 	bool result = true;
 	size_t i;
 	for (i = 0; i < s.values.size()-1; i++)
-		result = result && ((((s.values[i]>>1) | (~s.values[i])) & 0x55555555) == 0);
-	result = result && ((((s.values[i]>>1) | (~s.values[i])) & (0x55555555 << (32 - ((s.size&0x0000000F) << 1)))) == 0);
+		result = result && ((((s.values[i]>>1) | (~s.values[i])) & v0) == 0);
+	result = result && ((((s.values[i]>>1) | (~s.values[i])) & (v0 << (32 - ((s.size&0x0000000F) << 1)))) == 0);
 	return result;
 }
 
@@ -373,8 +436,8 @@ bool all1(minterm s)
 	bool result = true;
 	size_t i;
 	for (i = 0; i < s.values.size()-1; i++)
-		result = result && ((((~s.values[i]>>1) | (s.values[i])) & 0x55555555) == 0);
-	result = result && ((((~s.values[i]>>1) | (s.values[i])) & (0x55555555 << (32 - ((s.size&0x0000000F) << 1)))) == 0);
+		result = result && ((((~s.values[i]>>1) | (s.values[i])) & v0) == 0);
+	result = result && ((((~s.values[i]>>1) | (s.values[i])) & (v0 << (32 - ((s.size&0x0000000F) << 1)))) == 0);
 	return result;
 }
 
@@ -386,8 +449,8 @@ bool allX(minterm s)
 	bool result = true;
 	size_t i;
 	for (i = 0; i < s.values.size()-1; i++)
-		result = result && ((((~s.values[i]>>1) | (~s.values[i])) & 0x55555555) == 0);
-	result = result && ((((~s.values[i]>>1) | (~s.values[i])) & (0x55555555 << (32 - ((s.size&0x0000000F) << 1)))) == 0);
+		result = result && ((((~s.values[i]>>1) | (~s.values[i])) & v0) == 0);
+	result = result && ((((~s.values[i]>>1) | (~s.values[i])) & (v0 << (32 - ((s.size&0x0000000F) << 1)))) == 0);
 	return result;
 }
 
@@ -396,8 +459,8 @@ bool has_(minterm s)
 	bool result = false;
 	size_t i;
 	for (i = 0; i < s.values.size()-1; i++)
-		result = result || (((s.values[i]>>1) | s.values[i] | 0xAAAAAAAA) < 0xFFFFFFFF);
-	result = result || (((s.values[i]>>1) | s.values[i] | 0xAAAAAAAA | ~(0xFFFFFFFF << (32 - ((s.size&0x0000000F) << 1)))) != 0xFFFFFFFF);
+		result = result || (((s.values[i]>>1) | s.values[i] | v1) < vX);
+	result = result || (((s.values[i]>>1) | s.values[i] | v1 | ~(vX << (32 - ((s.size&0x0000000F) << 1)))) != vX);
 	return result;
 }
 
@@ -421,11 +484,11 @@ bool conflict(minterm s1, minterm s2)
 	for (i = 0; i < s1.values.size() - 1; i++)
 	{
 		C = ~(s1.values[i] & s2.values[i]);
-		result = result && (((C >> 1) & C & 0x55555555) == 0);
+		result = result && (((C >> 1) & C & v0) == 0);
 	}
 
 	C = ~(s1.values[i] & s2.values[i]);
-	result = result && (((C >> 1) & C & (0x55555555 << (32 - ((s1.size&0x0000000F)<<1)))) == 0);
+	result = result && (((C >> 1) & C & (v0 << (32 - ((s1.size&0x0000000F)<<1)))) == 0);
 
 	return result;
 }
@@ -436,8 +499,8 @@ bool up_conflict(minterm s1, minterm s2)
 	bool result = true;
 	size_t i;
 	for (i = 0; i < s1.values.size() - 1; i++)
-		result = result && ((~(s1.values[i] >> 1) & s1.values[i] & (s2.values[i] >> 1) & ~s2.values[i] & 0x55555555) == 0);
-	result = result && ((~(s1.values[i] >> 1) & s1.values[i] & (s2.values[i] >> 1) & ~s2.values[i] & (0x55555555 << (32 - ((s1.size&0x0000000F)<<1)))) == 0);
+		result = result && ((~(s1.values[i] >> 1) & s1.values[i] & (s2.values[i] >> 1) & ~s2.values[i] & v0) == 0);
+	result = result && ((~(s1.values[i] >> 1) & s1.values[i] & (s2.values[i] >> 1) & ~s2.values[i] & (v0 << (32 - ((s1.size&0x0000000F)<<1)))) == 0);
 	return result;
 }
 
@@ -447,8 +510,8 @@ bool down_conflict(minterm s1, minterm s2)
 	bool result = true;
 	size_t i;
 	for (i = 0; i < s1.values.size() - 1; i++)
-		result = result && (((s1.values[i] >> 1) & ~s1.values[i] & ~(s2.values[i] >> 1) & s2.values[i] & 0x55555555) == 0);
-	result = result && (((s1.values[i] >> 1) & ~s1.values[i] & ~(s2.values[i] >> 1) & s2.values[i] & (0x55555555 << (32 - ((s1.size&0x0000000F)<<1)))) == 0);
+		result = result && (((s1.values[i] >> 1) & ~s1.values[i] & ~(s2.values[i] >> 1) & s2.values[i] & v0) == 0);
+	result = result && (((s1.values[i] >> 1) & ~s1.values[i] & ~(s2.values[i] >> 1) & s2.values[i] & (v0 << (32 - ((s1.size&0x0000000F)<<1)))) == 0);
 	return result;
 }
 
@@ -485,7 +548,6 @@ uint32_t minterm::operator[](int i)
 
 minterm minterm::operator()(int i, uint32_t v)
 {
-	cout << i << " " << size << endl;
 	minterm result = *this;
 	result.sv_intersect(i, v);
 	if (!has_(result))
@@ -507,36 +569,33 @@ minterm &minterm::operator&=(minterm s)
 	return *this;
 }
 
-minterm &minterm::operator|=(minterm s)
-{
-	*this = *this | s;
-	return *this;
-}
-
 // This assumes that s1.size == s2.size
 minterm operator&(minterm s1, minterm s2)
 {
 	for (size_t i = 0; i < s1.values.size(); i++)
-		s1.values[i] = (s1.values[i] & s2.values[i] & 0xAAAAAAAA) | (((s1.values[i]&(s2.values[i] >> 1)) | (s1.values[i]&s2.values[i]) | (s2.values[i]&(s1.values[i] >> 1))) & 0x55555555);
+		s1.values[i] = (s1.values[i] & s2.values[i] & v1) | (((s1.values[i]&(s2.values[i] >> 1)) | (s1.values[i]&s2.values[i]) | (s2.values[i]&(s1.values[i] >> 1))) & v0);
 
 	return s1;
 }
 
 // This assumes that s1.size == s2.size
-minterm operator|(minterm s1, minterm s2)
+canonical operator|(minterm s1, minterm s2)
 {
-	for (size_t i = 0; i < s1.values.size(); i++)
-		s1.values[i] = (((s1.values[i]&(s2.values[i] << 1)) | (s1.values[i]&s2.values[i]) | (s2.values[i]&(s1.values[i] << 1))) & 0xAAAAAAAA) | (s1.values[i] & s2.values[i] & 0x55555555);
-
-	return s1;
+	canonical result;
+	result.terms.push_back(s1);
+	result.terms.push_back(s2);
+	result.mccluskey();
+	return result;
 }
 
-minterm operator~(minterm s)
+canonical operator~(minterm s)
 {
-	for (size_t i = 0; i < s.values.size(); i++)
-		s.values[i] = (((s.values[i] << 1) & 0xAAAAAAAA) | ((s.values[i] >> 1) & 0x55555555));
-
-	return s;
+	canonical result;
+	int i;
+	for (i = 0; i < s.size; i++)
+		result.push_back(minterm(s.size, i, s[i]));
+	result.mccluskey();
+	return result;
 }
 
 bool operator==(minterm s1, minterm s2)
@@ -583,7 +642,7 @@ minterm operator!(minterm s)
 	for (i = 0; i < s.values.size(); i++)
 		s.values[i] = ~s.values[i];
 
-	s.values[i-1] &= (0xFFFFFFFF << (32 - ((s.size&0x0000000F)<<1)));
+	s.values[i-1] &= (vX << (32 - ((s.size&0x0000000F)<<1)));
 
 	return s;
 }
@@ -595,7 +654,7 @@ minterm project(minterm m0, minterm m1)
 	uint32_t mask;
 	for (int i = 0; i < (int)m1.values.size(); i++)
 	{
-		mask = ~((m1.values[i]>>1) | m1.values[i]) & 0x55555555;
+		mask = ~((m1.values[i]>>1) | m1.values[i]) & v0;
 		mask = mask | (mask<<1);
 		result.values.push_back(((m0.values[i] & mask) | m1.values[i]));
 	}

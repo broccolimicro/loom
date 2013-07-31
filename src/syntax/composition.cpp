@@ -18,9 +18,8 @@ composition::composition()
 	vars = NULL;
 	net = NULL;
 	chp = "";
-	tab = "";
 	_kind = "composition";
-	verbosity = VERB_NONE;
+	flags = NULL;
 }
 
 composition::~composition()
@@ -29,9 +28,8 @@ composition::~composition()
 	vars = NULL;
 	net = NULL;
 	chp = "";
-	tab = "";
 	_kind = "composition";
-	verbosity = VERB_NONE;
+	flags = NULL;
 
 	list<instruction*>::iterator j;
 	for (j = instrs.begin(); j != instrs.end(); j++)
@@ -44,13 +42,12 @@ composition::~composition()
 	instrs.clear();
 }
 
-void composition::init(string chp, vspace *vars, string tab, int verbosity)
+void composition::init(string chp, variable_space *vars, flag_space *flags)
 {
 	clear();
 
 	this->chp = chp;
-	this->tab = tab;
-	this->verbosity = verbosity;
+	this->flags = flags;
 	this->vars = vars;
 
 	expand_shortcuts();
@@ -119,8 +116,8 @@ vector<int> composition::passive_variant()
 
 instruction *composition::expand_assignment(string chp)
 {
-	parallel *p = new parallel(this, "", vars, tab, verbosity);
-	assignment *a = new assignment(p, chp, vars, tab, verbosity);
+	parallel *p = new parallel(this, "", vars, flags);
+	assignment *a = new assignment(p, chp, vars, flags);
 	pair<string, instruction*> result;
 	list<pair<string, string> >::iterator i;
 	list<pair<string, string> > remove;
@@ -139,7 +136,7 @@ instruction *composition::expand_assignment(string chp)
 		}
 		else if (v != NULL)
 		{
-			p->push(new condition(p, "[" + i->second + "->" + i->first + "+[]~" + i->second + "->" + i->first + "-]", vars, tab, verbosity));
+			p->push(new condition(p, "[" + i->second + "->" + i->first + "+[]~" + i->second + "->" + i->first + "-]", vars, flags));
 			remove.push_back(*i);
 		}
 	}
@@ -164,9 +161,9 @@ instruction *composition::expand_assignment(string chp)
 
 instruction *composition::expand_condition(string chp)
 {
-	sequential *s = new sequential(this, "", vars, tab, verbosity);
-	parallel *p = new parallel(s, "", vars, tab, verbosity);
-	condition *a = new condition(s, chp, vars, tab, verbosity);
+	sequential *s = new sequential(this, "", vars, flags);
+	parallel *p = new parallel(s, "", vars, flags);
+	condition *a = new condition(s, chp, vars, flags);
 	pair<string, instruction*> result;
 	list<pair<sequential*, guard*> >::iterator i;
 
@@ -202,9 +199,9 @@ instruction *composition::expand_condition(string chp)
 
 instruction *composition::expand_loop(string chp)
 {
-	sequential *s = new sequential(this, "", vars, tab, verbosity);
-	parallel *p = new parallel(s, "", vars, tab, verbosity);
-	loop *a = new loop(s, chp, vars, tab, verbosity);
+	sequential *s = new sequential(this, "", vars, flags);
+	parallel *p = new parallel(s, "", vars, flags);
+	loop *a = new loop(s, chp, vars, flags);
 	pair<string, instruction*> result;
 	list<pair<sequential*, guard*> >::iterator i;
 

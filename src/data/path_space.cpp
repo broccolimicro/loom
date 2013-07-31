@@ -1,11 +1,11 @@
 /*
- * pspace.cpp
+ * path_space.cpp
  *
  *  Created on: Mar 14, 2013
  *      Author: nbingham
  */
 
-#include "pspace.h"
+#include "path_space.h"
 
 path_space::path_space()
 {
@@ -215,6 +215,6 @@ ostream &operator<<(ostream &os, path_space p)
 {
 	list<path>::iterator i;
 	for (i = p.paths.begin(); i != p.paths.end(); i++)
-		cout << *i << endl;
+		os << *i << endl;
 	return os;
 }

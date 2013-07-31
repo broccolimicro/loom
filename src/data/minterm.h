@@ -6,7 +6,7 @@
  */
 
 #include "../common.h"
-#include "vspace.h"
+#include "variable_space.h"
 
 #ifndef minterm_h
 #define minterm_h
@@ -16,11 +16,13 @@
 #define v1 0xAAAAAAAA
 #define vX 0xFFFFFFFF
 
+struct canonical;
+
 struct minterm
 {
 	minterm();
 	minterm(string str);
-	minterm(string str, vspace *vars);
+	minterm(string str, variable_space *vars);
 	minterm(string str, vector<string> vars);
 	minterm(int s, uint32_t v);
 	minterm(int s, int i, uint32_t v);
@@ -45,7 +47,14 @@ struct minterm
 	bool always_0();
 	bool always_1();
 
-	vector<int> variable_list();
+	vector<int> allvars();
+
+	minterm mask();
+	minterm get_pos();
+	minterm get_neg();
+	minterm inverse();
+	minterm combine(minterm m);
+	void extract(map<int, uint32_t> *result);
 
 	uint32_t operator[](int i);
 	minterm operator()(int i, uint32_t v);
@@ -53,7 +62,6 @@ struct minterm
 	minterm &operator=(minterm s);
 
 	minterm &operator&=(minterm s);
-	minterm &operator|=(minterm s);
 
 	void push_back(uint32_t v);
 
@@ -77,9 +85,9 @@ bool conflict(minterm s1, minterm s2);
 bool up_conflict(minterm s1, minterm s2);
 bool down_conflict(minterm s1, minterm s2);
 
-minterm operator~(minterm s);
+canonical operator~(minterm s);
 minterm operator&(minterm s1, minterm s2);
-minterm operator|(minterm s1, minterm s2);
+canonical operator|(minterm s1, minterm s2);
 
 minterm operator!(minterm s);
 minterm operator||(minterm s1, minterm s2);

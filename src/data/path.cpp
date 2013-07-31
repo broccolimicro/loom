@@ -14,7 +14,7 @@ path::path()
 
 path::path(int s)
 {
-	nodes.resize(s);
+	nodes.resize(s, 0);
 }
 
 path::~path()

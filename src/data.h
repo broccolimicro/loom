@@ -15,6 +15,6 @@
 #include "data/bdd.h"
 #include "data/petri.h"
 #include "data/variable.h"
-#include "data/vspace.h"
+#include "data/variable_space.h"
 
 #endif

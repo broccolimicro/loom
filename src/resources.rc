@@ -1,0 +1,26 @@
+1 ICON "../haystack.ico"
+
+1 VERSIONINFO
+FILEVERSION     1,0,0,0
+PRODUCTVERSION  1,0,0,0
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904E4"
+    BEGIN
+      VALUE "CompanyName", "Sol Union"
+      VALUE "FileDescription", "Compiler for Communicating Hardware Processes"
+      VALUE "FileVersion", "1.0"
+      VALUE "InternalName", "haystack"
+      VALUE "LegalCopyright", "Ned Bingham and Nicholas Kramer"
+      VALUE "OriginalFilename", "haystack.exe"
+      VALUE "ProductName", "Haystack"
+      VALUE "ProductVersion", "1.0"
+    END
+  END
+
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1252
+  END
+END

@@ -1,5 +1,5 @@
 /*
- * pspace.h
+ * path_space.h
  *
  *  Created on: Mar 14, 2013
  *      Author: nbingham
@@ -7,8 +7,8 @@
 
 #include "path.h"
 
-#ifndef pspace_h
-#define pspace_h
+#ifndef path_space_h
+#define path_space_h
 
 struct path_space
 {

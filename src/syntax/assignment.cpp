@@ -13,12 +13,11 @@ assignment::assignment()
 	_kind = "assignment";
 }
 
-assignment::assignment(instruction *parent, string chp, vspace *vars, string tab, int verbosity)
+assignment::assignment(instruction *parent, string chp, variable_space *vars, flag_space *flags)
 {
 	this->_kind		= "assignment";
 	this->chp		= chp;
-	this->tab		= tab;
-	this->verbosity = verbosity;
+	this->flags 	= flags;
 	this->vars		= vars;
 	this->parent	= parent;
 
@@ -36,15 +35,14 @@ assignment::~assignment()
  * This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *assignment::duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity)
+instruction *assignment::duplicate(instruction *parent, variable_space *vars, map<string, string> convert)
 {
 	assignment *instr;
 
 	instr 				= new assignment();
 	instr->chp			= this->chp;
 	instr->vars			= vars;
-	instr->tab			= tab;
-	instr->verbosity	= verbosity;
+	instr->flags 		= flags;
 	instr->expr			= this->expr;
 	instr->parent		= parent;
 
@@ -165,6 +163,9 @@ instruction *assignment::duplicate(instruction *parent, vspace *vars, map<string
 			ev->driven = true;
 	}
 
+	if (instr->flags == NULL)
+		cout << "FUCK" << endl;
+
 	return instr;
 }
 
@@ -231,8 +232,9 @@ void assignment::parse()
 	string left, right;
 	variable *v;
 
-	if ((verbosity & VERB_BASE_HSE) && (verbosity & VERB_DEBUG))
-		cout << tab << "Assignment:\t" + chp << endl;
+	flags->inc();
+	if (flags->log_base_hse())
+		(*flags->log_file) << flags->tab << "Assignment:\t" + chp << endl;
 
 	// Identify that this instruction is an assign.
 	if (chp.find(":=") != chp.npos)
@@ -264,6 +266,8 @@ void assignment::parse()
 	// If all else fails, complain to the user.
 	else
 		cout << "Error: Instruction not handled: " << chp << endl;
+
+	flags->dec();
 }
 
 void assignment::merge()
@@ -282,8 +286,8 @@ vector<int> assignment::generate_states(petri *n, vector<int> f, map<int, int> p
 	size_t k;
 	int l;
 
-	if ((verbosity & VERB_BASE_STATE_SPACE) && (verbosity & VERB_DEBUG))
-		cout << tab << "Assignment " << chp << endl;
+	if (flags->log_base_state_space())
+		(*flags->log_file) << flags->tab << "Assignment " << chp << endl;
 
 	net  = n;
 	from = f;

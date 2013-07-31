@@ -12,12 +12,13 @@
 #define variable_h
 
 #include "../common.h"
+#include "../flag_space.h"
 
 struct variable
 {
 	variable();
-	variable(string name, string type, uint16_t width, bool arg);
-	variable(string chp, bool arg, string tab, int verbosity);
+	variable(string name, string type, uint16_t width, bool arg, flag_space *flags);
+	variable(string chp, bool arg, flag_space *flags);
 	~variable();
 
 	int			uid;
@@ -32,8 +33,7 @@ struct variable
 	list<string> inputs;
 
 	// For debugging purposes
-	string tab;
-	int verbosity;
+	flag_space *flags;
 
 	variable &operator=(variable v);
 	void parse(string chp);

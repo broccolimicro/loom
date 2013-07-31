@@ -16,10 +16,10 @@
 struct parallel : composition
 {
 	parallel();
-	parallel(instruction *parent, string chp, vspace *vars, string tab, int verbosity);
+	parallel(instruction *parent, string chp, variable_space *vars, flag_space *flags);
 	~parallel();
 
-	instruction *duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity);
+	instruction *duplicate(instruction *parent, variable_space *vars, map<string, string> convert);
 
 	void expand_shortcuts();
 	void parse();

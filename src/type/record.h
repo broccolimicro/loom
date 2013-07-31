@@ -11,6 +11,7 @@
 #define record_h
 
 #include "../common.h"
+#include "../flag_space.h"
 #include "../data.h"
 #include "keyword.h"
 
@@ -21,14 +22,15 @@
 struct record : keyword
 {
 	record();
-	record(string raw, map<string, keyword*> *types, int verbosity);
+	record(string raw, type_space *types, flag_space *flags);
 	~record();
 
 	string					chp;
-	vspace					vars;
+	variable_space			vars;
+	flag_space				*flags;
 
 	record &operator=(record r);
-	void parse(string raw, int verbosity);
+	void parse(string raw);
 };
 
 ostream &operator<<(ostream &os, record s);

@@ -20,26 +20,30 @@ rule::rule(int uid)
 	this->uid = uid;
 }
 
-rule::rule(int uid, petri *g, vspace *v, int verbosity)
+rule::rule(int uid, petri *g, variable_space *v, flag_space *flags, bool bubble)
 {
 	this->uid = uid;
 	this->vars = v;
 	this->net = g;
-	this->verbosity = verbosity;
+	this->flags = flags;
 
-	gen_minterms();
+	if (bubble)
+		gen_minterms();
+	else
+		gen_bubbleless_minterms();
 }
 
-rule::rule(string u, string d, string v, vspace *vars, petri *net)
+rule::rule(string u, string d, string v, variable_space *vars, petri *net, flag_space *flags)
 {
 	this->net = net;
 	this->vars = vars;
+	this->flags = flags;
 
-	gen_variables(u, vars);
-	gen_variables(d, vars);
+	gen_variables(u, vars, flags);
+	gen_variables(d, vars, flags);
 
 	if ((uid = vars->get_uid(v)) < 0)
-		uid = vars->insert(variable(v, "node", 1, false));
+		uid = vars->insert(variable(v, "node", 1, false, flags));
 	vars->find(uid)->driven = true;
 
 	this->up = net->values.build(u, vars);
@@ -60,6 +64,7 @@ rule &rule::operator=(rule r)
 	down = r.down;
 	vars = r.vars;
 	net = r.net;
+	flags = r.flags;
 	return *this;
 }
 
@@ -72,39 +77,71 @@ rule &rule::operator=(rule r)
  */
 void rule::gen_minterms()
 {
-	up = -1;
-	down = -1;
+	up = 0;
+	down = 0;
 	vector<int> ia;
 	vector<int> vl;
 	int i, j, t;
 	for (i = 0; i < (int)net->T.size(); i++)
 	{
 		vl.clear();
-		net->values.variable_list(net->T[i].index, &vl);
+		net->values.allvars(net->T[i].index, &vl);
 		if (net->T[i].active && find(vl.begin(), vl.end(), uid) != vl.end())
 		{
 			if (net->values.restrict(net->T[i].index, uid, 1) > 0)
 			{
 				ia = net->input_arcs(net->trans_id(i));
-				t = net->S[ia[0]].index;
-				for (j = 1; j < (int)ia.size(); j++)
+				for (j = 0, t = 1; j < (int)ia.size(); j++)
 					t = net->values.apply_and(t, net->S[ia[j]].index);
 
 				t = net->values.smooth(t, vl);
-
-				up = (up == -1) ? t : net->values.apply_or(up, t);
+				up = net->values.apply_or(up, t);
 			}
 
 			if (net->values.restrict(net->T[i].index, uid, 0) > 0)
 			{
 				ia = net->input_arcs(net->trans_id(i));
-				t = net->S[ia[0]].index;
-				for (j = 1; j < (int)ia.size(); j++)
+				for (j = 0, t = 1; j < (int)ia.size(); j++)
 					t = net->values.apply_and(t, net->S[ia[j]].index);
 
 				t = net->values.smooth(t, vl);
+				down = net->values.apply_or(down, t);
+			}
+		}
+	}
+}
 
-				down = (down == -1) ? t : net->values.apply_or(down, t);
+void rule::gen_bubbleless_minterms()
+{
+	up = 0;
+	down = 0;
+	vector<int> ia;
+	vector<int> vl;
+	int i, j, t;
+	for (i = 0; i < (int)net->T.size(); i++)
+	{
+		vl.clear();
+		net->values.allvars(net->T[i].index, &vl);
+		if (net->T[i].active && find(vl.begin(), vl.end(), uid) != vl.end())
+		{
+			if (net->values.restrict(net->T[i].index, uid, 1) > 0)
+			{
+				ia = net->input_arcs(net->trans_id(i));
+				for (j = 0, t = 1; j < (int)ia.size(); j++)
+					t = net->values.apply_and(t, net->S[ia[j]].negative);
+
+				t = net->values.smooth(t, vl);
+				up = net->values.apply_or(up, t);
+			}
+
+			if (net->values.restrict(net->T[i].index, uid, 0) > 0)
+			{
+				ia = net->input_arcs(net->trans_id(i));
+				for (j = 0, t = 1; j < (int)ia.size(); j++)
+					t = net->values.apply_and(t, net->S[ia[j]].positive);
+
+				t = net->values.smooth(t, vl);
+				down = net->values.apply_or(down, t);
 			}
 		}
 	}

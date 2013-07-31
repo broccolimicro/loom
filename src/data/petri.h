@@ -8,13 +8,13 @@
 #include "../common.h"
 #include "matrix.h"
 #include "bdd.h"
-#include "pspace.h"
+#include "path_space.h"
 
 #ifndef petri_h
 #define petri_h
 
 struct instruction;
-struct vspace;
+struct variable_space;
 
 struct node
 {
@@ -28,7 +28,10 @@ struct node
 	map<int, int> pbranch;
 	map<int, int> cbranch;
 	bool active;
+
 	int index;
+	int positive;	// Negative sense variables are smoothed out
+	int negative;	// Positive sense variables are smoothed out
 };
 
 struct petri
@@ -37,7 +40,7 @@ struct petri
 	~petri();
 
 	bdd values;
-	vspace *vars;
+	variable_space *vars;
 	vector<node> S;
 	vector<node> T;
 	matrix<int> Wp;		// <s, t> from t to s
@@ -49,6 +52,11 @@ struct petri
 
 	map<int, list<vector<int> > > conflicts;
 	map<int, list<vector<int> > > indistinguishable;
+	map<int, list<vector<int> > > positive_conflicts;
+	map<int, list<vector<int> > > positive_indistinguishable;
+	map<int, list<vector<int> > > negative_conflicts;
+	map<int, list<vector<int> > > negative_indistinguishable;
+
 	map<int, pair<int, int> > conditional_places;
 
 	int new_transition(int root, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
@@ -88,7 +96,7 @@ struct petri
 	void connect(vector<int> from, int to);
 	void connect(int from, vector<int> to);
 	void connect(int from, int to);
-	pair<int, int> closest_transition(vector<int> from, int to, path p);
+	pair<int, int> closest_input(vector<int> from, vector<int> to, path p);
 
 	bool dead(int from);
 	bool is_place(int from);
@@ -110,9 +118,13 @@ struct petri
 
 	int get_split_place(int merge_place, vector<bool> *covered);
 
+	void add_conflict_pair(map<int, list<vector<int> > > *c, int i, int j);
+
 	void gen_mutables();
 	void gen_conditional_places();
 	void gen_conflicts();
+	void gen_bubbleless_conflicts();
+	void gen_senses();
 	void trim_branch_ids();
 	void gen_tails();
 	void gen_arcs();
@@ -160,6 +172,10 @@ struct petri
 	void filter_path(int from, int to, path *p);
 	void zero_paths(path_space *paths, int from);
 	void zero_paths(path_space *paths, vector<int> from);
+	void zero_ins(path_space *paths, int from);
+	void zero_ins(path_space *paths, vector<int> from);
+	void zero_outs(path_space *paths, int from);
+	void zero_outs(path_space *paths, vector<int> from);
 
 	node &operator[](int i);
 

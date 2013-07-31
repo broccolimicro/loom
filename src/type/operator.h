@@ -12,6 +12,7 @@
 
 #include "../common.h"
 #include "../data.h"
+#include "../flag_space.h"
 #include "keyword.h"
 #include "process.h"
 
@@ -24,12 +25,12 @@
 struct operate : process
 {
 	operate();
-	operate(string raw, map<string, keyword*> *types, int verbosity);
+	operate(string raw, type_space *types, flag_space *flags);
 	~operate();
 
 	operate &operator=(operate p);
 
-	void parse(string raw, int verbosity);
+	void parse(string raw);
 
 	void print_prs(ostream *fout, string prefix, vector<string> driven);
 };

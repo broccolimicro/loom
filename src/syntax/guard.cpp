@@ -11,12 +11,11 @@ guard::guard()
 	_kind = "guard";
 }
 
-guard::guard(instruction *parent, string chp, vspace *vars, string tab, int verbosity)
+guard::guard(instruction *parent, string chp, variable_space *vars, flag_space *flags)
 {
 	this->_kind		= "guard";
 	this->chp		= chp;
-	this->tab		= tab;
-	this->verbosity = verbosity;
+	this->flags 	= flags;
 	this->vars		= vars;
 	this->parent	= parent;
 
@@ -32,15 +31,14 @@ guard::~guard()
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *guard::duplicate(instruction *parent, vspace *vars, map<string, string> convert, string tab, int verbosity)
+instruction *guard::duplicate(instruction *parent, variable_space *vars, map<string, string> convert)
 {
 	guard *instr;
 
 	instr 				= new guard();
 	instr->chp			= this->chp;
 	instr->vars			= vars;
-	instr->tab			= tab;
-	instr->verbosity	= verbosity;
+	instr->flags		= flags;
 	instr->parent		= parent;
 
 	size_t idx;
@@ -107,8 +105,10 @@ void guard::expand_shortcuts()
 void guard::parse()
 {
 	// TODO Expand multi-bit guard expressions using operators
-	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
-		cout << tab << "Guard:\t" + chp << endl;
+	flags->inc();
+	if (flags->log_base_hse())
+		(*flags->log_file) << flags->tab << "Guard:\t" + chp << endl;
+	flags->dec();
 }
 
 void guard::merge()
@@ -118,14 +118,16 @@ void guard::merge()
 
 vector<int> guard::generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
 {
+	flags->inc();
 	from = f;
 	net = n;
 	chp = canonical(chp, vars).print(vars->get_names());
 
-	if (verbosity & VERB_BASE_STATE_SPACE && verbosity & VERB_DEBUG)
-		cout << tab << "Guard " << chp << endl;
+	if (flags->log_base_state_space())
+		(*flags->log_file) << flags->tab << "Guard " << chp << endl;
 
 	uid.push_back(net->insert_transition(from, net->values.build(chp, vars), pbranch, cbranch, this));
+	flags->dec();
 
 	return uid;
 }

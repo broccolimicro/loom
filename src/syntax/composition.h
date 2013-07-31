@@ -17,7 +17,7 @@ struct composition : instruction
 
 	list<instruction*> instrs;		// an ordered list of instructions in sequential
 
-	void init(string chp, vspace *vars, string tab, int verbosity);
+	void init(string chp, variable_space *vars, flag_space *flags);
 	void clear();
 
 	vector<int> variant();

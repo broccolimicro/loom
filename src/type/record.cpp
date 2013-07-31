@@ -22,12 +22,13 @@ record::record()
 	_kind = "record";
 }
 
-record::record(string raw, map<string, keyword*> *types, int verbosity)
+record::record(string raw, type_space *types, flag_space *flags)
 {
 	_kind = "record";
 	vars.types = types;
+	this->flags = flags;
 
-	parse(raw, verbosity);
+	parse(raw);
 }
 
 record::~record()
@@ -42,10 +43,11 @@ record &record::operator=(record r)
 {
 	chp = r.chp;
 	vars = r.vars;
+	flags = r.flags;
 	return *this;
 }
 
-void record::parse(string raw, int verbosity)
+void record::parse(string raw)
 {
 	chp = raw;
 
@@ -61,26 +63,26 @@ void record::parse(string raw, int verbosity)
 	name = chp.substr(name_start, name_end - name_start);
 	io_sequential = chp.substr(sequential_start, sequential_end - sequential_start);
 
-	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
+	if (flags->log_base_hse())
 	{
-		cout << "Record: " << chp << endl;
-		cout << "\tName:  " << name << endl;
-		cout << "\tSequential: " << io_sequential << endl;
+		(*flags->log_file) << "Record: " << chp << endl;
+		(*flags->log_file) << "\tName:  " << name << endl;
+		(*flags->log_file) << "\tSequential: " << io_sequential << endl;
 	}
 
 	for (i = io_sequential.begin(), j = io_sequential.begin(); i != io_sequential.end(); i++)
 	{
 		if (*(i+1) == ';')
 		{
-			expand_instantiation(NULL, io_sequential.substr(j-io_sequential.begin(), i+1 - j), &vars, NULL, "\t", verbosity, false);
+			expand_instantiation(NULL, io_sequential.substr(j-io_sequential.begin(), i+1 - j), &vars, NULL, flags, false);
 
 			j = i+2;
 		}
 	}
 
-	if (verbosity & VERB_BASE_HSE && verbosity & VERB_DEBUG)
+	if (flags->log_base_hse())
 	{
-		cout << endl;
+		(*flags->log_file) << endl;
 	}
 }
 
