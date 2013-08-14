@@ -15,8 +15,8 @@ struct triple
 	~triple();
 
 	int i;
-	int l;
-	int h;
+	uint32_t l;
+	uint32_t h;
 
 	triple &operator=(triple t);
 };

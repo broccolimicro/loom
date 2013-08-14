@@ -21,6 +21,7 @@ inline process fifo0b(achan4p0b L, achan4p0b R)
 inline process fifo1b(achan4p1b L, achan4p1b R)
 {
 	node<1> i;
+	
 	*[L?i;R!i]
 }
 

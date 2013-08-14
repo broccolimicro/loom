@@ -29,10 +29,6 @@ struct control : instruction
 
 	void clear();
 
-	vector<int> variant();
-	vector<int> active_variant();
-	vector<int> passive_variant();
-
 	pair<string, instruction*> expand_guard(string chp);
 };
 

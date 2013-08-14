@@ -228,7 +228,7 @@ vector<int> loop::generate_states(petri *n, vector<int> f, map<int, int> pbranch
 		net->connect(end, from);
 		antiguard += string(antiguard != "" ? "&" : "") + "~(" + instr_iter->second->chp + ")";
 	}
-	uid.push_back(net->insert_transition(f, net->values.build(antiguard, vars), pbranch, cbranch, this));
+	uid.push_back(net->insert_transition(f, logic(antiguard, vars), pbranch, cbranch, this));
 	flags->dec();
 
 	return uid;

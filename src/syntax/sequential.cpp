@@ -209,7 +209,7 @@ void sequential::merge()
 			if (ic->instrs.size() == 1 && ic->instrs.front().first->instrs.size() == 0)
 			{
 				for (k = jc->instrs.begin(); k != jc->instrs.end(); k++)
-					k->second->chp = canonical("(" + ic->instrs.front().second->chp + ")&(" + k->second->chp + ")", vars).print(vars->get_names());
+					k->second->chp = canonical("(" + ic->instrs.front().second->chp + ")&(" + k->second->chp + ")", vars).print(vars);
 				instrs.remove(*i);
 				//delete (condition*)(*i);
 			}

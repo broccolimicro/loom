@@ -169,43 +169,6 @@ instruction *assignment::duplicate(instruction *parent, variable_space *vars, ma
 	return instr;
 }
 
-/* variant()
- *
- * This returns a union of the passive and active variants.
- */
-vector<int> assignment::variant()
-{
-	vector<int> result;
-	list<pair<string, string> >::iterator i;
-	for (i = expr.begin(); i != expr.end(); i++)
-		result.push_back(vars->get_uid(i->first));
-
-	return result;
-}
-
-/* active_variant()
- *
- * This returns a list of the variables that are modified during this assignment.
- */
-vector<int> assignment::active_variant()
-{
-	vector<int> result;
-	list<pair<string, string> >::iterator i;
-	for (i = expr.begin(); i != expr.end(); i++)
-		result.push_back(vars->get_uid(i->first));
-
-	return result;
-}
-
-/* passive_variant()
- *
- * This function is a stub. Assignments don't have a passive variant.
- */
-vector<int> assignment::passive_variant()
-{
-	return vector<int>();
-}
-
 /* Expand shortcut handles cases of implied syntax.
  * It runs before parsing, and translates user input from main.chp into a standard
  * form that parse can recognize. In assignment, the implied syntax is var+ and var-
@@ -310,7 +273,7 @@ vector<int> assignment::generate_states(petri *n, vector<int> f, map<int, int> p
 			net->S[next[l]].pbranch = npbranch;
 
 		end.clear();
-		end.push_back(net->insert_transition(next, net->values.mk(v->uid, ei->second == "0", ei->second == "1"), npbranch, cbranch, this));
+		end.push_back(net->insert_transition(next, logic(v->uid, (uint32_t)(ei->second == "1")), npbranch, cbranch, this));
 		allends.push_back(net->insert_place(end, npbranch, cbranch, this));
 	}
 	uid.push_back(net->insert_dummy(allends, pbranch, cbranch, this));

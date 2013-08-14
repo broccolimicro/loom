@@ -44,33 +44,28 @@ canonical::canonical(vector<minterm> m)
  */
 canonical::canonical(string s, variable_space *vars)
 {
+	if (s == "0")
+		return;
+
 	vector<string> t = distribute(demorgan(s, -1, false));
 
 	for (int i = 0; i < (int)t.size(); i++)
 	{
 		minterm m(t[i], vars);
-		if (!has_(m))
+		if (m != 0)
 			terms.push_back(m);
 	}
 	mccluskey();
 }
 
-/**
- * \brief	A constructor that parses a string and uses it to fill the canonical expression with values.
- * \param	s		A string that represents the expression.
- * \param	vars	A list of all the of variable names indexed by variable index.
- */
-canonical::canonical(string s, vector<string> vars)
+canonical::canonical(int var, uint32_t val)
 {
-	vector<string> t = distribute(demorgan(s, -1, false));
+	terms.push_back(minterm(var, val));
+}
 
-	for (int i = 0; i < (int)t.size(); i++)
-	{
-		minterm m(t[i], vars);
-		if (!has_(m))
-			terms.push_back(m);
-	}
-	mccluskey();
+canonical::canonical(map<int, uint32_t> vals)
+{
+	terms.push_back(minterm(vals));
 }
 
 canonical::~canonical()
@@ -145,7 +140,7 @@ void canonical::push_up(minterm m)
 		terms.resize(m.size);
 
 	for (int i = 0; i < (int)terms.size(); i++)
-		terms[i].push_back(m[i]);
+		terms[i].push_back(m.get(i));
 }
 
 /**
@@ -163,22 +158,6 @@ void canonical::remove(int i)
 void canonical::clear()
 {
 	terms.clear();
-}
-
-/**
- * \brief	Checks to see if this expression is always false.
- */
-bool canonical::always_0()
-{
-	return (terms.size() == 0);
-}
-
-/**
- * \brief	Checks to see if this expression is always true.
- */
-bool canonical::always_1()
-{
-	return (terms.size() == 1 && allX(terms[0]));
 }
 
 /**
@@ -208,8 +187,14 @@ void canonical::mccluskey()
 	size_t max_count = implicants.size();
 	size_t choice;
 
-	t[1] = terms;
-	implicants = terms;
+	for (i = 0; i < terms.size(); i++)
+	{
+		if (terms[i] != 0)
+		{
+			t[1].push_back(terms[i]);
+			implicants.push_back(terms[i]);
+		}
+	}
 	terms.clear();
 
 	/**
@@ -225,9 +210,9 @@ void canonical::mccluskey()
 		{
 			for (j = i+1; j < t[1].size(); j++)
 			{
-				if (diff_count(t[1][i], t[1][j]) <= 1)
+				if (t[1][i].diff_count(t[1][j]) <= 1)
 				{
-					implicant = t[1][i] || t[1][j];
+					implicant = t[1][i] | t[1][j];
 					count[i]++;
 					count[j]++;
 					if (find(t[0].begin(), t[0].end(), implicant) == t[0].end())
@@ -256,7 +241,7 @@ void canonical::mccluskey()
 	for (j = 0; j < implicants.size(); j++)
 	{
 		for (i = 0; i < primes.size(); i++)
-			if (subset(primes[i], implicants[j]))
+			if (primes[i].subset(implicants[j]))
 				cov[j].push_back(i);
 
 		if (cov[j].size() == 1 && find(essentials.begin(), essentials.end(), cov[j].front()) == essentials.end())
@@ -309,112 +294,112 @@ void canonical::mccluskey()
 	}
 }
 
-canonical canonical::restrict(int j, uint32_t b)
+minterm canonical::mask()
+{
+	minterm result;
+	for (int i = 0; i < (int)terms.size(); i++)
+		result |= terms[i].mask();
+	return result;
+}
+
+void canonical::vars(vector<int> *var_list)
+{
+	for (int i = 0; i < (int)terms.size(); i++)
+		terms[i].vars(var_list);
+}
+
+vector<int> canonical::vars()
+{
+	vector<int> result;
+	for (int i = 0; i < (int)terms.size(); i++)
+		terms[i].vars(&result);
+	return result;
+}
+
+canonical canonical::smooth(int var)
 {
 	canonical result;
 	int i;
 	for (i = 0; i < (int)terms.size(); i++)
-		if ((terms[i][j] & b) != 0)
-		{
-			result.push_back(terms[i]);
-			result.terms[result.terms.size()-1].sv_union(j, vX);
-		}
+		result.terms.push_back(terms[i].smooth(var));
 	result.mccluskey();
 	return result;
 }
 
-canonical canonical::smooth(int j)
+canonical canonical::smooth(vector<int> vars)
 {
 	canonical result;
-	int i;
-	for (i = 0; i < (int)terms.size(); i++)
+	for (int i = 0; i < (int)terms.size(); i++)
+		result.terms.push_back(terms[i].smooth(vars));
+	result.mccluskey();
+	return result;
+}
+
+void canonical::extract(map<int, canonical> *result)
+{
+	minterm m;
+	vector<int> v = vars();
+	unique(&v);
+
+	for (int i = 0; i < (int)terms.size(); i++)
+		m = (i == 0 ? terms[i] : m | terms[i]);
+
+	for (int i = 0; i < (int)v.size(); i++)
 	{
-		result.push_back(terms[i]);
-		result.terms[result.terms.size()-1].sv_union(j, vX);
+		cout << "ARRIBA " << m[v[i]].print(NULL) << "\t" << m.val(v[i]) << endl;
+		result->insert(pair<int, canonical>(v[i], canonical(m[v[i]])));
 	}
-	result.mccluskey();
-	return result;
 }
 
-canonical canonical::smooth(vector<int> j)
+map<int, canonical> canonical::extract()
 {
-	canonical result;
-	int i, k;
-	for (i = 0; i < (int)terms.size(); i++)
-		for (k = 0; k < (int)j.size(); k++)
-		{
-			result.push_back(terms[i]);
-			result.terms[result.terms.size()-1].sv_union(j[k], vX);
-		}
-	result.mccluskey();
-	return result;
-}
+	map<int, canonical> result;
+	minterm m;
+	vector<int> v = vars();
+	unique(&v);
 
-void canonical::extract(map<int, uint32_t> *result)
-{
-	minterm m(terms[0].size, v_);
 	for (int i = 0; i < (int)terms.size(); i++)
-		m = m || terms[i];
-	m.extract(result);
+		m = (i == 0 ? terms[i] : m | terms[i]);
+
+	for (int i = 0; i < (int)v.size(); i++)
+		result.insert(pair<int, canonical>(v[i], canonical(m[v[i]])));
+	return result;
 }
 
-canonical canonical::get_pos()
+canonical canonical::pabs()
 {
 	canonical result;
 	for (int i = 0; i < (int)terms.size(); i++)
-		result.push_back(terms[i].get_pos());
+		result.push_back(terms[i].pabs());
 	result.mccluskey();
 	return result;
 }
 
-canonical canonical::get_neg()
+canonical canonical::nabs()
 {
 	canonical result;
 	for (int i = 0; i < (int)terms.size(); i++)
-		result.push_back(terms[i].get_neg());
+		result.push_back(terms[i].nabs());
 	result.mccluskey();
 	return result;
 }
 
-/**
- * \brief	Prints the sum of minterms to stdout where each variable is given the name xi where i is the variable index.
- */
-string canonical::print()
+int canonical::satcount()
 {
-	if (terms.size() == 0)
-		return "0";
-	else if (terms.size() == 1 && allX(terms[0]))
-		return "1";
-
-	ostringstream res;
-	for (int i = 0; i < (int)terms.size(); i++)
-	{
-		if (i != 0)
-			res << "|";
-		res << terms[i].print_expr();
-	}
-	return res.str();
+	return (int)terms.size();
 }
 
-/**
- * \brief	Prints the sum of minterms to stdout.
- * \param	vars	A list of variable names indexed by variable index.
- */
-string canonical::print(vector<string> vars)
+map<int, uint32_t> canonical::anysat()
 {
-	if (terms.size() == 0)
-		return "0";
-	else if (terms.size() == 1 && allX(terms[0]))
-		return "1";
+	return terms[0].anysat();
+}
 
-	ostringstream res;
+vector<map<int, uint32_t> > canonical::allsat()
+{
+	vector<map<int, uint32_t> > sats;
 	for (int i = 0; i < (int)terms.size(); i++)
-	{
-		if (i != 0)
-			res << "|";
-		res << terms[i].print_expr(vars);
-	}
-	return res.str();
+		sats.push_back(terms[i].anysat());
+	return sats;
 }
 
 canonical &canonical::operator=(canonical c)
@@ -423,26 +408,46 @@ canonical &canonical::operator=(canonical c)
 	return *this;
 }
 
-/**
- * \brief	Restricts all variables to the values contained in the minterm m.
- * \details	This does not modify the canonical this was applied on. Instead, it
- * 			makes a copy, does the operation and returns the copy.
- * \param	m	The values to restrict the variables to (v0, v1, vX, or v_).
- * \return	The canonical that results from this restriction.
- */
-canonical canonical::operator()(minterm m)
+canonical &canonical::operator=(minterm t)
 {
-	canonical result;
-	minterm x;
-	for (size_t i = 0; i < terms.size(); i++)
-	{
-		x = terms[i] && m;
-		if (!has_(x))
-			result.push_back(terms[i] || (!m));
-	}
+	this->terms.clear();
+	this->terms.push_back(t);
+	return *this;
+}
 
-	result.mccluskey();
-	return result;
+canonical &canonical::operator=(uint32_t c)
+{
+	terms.clear();
+	if (c == 1)
+		terms.push_back(minterm());
+	return *this;
+}
+
+canonical &canonical::operator|=(canonical c)
+{
+	*this = *this | c;
+	return *this;
+}
+canonical &canonical::operator&=(canonical c)
+{
+	*this = *this & c;
+	return *this;
+}
+
+canonical &canonical::operator|=(uint32_t c)
+{
+	if (c == 1)
+	{
+		terms.clear();
+		terms.push_back(minterm());
+	}
+	return *this;
+}
+canonical &canonical::operator&=(uint32_t c)
+{
+	if (c == 0)
+		terms.clear();
+	return *this;
 }
 
 /**
@@ -455,86 +460,171 @@ canonical canonical::operator()(minterm m)
  * \param	v	The value to restrict the variable to (v0, v1, vX, or v_).
  * \return	The canonical that results from this restriction.
  */
-canonical canonical::operator()(int i, uint32_t v)
+canonical canonical::operator()(int j, uint32_t b)
 {
 	canonical result;
-	minterm x;
-	for (size_t j = 0; j < terms.size(); j++)
+	minterm temp;
+	int i;
+	uint32_t v;
+	for (i = 0; i < (int)terms.size(); i++)
 	{
-		x = terms[j];
-		x.sv_intersect(i, v);
-		if (!has_(x))
-		{
-			x.sv_union(i, vX);
-			result.push_back(x);
-		}
+		v = terms[i].val(j);
+		if (v == 2 || v == b)
+			result.push_back(terms[i](j, b));
 	}
-
 	result.mccluskey();
 	return result;
 }
 
-/**
- * \brief	Returns the minterm located at index i.
- * \param	i	The index of the minterm to lookup.
- */
-minterm canonical::operator[](int i)
-{
-	return terms[i];
-}
-
-/**
- * \brief	Returns the value of the variable whose index is i in each minterm.
- * \param	i	The index of the variable to lookup.
- */
-minterm canonical::operator()(int i)
-{
-	minterm ret;
-	vector<minterm>::iterator t;
-
-	for (t = terms.begin(); t != terms.end(); t++)
-		ret.push_back((*t)[i]);
-
-	return ret;
-}
-
-canonical operator|(canonical c1, canonical c2)
+canonical canonical::operator[](int i)
 {
 	canonical result;
-	result.terms.insert(result.terms.end(), c1.terms.begin(), c1.terms.end());
-	result.terms.insert(result.terms.end(), c2.terms.begin(), c2.terms.end());
+	result.push_back(minterm());
+	for (int j = 0; j < (int)terms.size(); j++)
+		result.terms[0].sv_union(i, terms[j].get(i));
+	return result;
+}
+
+canonical canonical::operator|(canonical c)
+{
+	canonical result;
+	result.terms.insert(result.terms.end(), terms.begin(), terms.end());
+	result.terms.insert(result.terms.end(), c.terms.begin(), c.terms.end());
 	result.mccluskey();
 	return result;
 }
 
-canonical operator&(canonical c1, canonical c2)
+canonical canonical::operator&(canonical c)
 {
 	canonical result;
 	int i, j;
-	for (i = 0; i < c1.terms.size(); i++)
-		for (j = 0; j < c2.terms.size(); j++)
-			result.terms.push_back(c1.terms[i] & c2.terms[j]);
+	for (i = 0; i < (int)terms.size(); i++)
+		for (j = 0; j < (int)c.terms.size(); j++)
+			result.terms.push_back(terms[i] & c.terms[j]); // TODO
 	result.mccluskey();
 	return result;
 }
 
-canonical operator~(canonical c)
+canonical canonical::operator~()
 {
 	canonical result;
 	int i;
-	for (i = 0; i < c.terms.size(); i++)
-		result = result & ~c.terms[i];
+	for (i = 0; i < (int)terms.size(); i++)
+		result = result & ~terms[i];
 	result.mccluskey();
 	return result;
 }
 
-canonical operator+(canonical s, minterm t)
+canonical canonical::operator|(uint32_t c)
 {
 	canonical result;
-	minterm m = t.mask();
-	int i;
-	for (i = 0; i < (int)s.terms.size(); i++)
-		result.terms.push_back((s.terms[i] || m) && t);
-	result.mccluskey();
+	if (c == 1)
+		result.terms.push_back(minterm());
+	else
+		result = *this;
 	return result;
 }
+
+canonical canonical::operator&(uint32_t c)
+{
+	if (c == 1)
+		return *this;
+	else
+		return canonical();
+}
+
+bool canonical::operator==(canonical c)
+{
+	bool result = (terms.size() == c.terms.size());
+	for (int i = 0; i < (int)terms.size() && result; i++)
+		result = result && (terms[i] == c.terms[i]);
+	return result;
+}
+
+bool canonical::operator!=(canonical c)
+{
+	bool result = (terms.size() == c.terms.size());
+	for (int i = 0; i < (int)terms.size() && result; i++)
+		result = result && (terms[i] == c.terms[i]);
+	return !result;
+}
+
+bool canonical::operator==(uint32_t c)
+{
+	if (c == 0)
+	{
+		bool zero = true;
+		for (int i = 0; i < (int)terms.size() && zero; i++)
+			zero = zero && (terms[i] == 0);
+		return zero;
+	}
+	else if (c == 1)
+	{
+		bool one = false;
+		for (int i = 0; i < (int)terms.size() && !one; i++)
+			one = one || (terms[i] == 1);
+		return one;
+	}
+	else
+		return false;
+}
+
+bool canonical::operator!=(uint32_t c)
+{
+	if (c == 0)
+	{
+		bool zero = true;
+		for (int i = 0; i < (int)terms.size() && zero; i++)
+			zero = zero && (terms[i] == 0);
+		return !zero;
+	}
+	else if (c == 1)
+	{
+		bool one = false;
+		for (int i = 0; i < (int)terms.size() && !one; i++)
+			one = one || (terms[i] == 1);
+		return !one;
+	}
+	else
+		return true;
+}
+
+bool canonical::constant()
+{
+	return ((terms.size() == 0) || (terms.size() == 1 && terms[0] == 1));
+}
+
+canonical canonical::operator>>(canonical c)
+{
+	canonical result;
+	int i, j;
+
+	for (i = 0; i < (int)terms.size(); i++)
+		for (j = 0; j < (int)c.terms.size(); j++)
+			result.terms.push_back(terms[i] >> c.terms[j]);
+	result.mccluskey();
+
+	return result;
+}
+
+/**
+ * \brief	Prints the sum of minterms to stdout.
+ * \param	vars	A list of variable names indexed by variable index.
+ */
+string canonical::print(variable_space *vars)
+{
+	if (terms.size() == 0)
+		return "0";
+	else if (terms.size() == 1 && terms[0] == 1)
+		return "1";
+
+	string res;
+	for (int i = 0; i < (int)terms.size(); i++)
+	{
+		if (i != 0)
+			res += "|";
+		res += terms[i].print(vars);
+	}
+	return res;
+}
+

@@ -41,9 +41,6 @@ public:
 	string kind();
 
 	virtual instruction *duplicate(instruction *parent, variable_space *vars, map<string, string> convert) = 0;
-	virtual vector<int> variant() = 0;
-	virtual vector<int> active_variant() = 0;
-	virtual vector<int> passive_variant() = 0;
 
 	virtual void expand_shortcuts() = 0;
 	virtual void parse() = 0;

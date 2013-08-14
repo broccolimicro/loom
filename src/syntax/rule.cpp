@@ -46,10 +46,10 @@ rule::rule(string u, string d, string v, variable_space *vars, petri *net, flag_
 		uid = vars->insert(variable(v, "node", 1, false, flags));
 	vars->find(uid)->driven = true;
 
-	this->up = net->values.build(u, vars);
-	this->down = net->values.build(d, vars);
-	cout << u << endl << net->values.expr(this->up, vars->get_names()) << endl << endl;
-	cout << d << endl << net->values.expr(this->down, vars->get_names()) << endl << endl << endl;
+	this->up = logic(u, vars);
+	this->down = logic(d, vars);
+	cout << u << endl << this->up.print(vars) << endl << endl;
+	cout << d << endl << this->down.print(vars) << endl << endl << endl;
 }
 
 rule::~rule()
@@ -81,31 +81,32 @@ void rule::gen_minterms()
 	down = 0;
 	vector<int> ia;
 	vector<int> vl;
-	int i, j, t;
+	int i, j;
+	logic t;
 	for (i = 0; i < (int)net->T.size(); i++)
 	{
 		vl.clear();
-		net->values.allvars(net->T[i].index, &vl);
+		net->T[i].index.vars(&vl);
 		if (net->T[i].active && find(vl.begin(), vl.end(), uid) != vl.end())
 		{
-			if (net->values.restrict(net->T[i].index, uid, 1) > 0)
+			if (net->T[i].index(uid, 1) != 0)
 			{
-				ia = net->input_arcs(net->trans_id(i));
+				ia = net->input_nodes(net->trans_id(i));
 				for (j = 0, t = 1; j < (int)ia.size(); j++)
-					t = net->values.apply_and(t, net->S[ia[j]].index);
+					t = t & net->S[ia[j]].index;
 
-				t = net->values.smooth(t, vl);
-				up = net->values.apply_or(up, t);
+				t = t.smooth(vl);
+				up = up | t;
 			}
 
-			if (net->values.restrict(net->T[i].index, uid, 0) > 0)
+			if (net->T[i].index(uid, 0) != 0)
 			{
-				ia = net->input_arcs(net->trans_id(i));
+				ia = net->input_nodes(net->trans_id(i));
 				for (j = 0, t = 1; j < (int)ia.size(); j++)
-					t = net->values.apply_and(t, net->S[ia[j]].index);
+					t = t & net->S[ia[j]].index;
 
-				t = net->values.smooth(t, vl);
-				down = net->values.apply_or(down, t);
+				t = t.smooth(vl);
+				down = down | t;
 			}
 		}
 	}
@@ -113,35 +114,36 @@ void rule::gen_minterms()
 
 void rule::gen_bubbleless_minterms()
 {
-	up = 0;
-	down = 0;
+	up = logic(0);
+	down = logic(0);
 	vector<int> ia;
 	vector<int> vl;
-	int i, j, t;
+	int i, j;
+	logic t;
 	for (i = 0; i < (int)net->T.size(); i++)
 	{
 		vl.clear();
-		net->values.allvars(net->T[i].index, &vl);
+		net->T[i].index.vars(&vl);
 		if (net->T[i].active && find(vl.begin(), vl.end(), uid) != vl.end())
 		{
-			if (net->values.restrict(net->T[i].index, uid, 1) > 0)
+			if (net->T[i].index(uid, 1) != 0)
 			{
-				ia = net->input_arcs(net->trans_id(i));
+				ia = net->input_nodes(net->trans_id(i));
 				for (j = 0, t = 1; j < (int)ia.size(); j++)
-					t = net->values.apply_and(t, net->S[ia[j]].negative);
+					t = t & net->S[ia[j]].negative;
 
-				t = net->values.smooth(t, vl);
-				up = net->values.apply_or(up, t);
+				t = t.smooth(vl);
+				up = up | t;
 			}
 
-			if (net->values.restrict(net->T[i].index, uid, 0) > 0)
+			if (net->T[i].index(uid, 0) != 0)
 			{
-				ia = net->input_arcs(net->trans_id(i));
+				ia = net->input_nodes(net->trans_id(i));
 				for (j = 0, t = 1; j < (int)ia.size(); j++)
-					t = net->values.apply_and(t, net->S[ia[j]].positive);
+					t = t & net->S[ia[j]].positive;
 
-				t = net->values.smooth(t, vl);
-				down = net->values.apply_or(down, t);
+				t = t.smooth(vl);
+				down = down | t;
 			}
 		}
 	}
@@ -157,9 +159,9 @@ void rule::print(ostream &os, string prefix)
 		names[i] = prefix + names[i];
 
 	if (up != -1)
-		os << net->values.expr(up, names) << " -> " << names[uid] << "+" << endl;
+		os << up.print(vars) << " -> " << names[uid] << "+" << endl;
 	if (down != -1)
-		os << net->values.expr(down, names) << " -> " << names[uid] << "-" << endl;
+		os << down.print(vars) << " -> " << names[uid] << "-" << endl;
 }
 
 //Print the rule in the following format:
@@ -169,9 +171,9 @@ ostream &operator<<(ostream &os, rule r)
 {
 	vector<string> names = r.vars->get_names();
 	if (r.up != -1)
-		os << r.net->values.expr(r.up, names) << " -> " << names[r.uid] << "+" << endl;
+		os << r.up.print(r.vars) << " -> " << names[r.uid] << "+" << endl;
 	if (r.down != -1)
-		os << r.net->values.expr(r.down, names) << " -> " << names[r.uid] << "-" << endl;
+		os << r.down.print(r.vars) << " -> " << names[r.uid] << "-" << endl;
 
     return os;
 }

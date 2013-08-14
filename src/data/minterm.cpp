@@ -9,13 +9,36 @@
 #include "canonical.h"
 #include "../common.h"
 
-minterm::minterm()
+#define v_ 0x00000000
+#define v0 0x55555555
+#define v1 0xAAAAAAAA
+#define vX 0xFFFFFFFF
+
+inline uint32_t itom(int v)
 {
-	values.clear();
-	size = 0;
+	v = (v&3) + 1;
+	return	(v << 0 ) | (v << 2 ) | (v << 4 ) | (v << 6 ) |
+			(v << 8 ) | (v << 10) | (v << 12) | (v << 14) |
+			(v << 16) | (v << 18) | (v << 20) | (v << 22) |
+			(v << 24) | (v << 26) | (v << 28) | (v << 30);
 }
 
-minterm::~minterm()
+inline int mtoi(uint32_t v)
+{
+	return (v&3) - 1;
+}
+
+inline uint32_t vidx(int v)
+{
+	return (30 - ((v & 0x0000000F)<<1));
+}
+
+inline uint32_t vmsk(int v)
+{
+	return (0x00000003 << (30 - ((v & 0x0000000F)<<1)));
+}
+
+minterm::minterm()
 {
 	values.clear();
 	size = 0;
@@ -44,106 +67,59 @@ minterm::minterm(string str)
 	}
 }
 
-minterm::minterm(string str, variable_space *vars)
+minterm::~minterm()
 {
-	string var;
-	uint32_t value;
-	int uid;
-	size_t k, l;
-	uint32_t s = vars->size();
-	uint32_t w = s >> 4, i;
+	values.clear();
+	size = 0;
+}
 
-	for (i = 0; i < w; i++)
-		values.push_back(vX);
-	if (((16 - (s & 0x000000F)) << 1) < 32)
-		values.push_back(vX << ((16 - (s & 0x000000F)) << 1));
-	size = s;
+uint32_t minterm::get(int uid)
+{
+	if (uid > size)
+		resize(uid+1, vX);
 
-	for (k = 0, l = 0; k <= str.size(); k++)
+	uint32_t v = (values[uid>>4] >> vidx(uid)) & 3;
+	return	(v << 0 ) | (v << 2 ) | (v << 4 ) | (v << 6 ) |
+			(v << 8 ) | (v << 10) | (v << 12) | (v << 14) |
+			(v << 16) | (v << 18) | (v << 20) | (v << 22) |
+			(v << 24) | (v << 26) | (v << 28) | (v << 30);
+}
+
+uint32_t minterm::val(int uid)
+{
+	if (uid > size)
+		resize(uid+1, vX);
+
+	return mtoi(values[uid>>4] >> vidx(uid));
+}
+
+void minterm::set(int uid, uint32_t v)
+{
+	if (uid > size)
+		resize(uid+1, vX);
+
+	int w = uid >> 4;
+	uint32_t m = vmsk(uid);
+	values[w] = (values[w] & ~m) | (v & m);
+}
+
+void minterm::resize(int s, uint32_t r)
+{
+	s--;
+	int w, l;
+	if (s >= size)
 	{
-		if (k == str.size() || str[k] == '&')
-		{
-			if (str[l] == '~')
-			{
-				value = v0;
-				var = str.substr(l+1, k-l-1);
-			}
-			else
-			{
-				value = v1;
-				var = str.substr(l, k-l);
-			}
+		w = s >> 4;
+		l = 30 - ((s & 0x0000000F)<<1);
 
-			uid = vars->get_uid(var);
+		if (w >= (int)values.size())
+			values.resize(w+1, r);
 
-			if (uid >= 0)
-				sv_intersect(uid, value);
+		values[size >> 4] |= r & (0x3FFFFFFF >> (((size&0x0000000F)<<1) - 2));
+		values[w] = (values[w] >> l) << l;
 
-			l = k+1;
-		}
+		size = s+1;
 	}
-}
-
-minterm::minterm(string str, vector<string> vars)
-{
-	string var;
-	uint32_t value;
-	int uid;
-	size_t k, l;
-	uint32_t s = vars.size();
-	uint32_t w = s >> 4, i;
-
-	for (i = 0; i < w; i++)
-		values.push_back(vX);
-	if (((16 - (s & 0x000000F)) << 1) < 32)
-		values.push_back(vX << ((16 - (s & 0x000000F)) << 1));
-	size = s;
-
-	for (k = 0, l = 0; k <= str.size(); k++)
-	{
-		if (k == str.size() || str[k] == '&')
-		{
-			if (str[l] == '~')
-			{
-				value = v0;
-				var = str.substr(l+1, k-l-1);
-			}
-			else
-			{
-				value = v1;
-				var = str.substr(l, k-l);
-			}
-
-			uid = (find(vars.begin(), vars.end(), var) - vars.begin());
-
-			if (uid >= 0)
-				sv_intersect(uid, value);
-
-			l = k+1;
-		}
-	}
-}
-
-minterm::minterm(int s, uint32_t v)
-{
-	uint32_t w = s >> 4,
-		l = (16 - (s & 0x000000F)) << 1,
-		i;
-
-	for (i = 0; i < w; i++)
-		values.push_back(v);
-	if (l < 32)
-		values.push_back(v << l);
-	size = s;
-}
-
-minterm::minterm(int s, int i, uint32_t v)
-{
-	int w = s >> 4,
-		j, k = i>>4,
-		m = (0x03 << (30 - ((i & 0x0F)<<1)));
-	for (j = 0; j < w; j++)
-		values.push_back(i == k ? ((vX&~m) | (v&m)) : vX);
 }
 
 void minterm::clear()
@@ -151,105 +127,147 @@ void minterm::clear()
 	values.clear();
 }
 
-vector<uint32_t>::iterator minterm::begin()
-{
-	return values.begin();
-}
-
-vector<uint32_t>::iterator minterm::end()
-{
-	return values.end();
-}
-
-// assumes i < size
-void minterm::inelastic_set(int uid, uint32_t v)
-{
-	int w = uid >> 4;
-	uint32_t mask = (0x00000003 << (30 - ((uid & 0x0000000F)<<1)));
-	values[w] = (values[w] & ~mask) | (v & mask);
-}
-
-// TODO Broken
-void minterm::elastic_set(int uid, uint32_t v, uint32_t r)
-{
-	int w = uid >> 4, l = 30 - ((uid & 0x0000000F)<<1);
-	uint32_t mask = (0x00000003 << l);
-
-	if (w >= (int)values.size())
-		values.resize(w+1, r);
-	values[w] = (values[w] & ~mask) | (v & mask);
-	if (uid >= size)
-	{
-		values[size >> 4] |= r & (0x3FFFFFFF >> (((size&0x0000000F)<<1) - 2));
-		values[w] = (values[w] >> l) << l;
-		size = uid+1;
-	}
-}
-
 void minterm::sv_union(int uid, uint32_t v)
 {
-	values[uid >> 4] |= (v & (0x00000003 << (30 - ((uid & 0x0000000F)<<1))));
+	if (uid > size)
+		resize(uid+1, vX);
+
+	values[uid >> 4] |= (v & vmsk(uid));
 }
 
 void minterm::sv_intersect(int uid, uint32_t v)
 {
-	values[uid >> 4] &= (v | ~(0x00000003 << (30 - ((uid & 0x0000000F)<<1))));
+	if (uid > size)
+		resize(uid+1, vX);
+
+	values[uid >> 4] &= (v | ~vmsk(uid));
 }
 
 void minterm::sv_invert(int uid)
 {
-	values[uid >> 4] ^= (0x00000003 << (30 - ((uid & 0x0000000F)<<1)));
+	if (uid > size)
+		resize(uid+1, vX);
+
+	values[uid >> 4] ^= vmsk(uid);
 }
 
 void minterm::sv_or(int uid, uint32_t v)
 {
-	uint32_t m = (0x00000003 << (30 - ((uid & 0x0000000F)<<1)));
+	if (uid > size)
+		resize(uid+1, vX);
+
+	uint32_t m = vmsk(uid);
 	v = (v & m) | (v0 & ~m);
 	values[uid >> 4] = (((values[uid >> 4]&(v << 1)) | (values[uid >> 4]&v) | (v&(values[uid >> 4] << 1))) & v1) | (values[uid >> 4] & v & v0);
 }
 
 void minterm::sv_and(int uid, uint32_t v)
 {
-	uint32_t m = (0x00000003 << (30 - ((uid & 0x0000000F)<<1)));
+	if (uid > size)
+		resize(uid+1, vX);
+
+	uint32_t m = vmsk(uid);
 	v = (v & m) | (v1 & ~m);
 	values[uid >> 4] = (values[uid >> 4] & v & v1) | (((values[uid >> 4]&(v >> 1)) | (values[uid >> 4]&v) | (v&(values[uid >> 4] >> 1))) & v0);
 }
 
 void minterm::sv_not(int uid)
 {
-	uint32_t m0 = (0x00000001 << (30 - ((uid & 0x0000000F)<<1)));
-	uint32_t m1 = (0x00000002 << (30 - ((uid & 0x0000000F)<<1)));
+	if (uid > size)
+		resize(uid+1, vX);
+
+	uint32_t m0 = (0x00000001 << vidx(uid));
+	uint32_t m1 = (0x00000002 << vidx(uid));
 	values[uid >> 4] = (values[uid >> 4] & ~(m0 | m1)) | (((values[uid >> 4] & m0) << 1) & 0xFFFFFFFE) | (((values[uid >> 4] & m1) >> 1) & 0x7FFFFFFF);
 }
 
-bool minterm::always_0()
+// Returns true if s2 is a subset of s1
+// Returns false otherwise
+// assumes that s1.size == s2.size
+bool minterm::subset(minterm s)
 {
-	return all_(*this);
+	if (s.size > size)
+		resize(s.size, vX);
+	else if (size > s.size)
+		s.resize(size, vX);
+
+	bool result = true;
+	for (size_t i = 0; i < values.size(); i++)
+		result = result && ((values[i] & s.values[i]) == s.values[i]);
+	return result;
 }
 
-bool minterm::always_1()
+// assumes that s1.size == s2.size
+bool minterm::conflict(minterm s)
 {
-	return allX(*this);
-}
+	if (s.size > size)
+		resize(s.size, vX);
+	else if (size > s.size)
+		s.resize(size, vX);
 
-vector<int> minterm::allvars()
-{
-	vector<int> result;
-	for (int i = 0; i < size; i++)
-		if ((*this)[i] != vX)
-			result.push_back(i);
+	bool result = true;
+	uint32_t C;
+	size_t i;
+	if (values.size() > 0)
+	{
+		for (i = 0; i < values.size() - 1; i++)
+		{
+			C = ~(values[i] & s.values[i]);
+			result = result && (((C >> 1) & C & v0) == 0);
+		}
+
+		C = ~(values[i] & s.values[i]);
+		result = result && (((C >> 1) & C & (v0 << (32 - ((size&0x0000000F)<<1)))) == 0);
+	}
 
 	return result;
+}
+
+int minterm::diff_count(minterm s)
+{
+	if (s.size > size)
+		resize(s.size, vX);
+	else if (size > s.size)
+		s.resize(size, vX);
+
+	uint32_t a;
+	int count = 0;
+	for (size_t i = 0; i < values.size(); i++)
+	{
+		// XOR to see what bits are different
+		a = values[i] ^ s.values[i];
+		// OR together any differences in the bit pairs (a single value)
+		a = (a | (a >> 1)) & 0x55555555;
+
+		// count the number of bits set to 1 (derived from Hacker's Delight)
+		a = (a & 0x33333333) + ((a >> 2) & 0x33333333);
+		a = (a & 0x0F0F0F0F) + ((a >> 4) & 0x0F0F0F0F);
+		a = a + (a >> 8);
+		a = a + (a >> 16);
+		count += a & 0x0000003F;
+	}
+	return count;
 }
 
 minterm minterm::mask()
 {
 	minterm result;
 	int i;
-	for (i = 0; i < values.size(); i++)
-		result.values.push_back(((values[i]>>1)&v0)^(values[i]&v0) | (values[i]&v1)^((values[i]<<1)&v1));
-	result.size = size;
-	return result;
+	if (values.size() > 0)
+	{
+		for (i = 0; i < (int)values.size(); i++)
+		{
+			result.values.push_back(((((values[i]>>1)&v0)^(values[i]&v0)) | ((values[i]&v1)^((values[i]<<1)&v1))));
+			printf("%08X->%08X\n", values[i], result.values.back());
+		}
+		result.size = size;
+		return result;
+	}
+	else
+	{
+		cout << "null mask" << endl;
+		return minterm(v_);
+	}
 }
 
 minterm minterm::inverse()
@@ -259,43 +277,6 @@ minterm minterm::inverse()
 		result.values.push_back((((values[i] << 1) & v1) | ((values[i] >> 1) & v0)));
 	result.size = size;
 	return result;
-}
-
-minterm minterm::get_pos()
-{
-	minterm result;
-	int i;
-	for (i = 0; i < (int)values.size(); i++)
-		result.push_back(values[i] | v1);
-	result.size = size;
-	result.values[i-1] &= (vX << (32 - ((size&0x0000000F)<<1)));
-	return result;
-}
-
-minterm minterm::get_neg()
-{
-	minterm result;
-	int i;
-	for (i = 0; i < (int)values.size(); i++)
-		result.push_back(values[i] | v0);
-	result.size = size;
-	result.values[i-1] &= (vX << (32 - ((size&0x0000000F)<<1)));
-	return result;
-}
-
-minterm minterm::combine(minterm m)
-{
-	minterm result;
-	for (size_t i = 0; i < values.size(); i++)
-		result.values.push_back((((values[i]&(m.values[i] << 1)) | (values[i]&m.values[i]) | (m.values[i]&(values[i] << 1))) & v1) | (values[i] & m.values[i] & v0));
-	result.size = size;
-	return result;
-}
-
-void minterm::extract(map<int, uint32_t> *result)
-{
-	for (int i = 0; i < size; i++)
-		result->insert(pair<int, uint32_t>(i, (*this)[i]));
 }
 
 void minterm::push_back(uint32_t v)
@@ -311,249 +292,201 @@ void minterm::push_back(uint32_t v)
 	size++;
 }
 
-string minterm::print_expr()
+minterm::minterm(uint32_t val)
 {
-	ostringstream res;
-	bool first = false;
+	values.push_back(itom(val));
+	size = 16;
+}
 
-	string tbl[4] = {"!", "~", "", ""};
-	uint32_t v;
-	for (size_t i = 0; i < values.size(); i++)
+minterm::minterm(int var, uint32_t val)
+{
+	uint32_t w		= var >> 4;
+	uint32_t l		= vidx(var);
+	uint32_t v		= itom(val);
+	uint32_t m		= 0x00000003 << l;
+
+	size = var+1;
+	values.resize(w+1, vX);
+	values[w] = (values[w] >> l) << l;
+	values[w] = (values[w] & ~m) | (v & m);
+}
+
+minterm::minterm(map<int, uint32_t> vals)
+{
+	size = vals.rbegin()->first;
+	map<int, uint32_t>::iterator i;
+	uint32_t w		= size >> 4;
+	uint32_t l		= vidx(size);
+	uint32_t m;
+
+	values.resize(w+1, vX);
+	values[w] = (values[w] >> l) << l;
+	for (i = vals.begin(); i != vals.end(); i++)
 	{
-		v = values[i];
-		for (int j = 15; j > 0; j--)
+		w		= i->first >> 4;
+		m		= vmsk(i->first);
+		values[w] = (values[w] & ~m) | (itom(i->second) & m);
+	}
+	size++;
+}
+
+minterm::minterm(string exp, variable_space *vars)
+{
+	string var;
+	uint32_t value;
+	int uid;
+	size_t k, l;
+	uint32_t s = vars->size();
+	uint32_t w = s >> 4, i;
+
+	for (i = 0; i < w; i++)
+		values.push_back(vX);
+	if (((16 - (s & 0x000000F)) << 1) < 32)
+		values.push_back(vX << ((16 - (s & 0x000000F)) << 1));
+	size = s;
+
+	for (k = 0, l = 0; k <= exp.size(); k++)
+	{
+		if (k == exp.size() || exp[k] == '&')
 		{
-			if (((v>>(2*j))&3) != 3 && ((int)i*16 + (15-j)) < size)
+			if (exp[l] == '~')
 			{
-				if (first)
-					res << "&";
-				res << tbl[(v>>(2*j))&3] << "x" << i*16 + (15-j);
-				first = true;
+				value = v0;
+				var = exp.substr(l+1, k-l-1);
 			}
-		}
-		if (((v>>30)&3) != 3 && ((int)i*16 + 15) < size)
-		{
-			if (first)
-				res << "&";
-			res << tbl[(v>>30)&3] << "x" << i*16 + 15;
-			first = true;
-		}
-	}
-
-	return res.str();
-}
-
-string minterm::print_expr(vector<string> vars)
-{
-	ostringstream res;
-	bool first = false;
-
-	string tbl[4] = {"!", "~", "", ""};
-	uint32_t v;
-	for (size_t i = 0; i < values.size(); i++)
-	{
-		v = values[i];
-		for (int j = 15; j > 0; j--)
-		{
-			if (((v>>(2*j))&3) != 3 && ((int)i*16 + (15-j)) < size)
+			else
 			{
-				if (first)
-					res << "&";
-				res << tbl[(v>>(2*j))&3] << vars[i*16 + (15-j)];
-				first = true;
+				value = v1;
+				var = exp.substr(l, k-l);
 			}
+
+			uid = vars->get_uid(var);
+
+			if (uid >= 0)
+				sv_intersect(uid, value);
+			else if ((var == "0" && value == v1) || (var == "1" && value == v0))
+			{
+				for (i = 0; i < w+1; i++)
+					values[i] = v_;
+				return;
+			}
+			else if (var != "1" && var != "0")
+				cout << "Error: Undefined variable \"" << var << "\"." << endl;
+
+			l = k+1;
 		}
-		if (((v>>30)&3) != 3 && ((int)i*16 + 15) < size)
-		{
-			if (first)
-				res << "&";
-			res << tbl[(v>>30)&3] << vars[i*16 + 15];
-			first = true;
-		}
 	}
-
-	return res.str();
 }
 
-string minterm::print_trace()
+vector<int> minterm::vars()
 {
-	ostringstream res;
-
-	string tbl[4] = {"_", "0", "1", "X"};
-	uint32_t v;
-	for (size_t i = 0; i < values.size(); i++)
-	{
-		v = values[i];
-		for (int j = 15; j >= 0; j--)
-			if (/*((v>>(2*j))&3) != 3 && */((int)i*16 + (15-j)) < size)
-				res << tbl[(v>>(2*j))&3];
-	}
-
-	return res.str();
-}
-
-minterm nullv(int s)
-{
-	return minterm(s, v_);
-}
-
-minterm fullv(int s)
-{
-	return minterm(s, vX);
-}
-
-bool all_(minterm s)
-{
-	if (s.values.size() == 0)
-		return false;
-
-	bool result = true;
-	size_t i;
-	for (i = 0; i < s.values.size()-1; i++)
-		result = result && ((((s.values[i]>>1) | (s.values[i])) & v0) == 0);
-	result = result && ((((s.values[i]>>1) | (s.values[i])) & (v0 << (32 - ((s.size&0x0000000F) << 1)))) == 0);
-	return result;
-}
-
-bool all0(minterm s)
-{
-	if (s.values.size() == 0)
-		return false;
-
-	bool result = true;
-	size_t i;
-	for (i = 0; i < s.values.size()-1; i++)
-		result = result && ((((s.values[i]>>1) | (~s.values[i])) & v0) == 0);
-	result = result && ((((s.values[i]>>1) | (~s.values[i])) & (v0 << (32 - ((s.size&0x0000000F) << 1)))) == 0);
-	return result;
-}
-
-bool all1(minterm s)
-{
-	if (s.values.size() == 0)
-		return false;
-
-	bool result = true;
-	size_t i;
-	for (i = 0; i < s.values.size()-1; i++)
-		result = result && ((((~s.values[i]>>1) | (s.values[i])) & v0) == 0);
-	result = result && ((((~s.values[i]>>1) | (s.values[i])) & (v0 << (32 - ((s.size&0x0000000F) << 1)))) == 0);
-	return result;
-}
-
-bool allX(minterm s)
-{
-	if (s.values.size() == 0)
-		return true;
-
-	bool result = true;
-	size_t i;
-	for (i = 0; i < s.values.size()-1; i++)
-		result = result && ((((~s.values[i]>>1) | (~s.values[i])) & v0) == 0);
-	result = result && ((((~s.values[i]>>1) | (~s.values[i])) & (v0 << (32 - ((s.size&0x0000000F) << 1)))) == 0);
-	return result;
-}
-
-bool has_(minterm s)
-{
-	bool result = false;
-	size_t i;
-	for (i = 0; i < s.values.size()-1; i++)
-		result = result || (((s.values[i]>>1) | s.values[i] | v1) < vX);
-	result = result || (((s.values[i]>>1) | s.values[i] | v1 | ~(vX << (32 - ((s.size&0x0000000F) << 1)))) != vX);
-	return result;
-}
-
-// Returns true if s2 is a subset of s1
-// Returns false otherwise
-// assumes that s1.size == s2.size
-bool subset(minterm s1, minterm s2)
-{
-	bool result = true;
-	for (size_t i = 0; i < s1.values.size() && i < s2.values.size(); i++)
-		result = result && ((s1.values[i] & s2.values[i]) == s2.values[i]);
-	return result;
-}
-
-// assumes that s1.size == s2.size
-bool conflict(minterm s1, minterm s2)
-{
-	bool result = true;
-	uint32_t C;
-	size_t i;
-	for (i = 0; i < s1.values.size() - 1; i++)
-	{
-		C = ~(s1.values[i] & s2.values[i]);
-		result = result && (((C >> 1) & C & v0) == 0);
-	}
-
-	C = ~(s1.values[i] & s2.values[i]);
-	result = result && (((C >> 1) & C & (v0 << (32 - ((s1.size&0x0000000F)<<1)))) == 0);
+	vector<int> result;
+	for (int i = 0; i < size; i++)
+		if (get(i) != vX)
+			result.push_back(i);
 
 	return result;
 }
 
-// assumes that s1.size == s2.size
-bool up_conflict(minterm s1, minterm s2)
+void minterm::vars(vector<int> *var_list)
 {
-	bool result = true;
-	size_t i;
-	for (i = 0; i < s1.values.size() - 1; i++)
-		result = result && ((~(s1.values[i] >> 1) & s1.values[i] & (s2.values[i] >> 1) & ~s2.values[i] & v0) == 0);
-	result = result && ((~(s1.values[i] >> 1) & s1.values[i] & (s2.values[i] >> 1) & ~s2.values[i] & (v0 << (32 - ((s1.size&0x0000000F)<<1)))) == 0);
-	return result;
+	for (int i = 0; i < size; i++)
+		if (get(i) != vX)
+			var_list->push_back(i);
 }
 
-// assumes that s1.size == s2.size
-bool down_conflict(minterm s1, minterm s2)
-{
-	bool result = true;
-	size_t i;
-	for (i = 0; i < s1.values.size() - 1; i++)
-		result = result && (((s1.values[i] >> 1) & ~s1.values[i] & ~(s2.values[i] >> 1) & s2.values[i] & v0) == 0);
-	result = result && (((s1.values[i] >> 1) & ~s1.values[i] & ~(s2.values[i] >> 1) & s2.values[i] & (v0 << (32 - ((s1.size&0x0000000F)<<1)))) == 0);
-	return result;
-}
-
-int diff_count(minterm s1, minterm s2)
-{
-	uint32_t a;
-	int count = 0;
-	for (size_t i = 0; i < s1.values.size(); i++)
-	{
-		// XOR to see what bits are different
-		a = s1.values[i] ^ s2.values[i];
-		// OR together any differences in the bit pairs (a single value)
-		a = (a | (a >> 1)) & 0x55555555;
-
-		// count the number of bits set to 1 (derived from Hacker's Delight)
-		a = (a & 0x33333333) + ((a >> 2) & 0x33333333);
-		a = (a & 0x0F0F0F0F) + ((a >> 4) & 0x0F0F0F0F);
-		a = a + (a >> 8);
-		a = a + (a >> 16);
-		count += a & 0x0000003F;
-	}
-	return count;
-}
-
-uint32_t minterm::operator[](int i)
-{
-	uint32_t v = (values[i>>4] >> (2*(15 - (i & 0x0000000F))))&0x00000003;
-	v = (v << 0 ) | (v << 2 ) | (v << 4 ) | (v << 6 ) |
-		(v << 8 ) | (v << 10) | (v << 12) | (v << 14) |
-		(v << 16) | (v << 18) | (v << 20) | (v << 22) |
-		(v << 24) | (v << 26) | (v << 28) | (v << 30);
-	return v;
-}
-
-minterm minterm::operator()(int i, uint32_t v)
+minterm minterm::smooth(int var)
 {
 	minterm result = *this;
-	result.sv_intersect(i, v);
-	if (!has_(result))
-		result.sv_union(i, vX);
-
+	if (var < size)
+		result.values[var >> 4] |= vmsk(var);
+	else
+		result.resize(var+1, vX);
 	return result;
+}
+
+minterm minterm::smooth(vector<int> vars)
+{
+	minterm result = *this;
+	for (int i = 0; i < (int)vars.size(); i++)
+	{
+		if (vars[i] < size)
+			result.values[vars[i] >> 4] |= vmsk(vars[i]);
+		else
+			result.resize(vars[i]+1, vX);
+	}
+	return result;
+}
+
+void minterm::extract(map<int, minterm> *result)
+{
+	uint32_t v;
+	for (int i = 0; i < size; i++)
+	{
+		v = get(i);
+		if (v != vX && v != v_)
+			result->insert(pair<int, minterm>(i, (*this)[i]));
+	}
+}
+
+map<int, minterm> minterm::extract()
+{
+	map<int, minterm> result;
+	uint32_t v;
+	for (int i = 0; i < size; i++)
+	{
+		v = get(i);
+		if (v != vX && v != v_)
+			result.insert(pair<int, minterm>(i, (*this)[i]));
+	}
+	return result;
+}
+
+minterm minterm::pabs()
+{
+	minterm result;
+	int i;
+	for (i = 0; i < (int)values.size(); i++)
+		result.values.push_back(values[i] | v1);
+	result.size = size;
+	if (i > 0)
+		result.values[i-1] &= (vX << (32 - ((size&0x0000000F)<<1)));
+	return result;
+}
+
+minterm minterm::nabs()
+{
+	minterm result;
+	int i;
+	for (i = 0; i < (int)values.size(); i++)
+		result.values.push_back(values[i] | v0);
+	result.size = size;
+	if (i > 0)
+		result.values[i-1] &= (vX << (32 - ((size&0x0000000F)<<1)));
+	return result;
+}
+
+int minterm::satcount()
+{
+	return 1;
+}
+
+map<int, uint32_t> minterm::anysat()
+{
+	map<int, uint32_t> result;
+	uint32_t v;
+	for (int i = 0; i < size; i++)
+	{
+		v = get(i);
+		if (v != vX && v != v_)
+			result.insert(pair<int, uint32_t>(i, (v == v1)));
+	}
+	return result;
+}
+
+vector<map<int, uint32_t> > minterm::allsat()
+{
+	return vector<map<int, uint32_t> >(1, anysat());
 }
 
 minterm &minterm::operator=(minterm s)
@@ -563,101 +496,259 @@ minterm &minterm::operator=(minterm s)
 	return *this;
 }
 
+minterm &minterm::operator=(uint32_t s)
+{
+	(*this) = minterm(s);
+	return *this;
+}
+
 minterm &minterm::operator&=(minterm s)
 {
 	*this = *this & s;
 	return *this;
 }
 
-// This assumes that s1.size == s2.size
-minterm operator&(minterm s1, minterm s2)
+minterm &minterm::operator|=(minterm s)
 {
-	for (size_t i = 0; i < s1.values.size(); i++)
-		s1.values[i] = (s1.values[i] & s2.values[i] & v1) | (((s1.values[i]&(s2.values[i] >> 1)) | (s1.values[i]&s2.values[i]) | (s2.values[i]&(s1.values[i] >> 1))) & v0);
-
-	return s1;
+	*this = *this | s;
+	return *this;
 }
 
-// This assumes that s1.size == s2.size
-canonical operator|(minterm s1, minterm s2)
+minterm &minterm::operator&=(uint32_t s)
 {
-	canonical result;
-	result.terms.push_back(s1);
-	result.terms.push_back(s2);
-	result.mccluskey();
+	*this = *this & s;
+	return *this;
+}
+
+minterm &minterm::operator|=(uint32_t s)
+{
+	*this = *this | s;
+	return *this;
+}
+
+minterm minterm::operator[](int i)
+{
+	return minterm(i, val(i));
+}
+
+minterm minterm::operator()(int i, uint32_t v)
+{
+	minterm result = *this;
+	result.sv_intersect(i, itom(v));
+	if (result != 0)
+		result.sv_union(i, vX);
+
 	return result;
 }
 
-canonical operator~(minterm s)
+// This assumes that s1.size == s2.size
+// TODO
+minterm minterm::operator&(minterm s)
+{
+	if (s.size > size)
+		resize(s.size, vX);
+	else if (size > s.size)
+		s.resize(size, vX);
+
+	minterm result;
+	for (size_t i = 0; i < values.size(); i++)
+		result.values.push_back(values[i] & s.values[i]);
+	result.size = size;
+
+	return result;
+}
+
+// This assumes that s1.size == s2.size
+minterm minterm::operator|(minterm s)
+{
+	if (s.size > size)
+		resize(s.size, vX);
+	else if (size > s.size)
+		s.resize(size, vX);
+
+	minterm result;
+	for (size_t i = 0; i < values.size(); i++)
+		result.values.push_back(values[i] | s.values[i]);
+	result.size = size;
+
+	return result;
+}
+
+canonical minterm::operator~()
 {
 	canonical result;
 	int i;
-	for (i = 0; i < s.size; i++)
-		result.push_back(minterm(s.size, i, s[i]));
+	for (i = 0; i < size; i++)
+		result.push_back(minterm(i, val(i)));
 	result.mccluskey();
 	return result;
 }
 
-bool operator==(minterm s1, minterm s2)
+// This assumes that s1.size == s2.size
+minterm minterm::operator&(uint32_t s)
 {
+	if (s == 0)
+		return minterm(0);
+	else
+		return (*this);
+}
+
+// This assumes that s1.size == s2.size
+minterm minterm::operator|(uint32_t s)
+{
+	if (s == 0)
+		return (*this);
+	else
+		return minterm(1);
+}
+
+bool minterm::operator==(minterm s)
+{
+	if (s.size > size)
+		resize(s.size, vX);
+	else if (size > s.size)
+		s.resize(size, vX);
+
 	bool result = true;
 
-	for (size_t i = 0; i < s1.values.size() && i < s2.values.size(); i++)
-		result = result && (s1.values[i] == s2.values[i]);
+	for (size_t i = 0; i < values.size() && i < s.values.size(); i++)
+		result = result && (values[i] == s.values[i]);
 
 	return result;
 }
 
-bool operator!=(minterm s1, minterm s2)
+bool minterm::operator!=(minterm s)
 {
+	if (s.size > size)
+		resize(s.size, vX);
+	else if (size > s.size)
+		s.resize(size, vX);
+
 	bool result = false;
 
-	for (size_t i = 0; i < s1.values.size() && i < s2.values.size(); i++)
-		result = result || (s1.values[i] != s2.values[i]);
+	for (size_t i = 0; i < values.size(); i++)
+		result = result || (values[i] != s.values[i]);
 
 	return result;
 }
 
-// This assumes that s1.size == s2.size
-minterm operator||(minterm s1, minterm s2)
+bool minterm::operator==(uint32_t s)
 {
-	for (size_t i = 0; i < s1.values.size(); i++)
-		s1.values[i] |= s2.values[i];
-
-	return s1;
-}
-
-// This assumes that s1.size == s2.size
-minterm operator&&(minterm s1, minterm s2)
-{
-	for (size_t i = 0; i < s1.values.size(); i++)
-		s1.values[i] &= s2.values[i];
-
-	return s1;
-}
-
-minterm operator!(minterm s)
-{
-	size_t i;
-	for (i = 0; i < s.values.size(); i++)
-		s.values[i] = ~s.values[i];
-
-	s.values[i-1] &= (vX << (32 - ((s.size&0x0000000F)<<1)));
-
-	return s;
-}
-
-// This assumes m0.size == m1.size
-minterm project(minterm m0, minterm m1)
-{
-	minterm result;
-	uint32_t mask;
-	for (int i = 0; i < (int)m1.values.size(); i++)
+	bool zero = false, one = true;
+	int i;
+	for (i = 0; i < (int)values.size()-1; i++)
 	{
-		mask = ~((m1.values[i]>>1) | m1.values[i]) & v0;
-		mask = mask | (mask<<1);
-		result.values.push_back(((m0.values[i] & mask) | m1.values[i]));
+		zero = zero || (((values[i]>>1) | values[i] | v1) != vX);
+		one = one && ((((~values[i]>>1) | (~values[i])) & v0) == 0);
+	}
+	if ((int)values.size() > 0)
+	{
+		zero = zero || (((values[i]>>1) | values[i] | v1 | ~(vX << (32 - ((size&0x0000000F) << 1)))) != vX);
+		one = one && ((((~values[i]>>1) | (~values[i])) & (v0 << (32 - ((size&0x0000000F) << 1)))) == 0);
 	}
 
+	if (((s == 0) && zero) || ((s == 1) && one))
+		return true;
+	else
+		return false;
+}
+
+bool minterm::operator!=(uint32_t s)
+{
+	bool zero = false, one = true;
+	int i = 0;
+	for (i = 0; i < (int)values.size()-1; i++)
+	{
+		zero = zero || (((values[i]>>1) | values[i] | v1) != vX);
+		one = one && ((((~values[i]>>1) | (~values[i])) & v0) == 0);
+	}
+	if ((int)values.size() > 0)
+	{
+		zero = zero || (((values[i]>>1) | values[i] | v1 | ~(vX << (32 - ((size&0x0000000F) << 1)))) != vX);
+		one = one && ((((~values[i]>>1) | (~values[i])) & (v0 << (32 - ((size&0x0000000F) << 1)))) == 0);
+	}
+
+	if (((s == 0) && zero) || ((s == 1) && one))
+		return false;
+	else
+		return true;
+}
+
+bool minterm::constant()
+{
+	bool zero = false, one = true;
+	int i;
+
+	for (i = 0; i < (int)values.size()-1; i++)
+	{
+		zero = zero || (((values[i]>>1) | values[i] | v1) != vX);
+		one = one && ((((~values[i]>>1) | (~values[i])) & v0) == 0);
+	}
+	if (values.size() > 0)
+	{
+		zero = zero || (((values[i]>>1) | values[i] | v1 | ~(vX << (32 - ((size&0x0000000F) << 1)))) != vX);
+		one = one && ((((~values[i]>>1) | (~values[i])) & (v0 << (32 - ((size&0x0000000F) << 1)))) == 0);
+	}
+
+	return (zero || one);
+}
+
+minterm minterm::operator>>(minterm t)
+{
+	if (t.size > size)
+		resize(t.size, vX);
+	else if (size > t.size)
+		t.resize(size, vX);
+
+	uint32_t v;
+	minterm result;
+	for (int i = 0; i < (int)values.size(); i++)
+	{
+		v = t.values[i] & (t.values[i] >> 1) & v0;
+		v = v | (v<<1);
+		result.values.push_back((values[i] & v) | (t.values[i] & ~v));
+	}
+	result.size = size;
 	return result;
+}
+
+string minterm::print(variable_space *vars)
+{
+	string res;
+	bool first = false;
+
+	string tbl[4] = {"!", "~", "", ""};
+	uint32_t v;
+	for (size_t i = 0; i < values.size(); i++)
+	{
+		v = values[i];
+		for (int j = 15; j > 0; j--)
+		{
+			if (((v>>(2*j))&3) != 3 && ((int)i*16 + (15-j)) < size)
+			{
+				if (first)
+					res += "&";
+				if (vars != NULL)
+					res += tbl[(v>>(2*j))&3] + vars->get_name(i*16 + (15-j));
+				else
+					res += tbl[(v>>(2*j))&3] + "x" + to_string(i*16 + (15-j));
+				first = true;
+			}
+		}
+		if (((v>>30)&3) != 3 && ((int)i*16 + 15) < size)
+		{
+			if (first)
+				res += "&";
+			if (vars != NULL)
+				res += tbl[(v>>30)&3] + vars->get_name(i*16 + 15);
+			else
+				res += tbl[(v>>30)&3] + "x" + to_string(i*16 + 15);
+			first = true;
+		}
+	}
+
+	if (res == "")
+		res = "1";
+
+	return res;
 }

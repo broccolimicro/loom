@@ -7,6 +7,7 @@
 
 #include "variable_space.h"
 #include "../type/channel.h"
+#include "canonical.h"
 
 int variable_space::size()
 {
@@ -239,16 +240,16 @@ vector<int> variable_space::x_channel(vector<int> av)
 	return result;
 }
 
-void variable_space::x_channel(vector<int> av, map<int, int> *result)
+void variable_space::x_channel(vector<int> av, map<int, logic> *result)
 {
 	vector<int> temp = x_channel(av);
-	map<int, int>::iterator ri;
+	map<int, logic>::iterator ri;
 	int i;
 	for (i = 0; i < (int)temp.size(); i++)
 	{
 		ri = result->find(temp[i]);
 		if (ri == result->end())
-			result->insert(pair<int, int>(temp[i], 0));
+			result->insert(pair<int, logic>(temp[i], logic(0)));
 		else
 			ri->second = 0;
 	}

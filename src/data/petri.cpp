@@ -17,7 +17,7 @@ node::node()
 	owner = NULL;
 }
 
-node::node(int index, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
+node::node(logic index, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
 {
 	this->index = index;
 	this->active = active;
@@ -42,7 +42,7 @@ petri::~petri()
 
 }
 
-int petri::new_transition(int root, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
+int petri::new_transition(logic root, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
 {
 	int ret = T.size() | 0x80000000;
 	T.push_back(node(root, active, pbranch, cbranch, owner));
@@ -51,7 +51,7 @@ int petri::new_transition(int root, bool active, map<int, int> pbranch, map<int,
 	return ret;
 }
 
-vector<int> petri::new_transitions(vector<int> root, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
+vector<int> petri::new_transitions(vector<logic> root, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
 {
 	vector<int> result;
 	for (int i = 0; i < (int)root.size(); i++)
@@ -59,7 +59,7 @@ vector<int> petri::new_transitions(vector<int> root, bool active, map<int, int> 
 	return result;
 }
 
-int petri::new_place(int root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
+int petri::new_place(logic root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
 {
 	int ret = S.size();
 	S.push_back(node(root, false, pbranch, cbranch, owner));
@@ -68,7 +68,7 @@ int petri::new_place(int root, map<int, int> pbranch, map<int, int> cbranch, ins
 	return ret;
 }
 
-int petri::insert_transition(int from, int root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
+int petri::insert_transition(int from, logic root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
 {
 	int t = new_transition(root, (owner != NULL && owner->kind() == "assignment"), pbranch, cbranch, owner);
 	if (is_trans(from))
@@ -82,7 +82,7 @@ int petri::insert_transition(int from, int root, map<int, int> pbranch, map<int,
 	return t;
 }
 
-int petri::insert_transition(vector<int> from, int root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
+int petri::insert_transition(vector<int> from, logic root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
 {
 	int t = new_transition(root, (owner != NULL && owner->kind() == "assignment"), pbranch, cbranch, owner);
 	for (size_t i = 0; i < from.size(); i++)
@@ -99,7 +99,7 @@ int petri::insert_transition(vector<int> from, int root, map<int, int> pbranch, 
 	return t;
 }
 
-void petri::insert_sv_at(int a, int root)
+void petri::insert_sv_at(int a, logic root)
 {
 	map<int, int> pbranch, cbranch;
 	instruction *owner;
@@ -140,11 +140,11 @@ void petri::insert_sv_at(int a, int root)
 	}
 }
 
-void petri::insert_sv_before(int from, int root)
+void petri::insert_sv_before(int from, logic root)
 {
 	map<int, int>::iterator bi, bj;
 	vector<pair<int, int> >::iterator ai;
-	vector<int> input_places = input_arcs(from);
+	vector<int> input_places = input_nodes(from);
 	int next;
 	int i;
 	instruction *ins = NULL, *prev;
@@ -204,11 +204,11 @@ void petri::insert_sv_before(int from, int root)
 	connect(next, from);
 }
 
-void petri::insert_sv_parallel(int from, int root)
+void petri::insert_sv_parallel(int from, logic root)
 {
 	map<int, int>::iterator bi, bj;
-	vector<int> ip = input_arcs(from);
-	vector<int> op = output_arcs(from);
+	vector<int> ip = input_nodes(from);
+	vector<int> op = output_nodes(from);
 	vector<int> input_places;
 	vector<int> output_places;
 	vector<int> fvl;
@@ -216,9 +216,9 @@ void petri::insert_sv_parallel(int from, int root)
 	int trans;
 	int i;
 
-	values.allvars(T[index(from)].index, &fvl);
+	T[index(from)].index.vars(&fvl);
 	merge_vectors(&fvl, vars->x_channel(fvl));
-	values.allvars(root, &tvl);
+	root.vars(&tvl);
 
 	// Implement the Physical Structure
 	input_places = duplicate_nodes(ip);
@@ -226,7 +226,7 @@ void petri::insert_sv_parallel(int from, int root)
 	for (i = 0; i < (int)op.size(); i++)
 	{
 		output_places.push_back(insert_place(trans, S[op[i]].pbranch, S[op[i]].cbranch, S[op[i]].owner));
-		connect(output_places.back(), output_arcs(op[i]));
+		connect(output_places.back(), output_nodes(op[i]));
 	}
 
 	// Update Branch IDs
@@ -246,10 +246,10 @@ void petri::insert_sv_parallel(int from, int root)
 	pbranch_count++;
 }
 
-void petri::insert_sv_after(int from, int root)
+void petri::insert_sv_after(int from, logic root)
 {
 	map<int, int>::iterator bi, bj;
-	vector<int> output_places = output_arcs(from);
+	vector<int> output_places = output_nodes(from);
 	vector<pair<int, int> >::iterator ai;
 	vector<int> vl;
 	int next;
@@ -264,7 +264,7 @@ void petri::insert_sv_after(int from, int root)
 	connect(next, output_places);
 }
 
-vector<int> petri::insert_transitions(int from, vector<int> root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
+vector<int> petri::insert_transitions(int from, vector<logic> root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
 {
 	int t, i;
 	vector<int> result;
@@ -284,7 +284,7 @@ vector<int> petri::insert_transitions(int from, vector<int> root, map<int, int> 
 	return result;
 }
 
-vector<int> petri::insert_transitions(vector<int> from, vector<int> root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
+vector<int> petri::insert_transitions(vector<int> from, vector<logic> root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
 {
 	int t, i, j;
 	vector<int> result;
@@ -309,7 +309,7 @@ vector<int> petri::insert_transitions(vector<int> from, vector<int> root, map<in
 
 int petri::insert_dummy(int from, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
 {
-	int t = new_transition(1, false, pbranch, cbranch, owner);
+	int t = new_transition(logic(1), false, pbranch, cbranch, owner);
 	if (is_trans(from))
 		cout << "Error: Illegal arc {T[" << index(from) << "], T[" << index(t) << "]}." << endl;
 	else
@@ -319,7 +319,7 @@ int petri::insert_dummy(int from, map<int, int> pbranch, map<int, int> cbranch, 
 
 int petri::insert_dummy(vector<int> from, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
 {
-	int t = new_transition(1, false, pbranch, cbranch, owner);
+	int t = new_transition(logic(1), false, pbranch, cbranch, owner);
 	for (size_t i = 0; i < from.size(); i++)
 	{
 		if (is_trans(from[i]))
@@ -332,7 +332,7 @@ int petri::insert_dummy(vector<int> from, map<int, int> pbranch, map<int, int> c
 
 int petri::insert_place(int from, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
 {
-	int p = new_place(0, pbranch, cbranch, owner);
+	int p = new_place(logic(0), pbranch, cbranch, owner);
 
 	if (is_place(from))
 		cout << "Error: Illegal arc {S[" << from << "], S[" << p << "]}." << endl;
@@ -343,7 +343,7 @@ int petri::insert_place(int from, map<int, int> pbranch, map<int, int> cbranch, 
 
 int petri::insert_place(vector<int> from, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
 {
-	int p = new_place(0, pbranch, cbranch, owner);
+	int p = new_place(logic(0), pbranch, cbranch, owner);
 	for (size_t i = 0; i < from.size(); i++)
 	{
 		if (is_place(from[i]))
@@ -393,17 +393,18 @@ void petri::remove_place(vector<int> from)
 		remove_place(from[i]);
 }
 
-void petri::propogate_marking_forward(int from)
+void petri::propogate_marking_forward(int from, vector<bool> *covered)
 {
-	vector<int> ot = output_arcs(from);
+	vector<int> ot = output_nodes(from);
 	vector<int> op, ip;
 	bool success;
 	int i, j;
 	for (i = 0; i < (int)ot.size(); i++)
 	{
-		if (T[ot[i]].index == 1)
+		if (T[index(ot[i])].index == 1 && !(*covered)[index(ot[i])])
 		{
-			ip = input_arcs(ot[i]);
+			(*covered)[index(ot[i])] = true;
+			ip = input_nodes(ot[i]);
 			success = true;
 			for (j = 0; j < (int)ip.size() && success; j++)
 				if (find(M0.begin(), M0.end(), ip[j]) == M0.end())
@@ -411,26 +412,27 @@ void petri::propogate_marking_forward(int from)
 
 			if (success)
 			{
-				op = output_arcs(ot[i]);
+				op = output_nodes(ot[i]);
 				M0.insert(M0.end(), op.begin(), op.end());
 				for (j = 0; j < (int)op.size(); j++)
-					propogate_marking_forward(op[i]);
+					propogate_marking_forward(op[j], covered);
 			}
 		}
 	}
 }
 
-void petri::propogate_marking_backward(int from)
+void petri::propogate_marking_backward(int from, vector<bool> *covered)
 {
-	vector<int> it = input_arcs(from);
+	vector<int> it = input_nodes(from);
 	vector<int> ip, op;
 	bool success;
 	int i, j;
 	for (i = 0; i < (int)it.size(); i++)
 	{
-		if (T[it[i]].index == 1)
+		if (T[index(it[i])].index == 1 && !(*covered)[index(it[i])])
 		{
-			op = output_arcs(it[i]);
+			(*covered)[index(it[i])] = true;
+			op = output_nodes(it[i]);
 			success = true;
 			for (j = 0; j < (int)op.size() && success; j++)
 				if (find(M0.begin(), M0.end(), op[j]) == M0.end())
@@ -438,9 +440,10 @@ void petri::propogate_marking_backward(int from)
 
 			if (success)
 			{
+				ip = input_nodes(it[i]);
 				M0.insert(M0.end(), ip.begin(), ip.end());
 				for (j = 0; j < (int)ip.size(); j++)
-					propogate_marking_backward(ip[i]);
+					propogate_marking_backward(ip[j], covered);
 			}
 		}
 	}
@@ -448,38 +451,38 @@ void petri::propogate_marking_backward(int from)
 
 void petri::updateplace(int p)
 {
-	map<int, int>::iterator ji;
-	vector<int> ia = input_arcs(p);
-	vector<int> oa = output_arcs(p);
+	map<int, logic>::iterator ji;
+	vector<int> ia = input_nodes(p);
+	vector<int> oa = output_nodes(p);
 	vector<int> ip;
 	vector<int> vl;
-	int i, j, t;
+	int i, j;
+	logic t(0);
 
 	S[p].index = 0;
 	for (i = 0; i < (int)ia.size(); i++)
 	{
-		ip = input_arcs(ia[i]);
-		t = S[ip[0]].index;
-		for (j = 1; j < (int)ip.size(); j++)
-			t = values.apply_and(t, S[ip[j]].index);
+		ip = input_nodes(ia[i]);
+		for (j = 0, t = 1; j < (int)ip.size(); j++)
+			t &= S[ip[j]].index;
 
-		S[p].index = values.apply_or(values.transition(t, T[index(ia[i])].index), S[p].index);
+		S[p].index |= (t >> T[index(ia[i])].index);
 	}
 	for (ji = S[p].mutables.begin(); ji != S[p].mutables.end(); ji++)
-		if (values.apply_and(S[p].index, ji->second) != S[p].index)
-			S[p].index = values.smooth(S[p].index, ji->first);
+		if ((S[p].index & ji->second) != S[p].index)
+			S[p].index = S[p].index.smooth(ji->first);
 }
 
 bool petri::update(int p, vector<bool> *covered)
 {
-	map<int, int>::iterator ji;
-	vector<int> ia = input_arcs(p);
-	vector<int> oa = output_arcs(p);
+	map<int, logic>::iterator ji;
+	vector<int> ia = input_nodes(p);
+	vector<int> oa = output_nodes(p);
 	vector<int> op;
 	vector<int> ip;
 	vector<int> vl;
-	int o;
-	int i, j, t;
+	logic o, t;
+	int i, j;
 	bool ret = false;
 
 	if (covered != NULL && covered->size() < S.size())
@@ -495,30 +498,43 @@ bool petri::update(int p, vector<bool> *covered)
 	{
 		o = S[p].index;
 		S[p].index = 0;
+
+		//cout << p << "\t";
 		for (i = 0; i < (int)ia.size(); i++)
 		{
-			ip = input_arcs(ia[i]);
+			ip = input_nodes(ia[i]);
 
+			//cout << "{";
 			for (j = 0, t = 1; j < (int)ip.size(); j++)
 			{
-				if (!(*covered)[ip[j]])
-					t = values.apply_and(t, 1);
-				else
-					t = values.apply_and(t, S[ip[j]].index);
-			}
+				//if (j != 0)
+				//	cout << ", ";
 
-			S[p].index = values.apply_or(values.transition(t, T[index(ia[i])].index), S[p].index);
+				if ((*covered)[ip[j]])
+				//{
+					t &= S[ip[j]].index;
+				//	cout << S[ip[j]].index.print(vars);
+				//}
+				//else
+				//	cout << 1;
+			}
+			//cout << "}>>" << T[index(ia[i])].index.print(vars) << " = (" << (t >> T[index(ia[i])].index).print(vars) << ")\t";
+			S[p].index |= (t >> T[index(ia[i])].index);
 		}
+		//cout << S[p].index.print(vars) << " ";
+
 		for (ji = S[p].mutables.begin(); ji != S[p].mutables.end(); ji++)
-			if (values.apply_and(S[p].index, ji->second) != S[p].index)
-				S[p].index = values.smooth(S[p].index, ji->first);
+			if ((S[p].index & ji->second) != S[p].index)
+				S[p].index = S[p].index.smooth(ji->first);
+
+		//cout << S[p].index.print(vars) << endl;
 
 		if (S[p].index != o || !(*covered)[p])
 		{
 			(*covered)[p] = true;
 			for (i = 0; i < (int)oa.size(); i++)
 			{
-				op = output_arcs(oa[i]);
+				op = output_nodes(oa[i]);
 				for (j = 0; j < (int)op.size(); j++)
 					update(op[j], covered);
 			}
@@ -535,10 +551,16 @@ void petri::update()
 {
 	int i, j;
 	int s = (int)M0.size();
+	vector<bool> covered;
+
 	for (i = 0; i < s; i++)
 	{
-		propogate_marking_forward(i);
-		propogate_marking_backward(i);
+		covered.clear();
+		covered.resize(T.size(), false);
+		propogate_marking_forward(i, &covered);
+		covered.clear();
+		covered.resize(T.size(), false);
+		propogate_marking_backward(i, &covered);
 	}
 	unique(&M0);
 
@@ -551,7 +573,9 @@ void petri::update()
 	}
 	bool ret = true;
 	vector<int> ia;
-	vector<bool> covered(S.size(), false);
+
+	covered.clear();
+	covered.resize(S.size(), false);
 	for (i = 0; i < (int)M0.size(); i++)
 		covered[M0[i]] = true;
 
@@ -560,7 +584,7 @@ void petri::update()
 		ret = false;
 		for (i = 0; i < (int)M0.size(); i++)
 		{
-			ia = output_arcs(M0[i]);
+			ia = output_nodes(M0[i]);
 			for (j = 0; j < (int)ia.size(); j++)
 				ret = ret || update(ia[j], &covered);
 		}
@@ -572,18 +596,18 @@ void petri::update_tail(int p)
 	vector<int> old_tail;
 	vector<int> ia, oa;
 	int i;
-	int s;
+	logic s(0);
 	if (is_trans(p))
 	{
 		old_tail = T[index(p)].tail;
 		T[index(p)].tail.clear();
 
-		ia = input_arcs(p);
+		ia = input_nodes(p);
 		s = 1;
 		for (i = 0, s = 1; i < (int)ia.size(); i++)
-			s = values.apply_and(s, S[ia[i]].index);
-		s = values.apply_and(s, T[index(p)].index);
-		for (i = 0; (!T[index(p)].active || s > 0) && i < (int)ia.size(); i++)
+			s = s & S[ia[i]].index;
+		s = s & T[index(p)].index;
+		for (i = 0; (!T[index(p)].active || s != 0) && i < (int)ia.size(); i++)
 		{
 			T[index(p)].tail.insert(T[index(p)].tail.end(), S[ia[i]].tail.begin(), S[ia[i]].tail.end());
 			T[index(p)].tail.push_back(ia[i]);
@@ -593,7 +617,7 @@ void petri::update_tail(int p)
 		if (T[index(p)].tail != old_tail)
 		{
 			old_tail.clear();
-			oa = output_arcs(p);
+			oa = output_nodes(p);
 			for (i = 0; i < (int)oa.size(); i++)
 				update_tail(oa[i]);
 		}
@@ -603,7 +627,7 @@ void petri::update_tail(int p)
 		old_tail = S[p].tail;
 		S[p].tail.clear();
 
-		ia = input_arcs(p);
+		ia = input_nodes(p);
 		for (i = 0; i < (int)ia.size(); i++)
 			S[p].tail.insert(S[p].tail.end(), T[index(ia[i])].tail.begin(), T[index(ia[i])].tail.end());
 		unique(&S[p].tail);
@@ -611,7 +635,7 @@ void petri::update_tail(int p)
 		if (S[p].tail != old_tail)
 		{
 			old_tail.clear();
-			oa = output_arcs(p);
+			oa = output_nodes(p);
 			for (i = 0; i < (int)oa.size(); i++)
 				update_tail(oa[i]);
 		}
@@ -652,48 +676,61 @@ void petri::connect(int from, int to)
 		cout << "Error: Illegal arc {T[" << index(from) << "], T[" << index(to) << "]}." << endl;
 }
 
-pair<int, int> petri::closest_input(vector<int> from, vector<int> to, path p)
+pair<int, int> petri::closest_input(vector<int> from, vector<int> to, path p, int i)
 {
+	/*cout << string((size_t)i, '\t') << "Closest Input {";
+	for (int j = 0; j < (int)from.size(); j++)
+	{
+		if (j != 0)
+			cout << ", ";
+		cout << from[j];
+	}
+	cout << "} -> {";
+	for (int j = 0; j < (int)to.size(); j++)
+	{
+		if (j != 0)
+			cout << ", ";
+		cout << to[j];
+	}
+	cout << "}" << endl;*/
 	int count = 0;
 	vector<int> next;
 	vector<int> it, ip;
 	vector<pair<int, int> > results;
-	int i;
+	int j;
 	int a;
 
 	if (from.size() == 0)
 		return pair<int, int>(arcs.size(), -1);
 
-	for (i = 0; i < (int)arcs.size(); i++)
-		if (find(to.begin(), to.end(), arcs[i].second) != to.end())
-			next.push_back(i);
+	next = to;
 
 	while (next.size() == 1)
 	{
 		count++;
 		a = next[0];
 
+	//	cout << string((size_t)i, '\t') << a << endl;
 
-		if (p.nodes[a] > 0)
+		if (p[a] > 0)
 			return pair<int, int>(arcs.size(), -1);
 
-		p.nodes[a]++;
+		p[a]++;
 
 		if (find(from.begin(), from.end(), a) != from.end())
 			return pair<int, int>(count, a);
 
 		next.clear();
-		for (i = 0; i < (int)arcs.size(); i++)
-			if (arcs[i].second == arcs[a].first)
-				next.push_back(i);
+		for (j = 0; j < (int)arcs.size(); j++)
+			if (arcs[j].second == arcs[a].first)
+				next.push_back(j);
 	}
 
-	for (i = 0; i < (int)next.size(); i++)
-		if (p.nodes[next[i]] == 0)
+	for (j = 0; j < (int)next.size(); j++)
+		if (p[next[j]] == 0)
 		{
 			count++;
-			p.nodes[next[i]]++;
-			results.push_back(closest_input(from, vector<int>(1, arcs[next[i]].first), p));
+			results.push_back(closest_input(from, vector<int>(1, next[j]), p, i+1));
 		}
 	unique(&results);
 
@@ -755,11 +792,12 @@ int petri::trans_id(int idx)
 	return (idx|0x80000000);
 }
 
-int petri::base(vector<int> idx)
+logic petri::base(vector<int> idx)
 {
-	int res = 1, i;
+	logic res(1);
+	int i;
 	for (i = 0; i < (int)idx.size(); i++)
-		res = values.apply_and(res, S[idx[i]].index);
+		res = res & S[idx[i]].index;
 
 	return res;
 }
@@ -804,8 +842,8 @@ bool petri::same_inputs(int p0, int p1)
 	bool diff_in = true;
 	int k, l;
 
-	it0 = input_arcs(p0);
-	it1 = input_arcs(p1);
+	it0 = input_nodes(p0);
+	it1 = input_nodes(p1);
 
 	if (it0.size() == it1.size())
 	{
@@ -828,8 +866,8 @@ bool petri::same_outputs(int p0, int p1)
 	bool diff_out = true;
 	int k, l;
 
-	ot0 = output_arcs(p0);
-	ot1 = output_arcs(p1);
+	ot0 = output_nodes(p0);
+	ot1 = output_nodes(p1);
 
 	if (ot0.size() == ot1.size())
 	{
@@ -852,9 +890,9 @@ vector<int> petri::duplicate_nodes(vector<int> from)
 	for (size_t i = 0; i < from.size(); i++)
 	{
 		if (is_place(from[i]))
-			ret.push_back(insert_place(input_arcs(from[i]), S[from[i]].pbranch, S[from[i]].cbranch, S[from[i]].owner));
+			ret.push_back(insert_place(input_nodes(from[i]), S[from[i]].pbranch, S[from[i]].cbranch, S[from[i]].owner));
 		else
-			ret.push_back(insert_transition(input_arcs(from[i]), T[index(from[i])].index, T[index(from[i])].pbranch, T[index(from[i])].cbranch, T[index(from[i])].owner));
+			ret.push_back(insert_transition(input_nodes(from[i]), T[index(from[i])].index, T[index(from[i])].pbranch, T[index(from[i])].cbranch, T[index(from[i])].owner));
 	}
 	sort(ret.rbegin(), ret.rend());
 	return ret;
@@ -863,9 +901,9 @@ vector<int> petri::duplicate_nodes(vector<int> from)
 int petri::duplicate_node(int from)
 {
 	if (is_place(from))
-		return insert_place(input_arcs(from), S[from].pbranch, S[from].cbranch, S[from].owner);
+		return insert_place(input_nodes(from), S[from].pbranch, S[from].cbranch, S[from].owner);
 	else
-		return insert_transition(input_arcs(from), T[index(from)].index, T[index(from)].pbranch, T[index(from)].cbranch, T[index(from)].owner);
+		return insert_transition(input_nodes(from), T[index(from)].index, T[index(from)].pbranch, T[index(from)].cbranch, T[index(from)].owner);
 }
 
 int petri::merge_places(vector<int> from)
@@ -873,17 +911,18 @@ int petri::merge_places(vector<int> from)
 	map<int, int> pbranch;
 	map<int, int> cbranch;
 	vector<pair<int, int> >::iterator ai;
-	int j, k, p;
+	int j, k;
+	logic idx(0);
 	pbranch = S[from[0]].pbranch;
 	cbranch = S[from[0]].cbranch;
-	for (j = 0, p = 0; j < (int)from.size(); j++)
+	for (j = 0, idx = 0; j < (int)from.size(); j++)
 	{
 		intersect(pbranch, S[from[j]].pbranch, &pbranch);
 		intersect(cbranch, S[from[j]].cbranch, &cbranch);
-		p = values.apply_or(p, S[from[j]].index);
+		idx = idx | S[from[j]].index;
 	}
 
-	p = new_place(p, pbranch, cbranch, NULL);
+	int p = new_place(idx, pbranch, cbranch, NULL);
 	for (j = 0; j < (int)from.size(); j++)
 	{
 		for (k = 0; k < (int)T.size(); k++)
@@ -905,7 +944,7 @@ int petri::merge_places(int a, int b)
 
 	intersect(S[a].pbranch, S[b].pbranch, &pbranch);
 	intersect(S[a].cbranch, S[b].cbranch, &cbranch);
-	p = new_place(values.apply_or(S[a].index, S[b].index), pbranch, cbranch, NULL);
+	p = new_place((S[a].index | S[b].index), pbranch, cbranch, NULL);
 	for (k = 0; k < (int)T.size(); k++)
 	{
 		Wn[p][k] = (Wn[a][k] || Wn[b][k]);
@@ -915,7 +954,7 @@ int petri::merge_places(int a, int b)
 	return p;
 }
 
-vector<int> petri::input_arcs(int from)
+vector<int> petri::input_nodes(int from)
 {
 	vector<int> ret;
 	if (is_place(from))
@@ -935,7 +974,7 @@ vector<int> petri::input_arcs(int from)
 	return ret;
 }
 
-vector<int> petri::output_arcs(int from)
+vector<int> petri::output_nodes(int from)
 {
 	vector<int> ret;
 	if (is_place(from))
@@ -954,6 +993,24 @@ vector<int> petri::output_arcs(int from)
 	return ret;
 }
 
+vector<int> petri::input_arcs(int from)
+{
+	vector<int> result;
+	for (int i = 0; i < (int)arcs.size(); i++)
+		if (arcs[i].second == from)
+			result.push_back(i);
+	return result;
+}
+
+vector<int> petri::output_arcs(int from)
+{
+	vector<int> result;
+	for (int i = 0; i < (int)arcs.size(); i++)
+		if (arcs[i].first == from)
+			result.push_back(i);
+	return result;
+}
+
 int petri::get_split_place(int merge_place, vector<bool> *covered)
 {
 	int i = merge_place, j, k, l;
@@ -965,15 +1022,15 @@ int petri::get_split_place(int merge_place, vector<bool> *covered)
 		return -1;
 
 	loop = true;
-	it = input_arcs(i);
+	it = input_nodes(i);
 	if ((int)it.size() <= 0)
 		return i;
 	else if ((int)it.size() == 1)
 	{
-		ot = output_arcs(i);
+		ot = output_nodes(i);
 		for (j = 0; j < (int)ot.size() && loop; j++)
 		{
-			op = output_arcs(ot[j]);
+			op = output_nodes(ot[j]);
 			for (k = 0; k < (int)op.size() && loop; k++)
 				if (!(*covered)[op[k]])
 					loop = false;
@@ -984,12 +1041,12 @@ int petri::get_split_place(int merge_place, vector<bool> *covered)
 
 	while (loop)
 	{
-		it = input_arcs(i);
+		it = input_nodes(i);
 		if ((int)it.size() <= 0)
 			return i;
 		else if ((int)it.size() == 1)
 		{
-			ip = input_arcs(it[0]);
+			ip = input_nodes(it[0]);
 			if (ip.size() == 0)
 				return i;
 			i = ip[0];
@@ -1001,7 +1058,7 @@ int petri::get_split_place(int merge_place, vector<bool> *covered)
 		{
 			for (l = 0, k = -1; l < (int)it.size() && k == -1; l++)
 			{
-				ip = input_arcs(it[l]);
+				ip = input_nodes(it[l]);
 				for (j = 0; j < (int)ip.size() && k == -1; j++)
 				{
 					c = *covered;
@@ -1018,10 +1075,10 @@ int petri::get_split_place(int merge_place, vector<bool> *covered)
 		(*covered)[i] = true;
 
 		loop = true;
-		ot = output_arcs(i);
+		ot = output_nodes(i);
 		for (j = 0; j < (int)ot.size() && loop; j++)
 		{
-			op = output_arcs(ot[j]);
+			op = output_nodes(ot[j]);
 			for (k = 0; k < (int)op.size() && loop; k++)
 				if (!(*covered)[op[k]])
 					loop = false;
@@ -1068,7 +1125,6 @@ void petri::gen_mutables()
 {
 	int i, j;
 	vector<int> ia;
-	vector<int> vl;
 
 	map<int, int>::iterator bi, bj;
 
@@ -1078,16 +1134,15 @@ void petri::gen_mutables()
 
 		for (j = 0; j < (int)T.size(); j++)
 			if (T[j].active && psiblings(i, trans_id(j)) >= 0)
-					values.extract(T[j].index, &S[i].mutables);
+			{
+				T[j].index.extract(&S[i].mutables);
+				vars->x_channel(T[j].index.vars(), &S[i].mutables);
+			}
 
-		ia = input_arcs(i);
+		ia = input_nodes(i);
 		for (j = 0; j < (int)ia.size(); j++)
 			if (T[index(ia[j])].active)
-			{
-				vl.clear();
-				values.allvars(T[index(ia[j])].index, &vl);
-				vars->x_channel(vl, &S[i].mutables);
-			}
+				vars->x_channel(T[index(ia[j])].index.vars(), &S[i].mutables);
 	}
 }
 
@@ -1101,7 +1156,7 @@ void petri::gen_conditional_places()
 	conditional_places.clear();
 	for (i = 0; i < (int)S.size(); i++)
 	{
-		it = input_arcs(i);
+		it = input_nodes(i);
 		if ((int)it.size() > 1)
 		{
 			for (j = 0; j < (int)covered.size(); j++)
@@ -1109,11 +1164,11 @@ void petri::gen_conditional_places()
 
 			for (j = 0, r = 0; j < 2 && r < (int)it.size(); r++)
 			{
-				ip = input_arcs(it[r]);
+				ip = input_nodes(it[r]);
 				if (ip.size() > 0)
 					sibs[j++] = ip[0];
 			}
-			if ((int)(ip = input_arcs(it[0])).size() > 0 && j >= 2)
+			if ((int)(ip = input_nodes(it[0])).size() > 0 && j >= 2)
 				if ((r = get_split_place(ip[0], &covered)) != -1)
 					conditional_places.insert(pair<int, pair<int, int>>(csiblings(sibs[0], sibs[1]), pair<int, int>(i, r)));
 		}
@@ -1131,14 +1186,16 @@ void petri::gen_conflicts()
 	vector<int> vl;
 	vector<int> temp;
 	int i, j;
-	int t, s1, s;
+	logic t(0);
+
+	logic s1(0);
 
 	conflicts.clear();
 	indistinguishable.clear();
 
 	for (i = 0; i < (int)S.size(); i++)
 	{
-		oa = output_arcs(i);
+		oa = output_nodes(i);
 
 		// INDEX
 		vl.clear();
@@ -1146,11 +1203,11 @@ void petri::gen_conflicts()
 		for (j = 0; j < (int)oa.size(); j++)
 			if (T[index(oa[j])].active)
 			{
-				values.allvars(T[index(oa[j])].index, &vl);
-				t = values.apply_and(t, T[index(oa[j])].index);
+				T[index(oa[j])].index.vars(&vl);
+				t = t & T[index(oa[j])].index;
 			}
 		unique(&vl);
-		s1 = values.smooth(S[i].index, vl);
+		s1 = S[i].index.smooth(vl);
 
 		for (j = 0; j < (int)S.size(); j++)
 		{
@@ -1163,10 +1220,10 @@ void petri::gen_conflicts()
 			 */
 
 			// INDEX
-			if (i != j && psiblings(i, j) < 0 && find(S[i].tail.begin(), S[i].tail.end(), j) == S[i].tail.end() && values.apply_and(s1, S[j].index) > 0)
+			if (i != j && psiblings(i, j) < 0 && find(S[i].tail.begin(), S[i].tail.end(), j) == S[i].tail.end() && (s1 & S[j].index) != 0)
 			{
 				// is it a conflicting state? (e.g. not vacuous)
-				if (S[i].active && values.apply_and(t, S[j].index) == 0)
+				if (S[i].active && (t & S[j].index) == 0)
 					add_conflict_pair(&conflicts, i, j);
 
 				// it is at least an indistinguishable state at this point
@@ -1187,8 +1244,8 @@ void petri::gen_bubbleless_conflicts()
 	vector<int> vlp, vln;
 	vector<int> temp;
 	int i, j;
-	int tp, sp1, sp;
-	int tn, sn1, sn;
+	logic tp(0), sp1(0);
+	logic tn(0), sn1(0);
 	bool parallel;
 
 	positive_conflicts.clear();
@@ -1198,7 +1255,7 @@ void petri::gen_bubbleless_conflicts()
 
 	for (i = 0; i < (int)S.size(); i++)
 	{
-		oa = output_arcs(i);
+		oa = output_nodes(i);
 
 		// POSITIVE
 		vlp.clear();
@@ -1206,11 +1263,11 @@ void petri::gen_bubbleless_conflicts()
 		for (j = 0; j < (int)oa.size(); j++)
 			if (T[index(oa[j])].active)
 			{
-				values.allvars(T[index(oa[j])].positive, &vlp);
-				tp = values.apply_and(tp, T[index(oa[j])].negative);
+				T[index(oa[j])].positive.vars(&vlp);
+				tp = tp & T[index(oa[j])].negative;
 			}
 		unique(&vlp);
-		sp1 = values.smooth(S[i].positive, vlp);
+		sp1 = S[i].positive.smooth(vlp);
 
 		// NEGATIVE
 		vln.clear();
@@ -1218,11 +1275,11 @@ void petri::gen_bubbleless_conflicts()
 		for (j = 0; j < (int)oa.size(); j++)
 			if (T[index(oa[j])].active)
 			{
-				values.allvars(T[index(oa[j])].negative, &vln);
-				tn = values.apply_and(tn, T[index(oa[j])].positive);
+				T[index(oa[j])].negative.vars(&vln);
+				tn = tn & T[index(oa[j])].positive;
 			}
 		unique(&vln);
-		sn1 = values.smooth(S[i].negative, vln);
+		sn1 = S[i].negative.smooth(vln);
 
 		for (j = 0; j < (int)S.size(); j++)
 		{
@@ -1236,10 +1293,10 @@ void petri::gen_bubbleless_conflicts()
 
 			parallel = (psiblings(i, j) >= 0);
 			// POSITIVE
-			if (i != j && !parallel && find(S[i].tail.begin(), S[i].tail.end(), j) == S[i].tail.end() && values.apply_and(sp1, S[j].index) > 0)
+			if (i != j && !parallel && find(S[i].tail.begin(), S[i].tail.end(), j) == S[i].tail.end() && (sp1 & S[j].index) != 0)
 			{
 				// is it a conflicting state? (e.g. not vacuous)
-				if (S[i].active && values.apply_and(tp, S[j].index) == 0)
+				if (S[i].active && (tp & S[j].index) == 0)
 					add_conflict_pair(&positive_conflicts, i, j);
 
 				// it is at least an indistinguishable state at this point
@@ -1247,10 +1304,10 @@ void petri::gen_bubbleless_conflicts()
 			}
 
 			// NEGATIVE
-			if (i != j && !parallel && find(S[i].tail.begin(), S[i].tail.end(), j) == S[i].tail.end() && values.apply_and(sn1, S[j].index) > 0)
+			if (i != j && !parallel && find(S[i].tail.begin(), S[i].tail.end(), j) == S[i].tail.end() && (sn1 & S[j].index) != 0)
 			{
 				// is it a conflicting state? (e.g. not vacuous)
-				if (S[i].active && values.apply_and(tn, S[j].index) == 0)
+				if (S[i].active && (tn & S[j].index) == 0)
 					add_conflict_pair(&negative_conflicts, i, j);
 
 				// it is at least an indistinguishable state at this point
@@ -1265,14 +1322,14 @@ void petri::gen_senses()
 	int i;
 	for (i = 0; i < (int)S.size(); i++)
 	{
-		S[i].positive = values.get_pos(S[i].index);
-		S[i].negative = values.get_neg(S[i].index);
+		S[i].positive = S[i].index.pabs();
+		S[i].negative = S[i].index.nabs();
 	}
 
 	for (i = 0; i < (int)T.size(); i++)
 	{
-		T[i].positive = values.get_pos(T[i].index);
-		T[i].negative = values.get_neg(T[i].index);
+		T[i].positive = T[i].index.pabs();
+		T[i].negative = T[i].index.nabs();
 	}
 }
 
@@ -1376,6 +1433,7 @@ bool petri::trim()
 	map<int, int>::iterator bi;
 	vector<pair<int, int> >::iterator ai;
 	bool vacuous;
+	logic v;
 
 	// Remove unreachable places
 	/**
@@ -1389,21 +1447,20 @@ bool petri::trim()
 	i = 0;
 	while (i < (int)T.size())
 	{
-		ia = input_arcs(trans_id(i));
-		oa = output_arcs(trans_id(i));
+		ia = input_nodes(trans_id(i));
+		oa = output_nodes(trans_id(i));
 
-		l = 1;
-		for (j = 0; j < (int)ia.size(); j++)
-			l = values.apply_and(l, S[ia[j]].index);
+		for (j = 0, v = 1; j < (int)ia.size(); j++)
+			v &= S[ia[j]].index;
 
 		vacuous = true;
 		for (k = 0; k < (int)oa.size() && vacuous; k++)
-			if (values.apply_and(S[oa[k]].index, l) != l)
+			if ((S[oa[k]].index & v) != v)
 				vacuous = false;
 
 		// Impossible and dangling transitions
 		/**
-		 * A transition is "impossible" it can never fire, regardless of the state
+		 * A transition is "impossible" when it can never fire, regardless of the state
 		 * encodings at it's input places. Logically, you would think that this
 		 * never should happen in the first place, but this can happen during the
 		 * compilation of infinite loops. In an infinite loop, you will always
@@ -1455,7 +1512,7 @@ bool petri::trim()
 			T.erase(T.begin() + i);
 			result = true;
 		}
-		else if (vacuous && oa.size() == 1 && input_arcs(oa[0]).size() == 1)
+		else if (vacuous && oa.size() == 1 && input_nodes(oa[0]).size() == 1)
 		{
 			for (j = 0; j < (int)ia.size(); j++)
 				for (l = 0; l < (int)Wn[oa[0]].size(); l++)
@@ -1518,8 +1575,8 @@ void petri::merge_conflicts()
 	vector<int>				ia, oa;
 	vector<int>				vli, vlji, vljo;
 	vector<vector<int> >	groups(S.size());
-	vector<pair<int, int> > merge_value(S.size());	// the aggregated state encoding of input places and aggregated state encoding of output places for each group
-	vector<pair<int, int> >::iterator ai;
+	vector<pair<logic, logic> > merge_value(S.size());	// the aggregated state encoding of input places and aggregated state encoding of output places for each group
+	vector<pair<logic, logic> >::iterator ai;
 	map<int, int>			pbranch, cbranch;
 	int						i, j, k, p;
 	bool					conflict;
@@ -1542,12 +1599,12 @@ void petri::merge_conflicts()
 	for (i = 0; i < (int)S.size(); i++)
 	{
 		groups[i].push_back(i);
-		if (input_arcs(i).size() == 0)
+		if (input_nodes(i).size() == 0)
 		{
 			merge_value[i].first = S[i].index;
 			merge_value[i].second = 0;
 		}
-		else if (output_arcs(i).size() == 0)
+		else if (output_nodes(i).size() == 0)
 		{
 			merge_value[i].first = 1;
 			merge_value[i].second = S[i].index;
@@ -1560,12 +1617,12 @@ void petri::merge_conflicts()
 		for (j = 0; j < p; j++)
 			if (find(groups[j].begin(), groups[j].end(), i) == groups[j].end())
 			{
-				ia = input_arcs(i);
-				oa = output_arcs(i);
+				ia = input_nodes(i);
+				oa = output_nodes(i);
 
 				conflict = true;
 				for (k = 0; k < (int)groups[j].size() && conflict; k++)
-					if (values.apply_and(S[i].index, S[groups[j][k]].index) == 0)
+					if ((S[i].index & S[groups[j][k]].index) == 0)
 						conflict = false;
 
 				/**
@@ -1578,9 +1635,9 @@ void petri::merge_conflicts()
 					vlji.clear();
 					vljo.clear();
 
-					values.allvars(S[i].index, &vli);
-					values.allvars(merge_value[j].first, &vlji);
-					values.allvars(merge_value[j].second, &vljo);
+					S[i].index.vars(&vli);
+					merge_value[j].first.vars(&vlji);
+					merge_value[j].second.vars(&vljo);
 
 					unique(&vli);
 					unique(&vlji);
@@ -1616,10 +1673,10 @@ void petri::merge_conflicts()
 						groups[j].push_back(i);
 
 						if (ia.size() == 0)
-							merge_value[j].first = values.apply_and(merge_value[j].first, S[i].index);
+							merge_value[j].first = merge_value[j].first & S[i].index;
 
 						if (oa.size() == 0)
-							merge_value[j].second = values.apply_or(merge_value[j].second, S[i].index);
+							merge_value[j].second = merge_value[j].second | S[i].index;
 					//}
 				}
 			}
@@ -1665,7 +1722,7 @@ void petri::merge_conflicts()
 		if (merge_value[i].second == 0)
 			merge_value[i].second = 1;
 
-		p = new_place(values.apply_and(merge_value[i].first, merge_value[i].second), pbranch, cbranch, NULL);
+		p = new_place((merge_value[i].first & merge_value[i].second), pbranch, cbranch, NULL);
 		for (j = 0; j < (int)groups[i].size(); j++)
 		{
 			for (k = 0; k < (int)T.size(); k++)
@@ -1758,7 +1815,7 @@ void petri::zip()
 	 */
 	for (i = 0; i < (int)T.size(); i++)
 		for (j = i+1; j < (int)T.size(); j++)
-			if (T[i].index == T[j].index && input_arcs(trans_id(i)) == input_arcs(trans_id(j)))
+			if (T[i].index == T[j].index && input_nodes(trans_id(i)) == input_nodes(trans_id(j)))
 			{
 				for (k = 0; k < (int)S.size(); k++)
 					Wp[k][i] = (Wp[k][i] || Wp[k][j]);
@@ -1786,229 +1843,141 @@ void petri::zip()
 	trim_branch_ids();
 }
 
-path_space petri::get_paths(int from, int to, path p)
+void petri::get_paths(vector<int> from, vector<int> to, path_space *p)
 {
-	path_space result(arcs.size());
-	path temp;
-	vector<int> next;
-	vector<int> curr;
-	int i, j;
+	path_space t(arcs.size());
+	vector<int> from_arcs, to_arcs, ex;
+	int i;
 
-	if (p.from.size() == 0)
-		p.from.push_back(from);
+	for (i = 0; i < (int)from.size(); i++)
+		merge_vectors(&from_arcs, output_arcs(from[i]));
+	for (i = 0; i < (int)to.size(); i++)
+		merge_vectors(&to_arcs, input_arcs(to[i]));
 
-	for (i = 0; i < (int)arcs.size(); i++)
-		if (from == arcs[i].first)
-			next.push_back(i);
+	unique(&from_arcs);
+	unique(&to_arcs);
 
-	while (next.size() == 1)
+	for (i = 0; i < (int)from_arcs.size(); i++)
 	{
-		from = next[0];
-		if (p.nodes[from] > 1)
-			return path_space(p.nodes.size());
-
-		p.nodes[from]++;
-
-		if (arcs[from].second == to)
-		{
-			p.to.push_back(to);
-			return path_space(p.mask());
-		}
-
-		curr = next;
-		next.clear();
-		for (i = 0; i < (int)arcs.size(); i++)
-			for (j = 0; j < (int)curr.size(); j++)
-			if (arcs[curr[j]].second == arcs[i].first)
-				next.push_back(i);
+		t.clear();
+		t.push_back(path(arcs.size()));
+		ex = from_arcs;
+		ex.erase(ex.begin() + i);
+		arc_paths(from_arcs[i], to_arcs, ex, &t, p);
 	}
 
-	for (i = 0; i < (int)next.size(); i++)
-	{
-		temp = p;
-		temp.nodes[next[i]]++;
-		result.merge(get_paths(arcs[next[i]].second, to, temp));
-	}
-
-	return result;
+	unique(&p->total.from);
+	unique(&p->total.to);
 }
 
-path_space petri::get_paths(int from, vector<int> to, path p)
+int petri::arc_paths(int from, vector<int> to, vector<int> ex, path_space *t, path_space *p, int i)
 {
-	path_space result(arcs.size());
-	path temp;
+	/*cout << string((size_t)i, '\t') << "Pathing(" << from << " -> ";
+	for (int j = 0; j < (int)to.size(); j++)
+	{
+		if (j != 0)
+			cout << ", ";
+		cout << to[j];
+	}
+	cout << ")" << endl;*/
+	path_space tmp1(arcs.size()), tmp2(arcs.size());
 	vector<int> next;
 	vector<int> curr;
-	int i, j;
+	map<int, pair<int, int> >::iterator cpi;
+	int j, k;
+	list<path>::iterator pi;
+	bool immune = false;
 
-	if (p.from.size() == 0)
-		p.from.push_back(from);
-
-	for (i = 0; i < (int)arcs.size(); i++)
-		if (from == arcs[i].first)
-			next.push_back(i);
-
-	while (next.size() == 1)
+	if (i == 0)
 	{
-		from = next[0];
-		if (p.nodes[from] > 1)
-			return path_space(p.nodes.size());
+		t->paths.front().from.push_back(from);
+		t->total.from.push_back(from);
+	}
 
-		p.nodes[from]++;
+	next.push_back(from);
 
-		for (i = 0; i < (int)to.size(); i++)
-			if (arcs[from].second == to[i])
+	while (1)
+	{
+	//	cout << string((size_t)i, '\t') << next[0] << endl;
+
+		if (find(ex.begin(), ex.end(), next[0]) != ex.end())
+		{
+	//		cout << string((size_t)i, '\t') << "exclude" << endl;
+			return -1;
+		}
+
+		for (pi = t->paths.begin(); pi != t->paths.end(); pi++)
+			if ((*pi)[next[0]] > 1)
+				pi = t->erase(pi);
+
+		if (t->paths.size() == 0)
+		{
+	//		cout << string((size_t)i, '\t') << "loop" << endl;
+			return -1;
+		}
+
+		if (!immune && i != 0 && is_trans(arcs[next[0]].first) && input_arcs(arcs[next[0]].first).size() > 1)
+		{
+	//		cout << string((size_t)i, '\t') << "pmerge" << endl;
+			return next[0];
+		}
+
+		for (cpi = conditional_places.begin(); !immune && i != 0 && cpi != conditional_places.end(); cpi++)
+			if (arcs[next[0]].first == cpi->second.first)
 			{
-				p.to.push_back(to[i]);
-				return path_space(p.mask());
+	//			cout << string((size_t)i, '\t') << "cmerge" << endl;
+				return next[0];
+			}
+
+		t->inc(next[0]);
+
+		for (j = 0; j < (int)to.size(); j++)
+			if (next[0] == to[j])
+			{
+	//			cout << string((size_t)i, '\t') << "end" << endl;
+				for (pi = t->paths.begin(); pi != t->paths.end(); pi++)
+				{
+					pi->to.push_back(to[j]);
+					p->push_back(pi->mask());
+				}
+				return -1;
 			}
 
 		curr = next;
 		next.clear();
-		for (i = 0; i < (int)arcs.size(); i++)
-			for (j = 0; j < (int)curr.size(); j++)
-			if (arcs[curr[j]].second == arcs[i].first)
-				next.push_back(i);
-	}
+		for (j = 0; j < (int)arcs.size(); j++)
+			for (k = 0; k < (int)curr.size(); k++)
+				if (arcs[curr[k]].second == arcs[j].first)
+					next.push_back(j);
+		unique(&next);
 
-	for (i = 0; i < (int)next.size(); i++)
-	{
-		temp = p;
-		temp.nodes[next[i]]++;
-		result.merge(get_paths(arcs[next[i]].second, to, temp));
-	}
-
-	return result;
-}
-
-path_space petri::get_paths(int from, int to, vector<int> ex, path p)
-{
-	path_space result(arcs.size());
-	path temp;
-	vector<int> next;
-	vector<int> curr;
-	int i, j;
-
-	if (p.from.size() == 0)
-		p.from.push_back(from);
-
-	for (i = 0; i < (int)arcs.size(); i++)
-		if (from == arcs[i].first)
-			next.push_back(i);
-
-	while (next.size() == 1)
-	{
-		from = next[0];
-
-		if (find(ex.begin(), ex.end(), arcs[from].first) != ex.end())
-			return path_space(arcs.size());
-
-		if (p.nodes[from] > 1)
-			return path_space(p.nodes.size());
-
-		p.nodes[from]++;
-
-		if (arcs[from].second == to)
+		immune = false;
+		if (next.size() > 1)
 		{
-			p.to.push_back(to);
-			return path_space(p.mask());
-		}
+			curr = next;
+			tmp2 = *t;
 
-		curr = next;
-		next.clear();
-		for (i = 0; i < (int)arcs.size(); i++)
+			t->clear();
+			next.clear();
 			for (j = 0; j < (int)curr.size(); j++)
-			if (arcs[curr[j]].second == arcs[i].first)
-				next.push_back(i);
-	}
-
-	for (i = 0; i < (int)next.size(); i++)
-	{
-		temp = p;
-		temp.nodes[next[i]]++;
-		result.merge(get_paths(arcs[next[i]].second, to, temp));
-	}
-
-	return result;
-}
-
-path_space petri::get_paths(int from, vector<int> to, vector<int> ex, path p)
-{
-	path_space result(arcs.size());
-	path temp;
-	vector<int> next;
-	vector<int> curr;
-	int i, j;
-
-	if (p.from.size() == 0)
-		p.from.push_back(from);
-
-	for (i = 0; i < (int)arcs.size(); i++)
-		if (from == arcs[i].first)
-			next.push_back(i);
-
-	while (next.size() == 1)
-	{
-		from = next[0];
-
-		if (find(ex.begin(), ex.end(), arcs[from].first) != ex.end())
-			return path_space(arcs.size());
-
-		if (p.nodes[from] > 1)
-			return path_space(p.nodes.size());
-
-		p.nodes[from]++;
-
-		for (i = 0; i < (int)to.size(); i++)
-			if (arcs[from].second == to[i])
 			{
-				p.to.push_back(to[i]);
-				return path_space(p.mask());
+				tmp1 = tmp2;
+				next.push_back(arc_paths(curr[j], to, ex, &tmp1, p, i+1));
+				if (next.back() == -1)
+					next.pop_back();
+				else
+				{
+					immune = true;
+					t->merge(tmp1);
+				}
 			}
 
-		curr = next;
-		next.clear();
-		for (i = 0; i < (int)arcs.size(); i++)
-			for (j = 0; j < (int)curr.size(); j++)
-			if (arcs[curr[j]].second == arcs[i].first)
-				next.push_back(i);
+			unique(&next);
+		}
+
+		if (next.size() < 1)
+			return -1;
 	}
-
-	for (i = 0; i < (int)next.size(); i++)
-	{
-		temp = p;
-		temp.nodes[next[i]]++;
-		result.merge(get_paths(arcs[next[i]].second, to, temp));
-	}
-
-	return result;
-}
-
-path_space petri::get_paths(vector<int> t1, int t2, path p)
-{
-	path_space result(p.nodes.size());
-	vector<int> ex;
-	for (int i = 0; i < (int)t1.size(); i++)
-	{
-		ex = t1;
-		ex.erase(ex.begin() + i);
-		result.merge(get_paths(t1[i], t2, ex, p));
-	}
-
-	return result;
-}
-
-path_space petri::get_paths(vector<int> t1, vector<int> t2, path p)
-{
-	path_space result(p.nodes.size());
-	vector<int> ex;
-	for (int i = 0; i < (int)t1.size(); i++)
-	{
-		ex = t1;
-		ex.erase(ex.begin() + i);
-		result.merge(get_paths(t1[i], t2, ex, p));
-	}
-	return result;
 }
 
 void petri::filter_path_space(path_space *p)
@@ -2016,7 +1985,7 @@ void petri::filter_path_space(path_space *p)
 	map<int, pair<int, int> >::iterator ci;
 	vector<int> it, ip;
 	list<path>::iterator pi;
-	int i, j;
+	int i;
 	int count, total;
 
 	for (ci = conditional_places.begin(); ci != conditional_places.end(); ci++)
@@ -2034,19 +2003,19 @@ void petri::filter_path_space(path_space *p)
 
 		for (pi = p->paths.begin(); pi != p-> paths.end() && count > 0 && count < total; pi++)
 			for (i = 0; i < (int)it.size(); i++)
-				if (pi->nodes[it[i]] > 0)
+				if ((*pi)[it[i]] > 0)
 					filter_path(ci->second.second, it[i], &(*pi));
 
-		for (int j = 0; j < (int)p->total.nodes.size(); j++)
-			p->total.nodes[j] = 0;
+		for (int j = 0; j < (int)p->total.size(); j++)
+			p->total[j] = 0;
 
 		for (pi = p->paths.begin(); pi != p->paths.end(); pi++)
 		{
 			count = 0;
-			for (int j = 0; j < (int)pi->nodes.size(); j++)
+			for (int j = 0; j < (int)pi->size(); j++)
 			{
-				p->total.nodes[j] += pi->nodes[j];
-				count += pi->nodes[j];
+				p->total[j] += (*pi)[j];
+				count += (*pi)[j];
 			}
 			if (count == 0)
 				pi = p->paths.erase(pi);
@@ -2148,10 +2117,7 @@ void petri::print_dot(ostream *fout, string name)
 	for (i = 0; i < (int)S.size(); i++)
 		if (!dead(i))
 		{
-			if (S[i].index >= 0)
-				label = values.expr(S[i].index, vars->get_names());//values.trace(S[i].index, vars->get_names());
-			else
-				label = "";
+			label = S[i].index.print(vars);
 
 			for (j = 0; j < (int)label.size(); j++)
 				if (label[j] == '|')
@@ -2164,7 +2130,7 @@ void petri::print_dot(ostream *fout, string name)
 
 	for (i = 0; i < (int)T.size(); i++)
 	{
-		label = values.expr(T[i].index, vars->get_names());
+		label = T[i].index.print(vars);
 		label = to_string(i) + " " + label;
 		if (label != "")
 			(*fout) << "\tT" << i << " [shape=box] [label=\"" << label << "\"];" << endl;
@@ -2238,7 +2204,7 @@ void petri::print_petrify(string name)
 	first = true;
 	for (i = 0; i < (int)T.size(); i++)
 	{
-		label = values.expr(T[i].index, vars->get_names());
+		label = T[i].index.print(vars);
 		if (label == "0" || label == "1")
 		{
 			if (first)
@@ -2294,6 +2260,17 @@ void petri::print_petrify(string name)
 	fprintf(file, ".end\n");
 
 	fclose(file);
+}
+
+void petri::print_mutables()
+{
+	for (int i = 0; i < (int)S.size(); i++)
+	{
+		cout << "S" << i << ": ";
+		for (map<int, logic>::iterator j = S[i].mutables.begin(); j != S[i].mutables.end(); j++)
+			cout << "{" << vars->get_name(j->first) << " " << j->second.print(vars) << "} ";
+		cout << endl;
+	}
 }
 
 void petri::print_branch_ids()

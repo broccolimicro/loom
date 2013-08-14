@@ -7,6 +7,7 @@
 
 #include "../common.h"
 #include "matrix.h"
+#include "canonical.h"
 #include "bdd.h"
 #include "path_space.h"
 
@@ -19,19 +20,19 @@ struct variable_space;
 struct node
 {
 	node();
-	node(int index, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	node(logic index, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
 	~node();
 
 	instruction *owner;
-	map<int, int> mutables;	// The set of variables whose value we cannot know
+	map<int, logic> mutables;	// The set of variables whose value we cannot know
 	vector<int> tail;		// The set of inactive states preceding an active state
 	map<int, int> pbranch;
 	map<int, int> cbranch;
 	bool active;
 
-	int index;
-	int positive;	// Negative sense variables are smoothed out
-	int negative;	// Positive sense variables are smoothed out
+	logic index;
+	logic positive;	// Negative sense variables are smoothed out
+	logic negative;	// Positive sense variables are smoothed out
 };
 
 struct petri
@@ -39,7 +40,6 @@ struct petri
 	petri();
 	~petri();
 
-	bdd values;
 	variable_space *vars;
 	vector<node> S;
 	vector<node> T;
@@ -59,20 +59,20 @@ struct petri
 
 	map<int, pair<int, int> > conditional_places;
 
-	int new_transition(int root, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
-	vector<int> new_transitions(vector<int> root, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
-	int new_place(int root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	int new_transition(logic root, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	vector<int> new_transitions(vector<logic> root, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	int new_place(logic root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
 
-	int insert_transition(int from, int root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
-	int insert_transition(vector<int> from, int root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	int insert_transition(int from, logic root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	int insert_transition(vector<int> from, logic root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
 
-	void insert_sv_at(int a, int root);
-	void insert_sv_before(int from, int root);
-	void insert_sv_parallel(int from, int root);
-	void insert_sv_after(int from, int root);
+	void insert_sv_at(int a, logic root);
+	void insert_sv_before(int from, logic root);
+	void insert_sv_parallel(int from, logic root);
+	void insert_sv_after(int from, logic root);
 
-	vector<int> insert_transitions(int from, vector<int> root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
-	vector<int> insert_transitions(vector<int> from, vector<int> root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	vector<int> insert_transitions(int from, vector<logic> root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	vector<int> insert_transitions(vector<int> from, vector<logic> root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
 
 	int insert_dummy(int from, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
 	int insert_dummy(vector<int> from, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
@@ -85,8 +85,8 @@ struct petri
 	void remove_place(int from);
 	void remove_place(vector<int> from);
 
-	void propogate_marking_forward(int from);
-	void propogate_marking_backward(int from);
+	void propogate_marking_forward(int from, vector<bool> *covered);
+	void propogate_marking_backward(int from, vector<bool> *covered);
 
 	void updateplace(int p);
 	bool update(int p, vector<bool> *covered);
@@ -96,7 +96,7 @@ struct petri
 	void connect(vector<int> from, int to);
 	void connect(int from, vector<int> to);
 	void connect(int from, int to);
-	pair<int, int> closest_input(vector<int> from, vector<int> to, path p);
+	pair<int, int> closest_input(vector<int> from, vector<int> to, path p, int i = 0);
 
 	bool dead(int from);
 	bool is_place(int from);
@@ -104,7 +104,7 @@ struct petri
 	int  index(int from);
 	int  place_id(int idx);
 	int  trans_id(int idx);
-	int base(vector<int> idx);
+	logic base(vector<int> idx);
 	bool connected(int from, int to);
 	int psiblings(int p0, int p1);
 	int csiblings(int p0, int p1);
@@ -152,22 +152,22 @@ struct petri
 
 	/**
 	 * \brief	If "from" is a transition this returns it's input places, and if "from" is a place this returns it's input transitions.
-	 * \sa		output_arcs()
+	 * \sa		output_nodes()
 	 */
-	vector<int> input_arcs(int from);
+	vector<int> input_nodes(int from);
 
 	/**
 	 * \brief	If "from" is a transition this returns it's output places, and if "from" is a place this returns it's output transitions.
-	 * \sa		input_arcs()
+	 * \sa		input_nodes()
 	 */
+	vector<int> output_nodes(int from);
+
+	vector<int> input_arcs(int from);
 	vector<int> output_arcs(int from);
 
-	path_space get_paths(int from, int to, path p);
-	path_space get_paths(int from, vector<int> to, path p);
-	path_space get_paths(int from, int to, vector<int> ex, path p);
-	path_space get_paths(int from, vector<int> to, vector<int> ex, path p);
-	path_space get_paths(vector<int> from, int to, path p);
-	path_space get_paths(vector<int> from, vector<int> to, path p);
+	void get_paths(vector<int> from, vector<int> to, path_space *p);
+
+	int arc_paths(int from, vector<int> to, vector<int> ex, path_space *t, path_space *p, int i = 0);
 	void filter_path_space(path_space *p);
 	void filter_path(int from, int to, path *p);
 	void zero_paths(path_space *paths, int from);
@@ -182,6 +182,7 @@ struct petri
 	void print_dot(ostream *fout, string name);
 	void print_petrify(string name);
 
+	void print_mutables();
 	void print_branch_ids();
 };
 

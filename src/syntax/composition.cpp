@@ -69,51 +69,6 @@ void composition::clear()
 	instrs.clear();
 }
 
-vector<int> composition::variant()
-{
-	vector<int> result;
-	vector<int> temp;
-
-	list<instruction*>::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		temp = (*i)->variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-	}
-
-	return unique(&result);
-}
-
-vector<int> composition::active_variant()
-{
-	vector<int> result;
-	vector<int> temp;
-
-	list<instruction*>::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		temp = (*i)->active_variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-	}
-
-	return unique(&result);
-}
-
-vector<int> composition::passive_variant()
-{
-	vector<int> result;
-	vector<int> temp;
-
-	list<instruction*>::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		temp = (*i)->passive_variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-	}
-
-	return unique(&result);
-}
-
 instruction *composition::expand_assignment(string chp)
 {
 	parallel *p = new parallel(this, "", vars, flags);

@@ -238,4 +238,5 @@ int main(int argc, char **argv)
 	ofstream f("verify_fifo1b.dot");
 	p.net.print_dot(&f, "verify_fifo1b");
 	f.close();*/
+
 }

@@ -53,57 +53,6 @@ void control::clear()
 	instrs.clear();
 }
 
-vector<int> control::variant()
-{
-	vector<int> result;
-	vector<int> temp;
-
-	list<pair<sequential*, guard*> >::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		temp = i->first->variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-		temp = i->second->variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-	}
-
-	return unique(&result);
-}
-
-vector<int> control::active_variant()
-{
-	vector<int> result;
-	vector<int> temp;
-
-	list<pair<sequential*, guard*> >::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		temp = i->first->active_variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-		temp = i->second->active_variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-	}
-
-	return unique(&result);
-}
-
-vector<int> control::passive_variant()
-{
-	vector<int> result;
-	vector<int> temp;
-
-	list<pair<sequential*, guard*> >::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		temp = i->first->passive_variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-		temp = i->second->passive_variant();
-		result.insert(result.end(), temp.begin(), temp.end());
-	}
-
-	return unique(&result);
-}
-
 pair<string, instruction*> control::expand_guard(string chp)
 {
 	return expand_expression(chp, "");

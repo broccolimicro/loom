@@ -180,6 +180,7 @@ void process::generate_states()
 	do
 	{
 		net.gen_mutables();
+		net.print_mutables();
 		net.update();
 	} while(net.trim());
 
@@ -195,11 +196,9 @@ bool process::insert_state_vars()
 	list<vector<int> >::iterator lj;
 	map<int, int>::iterator m, n;
 	list<path>::iterator li;
-	path_space up_paths, up_temp, up_inv, down_paths, down_temp, down_inv;
-	path up_mask, down_mask;
 	vector<int> arcs, uptrans, downtrans, ia, oa;
 	vector<pair<vector<int>, vector<int> > > ip;
-	int um, dm, ium, idm, vid, j, k;
+	int ium, idm, vid, j, k;
 	string vname;
 
 	net.gen_tails();
@@ -224,17 +223,15 @@ bool process::insert_state_vars()
 	if (net.conflicts.size() == 0)
 		return false;
 
+	path_space up_paths(net.arcs.size()), up_temp(net.arcs.size()), up_inv(net.arcs.size()), down_paths(net.arcs.size()), down_temp(net.arcs.size()), down_inv(net.arcs.size());
+	path up_mask(net.arcs.size()), down_mask(net.arcs.size());
 	cout << "PROCESS " << name << endl;
 	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
 	{
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
-			up_paths = net.get_paths(i->first, *lj, path(net.arcs.size()));
-			down_paths = net.get_paths(*lj, i->first, path(net.arcs.size()));
-			unique(&up_paths.total.from);
-			unique(&up_paths.total.to);
-			unique(&down_paths.total.from);
-			unique(&down_paths.total.to);
+			net.get_paths(vector<int>(1, i->first), *lj, &up_paths);
+			net.get_paths(*lj, vector<int>(1, i->first), &down_paths);
 
 			/**
 			 * After identifying paths, start at every conditional merge and
@@ -264,7 +261,7 @@ bool process::insert_state_vars()
 			net.zero_outs(&down_paths, *lj);
 
 			for (j = 0; j < (int)net.arcs.size(); j++)
-				if (net.is_place(net.arcs[j].first) && net.output_arcs(net.arcs[j].first).size() > 1)
+				if (net.is_place(net.arcs[j].first) && net.output_nodes(net.arcs[j].first).size() > 1)
 				{
 					up_paths.zero(j);
 					down_paths.zero(j);
@@ -336,14 +333,15 @@ bool process::insert_state_vars()
 	}
 
 	unique(&ip);
+	logic um, dm;
 	for (j = 0; j < (int)ip.size(); j++)
 	{
 		vname = vars.unique_name("_sv");
 		vid   = vars.insert(variable(vname, "node", 1, false, flags));
 		vars.find(vname)->driven = true;
 
-		um = net.values.mk(vid, 0, 1);
-		dm = net.values.mk(vid, 1, 0);
+		um = logic(vid, 1);
+		dm = logic(vid, 0);
 
 		for (k = 0; k < (int)ip[j].first.size(); k++)
 			net.insert_sv_at(ip[j].first[k], um);
@@ -364,11 +362,10 @@ bool process::insert_bubbleless_state_vars()
 	list<vector<int> >::iterator lj;
 	map<int, int>::iterator m, n;
 	list<path>::iterator li;
-	path_space up_paths, up_temp, up_inv, down_paths, down_temp, down_inv;
-	path up_mask, down_mask;
+
 	vector<int> arcs, uptrans, downtrans, ia, oa;
 	vector<pair<vector<int>, vector<int> > > ip;
-	int um, dm, ium, idm, vid, j, k;
+	int ium, idm, vid, j, k;
 	string vname;
 
 	timeval timing;
@@ -452,6 +449,8 @@ bool process::insert_bubbleless_state_vars()
 	if (net.positive_conflicts.size() == 0 && net.negative_conflicts.size() == 0)
 		return false;
 
+	path_space up_paths(net.arcs.size()), up_temp(net.arcs.size()), up_inv(net.arcs.size()), down_paths(net.arcs.size()), down_temp(net.arcs.size()), down_inv(net.arcs.size());
+	path up_mask(net.arcs.size()), down_mask(net.arcs.size());
 	cout << "PROCESS " << name << endl;
 	for (i = net.positive_conflicts.begin(); i != net.positive_conflicts.end(); i++)
 	{
@@ -459,12 +458,8 @@ bool process::insert_bubbleless_state_vars()
 		{
 			gettimeofday(&timing, NULL);
 			tim1 = timing.tv_sec+(timing.tv_usec/1000000.0);
-			up_paths = net.get_paths(*lj, i->first, path(net.arcs.size()));
-			down_paths = net.get_paths(i->first, *lj, path(net.arcs.size()));
-			unique(&up_paths.total.from);
-			unique(&up_paths.total.to);
-			unique(&down_paths.total.from);
-			unique(&down_paths.total.to);
+			net.get_paths(*lj, vector<int>(1, i->first), &up_paths);
+			net.get_paths(vector<int>(1, i->first), *lj, &down_paths);
 
 			gettimeofday(&timing, NULL);
 			tim2 = timing.tv_sec+(timing.tv_usec/1000000.0);
@@ -506,7 +501,7 @@ bool process::insert_bubbleless_state_vars()
 			net.zero_paths(&down_paths, *lj);
 
 			for (j = 0; j < (int)net.arcs.size(); j++)
-				if (net.is_place(net.arcs[j].first) && net.output_arcs(net.arcs[j].first).size() > 1)
+				if (net.is_place(net.arcs[j].first) && net.output_nodes(net.arcs[j].first).size() > 1)
 				{
 					up_paths.zero(j);
 					down_paths.zero(j);
@@ -531,6 +526,7 @@ bool process::insert_bubbleless_state_vars()
 				cout << up_paths.total.to[j];
 			}
 			cout << "}" << endl;
+
 			uptrans.clear();
 			while (up_paths.size() > 0 && (ium = net.closest_input(up_paths.total.maxes(), up_paths.total.to, path(net.arcs.size())).second) != -1)
 			{
@@ -583,12 +579,8 @@ bool process::insert_bubbleless_state_vars()
 	{
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
-			up_paths = net.get_paths(i->first, *lj, path(net.arcs.size()));
-			down_paths = net.get_paths(*lj, i->first, path(net.arcs.size()));
-			unique(&up_paths.total.from);
-			unique(&up_paths.total.to);
-			unique(&down_paths.total.from);
-			unique(&down_paths.total.to);
+			net.get_paths(vector<int>(1, i->first), *lj, &up_paths);
+			net.get_paths(*lj, vector<int>(1, i->first), &down_paths);
 
 			/**
 			 * After identifying paths, start at every conditional merge and
@@ -618,7 +610,7 @@ bool process::insert_bubbleless_state_vars()
 			net.zero_ins(&down_paths, *lj);
 
 			for (j = 0; j < (int)net.arcs.size(); j++)
-				if (net.is_place(net.arcs[j].first) && net.output_arcs(net.arcs[j].first).size() > 1)
+				if (net.is_place(net.arcs[j].first) && net.output_nodes(net.arcs[j].first).size() > 1)
 				{
 					up_paths.zero(j);
 					down_paths.zero(j);
@@ -688,14 +680,15 @@ bool process::insert_bubbleless_state_vars()
 	gettimeofday(&timing, NULL);
 	tim1 = timing.tv_sec+(timing.tv_usec/1000000.0);
 	unique(&ip);
+	logic um, dm;
 	for (j = 0; j < (int)ip.size(); j++)
 	{
 		vname = vars.unique_name("_sv");
 		vid   = vars.insert(variable(vname, "node", 1, false, flags));
 		vars.find(vname)->driven = true;
 
-		um = net.values.mk(vid, 0, 1);
-		dm = net.values.mk(vid, 1, 0);
+		um = logic(vid, 1);
+		dm = logic(vid, 0);
 
 		for (k = 0; k < (int)ip[j].first.size(); k++)
 			net.insert_sv_at(ip[j].first[k], um);
@@ -813,32 +806,32 @@ void process::elaborate_prs()
 	int uto, dto;
 	vector<int> ot, op;
 	vector<int> vl;
-	list<list<pair<int, int> > > sat;
-	list<list<pair<int, int> > >::iterator si;
+	vector<map<int, uint32_t> > sat;
+	vector<map<int, uint32_t> >::iterator si;
 	int i, j;
 
 	for (i = 0; i < (int)prs.size(); i++)
 	{
-		sat = net.values.allsat(net.values.apply_and(prs[i].up, net.values.mk(prs[i].uid, 1, 0)));
+		sat = (prs[i].up & logic(prs[i].uid, 0)).allsat();
 		//sat = net.values.allsat(prs[i].up);
 		for (si = sat.begin(); si != sat.end(); si++)
 		{
-			ufrom  = net.new_place(net.values.build(*si), map<int, int>(), map<int, int>(), NULL);
-			utrans = net.insert_transition(ufrom, net.values.mk(prs[i].uid, 0, 1), map<int, int>(), map<int, int>(), NULL);
+			ufrom  = net.new_place(logic(*si), map<int, int>(), map<int, int>(), NULL);
+			utrans = net.insert_transition(ufrom, logic(prs[i].uid, 1), map<int, int>(), map<int, int>(), NULL);
 			uto    = net.insert_place(utrans, map<int, int>(), map<int, int>(), NULL);
-			net.S[uto].index = net.values.transition(net.S[ufrom].index, net.T[utrans].index);
+			net.S[uto].index = net.S[ufrom].index >> net.T[utrans].index;
 			net.S[ufrom].active = true;
 			net.T[utrans].active = true;
 		}
 
-		sat = net.values.allsat(net.values.apply_and(prs[i].down, net.values.mk(prs[i].uid, 0, 1)));
+		sat = (prs[i].down & logic(prs[i].uid, 1)).allsat();
 		//sat = net.values.allsat(prs[i].down);
 		for (si = sat.begin(); si != sat.end(); si++)
 		{
-			dfrom  = net.new_place(net.values.build(*si), map<int, int>(), map<int, int>(), NULL);
-			dtrans = net.insert_transition(dfrom, net.values.mk(prs[i].uid, 1, 0), map<int, int>(), map<int, int>(), NULL);
+			dfrom  = net.new_place(logic(*si), map<int, int>(), map<int, int>(), NULL);
+			dtrans = net.insert_transition(dfrom, logic(prs[i].uid, 0), map<int, int>(), map<int, int>(), NULL);
 			dto    = net.insert_place(dtrans, map<int, int>(), map<int, int>(), NULL);
-			net.S[dto].index = net.values.transition(net.S[dfrom].index, net.T[dtrans].index);
+			net.S[dto].index = net.S[dfrom].index >> net.T[dtrans].index;
 			net.S[dfrom].active = true;
 			net.T[dtrans].active = true;
 		}
@@ -870,7 +863,7 @@ void process::elaborate_prs()
 	//net.zip();
 
 	for (int i = 0; i < (int)net.S.size(); i++)
-		if (net.output_arcs(i).size() == 0)
+		if (net.output_nodes(i).size() == 0)
 		{
 			net.remove_place(i);
 			i--;

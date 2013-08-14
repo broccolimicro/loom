@@ -100,8 +100,6 @@ void program::compile()
 		}
 		else if (flags.hse() && flags.sse())
 			print_dot();
-
-
 	}
 }
 

@@ -11,31 +11,24 @@
 #ifndef minterm_h
 #define minterm_h
 
-#define v_ 0x00000000
-#define v0 0x55555555
-#define v1 0xAAAAAAAA
-#define vX 0xFFFFFFFF
-
 struct canonical;
 
 struct minterm
 {
 	minterm();
 	minterm(string str);
-	minterm(string str, variable_space *vars);
-	minterm(string str, vector<string> vars);
-	minterm(int s, uint32_t v);
-	minterm(int s, int i, uint32_t v);
 	~minterm();
 
 	vector<uint32_t> values;
 	int size;
 
+
+	// INTERNAL FUNCTIONS
+	uint32_t get(int uid);
+	uint32_t val(int uid);
+	void set(int uid, uint32_t v);
+	void resize(int s, uint32_t r = 0xFFFFFFFF);
 	void clear();
-	vector<uint32_t>::iterator begin();
-	vector<uint32_t>::iterator end();
-	void inelastic_set(int uid, uint32_t v);
-	void elastic_set(int uid, uint32_t v, uint32_t r = 0);
 
 	void sv_union(int uid, uint32_t v);
 	void sv_intersect(int uid, uint32_t v);
@@ -44,60 +37,69 @@ struct minterm
 	void sv_and(int uid, uint32_t v);
 	void sv_not(int uid);
 
-	bool always_0();
-	bool always_1();
+	bool subset(minterm s);
+	bool conflict(minterm s);
 
-	vector<int> allvars();
+	int diff_count(minterm s);
 
 	minterm mask();
-	minterm get_pos();
-	minterm get_neg();
 	minterm inverse();
-	minterm combine(minterm m);
-	void extract(map<int, uint32_t> *result);
-
-	uint32_t operator[](int i);
-	minterm operator()(int i, uint32_t v);
-
-	minterm &operator=(minterm s);
-
-	minterm &operator&=(minterm s);
 
 	void push_back(uint32_t v);
 
-	string print_expr();
-	string print_expr(vector<string> vars);
-	string print_trace();
+	// EXTERNAL FUNCTIONS
+	minterm(uint32_t val);
+	minterm(int var, uint32_t val);
+	minterm(map<int, uint32_t> vals);
+	minterm(string exp, variable_space *vars);
+
+	vector<int> vars();
+	void vars(vector<int> *var_list);
+
+	minterm smooth(int var);
+	minterm smooth(vector<int> vars);
+	void extract(map<int, minterm> *result);
+	map<int, minterm> extract();
+
+	minterm pabs();
+	minterm nabs();
+
+	int satcount();
+	map<int, uint32_t> anysat();
+	vector<map<int, uint32_t> > allsat();
+
+	minterm &operator=(minterm s);
+	minterm &operator=(uint32_t s);
+
+	minterm &operator&=(minterm s);
+	minterm &operator|=(minterm s);
+
+	minterm &operator&=(uint32_t s);
+	minterm &operator|=(uint32_t s);
+
+	minterm operator()(int i, uint32_t v);
+	minterm operator[](int i);
+
+	minterm operator&(minterm s);
+	minterm operator|(minterm s);
+	canonical operator~();
+
+	minterm operator|(uint32_t s);
+	minterm operator&(uint32_t s);
+
+	bool operator==(minterm s);
+	bool operator!=(minterm s);
+
+	bool operator==(uint32_t s);
+	bool operator!=(uint32_t s);
+
+	bool constant();
+
+	minterm operator>>(minterm t);
+
+	string print(variable_space *vars);
 };
 
-minterm nullv(int s);
-minterm fullv(int s);
 
-bool all_(minterm s);
-bool all0(minterm s);
-bool all1(minterm s);
-bool allX(minterm s);
-
-bool has_(minterm s);
-
-bool subset(minterm s1, minterm s2);
-bool conflict(minterm s1, minterm s2);
-bool up_conflict(minterm s1, minterm s2);
-bool down_conflict(minterm s1, minterm s2);
-
-canonical operator~(minterm s);
-minterm operator&(minterm s1, minterm s2);
-canonical operator|(minterm s1, minterm s2);
-
-minterm operator!(minterm s);
-minterm operator||(minterm s1, minterm s2);
-minterm operator&&(minterm s1, minterm s2);
-
-bool operator==(minterm s1, minterm s2);
-bool operator!=(minterm s1, minterm s2);
-
-int diff_count(minterm s1, minterm s2);
-
-minterm project(minterm m0, minterm m1);
 
 #endif

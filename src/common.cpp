@@ -395,17 +395,17 @@ int powi(int base, int exp)
     return result;
 }
 
-int bitwise_or(int a, int b)
+uint32_t bitwise_or(uint32_t a, uint32_t b)
 {
 	return a||b;
 }
 
-int bitwise_and(int a, int b)
+uint32_t bitwise_and(uint32_t a, uint32_t b)
 {
 	return a&&b;
 }
 
-int bitwise_not(int a)
+uint32_t bitwise_not(uint32_t a)
 {
 	return !a;
 }

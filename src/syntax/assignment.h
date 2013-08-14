@@ -21,10 +21,6 @@ struct assignment : instruction
 	list<pair<string, string> > expr;
 
 	instruction *duplicate(instruction *parent, variable_space *vars, map<string, string> convert);
-	vector<int> variant();
-	vector<int> active_variant();
-	vector<int> passive_variant();
-	void x_channel(node *s, string v);
 
 	void expand_shortcuts();
 	void parse();

@@ -7,30 +7,37 @@
 
 #include "path_space.h"
 
-path_space::path_space()
+path_space::path_space(int s) : total(s)
 {
 
 }
 
-path_space::path_space(int s)
+path_space::path_space(path p) : total(p.size(), p.from, p.to)
 {
-	total.nodes.assign(s, 0);
-}
-
-path_space::path_space(path p)
-{
-	bool empty = true;
-	for (int i = 0; i < (int)p.nodes.size() && empty; i++)
-		if (p.nodes[i] > 0)
-			empty = false;
-
-	total.nodes.assign(p.nodes.size(), 0);
-	if (!empty)
+	if (!p.empty())
 		push_back(p);
-
-	total.from = p.from;
-	total.to = p.to;
 }
+
+path_space::path_space(int s, int f, int t) : total(s, f, t)
+{
+
+}
+
+path_space::path_space(int s, int f, vector<int> t) : total(s, f, t)
+{
+
+}
+
+path_space::path_space(int s, vector<int> f, int t) : total(s, f, t)
+{
+
+}
+
+path_space::path_space(int s, vector<int> f, vector<int> t) : total(s, f, t)
+{
+
+}
+
 
 path_space::~path_space()
 {
@@ -47,7 +54,7 @@ void path_space::merge(path_space s)
 	paths.merge(s.paths);
 
 	for (int i = 0; i < s.total.size(); i++)
-		total.nodes[i] += s.total.nodes[i];
+		total[i] += s.total[i];
 
 	total.from.insert(total.from.end(), s.total.from.begin(), s.total.from.end());
 	total.to.insert(total.to.end(), s.total.to.begin(), s.total.to.end());
@@ -58,10 +65,17 @@ void path_space::push_back(path p)
 	paths.push_back(p);
 
 	for (int i = 0; i < p.size(); i++)
-		total.nodes[i] += p.nodes[i];
+		total[i] += p[i];
 
 	total.from.insert(total.from.end(), p.from.begin(), p.from.end());
 	total.to.insert(total.to.end(), p.to.begin(), p.to.end());
+}
+
+list<path>::iterator path_space::erase(list<path>::iterator i)
+{
+	for (int j = 0; j < i->size(); j++)
+		total[j] -= (*i)[j];
+	return paths.erase(i);
 }
 
 list<path>::iterator path_space::begin()
@@ -80,16 +94,25 @@ void path_space::clear()
 	total.clear();
 }
 
+void path_space::inc(int i)
+{
+	list<path>::iterator pi;
+	for (pi = paths.begin(); pi != paths.end(); pi++)
+		(*pi)[i]++;
+
+	total[i] += paths.size();
+}
+
 void path_space::zero(int i)
 {
 	list<path>::iterator pi;
 	for (pi = paths.begin(); pi != paths.end(); pi++)
 	{
-		pi->nodes[i] = 0;
+		(*pi)[i] = 0;
 		if (pi->empty())
 			pi = paths.erase(pi);
 	}
-	total.nodes[i] = 0;
+	total[i] = 0;
 }
 
 void path_space::zero(vector<int> i)
@@ -99,17 +122,17 @@ void path_space::zero(vector<int> i)
 	for (pi = paths.begin(); pi != paths.end(); pi++)
 	{
 		for (j = 0; j < (int)i.size(); j++)
-			pi->nodes[i[j]] = 0;
+			(*pi)[i[j]] = 0;
 		if (pi->empty())
 			pi = paths.erase(pi);
 	}
 	for (j = 0; j < (int)i.size(); j++)
-		total.nodes[i[j]] = 0;
+		total[i[j]] = 0;
 }
 
 int path_space::coverage_count(int n)
 {
-	return total.nodes[n];
+	return total[n];
 }
 
 int path_space::coverage_count(vector<int> n)
@@ -117,8 +140,8 @@ int path_space::coverage_count(vector<int> n)
 	int i;
 	int m = 0;
 	for (i = 0; i < (int)n.size(); i++)
-		if (total.nodes[n[i]] > m)
-			m = total.nodes[n[i]];
+		if (total[n[i]] > m)
+			m = total[n[i]];
 	return m;
 }
 
@@ -134,11 +157,9 @@ int path_space::coverage_max()
 
 path path_space::get_mask()
 {
-	path result;
+	path result(total.size(), total.from, total.to);
 	for (int i = 0; i < (int)total.nodes.size(); i++)
-		result.nodes.push_back((int)(total.nodes[i] > 0));
-	result.from = total.from;
-	result.to = total.to;
+		result.nodes[i] = (total[i] > 0);
 	return result;
 }
 
@@ -150,13 +171,13 @@ void path_space::apply_mask(path m)
 	for (pi = paths.begin(); pi != paths.end(); pi++)
 	{
 		for (i = 0; i < (int)pi->size(); i++)
-			pi->nodes[i] *= m.nodes[i];
+			(*pi)[i] *= m[i];
 		if (pi->empty())
 			pi = paths.erase(pi);
 	}
 
-	for (int i = 0; i < total.nodes.size(); i++)
-		total.nodes[i] *= m.nodes[i];
+	for (int i = 0; i < (int)total.nodes.size(); i++)
+		total[i] *= m[i];
 }
 
 path_space path_space::inverse()
@@ -203,7 +224,12 @@ path_space &path_space::operator=(path_space s)
 	return *this;
 }
 
-path &path_space::operator[](int i)
+int &path_space::operator[](int i)
+{
+	return total[i];
+}
+
+path &path_space::operator()(int i)
 {
 	list<path>::iterator j;
 	for (j = paths.begin(); j != paths.end() && i > 0; j++, i--);

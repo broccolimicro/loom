@@ -8,13 +8,37 @@
 #include "path.h"
 #include "../common.h"
 
-path::path()
-{
-}
-
 path::path(int s)
 {
 	nodes.resize(s, 0);
+}
+
+path::path(int s, int f, int t)
+{
+	nodes.resize(s, 0);
+	from.push_back(f);
+	to.push_back(t);
+}
+
+path::path(int s, int f, vector<int> t)
+{
+	nodes.resize(s, 0);
+	from.push_back(f);
+	to.insert(to.end(), t.begin(), t.end());
+}
+
+path::path(int s, vector<int> f, int t)
+{
+	nodes.resize(s, 0);
+	from.insert(from.end(), f.begin(), f.end());
+	to.push_back(t);
+}
+
+path::path(int s, vector<int> f, vector<int> t)
+{
+	nodes.resize(s, 0);
+	from.insert(from.end(), f.begin(), f.end());
+	to.insert(to.end(), t.begin(), t.end());
 }
 
 path::~path()
@@ -83,11 +107,11 @@ int path::max()
 
 path path::inverse()
 {
-	path result;
+	path result(nodes.size());
 	int i;
 
-	for (i = 0; i < nodes.size(); i++)
-		result.nodes.push_back(1 - nodes[i]);
+	for (i = 0; i < (int)nodes.size(); i++)
+		result.nodes[i] = 1 - nodes[i];
 
 	result.from = from;
 	result.to = to;
@@ -97,11 +121,11 @@ path path::inverse()
 
 path path::mask()
 {
-	path result;
+	path result(nodes.size());
 	int i;
 
-	for (i = 0; i < nodes.size(); i++)
-		result.nodes.push_back(nodes[i] > 0);
+	for (i = 0; i < (int)nodes.size(); i++)
+		result.nodes[i] = (nodes[i] > 0);
 
 	result.from = from;
 	result.to = to;
@@ -130,8 +154,6 @@ path &path::operator=(path p)
 
 int &path::operator[](int i)
 {
-	if ((int)nodes.size() <= i)
-		nodes.resize(i+1, 0);
 	return nodes[i];
 }
 
@@ -145,9 +167,9 @@ ostream &operator<<(ostream &os, path p)
 
 path operator+(path p1, path p2)
 {
-	path result(min(p1.size(), p2.size()));
-	for (int i = 0; i < p1.size() && i < p2.size(); i++)
-		result.nodes[i] = p1[i] + p2[i];
+	path result(max(p1.size(), p2.size()));
+	for (int i = 0; i < result.size(); i++)
+		result[i] = p1[i] + p2[i];
 
 	return result;
 }
@@ -168,9 +190,8 @@ path operator*(path p1, int n)
 
 bool operator==(path p1, path p2)
 {
-	vector<int>::iterator i, j;
-	for (i = p1.begin(), j = p2.begin(); i != p1.end() && j != p2.end(); i++, j++)
-		if (*i != *j)
+	for (int i = 0; i < max(p1.size(), p2.size()); i++)
+		if (p1[i] != p2[i])
 			return false;
 
 	return true;
@@ -178,10 +199,9 @@ bool operator==(path p1, path p2)
 
 bool operator<(path p1, path p2)
 {
-	vector<int>::iterator i, j;
-	for (i = p1.begin(), j = p2.begin(); i != p1.end() && j != p2.end(); i++, j++)
-		if (*i != *j)
-			return *i < *j;
+	for (int i = 0; i < max(p1.size(), p2.size()); i++)
+		if (p1[i] != p2[i])
+			return p1[i] < p2[i];
 
 	return false;
 }
@@ -189,10 +209,9 @@ bool operator<(path p1, path p2)
 
 bool operator>(path p1, path p2)
 {
-	vector<int>::iterator i, j;
-	for (i = p1.begin(), j = p2.begin(); i != p1.end() && j != p2.end(); i++, j++)
-		if (*i != *j)
-			return *i > *j;
+	for (int i = 0; i < max(p1.size(), p2.size()); i++)
+		if (p1[i] != p2[i])
+			return p1[i] > p2[i];
 
 	return false;
 }

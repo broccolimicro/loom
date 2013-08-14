@@ -12,9 +12,12 @@
 
 struct path_space
 {
-	path_space();
 	path_space(int s);
 	path_space(path p);
+	path_space(int s, int f, int t);
+	path_space(int s, int f, vector<int> t);
+	path_space(int s, vector<int> f, int t);
+	path_space(int s, vector<int> f, vector<int> t);
 	~path_space();
 
 	list<path> paths;
@@ -23,9 +26,11 @@ struct path_space
 	int size();
 	void merge(path_space s);
 	void push_back(path p);
+	list<path>::iterator erase(list<path>::iterator i);
 	list<path>::iterator begin();
 	list<path>::iterator end();
 	void clear();
+	void inc(int i);
 	void zero(int i);
 	void zero(vector<int> i);
 
@@ -41,7 +46,8 @@ struct path_space
 
 	path_space &operator=(path_space s);
 
-	path &operator[](int i);
+	int &operator[](int i);
+	path &operator()(int i);
 };
 
 ostream &operator<<(ostream &os, path_space p);

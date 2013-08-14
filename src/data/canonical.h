@@ -21,7 +21,8 @@ struct canonical
 	canonical(minterm m);
 	canonical(vector<minterm> m);
 	canonical(string s, variable_space *vars);
-	canonical(string s, vector<string> vars);
+	canonical(int var, uint32_t val);
+	canonical(map<int, uint32_t> vals);
 	~canonical();
 
 	vector<minterm> terms;
@@ -29,6 +30,7 @@ struct canonical
 	vector<minterm>::iterator begin();
 	vector<minterm>::iterator end();
 
+	// INTERNAL FUNCTIONS
 	int size();
 	int width();
 	void assign(int i, minterm t);
@@ -38,34 +40,58 @@ struct canonical
 	void push_up(minterm m);
 	void clear();
 
-	bool always_0();
-	bool always_1();
-
 	void mccluskey();
+	minterm mask();
 
-	canonical restrict(int j, uint32_t b);
-	canonical smooth(int j);
-	canonical smooth(vector<int> j);
-	void extract(map<int, uint32_t> *result);
+	// EXTERNAL FUNCTIONS
+	vector<int> vars();
+	void vars(vector<int> *var_list);
 
-	canonical get_pos();
-	canonical get_neg();
+	canonical smooth(int var);
+	canonical smooth(vector<int> vars);
+	void extract(map<int, canonical> *result);
+	map<int, canonical> extract();
 
-	string print();
-	string print(vector<string> vars);
+	canonical pabs();
+	canonical nabs();
+
+	int satcount();
+	map<int, uint32_t> anysat();
+	vector<map<int, uint32_t> > allsat();
 
 	canonical &operator=(canonical c);
+	canonical &operator=(minterm t);
+	canonical &operator=(uint32_t c);
 
-	canonical operator()(minterm m);
+	canonical &operator|=(canonical c);
+	canonical &operator&=(canonical c);
+
+	canonical &operator|=(uint32_t c);
+	canonical &operator&=(uint32_t c);
+
 	canonical operator()(int i, uint32_t v);
-	minterm operator[](int i);
-	minterm operator()(int i);
+	canonical operator[](int i);
+
+	canonical operator|(canonical c);
+	canonical operator&(canonical c);
+	canonical operator~();
+
+	canonical operator|(uint32_t c);
+	canonical operator&(uint32_t c);
+
+	bool operator==(canonical c);
+	bool operator!=(canonical c);
+
+	bool operator==(uint32_t c);
+	bool operator!=(uint32_t c);
+
+	bool constant();
+
+	canonical operator>>(canonical t);
+
+	string print(variable_space *v);
 };
 
-canonical operator|(canonical c1, canonical c2);
-canonical operator&(canonical c1, canonical c2);
-canonical operator~(canonical c);
 
-canonical operator+(canonical s, minterm t);
 
 #endif

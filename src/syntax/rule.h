@@ -24,7 +24,7 @@ struct rule
 	variable_space *vars;
 
 	int uid;
-	int up, down;
+	logic up, down;
 
 	flag_space *flags;
 

@@ -12,8 +12,11 @@
 
 struct path
 {
-	path();
 	path(int s);
+	path(int s, int f, int t);
+	path(int s, int f, vector<int> t);
+	path(int s, vector<int> f, int t);
+	path(int s, vector<int> f, vector<int> t);
 	~path();
 
 	vector<int> from, to;

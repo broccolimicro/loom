@@ -6,63 +6,78 @@
  */
 
 #include "../common.h"
-#include "variable_space.h"
+#include "minterm.h"
 #include "canonical.h"
-#include "triple.h"
+#include "variable_space.h"
 
 #ifndef bdd_h
 #define bdd_h
 
-/**
- * This is a package for Reduced Ordered Binary Decision Diagrams. It can store
- * many boolean expressions at once, optimizing for memory and access time. To
- * get started, look at the build(), apply(), print(), and expr() functions.
- */
 struct bdd
 {
 	bdd();
+	bdd(minterm t);
+	bdd(canonical c);
 	~bdd();
 
-	vector<triple> T;
-	unordered_map<triple, int> H;
+	uint32_t idx;
 
-	int var(int u);
-	int low(int u);
-	int high(int u);
-	void allvars(int u, vector<int> *l);
+	int var();
+	bdd low();
+	bdd high();
 
-	int mk(int i, int l, int h);
-	int build(string e, variable_space *vars, int i = 0);
-	int build(minterm t, int i = 0);
-	int build(list<pair<int, int> > t);
-	vector<int> build(canonical t, int i = 0);
 
-	int apply(int (*op)(int, int), int u1, int u2, unordered_map<pair<int, int>, int> *G);
-	int apply(int (*op)(int), int u1, unordered_map<int, int> *G);
-	int apply_or(int u0, int u1);
-	int apply_and(int u0, int u1);
-	int apply_not(int u1);
 
-	int invert(int u);
-	int simplify(int d, int u);
-	int transition(int u0, int u1);
-	int get_pos(int u);
-	int get_neg(int u);
+	bdd(uint32_t val);
+	bdd(int var, uint32_t val);
+	bdd(map<int, uint32_t> vals);
+	bdd(string exp, variable_space *v);
 
-	int restrict(int u, int j, int b);
-	int smooth(int u, int j);
-	int smooth(int u, vector<int> j);
-	int extract(int u, int j);
-	void extract(int u, map<int, int> *result);
+	vector<int> vars();
+	void vars(vector<int> *var_list);
 
-	int count(int u);
-	int satcount(int u);
-	list<pair<int, int> > anysat(int u);
-	list<list<pair<int, int> > > allsat(int u);
+	bdd smooth(int var);
+	bdd smooth(vector<int> vars);
+	void extract(map<int, bdd> *result);
+	map<int, bdd> extract();
 
-	void print(int u, string tab = "");
-	string expr(int u, vector<string> vars);
-	string trace(int u, vector<string> vars);
+	bdd pabs();
+	bdd nabs();
+
+	int satcount();
+	map<int, uint32_t> anysat();
+	vector<map<int, uint32_t> > allsat();
+
+	bdd &operator=(bdd b);
+	bdd &operator=(uint32_t b);
+
+	bdd &operator|=(bdd b);
+	bdd &operator&=(bdd b);
+
+	bdd &operator|=(uint32_t b);
+	bdd &operator&=(uint32_t b);
+
+	bdd operator()(int var, uint32_t val);
+	bdd operator[](int var);
+
+	bdd operator|(bdd b);
+	bdd operator&(bdd b);
+	bdd operator~();
+
+	bdd operator|(uint32_t b);
+	bdd operator&(uint32_t b);
+
+	bool operator==(bdd b);
+	bool operator!=(bdd b);
+
+	bool operator==(uint32_t b);
+	bool operator!=(uint32_t b);
+
+	bool constant();
+
+	bdd operator>>(bdd b);
+
+	string print(variable_space *v);
 };
 
 #endif

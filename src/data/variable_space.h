@@ -14,6 +14,8 @@
 #include "../type/keyword.h"
 #include "variable.h"
 
+struct logic;
+
 struct variable_space
 {
 	type_space *types;
@@ -38,7 +40,7 @@ struct variable_space
 
 	vector<string> get_names();
 	vector<int> x_channel(vector<int> av);
-	void x_channel(vector<int> av, map<int, int> *result);
+	void x_channel(vector<int> av, map<int, logic> *result);
 
 	string unique_name(string prefix);
 

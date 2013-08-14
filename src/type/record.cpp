@@ -70,12 +70,18 @@ void record::parse(string raw)
 		(*flags->log_file) << "\tSequential: " << io_sequential << endl;
 	}
 
+	string instr;
 	for (i = io_sequential.begin(), j = io_sequential.begin(); i != io_sequential.end(); i++)
 	{
 		if (*(i+1) == ';')
 		{
-			expand_instantiation(NULL, io_sequential.substr(j-io_sequential.begin(), i+1 - j), &vars, NULL, flags, false);
+			instr = io_sequential.substr(j-io_sequential.begin(), i+1 - j);
+			if (instr.find_first_of("(") != string::npos && instr.find_first_of(")") != string::npos)
+			{
 
+			}
+			else
+				expand_instantiation(NULL, instr, &vars, NULL, flags, false);
 			j = i+2;
 		}
 	}

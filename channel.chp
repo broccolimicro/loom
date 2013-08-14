@@ -4,6 +4,7 @@ record dualrail
 {
 	node<1> t;
 	node<1> f;
+	require(~t | ~f);
 }
 
 channel achan4p0b
@@ -34,9 +35,15 @@ channel achan4p1b
 	
 	operator!(node<1> i)
 	{
-		[	i  -> r.t,r.f := 1,0
-		[]	~i -> r.t,r.f := 0,1
-		];[a]; r.t,r.f := 0,0; [~a];
+		/* This causes an isochronic fork.
+		 * [	i  -> r.t,r.f := 1,0
+		 * []	~i -> r.t,r.f := 0,1
+		 * ];[a]; r.t,r.f := 0,0; [~a];
+		 */
+		 
+		[	i	-> r.t,r.f := 1,0; [a]; r.t,r.f := 0,0;
+		[]	~i	-> r.t,r.f := 0,1; [a]; r.t,r.f := 0,0;
+		];[~a];
 	}
 	
 	operator?(node<1> i)

@@ -16,12 +16,9 @@ struct guard : instruction
 	guard(instruction *parent, string chp, variable_space *vars, flag_space *flags);
 	~guard();
 
-	bdd solution;
+	canonical solution;
 
 	instruction *duplicate(instruction *parent, variable_space *vars, map<string, string> convert);
-	vector<int> variant();
-	vector<int> active_variant();
-	vector<int> passive_variant();
 
 	void expand_shortcuts();
 	void parse();

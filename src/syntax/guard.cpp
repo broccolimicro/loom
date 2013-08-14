@@ -78,24 +78,9 @@ instruction *guard::duplicate(instruction *parent, variable_space *vars, map<str
 			k = instr->chp.npos;
 	}
 
-	instr->chp = canonical(instr->chp, vars).print(vars->get_names());
+	instr->chp = canonical(instr->chp, vars).print(vars);
 
 	return instr;
-}
-
-vector<int> guard::variant()
-{
-	return extract_ids(chp, vars);
-}
-
-vector<int> guard::active_variant()
-{
-	return vector<int>();
-}
-
-vector<int> guard::passive_variant()
-{
-	return extract_ids(chp, vars);
 }
 
 void guard::expand_shortcuts()
@@ -113,7 +98,7 @@ void guard::parse()
 
 void guard::merge()
 {
-	chp = canonical(chp, vars).print(vars->get_names());
+	chp = canonical(chp, vars).print(vars);
 }
 
 vector<int> guard::generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
@@ -121,12 +106,12 @@ vector<int> guard::generate_states(petri *n, vector<int> f, map<int, int> pbranc
 	flags->inc();
 	from = f;
 	net = n;
-	chp = canonical(chp, vars).print(vars->get_names());
+	chp = canonical(chp, vars).print(vars);
 
 	if (flags->log_base_state_space())
 		(*flags->log_file) << flags->tab << "Guard " << chp << endl;
 
-	uid.push_back(net->insert_transition(from, net->values.build(chp, vars), pbranch, cbranch, this));
+	uid.push_back(net->insert_transition(from, logic(chp, vars), pbranch, cbranch, this));
 	flags->dec();
 
 	return uid;

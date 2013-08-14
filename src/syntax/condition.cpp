@@ -235,12 +235,12 @@ void condition::merge()
 				delete copy;
 				nguard = j->second;
 
-				nguard->chp = canonical("(" + i->second->chp + ")&(" + nguard->chp + ")", vars).print(vars->get_names());
+				nguard->chp = canonical("(" + i->second->chp + ")&(" + nguard->chp + ")", vars).print(vars);
 				add.push_back(pair<sequential*, guard*>(nsequential, nguard));
 			}
 			j = front->instrs.begin();
 
-			i->second->chp = canonical("(" + i->second->chp + ")&(" + j->second->chp + ")", vars).print(vars->get_names());
+			i->second->chp = canonical("(" + i->second->chp + ")&(" + j->second->chp + ")", vars).print(vars);
 			for (ii = j->first->instrs.begin(); ii != j->first->instrs.end(); ii++)
 				i->first->instrs.push_front(*ii);
 			j->first->instrs.clear();
