@@ -124,12 +124,10 @@ instruction *composition::expand_condition(string chp)
 
 	for (i = a->instrs.begin(); i != a->instrs.end(); i++)
 	{
-		cout << "Expanding Guard: " << i->second->chp << endl;
 		if (i->second->chp.find_first_of("&|~^=<>/+-*?#()") != string::npos)
 		{
 			result = a->expand_guard(i->second->chp);
 			i->second->chp = result.first;
-			cout << "Result: " << result.first << endl;
 			if (result.second != NULL)
 			{
 				result.second->parent = p;

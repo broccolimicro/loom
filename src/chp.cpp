@@ -121,9 +121,9 @@ int main(int argc, char **argv)
 			cout << " \t-Lfactored_prs\t\tLog the steps taken during prs factoring" << endl;
 			cout << " \t-Lreshuffled_prs\tLog the steps taken during bubble reshuffling" << endl;
 			cout << endl;
-			cout << "For bug reporting instruction, please see:" << endl;
-			cout << "<https://www.sol-union.com/bugs.php>" << endl;
-			cout << endl;
+			//cout << "For bug reporting instruction, please see:" << endl;
+			//cout << "<https://www.sol-union.com/bugs.php>" << endl;
+			//cout << endl;
 		}
 		else if (strncmp(argv[i], "--version", 9) == 0)	// Version Information
 		{

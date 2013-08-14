@@ -368,27 +368,11 @@ bool process::insert_bubbleless_state_vars()
 	int ium, idm, vid, j, k;
 	string vname;
 
-	timeval timing;
-	double tim1, tim2;
-
-	gettimeofday(&timing, NULL);
-	tim1 = timing.tv_sec+(timing.tv_usec/1000000.0);
-
-	cout << "Preparing" << endl;
 	net.gen_tails();
-	cout << "Tails" << endl;
 	net.gen_senses();
-	cout << "Senses" << endl;
 	net.gen_bubbleless_conflicts();
-	cout << "Conflicts" << endl;
 	net.gen_arcs();
-	cout << "Arcs " << net.arcs.size() << endl;
 	net.gen_conditional_places();
-	cout << "Conditional Places" << endl;
-
-	gettimeofday(&timing, NULL);
-	tim2 = timing.tv_sec+(timing.tv_usec/1000000.0);
-	cout << "Prepare " << (tim2-tim1) << endl;
 
 	cout << "Positive Conflicts: " << name << endl;
 	for (i = net.positive_conflicts.begin(); i != net.positive_conflicts.end(); i++)
@@ -456,14 +440,8 @@ bool process::insert_bubbleless_state_vars()
 	{
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
-			gettimeofday(&timing, NULL);
-			tim1 = timing.tv_sec+(timing.tv_usec/1000000.0);
 			net.get_paths(*lj, vector<int>(1, i->first), &up_paths);
 			net.get_paths(vector<int>(1, i->first), *lj, &down_paths);
-
-			gettimeofday(&timing, NULL);
-			tim2 = timing.tv_sec+(timing.tv_usec/1000000.0);
-			cout << "Get Paths " << (tim2-tim1) << endl;
 
 			/**
 			 * After identifying paths, start at every conditional merge and
@@ -478,10 +456,6 @@ bool process::insert_bubbleless_state_vars()
 			net.filter_path_space(&up_paths);
 			net.filter_path_space(&down_paths);
 
-			gettimeofday(&timing, NULL);
-			tim1 = timing.tv_sec+(timing.tv_usec/1000000.0);
-			cout << "Filter Paths " << (tim1-tim2) << endl;
-
 			up_inv = up_paths.inverse();
 			down_inv = down_paths.inverse();
 
@@ -490,10 +464,6 @@ bool process::insert_bubbleless_state_vars()
 
 			up_paths.apply_mask(down_mask);
 			down_paths.apply_mask(up_mask);
-
-			gettimeofday(&timing, NULL);
-			tim2 = timing.tv_sec+(timing.tv_usec/1000000.0);
-			cout << "Mask Paths " << (tim2-tim1) << endl;
 
 			net.zero_paths(&up_paths, i->first);
 			net.zero_ins(&down_paths, i->first);
@@ -506,10 +476,6 @@ bool process::insert_bubbleless_state_vars()
 					up_paths.zero(j);
 					down_paths.zero(j);
 				}
-
-			gettimeofday(&timing, NULL);
-			tim1 = timing.tv_sec+(timing.tv_usec/1000000.0);
-			cout << "Zero Paths " << (tim1-tim2) << endl;
 
 			cout << "Up: {";
 			for (j = 0; j < (int)up_paths.total.from.size(); j++)
@@ -560,9 +526,6 @@ bool process::insert_bubbleless_state_vars()
 			cout << endl;
 
 			unique(&uptrans, &downtrans);
-			gettimeofday(&timing, NULL);
-			tim2 = timing.tv_sec+(timing.tv_usec/1000000.0);
-			cout << "Get Trans " << (tim2-tim1) << endl;
 			if (uptrans.size() == 0 || downtrans.size() == 0)
 			{
 				cout << "Error: No solution for the conflict set: " << i->first << " -> {";
@@ -677,8 +640,6 @@ bool process::insert_bubbleless_state_vars()
 		}
 	}
 
-	gettimeofday(&timing, NULL);
-	tim1 = timing.tv_sec+(timing.tv_usec/1000000.0);
 	unique(&ip);
 	logic um, dm;
 	for (j = 0; j < (int)ip.size(); j++)
@@ -695,17 +656,10 @@ bool process::insert_bubbleless_state_vars()
 		for (k = 0; k < (int)ip[j].second.size(); k++)
 			net.insert_sv_at(ip[j].second[k], dm);
 	}
-	gettimeofday(&timing, NULL);
-	tim2 = timing.tv_sec+(timing.tv_usec/1000000.0);
-	cout << "Insert State Var " << (tim2-tim1) << endl;
 
 	net.trim_branch_ids();
 	net.gen_mutables();
 	net.update();
-
-	gettimeofday(&timing, NULL);
-	tim1 = timing.tv_sec+(timing.tv_usec/1000000.0);
-	cout << "Update " << (tim1-tim2) << endl;
 
 	return (ip.size() > 0);
 }
@@ -872,12 +826,15 @@ void process::elaborate_prs()
 
 void process::print_hse(ostream *fout)
 {
+	(*fout) << "/* Process " << name << " */";
 	def.print_hse("", fout);
+	(*fout) << endl << endl;
 }
 
 void process::print_dot(ostream *fout)
 {
 	net.print_dot(fout, name);
+	(*fout) << endl;
 }
 
 void process::print_petrify()
@@ -903,4 +860,5 @@ void process::print_prs(ostream *fout)
 			((channel*)ki->second)->recv->print_prs(fout, vi->first + ".", vars.get_driven());
 		}
 	}
+	(*fout) << endl;
 }

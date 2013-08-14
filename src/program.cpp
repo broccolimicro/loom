@@ -38,7 +38,6 @@ void program::compile()
 
 		if (flags.pre())
 		{
-			cout << "PRE" << endl;
 			prgm = string((istreambuf_iterator<char>(*(flags.input_files[0]))),
 						   istreambuf_iterator<char>());
 			cout << prgm << endl;
@@ -90,16 +89,23 @@ void program::compile()
 			generate_prs();
 			//factor_prs();
 
+			print_hse();
+			print_dot();
 			print_prs();
 		}
 		else if (flags.prs())
 		{
 			generate_bubbleless_prs();
 
+			print_hse();
+			print_dot();
 			print_prs();
 		}
 		else if (flags.hse() && flags.sse())
+		{
+			print_hse();
 			print_dot();
+		}
 	}
 }
 

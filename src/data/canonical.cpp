@@ -345,10 +345,7 @@ void canonical::extract(map<int, canonical> *result)
 		m = (i == 0 ? terms[i] : m | terms[i]);
 
 	for (int i = 0; i < (int)v.size(); i++)
-	{
-		cout << "ARRIBA " << m[v[i]].print(NULL) << "\t" << m.val(v[i]) << endl;
 		result->insert(pair<int, canonical>(v[i], canonical(m[v[i]])));
-	}
 }
 
 map<int, canonical> canonical::extract()
