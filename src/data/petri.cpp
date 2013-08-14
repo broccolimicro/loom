@@ -124,7 +124,7 @@ void petri::insert_sv_at(int a, logic root)
 
 	if (is_trans(arcs[a].first) && is_place(arcs[a].second))
 	{
-		Wp[arcs[a].second][arcs[a].first] = 0;
+		Wp[index(arcs[a].second)][index(arcs[a].first)] = 0;
 		connect(arcs[a].first, p);
 		connect(p, t);
 		connect(t, arcs[a].second);
@@ -132,7 +132,7 @@ void petri::insert_sv_at(int a, logic root)
 	}
 	else if (is_place(arcs[a].first) && is_trans(arcs[a].second))
 	{
-		Wn[arcs[a].first][arcs[a].second] = 0;
+		Wn[index(arcs[a].first)][index(arcs[a].second)] = 0;
 		connect(arcs[a].first, t);
 		connect(t, p);
 		connect(p, arcs[a].second);

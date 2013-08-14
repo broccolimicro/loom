@@ -232,7 +232,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 		}
 	}
 
-	C = pair<string, instruction*>("", NULL);
+	C = pair<string, instruction*>("", (instruction*)NULL);
 	if (expr[0] == '(' && expr[expr.length()-1] == ')' && op == "")
 	{
 		C = expand_expression(expr.substr(1, expr.length()-2), top);
@@ -241,8 +241,8 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 		return C;
 	}
 
-	A = pair<string, instruction*>(left, NULL);
-	B = pair<string, instruction*>(right, NULL);
+	A = pair<string, instruction*>(left, (instruction*)NULL);
+	B = pair<string, instruction*>(right, (instruction*)NULL);
 	if (left.find_first_of("&|~^=<>/+-*?!#()") != left.npos)
 		A = expand_expression(left, "");
 	if (right.find_first_of("&|~^=<>/+-*?!#()") != right.npos)
@@ -256,7 +256,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 	if (A.second == NULL && B.second == NULL && (op == "&" || op == "|" || op == "~") && top == "" &&
 	   (A.first.find_first_of("&|~") != A.first.npos || (vars->get_type(A.first) == "node" && vars->get_width(A.first) == 1) || A.first == "") &&
 	   (B.first.find_first_of("&|~") != B.first.npos || (vars->get_type(B.first) == "node" && vars->get_width(B.first) == 1) || B.first == ""))
-		return pair<string, instruction*>(A.first + op + B.first, NULL);
+		return pair<string, instruction*>(A.first + op + B.first, (instruction*)NULL);
 
 	string type = "operator" + op + "(";
 	if (op == "?")
@@ -293,7 +293,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 		if (B.second != NULL)
 			delete B.second;
 
-		return pair<string, instruction*>(expr, NULL);
+		return pair<string, instruction*>(expr, (instruction*)NULL);
 	}
 
 	sequential* ret = new sequential();
