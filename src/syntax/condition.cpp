@@ -37,19 +37,6 @@ condition::~condition()
 {
 	_kind = "condition";
 	type = unknown;
-
-	list<pair<sequential*, guard*> >::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		if (i->first != NULL)
-			delete i->first;
-		if (i->second != NULL)
-			delete i->second;
-		i->first = NULL;
-		i->second = NULL;
-	}
-
-	instrs.clear();
 }
 
 /* This copies a guard to another process and replaces

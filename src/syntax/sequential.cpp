@@ -39,16 +39,6 @@ sequential::sequential(instruction *parent, string chp, variable_space *vars, fl
 sequential::~sequential()
 {
 	_kind = "sequential";
-
-	list<instruction*>::iterator j;
-	for (j = instrs.begin(); j != instrs.end(); j++)
-	{
-		if (*j != NULL)
-			delete *j;
-		*j = NULL;
-	}
-
-	instrs.clear();
 }
 
 /* This copies a guard to another process and replaces

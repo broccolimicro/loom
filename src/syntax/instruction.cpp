@@ -232,6 +232,17 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 		}
 	}
 
+	if (op == "")
+	{
+		p = find_first_of_l0(expr, "#");
+		if (p != expr.npos)
+		{
+			op = "#";
+			left = "";
+			right = expr.substr(p+1);
+		}
+	}
+
 	C = pair<string, instruction*>("", (instruction*)NULL);
 	if (expr[0] == '(' && expr[expr.length()-1] == ')' && op == "")
 	{
@@ -261,12 +272,14 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 	string type = "operator" + op + "(";
 	if (op == "?")
 		type = vars->get_type(left) + "." + type;
+	else if (op == "#")
+		type = vars->get_type(right) + "." + type;
 
 	if (A.first != "")
 	{
 		if (A.first.find_first_of("|&~") != A.first.npos)
 			type += "node<1>";
-		else
+		else if (op != "?")
 			type += vars->get_info(A.first);
 	}
 
@@ -277,11 +290,13 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 
 		if (B.first.find_first_of("|&~") != B.first.npos)
 			type += "node<1>";
-		else
+		else if (op != "#")
 			type += vars->get_info(B.first);
 	}
 
 	type += ")";
+
+	cout << type << "\t" << A.first << " " << B.first << " " << op << endl;
 
 	proc = (operate*)vars->find_type(type);
 	if (proc == NULL)
@@ -299,25 +314,29 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 	sequential* ret = new sequential();
 	parallel *sub = new parallel();
 
-	string name = vars->unique_name("_fn");
+	string name;
 	if (op == "?")
-		name = A.first + "." + name;
+		name = vars->unique_name(A.first + "." + "_fn");
+	else if (op == "#")
+		name = vars->unique_name(B.first + "." + "_fn");
+	else
+		name = vars->unique_name("_fn");
 
 	name += "(";
-	if (top == "")
+	if (top == "" && op != "#")
 	{
 		C = add_unique_variable(ret, "_op", "", proc->vars.get_info(proc->args.front()), vars, flags);
-		//cout << "YO DUERFEW EWFFEW EFWEFEWF " << proc->vars.get_info(proc->input.front()) << endl;
 		name += C.first;
 	}
-	else
+	else if (op != "#")
 		name += top;
 
-	if (A.first != "")
+	if (A.first != "" && op != "?")
 		name += "," + A.first;
-	if (B.first != "")
+	if (B.first != "" && op != "#")
 		name += "," + B.first;
 	name += ")";
+
 
 	sub->flags = flags;
 	sub->vars = vars;
@@ -333,7 +352,15 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 	ret->flags = flags;
 	ret->vars = vars;
 	ret->push(sub);
-	ret->push(expand_instantiation(ret, type + " " + name, vars, NULL, flags, true));
+
+	if (op == "#")
+	{
+		instruction *probe = expand_instantiation(ret, type + " " + name, vars, NULL, flags, true);
+		C.first = probe->chp;
+		delete probe;
+	}
+	else
+		ret->push(expand_instantiation(ret, type + " " + name, vars, NULL, flags, true));
 
 	return pair<string, instruction*>(C.first, ret);
 }

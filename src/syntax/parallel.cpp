@@ -38,8 +38,6 @@ parallel::~parallel()
 {
 	chp = "";
 	_kind = "parallel";
-
-	instrs.clear();
 }
 
 /* This copies a guard to another process and replaces

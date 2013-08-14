@@ -4,7 +4,6 @@ record dualrail
 {
 	node<1> t;
 	node<1> f;
-	require(~t | ~f);
 }
 
 channel achan4p0b

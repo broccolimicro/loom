@@ -37,8 +37,6 @@ loop::loop(instruction *parent, string chp, variable_space *vars, flag_space *fl
 loop::~loop()
 {
 	_kind = "loop";
-
-	instrs.clear();
 }
 
 /* This copies a guard to another process and replaces
