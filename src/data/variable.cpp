@@ -58,6 +58,7 @@ variable &variable::operator=(variable v)
 {
 	chp = v.chp;
 	name = v.name;
+	reset = v.reset;
 	type = v.type;
 	width = v.width;
 	fixed = v.fixed;
@@ -79,6 +80,7 @@ void variable::parse(string chp)
 	size_t name_start = find_first_of_l0(chp, "> ");
 	size_t input_start = find_first_of_l0(chp, "(", name_start);
 	size_t input_end = find_first_of_l0(chp, ")", input_start);
+	size_t reset_start = find_first_of_l0(chp, ":=", name_start);
 
 	if (flags->log_base_hse())
 		(*flags->log_file) << flags->tab << "Variable: " << chp << endl;
@@ -91,6 +93,27 @@ void variable::parse(string chp)
 		inputs.push_back(input.substr(0, input.find_first_of(",")));
 		for (size_t i = input.find_first_of(","); i != input.npos; i = input.find_first_of(",", i+1))
 			inputs.push_back(input.substr(i+1, input.find_first_of(",", i+1) - i-1));
+	}
+	else if (reset_start != chp.npos)
+	{
+		string temp;
+		name = chp.substr(name_start+1, reset_start - (name_start+1));
+		temp = chp.substr(reset_start+2);
+
+		if (temp.find_first_of("acdefghijklmnopqrstuvwyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()-=_+|\\}]{[?/>.<, \t~`") != temp.npos)
+			cout << "Error: Invalid reset value " << temp << " for variable " << name << "." << endl;
+		else
+		{
+			if (temp[1] == 'x')
+				temp = hex_to_bin(temp);
+			else if (temp[1] == 'b')
+				temp = temp.substr(2);
+			else
+				temp = dec_to_bin(temp);
+
+			for (int i = (int)temp.length() - 1; i >= 0; i--)
+				reset.push_back((int)temp[i] - (int)'0');
+		}
 	}
 	else
 		name = chp.substr(name_start+1);
@@ -110,6 +133,10 @@ void variable::parse(string chp)
 		(*flags->log_file) << flags->tab << "\tArg:    " << input << endl;
 		(*flags->log_file) << flags->tab << "\tType:  " << type << endl;
 		(*flags->log_file) << flags->tab << "\tWidth: " << width << endl;
+		(*flags->log_file) << flags->tab << "\tReset: 0b";
+		for (int i = (int)reset.size() - 1; i >= 0; i--)
+			(*flags->log_file) << reset[i];
+		(*flags->log_file) << endl;
 		(*flags->log_file) << flags->tab << "\tArg:    " << arg << endl;
 	}
 }

@@ -261,20 +261,24 @@ vector<int> assignment::generate_states(petri *n, vector<int> f, map<int, int> p
 	{
 		v = vars->find(ei->first);
 		if (v != NULL)
+		{
 			v->driven = true;
 
-		npbranch = pbranch;
-		if (expr.size() > 1)
-			npbranch.insert(pair<int, int>(pbranch_id, (int)k));
+			npbranch = pbranch;
+			if (expr.size() > 1)
+				npbranch.insert(pair<int, int>(pbranch_id, (int)k));
 
-		next.clear();
-		next = (k == 0 ? from : net->duplicate_nodes(from));
-		for (l = 0; l < (int)next.size(); l++)
-			net->S[next[l]].pbranch = npbranch;
+			next.clear();
+			next = (k == 0 ? from : net->duplicate_nodes(from));
+			for (l = 0; l < (int)next.size(); l++)
+				net->S[next[l]].pbranch = npbranch;
 
-		end.clear();
-		end.push_back(net->insert_transition(next, logic(v->uid, (uint32_t)(ei->second == "1")), npbranch, cbranch, this));
-		allends.push_back(net->insert_place(end, npbranch, cbranch, this));
+			end.clear();
+			end.push_back(net->insert_transition(next, logic(v->uid, (uint32_t)(ei->second == "1")), npbranch, cbranch, this));
+			allends.push_back(net->insert_place(end, npbranch, cbranch, this));
+		}
+		else
+			cout << "Error: Undefined variable " << ei->first << "." << endl;
 	}
 	uid.push_back(net->insert_dummy(allends, pbranch, cbranch, this));
 

@@ -15,6 +15,7 @@
 #include "parallel.h"
 #include "condition.h"
 #include "loop.h"
+#include "debug.h"
 
 parallel::parallel()
 {

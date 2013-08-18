@@ -15,6 +15,7 @@
 node::node()
 {
 	owner = NULL;
+	assumptions = 1;
 }
 
 node::node(logic index, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner)
@@ -24,6 +25,7 @@ node::node(logic index, bool active, map<int, int> pbranch, map<int, int> cbranc
 	this->pbranch = pbranch;
 	this->cbranch = cbranch;
 	this->owner = owner;
+	assumptions = 1;
 }
 
 node::~node()
@@ -449,102 +451,157 @@ void petri::propogate_marking_backward(int from, vector<bool> *covered)
 	}
 }
 
-void petri::updateplace(int p)
+bool petri::updateplace(int p, int i)
 {
 	map<int, logic>::iterator ji;
 	vector<int> ia = input_nodes(p);
 	vector<int> oa = output_nodes(p);
 	vector<int> ip;
 	vector<int> vl;
-	int i, j;
+	int k, j;
 	logic t(0);
+	logic o;
 
+	o = S[p].index;
 	S[p].index = 0;
-	for (i = 0; i < (int)ia.size(); i++)
-	{
-		ip = input_nodes(ia[i]);
-		for (j = 0, t = 1; j < (int)ip.size(); j++)
-			t &= S[ip[j]].index;
 
-		S[p].index |= (t >> T[index(ia[i])].index);
+	cout << string(i, '\t') << p << "\t";
+
+	for (k = 0; k < (int)ia.size(); k++)
+	{
+		cout << "{";
+		ip = input_nodes(ia[k]);
+
+		for (j = 0, t = 1; j < (int)ip.size(); j++)
+		{
+			t &= S[ip[j]].index;
+			cout << S[ip[j]].index.print(vars) << " ";
+		}
+
+		cout << "}>>" << T[index(ia[k])].index.print(vars) << " = (" << (t >> T[index(ia[k])].index).print(vars) << ")\t";
+		S[p].index |= (t >> T[index(ia[k])].index);
 	}
+
+	cout << S[p].index.print(vars) << " ";
+
 	for (ji = S[p].mutables.begin(); ji != S[p].mutables.end(); ji++)
 		if ((S[p].index & ji->second) != S[p].index)
 			S[p].index = S[p].index.smooth(ji->first);
+
+	cout << S[p].index.print(vars) << " ";
+
+	if (S[p].index != 0)
+	{
+		S[p].index &= vars->enforcements;
+
+		if (S[p].index == 0)
+			cout << "Error: Enforcements conflict with known state state at state " << p << "." << endl;
+		else
+		{
+			S[p].index &= S[p].assumptions;
+
+			if (S[p].index == 0)
+				cout << "Error: Assumption " << S[p].assumptions.print(vars) << " conflict with known state state at state " << p << "." << endl;
+		}
+	}
+
+	cout << S[p].index.print(vars) << " ? " << o.print(vars) << endl;
+
+	return (S[p].index != o);
 }
 
-bool petri::update(int p, vector<bool> *covered)
+int petri::update(int p, vector<bool> *covered, int i)
 {
-	map<int, logic>::iterator ji;
-	vector<int> ia = input_nodes(p);
-	vector<int> oa = output_nodes(p);
-	vector<int> op;
-	vector<int> ip;
-	vector<int> vl;
-	logic o, t;
-	int i, j;
-	bool ret = false;
+	cout << string(i, '\t') << "Update ";
+	if (is_trans(p))
+		cout << "T";
+	else
+		cout << "S";
+	cout << index(p) << endl;
+
+	vector<int> next;
+	vector<int> curr;
+	vector<int> it;
+	map<int, pair<int, int> >::iterator cpi;
+	int j, k;
+	bool immune = false;
+	bool updated;
 
 	if (covered != NULL && covered->size() < S.size())
 		covered->resize(S.size(), false);
 
-	if (is_trans(p))
+	next.push_back(p);
+
+	while (1)
 	{
-		for (j = 0; j < (int)oa.size(); j++)
-			ret = ret || update(oa[j], covered);
-		return ret;
-	}
-	else if (ia.size() > 0)
-	{
-		o = S[p].index;
-		S[p].index = 0;
-
-		//cout << p << "\t";
-		for (i = 0; i < (int)ia.size(); i++)
+		if (!immune && i != 0 && (it = input_nodes(next[0])).size() > 1)
 		{
-			ip = input_nodes(ia[i]);
-
-			//cout << "{";
-			for (j = 0, t = 1; j < (int)ip.size(); j++)
+			if (is_trans(next[0]))
 			{
-				//if (j != 0)
-				//	cout << ", ";
-
-				if ((*covered)[ip[j]])
-				//{
-					t &= S[ip[j]].index;
-				//	cout << S[ip[j]].index.print(vars);
-				//}
-				//else
-				//	cout << 1;
+				cout << string(i, '\t') << "pmerge" << endl;
+				return next[0];
 			}
-			//cout << "}>>" << T[index(ia[i])].index.print(vars) << " = (" << (t >> T[index(ia[i])].index).print(vars) << ")\t";
-			S[p].index |= (t >> T[index(ia[i])].index);
+			else
+			{
+				for (j = 0; j < (int)it.size(); j++)
+					for (k = j+1; k < (int)it.size(); k++)
+						if (csiblings(it[j], it[k]) != -1)
+						{
+							cout << string(i, '\t') << "cmerge" << endl;
+							return next[0];
+						}
+			}
 		}
-		//cout << S[p].index.print(vars) << " ";
 
-		for (ji = S[p].mutables.begin(); ji != S[p].mutables.end(); ji++)
-			if ((S[p].index & ji->second) != S[p].index)
-				S[p].index = S[p].index.smooth(ji->first);
-
-		//cout << S[p].index.print(vars) << endl;
-
-		if (S[p].index != o || !(*covered)[p])
+		if (is_place(next[0]))
 		{
-			(*covered)[p] = true;
-			for (i = 0; i < (int)oa.size(); i++)
-			{
-				op = output_nodes(oa[i]);
-				for (j = 0; j < (int)op.size(); j++)
-					update(op[j], covered);
-			}
-			return true;
-		}
-		else
-			return false;
-	}
+			updated = updateplace(next[0], i);
 
-	return false;
+			if (!updated && (*covered)[next[0]])
+			{
+				cout << string(i, '\t') << "end" << endl;
+				return (int)S.size();
+			}
+
+			(*covered)[next[0]] = true;
+		}
+
+		cout << string(i, '\t') << "{";
+		for (j = 0; j < (int)next.size(); j++)
+			cout << (is_trans(next[j]) ? "T" : "S") << index(next[j]) << " ";
+		cout << "} -> ";
+		curr = next;
+		next.clear();
+		for (j = 0; j < (int)arcs.size(); j++)
+			for (k = 0; k < (int)curr.size(); k++)
+				if (curr[k] == arcs[j].first)
+					next.push_back(arcs[j].second);
+		unique(&next);
+		cout << "{";
+		for (j = 0; j < (int)next.size(); j++)
+			cout << (is_trans(next[j]) ? "T" : "S") << index(next[j]) << " ";
+		cout << "}" << endl;
+
+		immune = false;
+		if (next.size() > 1)
+		{
+			curr = next;
+			next.clear();
+			for (j = 0; j < (int)curr.size(); j++)
+			{
+				next.push_back(update(curr[j], covered, i+1));
+				if (next.back() == (int)S.size())
+					next.pop_back();
+				else
+					immune = true;
+			}
+
+			unique(&next);
+		}
+
+		if (next.size() < 1)
+			return (int)S.size();
+	}
 }
 
 void petri::update()
@@ -552,6 +609,7 @@ void petri::update()
 	int i, j;
 	int s = (int)M0.size();
 	vector<bool> covered;
+	vector<int> M = M0;
 
 	for (i = 0; i < s; i++)
 	{
@@ -564,30 +622,40 @@ void petri::update()
 	}
 	unique(&M0);
 
+	gen_arcs();
+
+	cout << "LOOK RESET " << vars->reset.print(vars) << endl;
 	for (i = 0; i < (int)S.size(); i++)
 	{
-		if (find(M0.begin(), M0.end(), i) != M0.end())
-			S[i].index = 1;
+		if (find(M.begin(), M.end(), i) != M.end())
+			S[i].index = vars->reset & vars->enforcements;
 		else
 			S[i].index = 0;
 	}
-	bool ret = true;
 	vector<int> ia;
 
 	covered.clear();
 	covered.resize(S.size(), false);
-	for (i = 0; i < (int)M0.size(); i++)
-		covered[M0[i]] = true;
 
-	while (ret)
+	for (i = 0; i < (int)M.size(); i++)
 	{
-		ret = false;
-		for (i = 0; i < (int)M0.size(); i++)
-		{
-			ia = output_nodes(M0[i]);
-			for (j = 0; j < (int)ia.size(); j++)
-				ret = ret || update(ia[j], &covered);
-		}
+		ia = output_nodes(M[i]);
+		for (j = 0; j < (int)ia.size(); j++)
+			update(ia[j], &covered);
+	}
+}
+
+void petri::check_assertions()
+{
+	for (int i = 0; i < (int)S.size(); i++)
+	{
+		for (int j = 0; j < (int)S[i].assertions.size(); j++)
+			if ((S[i].index & S[i].assertions[j]) != 0)
+				cout << "Error: Assertion " << (~S[i].assertions[j]).print(vars) << " fails at state " << i << " with a state encoding of " << S[i].index.print(vars) << "." << endl;
+
+		for (int j = 0; j < (int)vars->requirements.size(); j++)
+			if ((S[i].index & vars->requirements[j]) != 0)
+				cout << "Error: Requirement " << (~vars->requirements[j]).print(vars) << " fails at state " << i << " with a state encoding of " << S[i].index.print(vars) << "." << endl;
 	}
 }
 
@@ -818,9 +886,11 @@ bool petri::connected(int from, int to)
 
 int petri::psiblings(int p0, int p1)
 {
+	node *n0 = &((*this)[p0]);
+	node *n1 = &((*this)[p1]);
 	map<int, int>::iterator bi, bj;
-	for (bi = (*this)[p0].pbranch.begin(); bi != (*this)[p0].pbranch.end(); bi++)
-		for (bj = (*this)[p1].pbranch.begin(); bj != (*this)[p1].pbranch.end(); bj++)
+	for (bi = n0->pbranch.begin(); bi != n0->pbranch.end(); bi++)
+		for (bj = n1->pbranch.begin(); bj != n1->pbranch.end(); bj++)
 			if (bi->first == bj->first && bi->second != bj->second)
 				return bi->first;
 	return -1;
@@ -828,9 +898,11 @@ int petri::psiblings(int p0, int p1)
 
 int petri::csiblings(int p0, int p1)
 {
+	node *n0 = &((*this)[p0]);
+	node *n1 = &((*this)[p1]);
 	map<int, int>::iterator bi, bj;
-	for (bi = (*this)[p0].cbranch.begin(); bi != (*this)[p0].cbranch.end(); bi++)
-		for (bj = (*this)[p1].cbranch.begin(); bj != (*this)[p1].cbranch.end(); bj++)
+	for (bi = n0->cbranch.begin(); bi != n0->cbranch.end(); bi++)
+		for (bj = n1->cbranch.begin(); bj != n1->cbranch.end(); bj++)
 			if (bi->first == bj->first && bi->second != bj->second)
 				return bi->first;
 	return -1;
@@ -1442,7 +1514,10 @@ bool petri::trim()
 	 */
 	for (i = 0; i < (int)S.size(); i++)
 		while (i < (int)S.size() && S[i].index == 0)
+		{
 			remove_place(i);
+			result = true;
+		}
 
 	i = 0;
 	while (i < (int)T.size())
@@ -1453,6 +1528,13 @@ bool petri::trim()
 		for (j = 0, v = 1; j < (int)ia.size(); j++)
 			v &= S[ia[j]].index;
 
+		/* The problem with this "vacuous" check is that while it may be locally vacuous,
+		 * it can be globally invacuous. For example, If you have *[S1; x-; S2] where
+		 * S1 and S2 don't modify the value of x, then x will always be 0 and the x-
+		 * transition will be locally vacuous. However, if you then remove the x- transition
+		 * and have *[S1;S2], you no longer know the value of x. Therefore, the x- transition
+		 * is globally invacuous.
+		 */
 		vacuous = true;
 		for (k = 0; k < (int)oa.size() && vacuous; k++)
 			if ((S[oa[k]].index & v) != v)
@@ -1496,14 +1578,18 @@ bool petri::trim()
 		 * conditional merge, and removing the transition that acts as the parallel
 		 * merge would break the parallel block.
 		 */
-		else if (vacuous && ia.size() == 1)
+		else if (vacuous && ia.size() == 1 && output_nodes(ia[0]).size() == 1 && (input_nodes(ia[0]).size() == 1 || output_nodes(trans_id(i)).size() == 1))
 		{
 			for (k = 0; k < (int)oa.size(); k++)
+			{
 				for (l = 0; l < (int)Wn[oa[k]].size(); l++)
 				{
 					Wn[oa[k]][l] = (Wn[oa[k]][l] || Wn[ia[0]][l]);
 					Wp[oa[k]][l] = (Wp[oa[k]][l] || Wp[ia[0]][l]);
 				}
+				S[oa[k]].assumptions = S[ia[0]].assumptions >> S[oa[k]].assumptions;
+				S[oa[k]].assertions.insert(S[oa[k]].assertions.end(), S[ia[0]].assertions.begin(), S[ia[0]].assertions.end());
+			}
 
 			remove_place(ia[0]);
 
@@ -1512,14 +1598,19 @@ bool petri::trim()
 			T.erase(T.begin() + i);
 			result = true;
 		}
-		else if (vacuous && oa.size() == 1 && input_nodes(oa[0]).size() == 1)
+		else if (vacuous && oa.size() == 1 && input_nodes(oa[0]).size() == 1 && (output_nodes(oa[0]).size() == 1 || input_nodes(trans_id(i)).size() == 1))
 		{
 			for (j = 0; j < (int)ia.size(); j++)
+			{
 				for (l = 0; l < (int)Wn[oa[0]].size(); l++)
 				{
 					Wn[ia[j]][l] = (Wn[ia[j]][l] || Wn[oa[0]][l]);
 					Wp[ia[j]][l] = (Wp[ia[j]][l] || Wp[oa[0]][l]);
 				}
+
+				S[ia[j]].assumptions = S[ia[j]].assumptions >> S[oa[0]].assumptions;
+				S[ia[j]].assertions.insert(S[ia[j]].assertions.end(), S[oa[0]].assertions.begin(), S[oa[0]].assertions.end());
+			}
 
 			remove_place(oa[0]);
 

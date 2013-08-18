@@ -6,12 +6,12 @@
  */
 
 #include "../common.h"
-#include "variable_space.h"
 
 #ifndef minterm_h
 #define minterm_h
 
 struct canonical;
+struct variable_space;
 
 struct minterm
 {
@@ -55,6 +55,8 @@ struct minterm
 
 	vector<int> vars();
 	void vars(vector<int> *var_list);
+
+	minterm refactor(vector<int> ids);
 
 	minterm smooth(int var);
 	minterm smooth(vector<int> vars);

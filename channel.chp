@@ -2,14 +2,14 @@
 
 record dualrail
 {
-	node<1> t;
-	node<1> f;
+	node<1> t := 0;
+	node<1> f := 0;
 }
 
 channel achan4p0b
 {
-	node<1> r;
-	node<1> a;
+	node<1> r := 0;
+	node<1> a := 0;
 	
 	operator!()
 	{
@@ -30,19 +30,20 @@ channel achan4p0b
 channel achan4p1b
 {
 	dualrail r;
-	node<1> a;
+	node<1> a := 0;
 	
 	operator!(node<1> i)
 	{
-		/* This causes an isochronic fork.
-		 * [	i  -> r.t,r.f := 1,0
-		 * []	~i -> r.t,r.f := 0,1
-		 * ];[a]; r.t,r.f := 0,0; [~a];
-		 */
+		require{~r.t | ~r.f};
+		/*[	i  -> r.t,r.f := 1,0
+		[]	~i -> r.t,r.f := 0,1
+		];[a]; ((assume{a};r.t-)||(assume{a};r.f-)); [~a];*/
+		
 		 
-		[	i	-> r.t,r.f := 1,0; [a]; r.t,r.f := 0,0;
-		[]	~i	-> r.t,r.f := 0,1; [a]; r.t,r.f := 0,0;
-		];[~a];
+		
+		[	i	-> r.t+; [a]; r.t-;
+		[]	~i	-> r.f+; [a]; r.f-;
+		]; [~a];
 	}
 	
 	operator?(node<1> i)
@@ -60,8 +61,8 @@ channel achan4p1b
 
 channel achan2p0b
 {
-	node<1> r;
-	node<1> a;
+	node<1> r := 0;
+	node<1> a := 0;
 	
 	operator!(node<1> i)
 	{
@@ -80,34 +81,5 @@ channel achan2p0b
 	operator#()
 	{
 		r
-	}
-}
-
-channel achan2p1b
-{
-	dualrail r;
-	node<1> a;
-	
-	operator!(node<1> i)
-	{
-		[   r -> r.t,r.f:=0,0;[~a]
-		[] ~r -> [ i  ->  r.t,r.f:=1,0
-				 []~i ->  r.t,r.f:=0,1
-				 ];[ a]
-		]
-	}
-	
-	operator?(node<1> i)
-	{
-		[   a -> [~r.t & ~r.f];a-
-		[] ~a -> [ r.t -> i+
-				 []r.f -> i-
-				 ];a+
-		]
-	}
-	
-	operator#()
-	{
-		r.t|r.f
 	}
 }

@@ -12,10 +12,12 @@
 #include "../type.h"
 #include "../data.h"
 
+#include "instruction.h"
 #include "sequential.h"
 #include "parallel.h"
 #include "condition.h"
 #include "loop.h"
+#include "debug.h"
 
 sequential::sequential()
 {
@@ -153,6 +155,8 @@ void sequential::parse()
 			// This sub sequential is a condition. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
 				push(expand_condition(raw_instr));
+			else if (raw_instr.find_first_of("{}") != raw_instr.npos)
+				push(new debug(this, raw_instr, vars, flags));
 			// This sub sequential is a variable instantiation.
 			else if (vars->vdef(raw_instr) && raw_instr.length() > 0)
 				push(expand_instantiation(this, raw_instr, vars, NULL, flags, true));
@@ -244,6 +248,7 @@ vector<int> sequential::generate_states(petri *n, vector<int> f, map<int, int> p
 	map<map<int, int>, vector<int> > groups;
 	map<map<int, int>, vector<int> >::iterator gi;
 	map<int, int>::iterator mi, mj;
+	bool trans = true;
 
 	flags->inc();
 	if (flags->log_base_state_space())
@@ -261,13 +266,13 @@ vector<int> sequential::generate_states(petri *n, vector<int> f, map<int, int> p
 			next.clear();
 			instr = *instr_iter;
 
-			if (instr_iter != instrs.begin())
-			{
+			if (instr_iter != instrs.begin() && trans)
 				next.push_back(net->insert_place(uid, pbranch, cbranch, this));
-				uid	= instr->generate_states(net, next, pbranch, cbranch);
-			}
 			else
-				uid	= instr->generate_states(net, uid, pbranch, cbranch);
+				next = uid;
+
+			uid	= instr->generate_states(net, next, pbranch, cbranch);
+			trans = (next != uid);
 		}
 	}
 	flags->dec();

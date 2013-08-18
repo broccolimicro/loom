@@ -8,10 +8,11 @@
 #include "../common.h"
 #include "minterm.h"
 #include "canonical.h"
-#include "variable_space.h"
 
 #ifndef bdd_h
 #define bdd_h
+
+struct variable_space;
 
 struct bdd
 {
@@ -26,8 +27,6 @@ struct bdd
 	bdd low();
 	bdd high();
 
-
-
 	bdd(uint32_t val);
 	bdd(int var, uint32_t val);
 	bdd(map<int, uint32_t> vals);
@@ -35,6 +34,8 @@ struct bdd
 
 	vector<int> vars();
 	void vars(vector<int> *var_list);
+
+	bdd refactor(vector<int> ids);
 
 	bdd smooth(int var);
 	bdd smooth(vector<int> vars);

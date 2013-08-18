@@ -47,6 +47,8 @@ struct canonical
 	vector<int> vars();
 	void vars(vector<int> *var_list);
 
+	canonical refactor(vector<int> ids);
+
 	canonical smooth(int var);
 	canonical smooth(vector<int> vars);
 	void extract(map<int, canonical> *result);

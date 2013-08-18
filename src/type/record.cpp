@@ -76,10 +76,8 @@ void record::parse(string raw)
 		if (*(i+1) == ';')
 		{
 			instr = io_sequential.substr(j-io_sequential.begin(), i+1 - j);
-			if (instr.find_first_of("(") != string::npos && instr.find_first_of(")") != string::npos)
-			{
-
-			}
+			if (instr.find_first_of("{}") != string::npos)
+				debug(NULL, instr, &vars, flags).generate_class_requirements();
 			else
 				expand_instantiation(NULL, instr, &vars, NULL, flags, false);
 			j = i+2;

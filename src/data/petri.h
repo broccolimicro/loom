@@ -33,6 +33,9 @@ struct node
 	logic index;
 	logic positive;	// Negative sense variables are smoothed out
 	logic negative;	// Positive sense variables are smoothed out
+
+	logic assumptions;
+	vector<logic> assertions;
 };
 
 struct petri
@@ -58,6 +61,7 @@ struct petri
 	map<int, list<vector<int> > > negative_indistinguishable;
 
 	map<int, pair<int, int> > conditional_places;
+	vector<int> variable_usage;
 
 	int new_transition(logic root, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
 	vector<int> new_transitions(vector<logic> root, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
@@ -88,9 +92,10 @@ struct petri
 	void propogate_marking_forward(int from, vector<bool> *covered);
 	void propogate_marking_backward(int from, vector<bool> *covered);
 
-	void updateplace(int p);
-	bool update(int p, vector<bool> *covered);
+	bool updateplace(int p, int i = 0);
+	int update(int p, vector<bool> *covered, int i = 0);
 	void update();
+	void check_assertions();
 	void update_tail(int p);
 	void connect(vector<int> from, vector<int> to);
 	void connect(vector<int> from, int to);

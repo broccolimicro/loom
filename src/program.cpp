@@ -235,7 +235,7 @@ void program::merge()
 {
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
-		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
+		if (i->second->kind() == "process" || i->second->kind() == "operate")
 			((process*)i->second)->merge();
 }
 

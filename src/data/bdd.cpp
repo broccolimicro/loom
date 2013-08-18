@@ -7,6 +7,7 @@
 
 #include "bdd.h"
 #include "bdd_package.h"
+#include "variable_space.h"
 
 bdd_package pkg;
 
@@ -77,6 +78,11 @@ void bdd::vars(vector<int> *var_list)
 {
 	pkg.vars(idx, var_list);
 	unique(var_list);
+}
+
+bdd bdd::refactor(vector<int> ids)
+{
+
 }
 
 /**

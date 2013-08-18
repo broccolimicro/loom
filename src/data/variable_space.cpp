@@ -7,7 +7,16 @@
 
 #include "variable_space.h"
 #include "../type/channel.h"
-#include "canonical.h"
+
+variable_space::variable_space()
+{
+	enforcements = 1;
+	reset = 1;
+}
+
+variable_space::~variable_space()
+{
+}
 
 int variable_space::size()
 {
@@ -280,6 +289,7 @@ map<string, string> variable_space::instantiate(string parent, bool parent_arg, 
 		return map<string, string>();
 
 	map<string, string> rename;
+	vector<int> id_change(s->global.size(), 0);
 
 	variable v;
 	map<string, variable>::iterator i;
@@ -292,7 +302,11 @@ map<string, string> variable_space::instantiate(string parent, bool parent_arg, 
 			v.name = parent + "." + v.name;
 			v.uid = global.size();
 			v.arg = parent_arg;
+			v.reset = i->second.reset;
 			global.insert(pair<string, variable>(v.name, v));
+			id_change[i->second.uid] = get_uid(v.name);
+			if (v.reset.size() > 0)
+				reset &= logic(id_change[i->second.uid], v.reset[0]);
 		}
 	}
 
@@ -308,6 +322,11 @@ map<string, string> variable_space::instantiate(string parent, bool parent_arg, 
 			label.insert(pair<string, variable>(v.name, v));
 		}
 	}
+
+	for (int j = 0; j < (int)s->requirements.size(); j++)
+		requirements.push_back(s->requirements[j].refactor(id_change));
+
+	enforcements = enforcements >> s->enforcements.refactor(id_change);
 
 	return rename;
 }
@@ -318,6 +337,7 @@ map<string, string> variable_space::call(string parent, bool parent_arg, variabl
 		return map<string, string>();
 
 	map<string, string> rename;
+	vector<int> id_change(s->global.size(), 0);
 
 	variable v;
 	map<string, variable>::iterator i;
@@ -330,7 +350,11 @@ map<string, string> variable_space::call(string parent, bool parent_arg, variabl
 			v.name = parent + "." + v.name;
 			v.uid = global.size();
 			v.arg = parent_arg;
+			v.reset = i->second.reset;
 			global.insert(pair<string, variable>(v.name, v));
+			id_change[i->second.uid] = get_uid(v.name);
+			if (v.reset.size() > 0)
+				reset &= logic(id_change[i->second.uid], v.reset[0]);
 		}
 	}
 
@@ -346,6 +370,11 @@ map<string, string> variable_space::call(string parent, bool parent_arg, variabl
 			label.insert(pair<string, variable>(v.name, v));
 		}
 	}
+
+	for (int j = 0; j < (int)s->requirements.size(); j++)
+		requirements.push_back(s->requirements[j].refactor(id_change));
+
+	enforcements = enforcements >> s->enforcements.refactor(id_change);
 
 	return rename;
 }
@@ -372,12 +401,16 @@ int variable_space::insert(variable v)
 			v.name = n + "[" + to_string(i) + "]";
 			v.width = 1;
 			v.uid = global.size();
+			if (i < (int)v.reset.size())
+				reset &= logic(v.uid, v.reset[i]);
 			global.insert(pair<string, variable>(v.name, v));
 		}
 	}
 	else if (v.type == "node" && v.width == 1)
 	{
 		v.uid = global.size();
+		if (v.reset.size() > 0)
+		reset &= logic(v.uid, v.reset[0]);
 		global.insert(pair<string, variable>(v.name, v));
 	}
 	else
@@ -393,15 +426,19 @@ void variable_space::clear()
 {
 	global.clear();
 	label.clear();
+	enforcements = 1;
+	requirements.clear();
+	reset = 1;
 }
 
 variable_space &variable_space::operator=(variable_space s)
 {
-	global.clear();
-	label.clear();
-	global.insert(s.global.begin(), s.global.end());
-	label.insert(s.label.begin(), s.label.end());
+	global = s.global;
+	label = s.label;
 	types = s.types;
+	requirements = s.requirements;
+	enforcements = s.enforcements;
+	reset = s.reset;
 	return *this;
 }
 

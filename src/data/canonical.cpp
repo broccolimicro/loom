@@ -6,6 +6,7 @@
  */
 
 #include "canonical.h"
+#include "variable_space.h"
 #include "../utility.h"
 
 canonical::canonical()
@@ -316,6 +317,14 @@ vector<int> canonical::vars()
 	return result;
 }
 
+canonical canonical::refactor(vector<int> ids)
+{
+	canonical result;
+	for (int i = 0; i < (int)terms.size(); i++)
+		result.terms.push_back(terms[i].refactor(ids));
+	return result;
+}
+
 canonical canonical::smooth(int var)
 {
 	canonical result;
@@ -497,14 +506,14 @@ canonical canonical::operator&(canonical c)
 	int i, j;
 	for (i = 0; i < (int)terms.size(); i++)
 		for (j = 0; j < (int)c.terms.size(); j++)
-			result.terms.push_back(terms[i] & c.terms[j]); // TODO
+			result.terms.push_back(terms[i] & c.terms[j]);
 	result.mccluskey();
 	return result;
 }
 
 canonical canonical::operator~()
 {
-	canonical result;
+	canonical result = 1;
 	int i;
 	for (i = 0; i < (int)terms.size(); i++)
 		result = result & ~terms[i];

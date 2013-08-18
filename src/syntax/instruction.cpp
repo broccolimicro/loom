@@ -296,8 +296,6 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 
 	type += ")";
 
-	cout << type << "\t" << A.first << " " << B.first << " " << op << endl;
-
 	proc = (operate*)vars->find_type(type);
 	if (proc == NULL)
 	{

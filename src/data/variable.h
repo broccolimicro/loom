@@ -29,6 +29,7 @@ struct variable
 	bool		fixed;		// is the bit width of this variable fixed or variable?
 	bool		driven;		// keep track of whether or not this variable is driven within this process
 	bool		arg;		// Is this variable an argument variable into a process?
+	vector<int>	reset;
 
 	list<string> inputs;
 

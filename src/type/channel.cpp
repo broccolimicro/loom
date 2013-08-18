@@ -75,6 +75,7 @@ void channel::parse(string chp)
 	}
 
 	int depth[3] = {0};
+	string instr;
 	for (i = io_sequential.begin(), j = io_sequential.begin(); i != io_sequential.end(); i++)
 	{
 		if (*i == '(')
@@ -92,7 +93,11 @@ void channel::parse(string chp)
 
 		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == ';')
 		{
-			expand_instantiation(NULL, io_sequential.substr(j-io_sequential.begin(), i - j), &vars, NULL, flags, false);
+			instr = io_sequential.substr(j-io_sequential.begin(), i - j);
+			if (instr.find_first_of("{}") != string::npos)
+				debug(NULL, instr, &vars, flags).generate_class_requirements();
+			else
+				expand_instantiation(NULL, instr, &vars, NULL, flags, false);
 			j = i+1;
 		}
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == '}')

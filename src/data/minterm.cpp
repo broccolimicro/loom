@@ -7,6 +7,7 @@
 
 #include "minterm.h"
 #include "canonical.h"
+#include "variable_space.h"
 #include "../common.h"
 
 #define v_ 0x00000000
@@ -75,7 +76,7 @@ minterm::~minterm()
 
 uint32_t minterm::get(int uid)
 {
-	if (uid > size)
+	if (uid >= size)
 		resize(uid+1, vX);
 
 	uint32_t v = (values[uid>>4] >> vidx(uid)) & 3;
@@ -87,7 +88,7 @@ uint32_t minterm::get(int uid)
 
 uint32_t minterm::val(int uid)
 {
-	if (uid > size)
+	if (uid >= size)
 		resize(uid+1, vX);
 
 	return mtoi(values[uid>>4] >> vidx(uid));
@@ -95,7 +96,7 @@ uint32_t minterm::val(int uid)
 
 void minterm::set(int uid, uint32_t v)
 {
-	if (uid > size)
+	if (uid >= size)
 		resize(uid+1, vX);
 
 	int w = uid >> 4;
@@ -395,6 +396,14 @@ void minterm::vars(vector<int> *var_list)
 			var_list->push_back(i);
 }
 
+minterm minterm::refactor(vector<int> ids)
+{
+	minterm result;
+	for (int i = 0; i < (int)ids.size(); i++)
+		result.set(ids[i], get(i));
+	return result;
+}
+
 minterm minterm::smooth(int var)
 {
 	minterm result = *this;
@@ -577,9 +586,13 @@ minterm minterm::operator|(minterm s)
 canonical minterm::operator~()
 {
 	canonical result;
-	int i;
+	int i, j;
 	for (i = 0; i < size; i++)
-		result.push_back(minterm(i, val(i)));
+	{
+		j = val(i);
+		if (j == 0 || j == 1)
+			result.push_back(minterm(i, 1-j));
+	}
 	result.mccluskey();
 	return result;
 }

@@ -16,5 +16,6 @@
 #include "syntax/condition.h"
 #include "syntax/loop.h"
 #include "syntax/rule.h"
+#include "syntax/debug.h"
 
 #endif

@@ -13,14 +13,20 @@
 #include "../common.h"
 #include "../type/keyword.h"
 #include "variable.h"
-
-struct logic;
+#include "canonical.h"
+#include "bdd.h"
 
 struct variable_space
 {
+	variable_space();
+	~variable_space();
+
 	type_space *types;
 	map<string, variable> global;
 	map<string, variable> label;
+	vector<logic> requirements;
+	logic enforcements;
+	logic reset;
 
 	int size();
 

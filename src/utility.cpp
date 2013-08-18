@@ -12,6 +12,7 @@ instruction *expand_instantiation(instruction *parent, string chp, variable_spac
 {
 	keyword* type;
 	map<string, variable>::iterator mem_var;
+	cout << "LOOK " << chp << endl;
 	variable v = variable(chp, !allow_process, flags);
 	variable v2;
 

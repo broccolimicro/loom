@@ -180,11 +180,16 @@ void process::generate_states()
 	do
 	{
 		net.gen_mutables();
-		net.print_mutables();
+		net.print_branch_ids();
 		net.update();
+		print_dot(&cout);
 	} while(net.trim());
 
+	net.check_assertions();
+
 	net.gen_tails();
+
+	print_dot(&cout);
 
 	cout << "BRANCHES " << name << endl;
 	net.print_branch_ids();
@@ -203,7 +208,6 @@ bool process::insert_state_vars()
 
 	net.gen_tails();
 	net.gen_conflicts();
-	net.gen_arcs();
 	net.gen_conditional_places();
 
 	cout << "Conflicts: " << name << endl;
@@ -371,7 +375,6 @@ bool process::insert_bubbleless_state_vars()
 	net.gen_tails();
 	net.gen_senses();
 	net.gen_bubbleless_conflicts();
-	net.gen_arcs();
 	net.gen_conditional_places();
 
 	cout << "Positive Conflicts: " << name << endl;
