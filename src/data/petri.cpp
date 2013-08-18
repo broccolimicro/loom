@@ -1283,6 +1283,7 @@ void petri::gen_conflicts()
 
 		for (j = 0; j < (int)S.size(); j++)
 		{
+			oa = output_nodes(j);
 			/* States are conflicting if:
 			 *  - they are not the same state
 			 *  - one is not in the tail of another (the might as well be here case)
@@ -1295,7 +1296,7 @@ void petri::gen_conflicts()
 			if (i != j && psiblings(i, j) < 0 && find(S[i].tail.begin(), S[i].tail.end(), j) == S[i].tail.end() && (s1 & S[j].index) != 0)
 			{
 				// is it a conflicting state? (e.g. not vacuous)
-				if (S[i].active && (t & S[j].index) == 0)
+				if (S[i].active && ((t & S[j].index) == 0 || (T[index(oa[0])].active && (t & T[index(oa[0])].index) == 0)))
 					add_conflict_pair(&conflicts, i, j);
 
 				// it is at least an indistinguishable state at this point
@@ -1313,7 +1314,7 @@ void petri::gen_bubbleless_conflicts()
 	map<int, int>::iterator bi, bj;
 	vector<int> group;
 	vector<int> oa;
-	vector<int> vlp, vln;
+	vector<int> vl;
 	vector<int> temp;
 	int i, j;
 	logic tp(0), sp1(0);
@@ -1330,31 +1331,35 @@ void petri::gen_bubbleless_conflicts()
 		oa = output_nodes(i);
 
 		// POSITIVE
-		vlp.clear();
-		tp = 1;
-		for (j = 0; j < (int)oa.size(); j++)
+		vl.clear();
+		for (j = 0, tp = 1; j < (int)oa.size(); j++)
 			if (T[index(oa[j])].active)
 			{
-				T[index(oa[j])].positive.vars(&vlp);
-				tp = tp & T[index(oa[j])].negative;
+				T[index(oa[j])].negative.vars(&vl);
+				tp &= T[index(oa[j])].negative;
 			}
-		unique(&vlp);
-		sp1 = S[i].positive.smooth(vlp);
+		unique(&vl);
+		sp1 = S[i].positive.smooth(vl);
 
 		// NEGATIVE
-		vln.clear();
-		tn = 1;
-		for (j = 0; j < (int)oa.size(); j++)
+		vl.clear();
+		for (j = 0, tn = 1; j < (int)oa.size(); j++)
 			if (T[index(oa[j])].active)
 			{
-				T[index(oa[j])].negative.vars(&vln);
-				tn = tn & T[index(oa[j])].positive;
+				T[index(oa[j])].positive.vars(&vl);
+				tn &= T[index(oa[j])].positive;
 			}
-		unique(&vln);
-		sn1 = S[i].negative.smooth(vln);
+		unique(&vl);
+		sn1 = S[i].negative.smooth(vl);
 
 		for (j = 0; j < (int)S.size(); j++)
 		{
+			/* A node has to have at least one output transition due to the trim function.
+			 * A node can only have one output transition if that transition is active,
+			 * otherwise it can have multiple.
+			 */
+			oa = output_nodes(j);
+
 			/* States are conflicting if:
 			 *  - they are not the same state
 			 *  - one is not in the tail of another (the might as well be here case)
@@ -1368,7 +1373,7 @@ void petri::gen_bubbleless_conflicts()
 			if (i != j && !parallel && find(S[i].tail.begin(), S[i].tail.end(), j) == S[i].tail.end() && (sp1 & S[j].index) != 0)
 			{
 				// is it a conflicting state? (e.g. not vacuous)
-				if (S[i].active && (tp & S[j].index) == 0)
+				if (S[i].active && ((tp & S[j].index) == 0 || (T[index(oa[0])].active && (tp & T[index(oa[0])].index) == 0)))
 					add_conflict_pair(&positive_conflicts, i, j);
 
 				// it is at least an indistinguishable state at this point
@@ -1379,7 +1384,7 @@ void petri::gen_bubbleless_conflicts()
 			if (i != j && !parallel && find(S[i].tail.begin(), S[i].tail.end(), j) == S[i].tail.end() && (sn1 & S[j].index) != 0)
 			{
 				// is it a conflicting state? (e.g. not vacuous)
-				if (S[i].active && (tn & S[j].index) == 0)
+				if (S[i].active && ((tn & S[j].index) == 0 || (T[index(oa[0])].active && (tn & T[index(oa[0])].index) == 0)))
 					add_conflict_pair(&negative_conflicts, i, j);
 
 				// it is at least an indistinguishable state at this point
