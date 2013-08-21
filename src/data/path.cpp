@@ -54,6 +54,8 @@ int path::size()
 void path::clear()
 {
 	nodes.assign(nodes.size(), 0);
+	from.clear();
+	to.clear();
 }
 
 bool path::contains(int n)

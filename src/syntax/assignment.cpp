@@ -163,9 +163,6 @@ instruction *assignment::duplicate(instruction *parent, variable_space *vars, ma
 			ev->driven = true;
 	}
 
-	if (instr->flags == NULL)
-		cout << "FUCK" << endl;
-
 	return instr;
 }
 

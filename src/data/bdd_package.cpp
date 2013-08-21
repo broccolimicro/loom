@@ -120,7 +120,6 @@ uint32_t bdd_package::build(minterm t)
 
 	for (int i = t.size-1; i >= 0; i--)
 	{
-		cout << "BLARG " << i << endl;
 		v = t.get(i);
 		if (v != 0xFFFFFFFF && v != 0)
 			p = mk(i, (v == 0x555555555)*p, (v == 0xAAAAAAAA)*p);
@@ -141,7 +140,6 @@ uint32_t bdd_package::build(map<int, uint32_t> t)
 	uint32_t p = 1;
 	for (it = t.rbegin(); it != t.rend(); it++)
 	{
-		cout << "BLARG " << it->first << endl;
 		if (it->first >= T[0].i || it->first >= T[1].i)
 		{
 			T[0].i = it->first;

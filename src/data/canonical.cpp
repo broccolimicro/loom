@@ -617,7 +617,7 @@ canonical canonical::operator>>(canonical c)
  * \brief	Prints the sum of minterms to stdout.
  * \param	vars	A list of variable names indexed by variable index.
  */
-string canonical::print(variable_space *vars)
+string canonical::print(variable_space *vars, string prefix)
 {
 	if (terms.size() == 0)
 		return "0";
@@ -629,7 +629,7 @@ string canonical::print(variable_space *vars)
 	{
 		if (i != 0)
 			res += "|";
-		res += terms[i].print(vars);
+		res += terms[i].print(vars, prefix);
 	}
 	return res;
 }

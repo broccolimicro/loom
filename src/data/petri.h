@@ -10,6 +10,7 @@
 #include "canonical.h"
 #include "bdd.h"
 #include "path_space.h"
+#include "../flag_space.h"
 
 #ifndef petri_h
 #define petri_h
@@ -44,6 +45,7 @@ struct petri
 	~petri();
 
 	variable_space *vars;
+	flag_space *flags;
 	vector<node> S;
 	vector<node> T;
 	matrix<int> Wp;		// <s, t> from t to s
@@ -102,6 +104,7 @@ struct petri
 	void connect(int from, vector<int> to);
 	void connect(int from, int to);
 	pair<int, int> closest_input(vector<int> from, vector<int> to, path p, int i = 0);
+	pair<int, int> closest_output(vector<int> from, vector<int> to, path p, int i = 0);
 
 	bool dead(int from);
 	bool is_place(int from);
@@ -181,6 +184,10 @@ struct petri
 	void zero_ins(path_space *paths, vector<int> from);
 	void zero_outs(path_space *paths, int from);
 	void zero_outs(path_space *paths, vector<int> from);
+	vector<int> start_path(int from, vector<int> ex);
+	vector<int> start_path(vector<int> from, vector<int> ex);
+	vector<int> end_path(int to, vector<int> ex);
+	vector<int> end_path(vector<int> to, vector<int> ex);
 
 	node &operator[](int i);
 
@@ -188,7 +195,7 @@ struct petri
 	void print_petrify(string name);
 
 	void print_mutables();
-	void print_branch_ids();
+	void print_branch_ids(ostream *fout);
 };
 
 #endif

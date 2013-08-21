@@ -99,7 +99,7 @@ struct minterm
 
 	minterm operator>>(minterm t);
 
-	string print(variable_space *vars);
+	string print(variable_space *vars, string prefix = "");
 };
 
 

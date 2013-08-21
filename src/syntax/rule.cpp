@@ -159,9 +159,9 @@ void rule::print(ostream &os, string prefix)
 		names[i] = prefix + names[i];
 
 	if (up != -1)
-		os << up.print(vars) << " -> " << names[uid] << "+" << endl;
+		os << up.print(vars, prefix) << " -> " << names[uid] << "+" << endl;
 	if (down != -1)
-		os << down.print(vars) << " -> " << names[uid] << "-" << endl;
+		os << down.print(vars, prefix) << " -> " << names[uid] << "-" << endl;
 }
 
 //Print the rule in the following format:

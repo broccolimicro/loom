@@ -22,6 +22,8 @@ struct flag_space
 
 	vector<ifstream*>	input_files;
 	ofstream			*output_file;
+	ofstream			*state_file;
+	ofstream			*hse_file;
 	ofstream			*log_file;
 
 	string tab;

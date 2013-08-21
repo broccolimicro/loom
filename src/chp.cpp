@@ -81,7 +81,9 @@ int main(int argc, char **argv)
 			cout << "Options:" << endl;
 			cout << " --help\t\t\tDisplay this information" << endl;
 			cout << " --version\t\tDisplay compiler version information" << endl;
-			cout << " -o <file>\t\tPlace output into <file>" << endl;
+			cout << " -h <file>\t\tPlace all resulting HSE into <file>" << endl;
+			cout << " -s <file>\t\tPlace all resulting state space graph into <file>" << endl;
+			cout << " -o <file>\t\tPlace all resulting production rules into <file>" << endl;
 			cout << " -l <file>\t\tPlace log into <file>" << endl;
 			cout << " -D[option]\t\tDebugging options" << endl;
 			cout << " \tThe usual pipeline is as follows: preprocessor, handshaking expansions, " << endl;
@@ -127,10 +129,26 @@ int main(int argc, char **argv)
 		}
 		else if (strncmp(argv[i], "--version", 9) == 0)	// Version Information
 		{
-			cout << "haystack 1.0.0" << endl;
+			cout << "haystack 1.0.1" << endl;
 			cout << "Copyright (C) 2013 Sol Union." << endl;
 			cout << "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << endl;
 			cout << endl;
+		}
+		else if (strncmp(argv[i], "-h", 2) == 0)		// Output File
+		{
+			i++;
+			if (i < argc)
+				prgm.flags.hse_file = new ofstream(argv[i]);
+			else
+				cout << "error: missing filename after '-o'" << endl;
+		}
+		else if (strncmp(argv[i], "-s", 2) == 0)		// Output File
+		{
+			i++;
+			if (i < argc)
+				prgm.flags.state_file = new ofstream(argv[i]);
+			else
+				cout << "error: missing filename after '-o'" << endl;
 		}
 		else if (strncmp(argv[i], "-o", 2) == 0)		// Output File
 		{

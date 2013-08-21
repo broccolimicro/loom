@@ -91,7 +91,7 @@ struct canonical
 
 	canonical operator>>(canonical t);
 
-	string print(variable_space *v);
+	string print(variable_space *v, string prefix = "");
 };
 
 

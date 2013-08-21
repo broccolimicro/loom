@@ -265,10 +265,7 @@ minterm minterm::mask()
 		return result;
 	}
 	else
-	{
-		cout << "null mask" << endl;
 		return minterm(v_);
-	}
 }
 
 minterm minterm::inverse()
@@ -725,7 +722,7 @@ minterm minterm::operator>>(minterm t)
 	return result;
 }
 
-string minterm::print(variable_space *vars)
+string minterm::print(variable_space *vars, string prefix)
 {
 	string res;
 	bool first = false;
@@ -742,9 +739,9 @@ string minterm::print(variable_space *vars)
 				if (first)
 					res += "&";
 				if (vars != NULL)
-					res += tbl[(v>>(2*j))&3] + vars->get_name(i*16 + (15-j));
+					res += tbl[(v>>(2*j))&3] + prefix + vars->get_name(i*16 + (15-j));
 				else
-					res += tbl[(v>>(2*j))&3] + "x" + to_string(i*16 + (15-j));
+					res += tbl[(v>>(2*j))&3] + prefix + "x" + to_string(i*16 + (15-j));
 				first = true;
 			}
 		}
@@ -753,9 +750,9 @@ string minterm::print(variable_space *vars)
 			if (first)
 				res += "&";
 			if (vars != NULL)
-				res += tbl[(v>>30)&3] + vars->get_name(i*16 + 15);
+				res += tbl[(v>>30)&3] + prefix + vars->get_name(i*16 + 15);
 			else
-				res += tbl[(v>>30)&3] + "x" + to_string(i*16 + 15);
+				res += tbl[(v>>30)&3] + prefix + "x" + to_string(i*16 + 15);
 			first = true;
 		}
 	}

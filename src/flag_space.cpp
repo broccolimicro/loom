@@ -15,6 +15,8 @@ flag_space::flag_space()
 	log = 0;
 
 	output_file = NULL;
+	state_file = NULL;
+	hse_file = NULL;
 	log_file = (ofstream*)&cout;
 
 	tab = "";
@@ -32,6 +34,20 @@ flag_space::~flag_space()
 		}
 		input_files[i] = NULL;
 	}
+
+	if (state_file != NULL)
+	{
+		state_file->close();
+		delete state_file;
+	}
+	state_file = NULL;
+
+	if (hse_file != NULL)
+	{
+		hse_file->close();
+		delete hse_file;
+	}
+	hse_file = NULL;
 
 	if (output_file != NULL)
 	{

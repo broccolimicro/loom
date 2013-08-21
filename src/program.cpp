@@ -33,14 +33,11 @@ void program::compile()
 	//While there are and #includes (of the form #include "foo.chp") in the program
 	if (flags.input_files.size() > 0)
 	{
-		if (flags.output_file == NULL)
-			flags.output_file = new ofstream("a.out");
-
 		if (flags.pre())
 		{
 			prgm = string((istreambuf_iterator<char>(*(flags.input_files[0]))),
 						   istreambuf_iterator<char>());
-			cout << prgm << endl;
+			(*flags.log_file) << prgm << endl;
 			while ((i = prgm.find("#include")) != prgm.npos)
 			{
 				//Find the file name
@@ -48,7 +45,7 @@ void program::compile()
 				close = prgm.find_first_of("\"", open+1);
 
 				if (flags.log_precompile())
-					cout << "Expanding Inclusion: " << prgm.substr(open+1, close-open-1) << endl;
+					(*flags.log_file) << "Expanding Inclusion: " << prgm.substr(open+1, close-open-1) << endl;
 
 				ifstream s(prgm.substr(open+1, close-open-1).c_str());
 				string f((istreambuf_iterator<char>(s)),
@@ -59,7 +56,7 @@ void program::compile()
 
 			}
 
-			cout << endl;
+			(*flags.log_file) << endl;
 		}
 
 		// CHP to HSE
@@ -136,7 +133,7 @@ void program::parse(string chp)
 	cleaned_chp = remove_whitespace(chp);
 
 	if (flags.log_precompile())
-		cout << chp << endl;
+		(*flags.log_file) << chp << endl;
 
 	// Split the program into records and processes
 	int depth[3] = {0};
@@ -324,7 +321,7 @@ void program::print_hse()
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
 		if (i->second->kind() == "process")
-			((process*)i->second)->print_hse(flags.output_file);
+			((process*)i->second)->print_hse(flags.hse_file);
 }
 
 void program::print_dot()
@@ -332,7 +329,7 @@ void program::print_dot()
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
 		if (i->second->kind() == "process")
-			((process*)i->second)->print_dot(flags.output_file);
+			((process*)i->second)->print_dot(flags.state_file);
 }
 
 void program::print_petrify()

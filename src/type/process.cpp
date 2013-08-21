@@ -107,7 +107,6 @@ void process::parse(string raw)
 	{
 		expand_instantiation(NULL, "__sync call", &vars, &args, flags, false);
 		sequential = "[call.r];call.a+;(" + sequential + ");[~call.r];call.a-";
-		cout << "LOOK " << sequential << endl;
 	}
 
 	def.init(sequential, &vars, flags);
@@ -169,8 +168,9 @@ void process::reshuffle()
 // TODO There is a problem with the interaction of scribe variables with bubbleless reshuffling because scribe variables insert bubbles
 void process::generate_states()
 {
-	cout << "Process" << endl;
+	(*flags->log_file) << "Process" << endl;
 	net.vars = &vars;
+	net.flags = flags;
 
 	vector<int> start;
 	start.push_back(net.insert_place(start, map<int, int>(), map<int, int>(), NULL));
@@ -180,19 +180,16 @@ void process::generate_states()
 	do
 	{
 		net.gen_mutables();
-		net.print_branch_ids();
 		net.update();
-		print_dot(&cout);
+		print_dot(flags->log_file);
 	} while(net.trim());
 
 	net.check_assertions();
 
 	net.gen_tails();
 
-	print_dot(&cout);
-
-	cout << "BRANCHES " << name << endl;
-	net.print_branch_ids();
+	(*flags->log_file) << "Branches: " << name << endl;
+	net.print_branch_ids(flags->log_file);
 }
 
 bool process::insert_state_vars()
@@ -201,7 +198,7 @@ bool process::insert_state_vars()
 	list<vector<int> >::iterator lj;
 	map<int, int>::iterator m, n;
 	list<path>::iterator li;
-	vector<int> arcs, uptrans, downtrans, ia, oa;
+	vector<int> arcs, uptrans, downtrans, ia, oa, jstart, istart;
 	vector<pair<vector<int>, vector<int> > > ip;
 	int ium, idm, vid, j, k;
 	string vname;
@@ -210,18 +207,18 @@ bool process::insert_state_vars()
 	net.gen_conflicts();
 	net.gen_conditional_places();
 
-	cout << "Conflicts: " << name << endl;
+	(*flags->log_file) << "Conflicts: " << name << endl;
 	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
 	{
-		cout << i->first << ": ";
+		(*flags->log_file) << i->first << ": ";
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
-			cout << "{";
+			(*flags->log_file) << "{";
 			for (j = 0; j < (int)lj->size(); j++)
-				cout << (*lj)[j] << " ";
-			cout << "} ";
+				(*flags->log_file) << (*lj)[j] << " ";
+			(*flags->log_file) << "} ";
 		}
-		cout << endl;
+		(*flags->log_file) << endl;
 	}
 
 	if (net.conflicts.size() == 0)
@@ -229,26 +226,18 @@ bool process::insert_state_vars()
 
 	path_space up_paths(net.arcs.size()), up_temp(net.arcs.size()), up_inv(net.arcs.size()), down_paths(net.arcs.size()), down_temp(net.arcs.size()), down_inv(net.arcs.size());
 	path up_mask(net.arcs.size()), down_mask(net.arcs.size());
-	cout << "PROCESS " << name << endl;
+	(*flags->log_file) << "PROCESS " << name << endl;
 	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
 	{
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
-			net.get_paths(vector<int>(1, i->first), *lj, &up_paths);
-			net.get_paths(*lj, vector<int>(1, i->first), &down_paths);
+			down_paths.clear();
+			up_paths.clear();
+			istart = net.start_path(i->first, *lj);
+			jstart = net.start_path(*lj, vector<int>(1, i->first));
 
-			/**
-			 * After identifying paths, start at every conditional merge and
-			 * check to make sure that there is a path coming from each pbranch.
-			 * If not iterate backwards from the conditional merge along the
-			 * paths that do come from a branch until a conflict or a conditional
-			 * split is reached and set the paths' values along that part of the
-			 * branch to zero. This will prevent cases where you have two
-			 * conflicting places on sibling branches and the state variable
-			 * insertion algorithm puts transitions after the conflicting places.
-			 */
-			net.filter_path_space(&up_paths);
-			net.filter_path_space(&down_paths);
+			net.get_paths(istart, *lj, &up_paths);
+			net.get_paths(jstart, vector<int>(1, i->first), &down_paths);
 
 			up_inv = up_paths.inverse();
 			down_inv = down_paths.inverse();
@@ -260,8 +249,8 @@ bool process::insert_state_vars()
 			down_paths.apply_mask(up_mask);
 
 			net.zero_outs(&up_paths, i->first);
-			net.zero_paths(&down_paths, i->first);
-			net.zero_paths(&up_paths, *lj);
+			net.zero_ins(&down_paths, i->first);
+			net.zero_ins(&up_paths, *lj);
 			net.zero_outs(&down_paths, *lj);
 
 			for (j = 0; j < (int)net.arcs.size(); j++)
@@ -271,54 +260,54 @@ bool process::insert_state_vars()
 					down_paths.zero(j);
 				}
 
-			cout << "Up: {";
+			(*flags->log_file) << "Up: {";
 			for (j = 0; j < (int)up_paths.total.from.size(); j++)
 			{
 				if (j != 0)
-					cout << ", ";
-				cout << up_paths.total.from[j];
+					(*flags->log_file) << ", ";
+				(*flags->log_file) << up_paths.total.from[j];
 			}
-			cout << "} -> {";
+			(*flags->log_file) << "} -> {";
 			for (j = 0; j < (int)up_paths.total.to.size(); j++)
 			{
 				if (j != 0)
-					cout << ", ";
-				cout << up_paths.total.to[j];
+					(*flags->log_file) << ", ";
+				(*flags->log_file) << up_paths.total.to[j];
 			}
-			cout << "}" << endl;
+			(*flags->log_file) << "}" << endl;
 			uptrans.clear();
-			cout << up_paths.total << endl;
+			(*flags->log_file) << up_paths.total << endl;
 			while (up_paths.size() > 0 && (ium = net.closest_input(up_paths.total.maxes(), up_paths.total.to, path(net.arcs.size())).second) != -1)
 			{
 				uptrans.push_back(ium);
 				up_paths = up_paths.avoidance(ium);
-				cout << up_paths.total << endl;
+				(*flags->log_file) << up_paths.total << endl;
 			}
 
-			cout << "Down: {";
+			(*flags->log_file) << "Down: {";
 			for (j = 0; j < (int)down_paths.total.from.size(); j++)
 			{
 				if (j != 0)
-					cout << ", ";
-				cout << down_paths.total.from[j];
+					(*flags->log_file) << ", ";
+				(*flags->log_file) << down_paths.total.from[j];
 			}
-			cout << "} -> {";
+			(*flags->log_file) << "} -> {";
 			for (j = 0; j < (int)down_paths.total.to.size(); j++)
 			{
 				if (j != 0)
-					cout << ", ";
-				cout << down_paths.total.to[j];
+					(*flags->log_file) << ", ";
+				(*flags->log_file) << down_paths.total.to[j];
 			}
-			cout << "}" << endl;
+			(*flags->log_file) << "}" << endl;
 			downtrans.clear();
-			cout << down_paths.total << endl;
+			(*flags->log_file) << down_paths.total << endl;
 			while (down_paths.size() > 0 && (idm = net.closest_input(down_paths.total.maxes(), down_paths.total.to, path(net.arcs.size())).second) != -1)
 			{
 				downtrans.push_back(idm);
 				down_paths = down_paths.avoidance(idm);
-				cout << down_paths.total << endl;
+				(*flags->log_file) << down_paths.total << endl;
 			}
-			cout << endl;
+			(*flags->log_file) << endl;
 
 			unique(&uptrans, &downtrans);
 
@@ -328,6 +317,7 @@ bool process::insert_state_vars()
 				for (j = 0; j < (int)lj->size(); j++)
 					cout << (*lj)[j] << " ";
 				cout << "}." << endl;
+				net.print_dot(&cout, name);
 			}
 			else if (downtrans < uptrans)
 				ip.push_back(pair<vector<int>, vector<int> >(downtrans, uptrans));
@@ -365,99 +355,108 @@ bool process::insert_bubbleless_state_vars()
 	map<int, list<vector<int> > >::iterator i;
 	list<vector<int> >::iterator lj;
 	map<int, int>::iterator m, n;
-	list<path>::iterator li;
+	vector<int> li;
 
-	vector<int> arcs, uptrans, downtrans, ia, oa;
+	map<int, pair<int, int> >::iterator ci;
+	vector<int> arcs, uptrans, downtrans, ia, oa, istart, jstart, iend, jend;
 	vector<pair<vector<int>, vector<int> > > ip;
 	int ium, idm, vid, j, k;
 	string vname;
 
+	net.print_dot(flags->log_file, name);
 	net.gen_tails();
 	net.gen_senses();
 	net.gen_bubbleless_conflicts();
 	net.gen_conditional_places();
 
-	cout << "Positive Conflicts: " << name << endl;
+	(*flags->log_file) << "Conflicts: " << name << endl;
+	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
+	{
+		(*flags->log_file) << i->first << ": ";
+		for (lj = i->second.begin(); lj != i->second.end(); lj++)
+		{
+			(*flags->log_file) << "{";
+			for (j = 0; j < (int)lj->size(); j++)
+				(*flags->log_file) << (*lj)[j] << " ";
+			(*flags->log_file) << "} ";
+		}
+		(*flags->log_file) << endl;
+	}
+
+	(*flags->log_file) << "Positive Conflicts: " << name << endl;
 	for (i = net.positive_conflicts.begin(); i != net.positive_conflicts.end(); i++)
 	{
-		cout << i->first << ": ";
+		(*flags->log_file) << i->first << ": ";
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
-			cout << "{";
+			(*flags->log_file) << "{";
 			for (j = 0; j < (int)lj->size(); j++)
-				cout << (*lj)[j] << " ";
-			cout << "} ";
+				(*flags->log_file) << (*lj)[j] << " ";
+			(*flags->log_file) << "} ";
 		}
-		cout << endl;
+		(*flags->log_file) << endl;
 	}
 
-	cout << "Negative Conflicts: " << name << endl;
+	(*flags->log_file) << "Negative Conflicts: " << name << endl;
 	for (i = net.negative_conflicts.begin(); i != net.negative_conflicts.end(); i++)
 	{
-		cout << i->first << ": ";
+		(*flags->log_file) << i->first << ": ";
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
-			cout << "{";
+			(*flags->log_file) << "{";
 			for (j = 0; j < (int)lj->size(); j++)
-				cout << (*lj)[j] << " ";
-			cout << "} ";
+				(*flags->log_file) << (*lj)[j] << " ";
+			(*flags->log_file) << "} ";
 		}
-		cout << endl;
+		(*flags->log_file) << endl;
 	}
 
-	cout << "Positive Indistinguishables: " << name << endl;
+	(*flags->log_file) << "Positive Indistinguishables: " << name << endl;
 	for (i = net.positive_indistinguishable.begin(); i != net.positive_indistinguishable.end(); i++)
 	{
-		cout << i->first << ": ";
+		(*flags->log_file) << i->first << ": ";
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
-			cout << "{";
+			(*flags->log_file) << "{";
 			for (j = 0; j < (int)lj->size(); j++)
-				cout << (*lj)[j] << " ";
-			cout << "} ";
+				(*flags->log_file) << (*lj)[j] << " ";
+			(*flags->log_file) << "} ";
 		}
-		cout << endl;
+		(*flags->log_file) << endl;
 	}
 
-	cout << "Negative Indistinguishables: " << name << endl;
+	(*flags->log_file) << "Negative Indistinguishables: " << name << endl;
 	for (i = net.negative_indistinguishable.begin(); i != net.negative_indistinguishable.end(); i++)
 	{
-		cout << i->first << ": ";
+		(*flags->log_file) << i->first << ": ";
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
-			cout << "{";
+			(*flags->log_file) << "{";
 			for (j = 0; j < (int)lj->size(); j++)
-				cout << (*lj)[j] << " ";
-			cout << "} ";
+				(*flags->log_file) << (*lj)[j] << " ";
+			(*flags->log_file) << "} ";
 		}
-		cout << endl;
+		(*flags->log_file) << endl;
 	}
 
-	if (net.positive_conflicts.size() == 0 && net.negative_conflicts.size() == 0)
+	if (net.positive_conflicts.size() == 0 && net.negative_conflicts.size() == 0 && net.conflicts.size() == 0)
 		return false;
 
 	path_space up_paths(net.arcs.size()), up_temp(net.arcs.size()), up_inv(net.arcs.size()), down_paths(net.arcs.size()), down_temp(net.arcs.size()), down_inv(net.arcs.size());
 	path up_mask(net.arcs.size()), down_mask(net.arcs.size());
-	cout << "PROCESS " << name << endl;
-	for (i = net.positive_conflicts.begin(); i != net.positive_conflicts.end(); i++)
+	(*flags->log_file) << "PROCESS " << name << endl;
+
+	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
 	{
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
-			net.get_paths(*lj, vector<int>(1, i->first), &up_paths);
-			net.get_paths(vector<int>(1, i->first), *lj, &down_paths);
+			down_paths.clear();
+			up_paths.clear();
+			istart = net.start_path(i->first, *lj);
+			jstart = net.start_path(*lj, vector<int>(1, i->first));
 
-			/**
-			 * After identifying paths, start at every conditional merge and
-			 * check to make sure that there is a path coming from each pbranch.
-			 * If not iterate backwards from the conditional merge along the
-			 * paths that do come from a branch until a conflict or a conditional
-			 * split is reached and set the paths' values along that part of the
-			 * branch to zero. This will prevent cases where you have two
-			 * conflicting places on sibling branches and the state variable
-			 * insertion algorithm puts transitions after the conflicting places.
-			 */
-			net.filter_path_space(&up_paths);
-			net.filter_path_space(&down_paths);
+			net.get_paths(istart, *lj, &up_paths);
+			net.get_paths(jstart, vector<int>(1, i->first), &down_paths);
 
 			up_inv = up_paths.inverse();
 			down_inv = down_paths.inverse();
@@ -468,10 +467,10 @@ bool process::insert_bubbleless_state_vars()
 			up_paths.apply_mask(down_mask);
 			down_paths.apply_mask(up_mask);
 
-			net.zero_paths(&up_paths, i->first);
+			net.zero_outs(&up_paths, i->first);
 			net.zero_ins(&down_paths, i->first);
 			net.zero_ins(&up_paths, *lj);
-			net.zero_paths(&down_paths, *lj);
+			net.zero_outs(&down_paths, *lj);
 
 			for (j = 0; j < (int)net.arcs.size(); j++)
 				if (net.is_place(net.arcs[j].first) && net.output_nodes(net.arcs[j].first).size() > 1)
@@ -480,53 +479,102 @@ bool process::insert_bubbleless_state_vars()
 					down_paths.zero(j);
 				}
 
-			cout << "Up: {";
+			(*flags->log_file) << "Up: {";
 			for (j = 0; j < (int)up_paths.total.from.size(); j++)
 			{
 				if (j != 0)
-					cout << ", ";
-				cout << up_paths.total.from[j];
+					(*flags->log_file) << ", ";
+				(*flags->log_file) << up_paths.total.from[j];
 			}
-			cout << "} -> {";
+			(*flags->log_file) << "} -> {";
 			for (j = 0; j < (int)up_paths.total.to.size(); j++)
 			{
 				if (j != 0)
-					cout << ", ";
-				cout << up_paths.total.to[j];
+					(*flags->log_file) << ", ";
+				(*flags->log_file) << up_paths.total.to[j];
 			}
-			cout << "}" << endl;
-
+			(*flags->log_file) << "}" << endl;
 			uptrans.clear();
+			(*flags->log_file) << up_paths.total << endl;
 			while (up_paths.size() > 0 && (ium = net.closest_input(up_paths.total.maxes(), up_paths.total.to, path(net.arcs.size())).second) != -1)
 			{
-				cout << up_paths.total << endl;
 				uptrans.push_back(ium);
 				up_paths = up_paths.avoidance(ium);
+				(*flags->log_file) << up_paths.total << endl;
 			}
 
-			cout << "Down: {";
+			(*flags->log_file) << "Down: {";
 			for (j = 0; j < (int)down_paths.total.from.size(); j++)
 			{
 				if (j != 0)
-					cout << ", ";
-				cout << down_paths.total.from[j];
+					(*flags->log_file) << ", ";
+				(*flags->log_file) << down_paths.total.from[j];
 			}
-			cout << "} -> {";
+			(*flags->log_file) << "} -> {";
 			for (j = 0; j < (int)down_paths.total.to.size(); j++)
 			{
 				if (j != 0)
-					cout << ", ";
-				cout << down_paths.total.to[j];
+					(*flags->log_file) << ", ";
+				(*flags->log_file) << down_paths.total.to[j];
 			}
-			cout << "}" << endl;
+			(*flags->log_file) << "}" << endl;
 			downtrans.clear();
+			(*flags->log_file) << down_paths.total << endl;
 			while (down_paths.size() > 0 && (idm = net.closest_input(down_paths.total.maxes(), down_paths.total.to, path(net.arcs.size())).second) != -1)
 			{
-				cout << down_paths.total << endl;
 				downtrans.push_back(idm);
 				down_paths = down_paths.avoidance(idm);
+				(*flags->log_file) << down_paths.total << endl;
 			}
-			cout << endl;
+			(*flags->log_file) << endl;
+
+			unique(&uptrans, &downtrans);
+
+			if (uptrans.size() == 0 || downtrans.size() == 0)
+			{
+				cout << "Error: No solution for the conflict set: " << i->first << " -> {";
+				for (j = 0; j < (int)lj->size(); j++)
+					cout << (*lj)[j] << " ";
+				cout << "}." << endl;
+				net.print_dot(&cout, name);
+			}
+			else if (downtrans < uptrans)
+				ip.push_back(pair<vector<int>, vector<int> >(downtrans, uptrans));
+			else
+				ip.push_back(pair<vector<int>, vector<int> >(uptrans, downtrans));
+		}
+	}
+
+	for (i = net.positive_conflicts.begin(); i != net.positive_conflicts.end(); i++)
+	{
+		for (lj = i->second.begin(); lj != i->second.end(); lj++)
+		{
+			down_paths.clear();
+			up_paths.clear();
+			jstart = net.start_path(*lj, vector<int>(1, i->first));
+			istart = net.start_path(vector<int>(1, i->first), *lj);
+
+			net.get_paths(jstart, vector<int>(1, i->first), &down_paths);
+			net.get_paths(istart, *lj, &up_paths);
+
+			uptrans = down_paths.total.to;
+			downtrans = up_paths.total.to;
+
+			(*flags->log_file) << "Down: {";
+			for (j = 0; j < (int)down_paths.total.from.size(); j++)
+			{
+				if (j != 0)
+					(*flags->log_file) << ", ";
+				(*flags->log_file) << down_paths.total.from[j];
+			}
+			(*flags->log_file) << "} -> {";
+			for (j = 0; j < (int)down_paths.total.to.size(); j++)
+			{
+				if (j != 0)
+					(*flags->log_file) << ", ";
+				(*flags->log_file) << down_paths.total.to[j];
+			}
+			(*flags->log_file) << "}" << endl;
 
 			unique(&uptrans, &downtrans);
 			if (uptrans.size() == 0 || downtrans.size() == 0)
@@ -535,6 +583,9 @@ bool process::insert_bubbleless_state_vars()
 				for (j = 0; j < (int)lj->size(); j++)
 					cout << (*lj)[j] << " ";
 				cout << "}." << endl;
+				cout << "Down Paths:" << endl;
+				cout << down_paths << endl;
+				net.print_dot(&cout, name);
 			}
 			else
 				ip.push_back(pair<vector<int>, vector<int> >(uptrans, downtrans));
@@ -545,89 +596,32 @@ bool process::insert_bubbleless_state_vars()
 	{
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
-			net.get_paths(vector<int>(1, i->first), *lj, &up_paths);
-			net.get_paths(*lj, vector<int>(1, i->first), &down_paths);
+			down_paths.clear();
+			up_paths.clear();
+			jstart = net.start_path(*lj, vector<int>(1, i->first));
+			istart = net.start_path(vector<int>(1, i->first), *lj);
 
-			/**
-			 * After identifying paths, start at every conditional merge and
-			 * check to make sure that there is a path coming from each pbranch.
-			 * If not iterate backwards from the conditional merge along the
-			 * paths that do come from a branch until a conflict or a conditional
-			 * split is reached and set the paths' values along that part of the
-			 * branch to zero. This will prevent cases where you have two
-			 * conflicting places on sibling branches and the state variable
-			 * insertion algorithm puts transitions after the conflicting places.
-			 */
-			net.filter_path_space(&up_paths);
-			net.filter_path_space(&down_paths);
+			net.get_paths(jstart, vector<int>(1, i->first), &up_paths);
+			net.get_paths(istart, *lj, &down_paths);
 
-			up_inv = up_paths.inverse();
-			down_inv = down_paths.inverse();
+			uptrans = down_paths.total.to;
+			downtrans = up_paths.total.to;
 
-			up_mask = up_inv.get_mask();
-			down_mask = down_inv.get_mask();
-
-			up_paths.apply_mask(down_mask);
-			down_paths.apply_mask(up_mask);
-
-			net.zero_ins(&up_paths, i->first);
-			net.zero_paths(&down_paths, i->first);
-			net.zero_paths(&up_paths, *lj);
-			net.zero_ins(&down_paths, *lj);
-
-			for (j = 0; j < (int)net.arcs.size(); j++)
-				if (net.is_place(net.arcs[j].first) && net.output_nodes(net.arcs[j].first).size() > 1)
-				{
-					up_paths.zero(j);
-					down_paths.zero(j);
-				}
-
-			cout << "Up: {";
+			(*flags->log_file) << "Up: {";
 			for (j = 0; j < (int)up_paths.total.from.size(); j++)
 			{
 				if (j != 0)
-					cout << ", ";
-				cout << up_paths.total.from[j];
+					(*flags->log_file) << ", ";
+				(*flags->log_file) << up_paths.total.from[j];
 			}
-			cout << "} -> {";
+			(*flags->log_file) << "} -> {";
 			for (j = 0; j < (int)up_paths.total.to.size(); j++)
 			{
 				if (j != 0)
-					cout << ", ";
-				cout << up_paths.total.to[j];
+					(*flags->log_file) << ", ";
+				(*flags->log_file) << up_paths.total.to[j];
 			}
-			cout << "}" << endl;
-			uptrans.clear();
-			while (up_paths.size() > 0 && (ium = net.closest_input(up_paths.total.maxes(), up_paths.total.to, path(net.arcs.size())).second) != -1)
-			{
-				cout << up_paths.total << endl;
-				uptrans.push_back(ium);
-				up_paths = up_paths.avoidance(ium);
-			}
-
-			cout << "Down: {";
-			for (j = 0; j < (int)down_paths.total.from.size(); j++)
-			{
-				if (j != 0)
-					cout << ", ";
-				cout << down_paths.total.from[j];
-			}
-			cout << "} -> {";
-			for (j = 0; j < (int)down_paths.total.to.size(); j++)
-			{
-				if (j != 0)
-					cout << ", ";
-				cout << down_paths.total.to[j];
-			}
-			cout << "}" << endl;
-			downtrans.clear();
-			while (down_paths.size() > 0 && (idm = net.closest_input(down_paths.total.maxes(), down_paths.total.to, path(net.arcs.size())).second) != -1)
-			{
-				cout << down_paths.total << endl;
-				downtrans.push_back(idm);
-				down_paths = down_paths.avoidance(idm);
-			}
-			cout << endl;
+			(*flags->log_file) << "}" << endl;
 
 			unique(&uptrans, &downtrans);
 
@@ -637,6 +631,9 @@ bool process::insert_bubbleless_state_vars()
 				for (j = 0; j < (int)lj->size(); j++)
 					cout << (*lj)[j] << " ";
 				cout << "}." << endl;
+				cout << "Up Paths:" << endl;
+				cout << up_paths << endl;
+				net.print_dot(&cout, name);
 			}
 			else
 				ip.push_back(pair<vector<int>, vector<int> >(uptrans, downtrans));
@@ -829,15 +826,41 @@ void process::elaborate_prs()
 
 void process::print_hse(ostream *fout)
 {
+	bool individual = false;
+	if (fout == NULL)
+	{
+		individual = true;
+		fout = new ofstream(name + ".hse");
+	}
+
 	(*fout) << "/* Process " << name << " */";
 	def.print_hse("", fout);
 	(*fout) << endl << endl;
+
+	if (individual)
+	{
+		delete fout;
+		fout = NULL;
+	}
 }
 
 void process::print_dot(ostream *fout)
 {
+	bool individual = false;
+	if (fout == NULL)
+	{
+		individual = true;
+		fout = new ofstream(name + ".dot");
+	}
+
 	net.print_dot(fout, name);
 	(*fout) << endl;
+
+	if (individual)
+	{
+		delete fout;
+		fout = NULL;
+	}
 }
 
 void process::print_petrify()
@@ -847,6 +870,13 @@ void process::print_petrify()
 
 void process::print_prs(ostream *fout)
 {
+	bool individual = false;
+	if (fout == NULL)
+	{
+		individual = true;
+		fout = new ofstream(name + ".prs");
+	}
+
 	(*fout) << "/* Process " << name << " */" << endl;
 	map<string, variable>::iterator vi;
 	type_space::iterator ki;
@@ -864,4 +894,10 @@ void process::print_prs(ostream *fout)
 		}
 	}
 	(*fout) << endl;
+
+	if (individual)
+	{
+		delete fout;
+		fout = NULL;
+	}
 }
