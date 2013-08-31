@@ -19,12 +19,21 @@ instruction *expand_instantiation(instruction *parent, string chp, variable_spac
 	map<string, string> rename2;
 	map<string, string>::iterator ri;
 	list<string>::iterator i, j;
+	string name,val;
+	int k;
+	vector<int> reset;
+	bool first;
 
 	if (input != NULL)
 		input->push_back(v.name);
 
 	if ((type = vars->find_type(v.type)) != NULL)
 	{
+		if (allow_process)
+		{
+			reset = v.reset;
+			v.reset = vector<int>();
+		}
 		vars->insert(v);
 
 		if (type->kind() == "record" || type->kind() == "channel")
@@ -48,6 +57,7 @@ instruction *expand_instantiation(instruction *parent, string chp, variable_spac
 						{
 							rename2 = vars->instantiate(chname, !allow_process, &(((channel*)ch)->vars), true);
 							rename.insert(rename2.begin(), rename2.end());
+
 						}
 					}
 
@@ -64,6 +74,29 @@ instruction *expand_instantiation(instruction *parent, string chp, variable_spac
 			}
 			else
 				cout << "Error: Invalid use of type " << type->kind() << " in record definition." << endl;
+		}
+		else if (allow_process)
+		{
+			first = true;
+			for (k = 0; k < (int)reset.size(); k++)
+			{
+				if (reset[k] == 0 || reset[k] == 1)
+				{
+					if (!first)
+					{
+						name += ",";
+						val += ",";
+					}
+
+					name += v.name + "[" + to_string(k) + "]";
+					val += to_string(reset[k]);
+
+					first = false;
+				}
+			}
+
+			if (name != "" && val != "")
+				return new assignment(parent, name + ":=" + val, vars, flags);
 		}
 	}
 	else
@@ -348,13 +381,15 @@ vector<string> extract_names(string exp)
 {
 	vector<string> ret;
 	size_t i = string::npos, j = 0;
-	while ((i = exp.find_first_of("&|", i+1)) != string::npos)
+	while ((i = exp.find_first_of("~&|()", i+1)) != string::npos)
 	{
-		ret.push_back(exp.substr(j, i-j));
+		if (i-j > 1)
+			ret.push_back(exp.substr(j, i-j));
 		j = i+1;
 	}
 
-	ret.push_back(exp.substr(j));
+	if (exp.size()-j > 1)
+		ret.push_back(exp.substr(j));
 
 	return unique(&ret);
 }
@@ -363,13 +398,15 @@ vector<int> extract_ids(string exp, variable_space *vars)
 {
 	vector<int> ret;
 	size_t i = string::npos, j = 0;
-	while ((i = exp.find_first_of("&|", i+1)) != string::npos)
+	while ((i = exp.find_first_of("~&|()", i+1)) != string::npos)
 	{
-		ret.push_back(vars->get_uid(exp.substr(j, i-j)));
+		if (i-j > 1)
+			ret.push_back(vars->get_uid(exp.substr(j, i-j)));
 		j = i+1;
 	}
 
-	ret.push_back(vars->get_uid(exp.substr(j)));
+	if (exp.size()-j > 1)
+		ret.push_back(vars->get_uid(exp.substr(j)));
 
 	return unique(&ret);
 }

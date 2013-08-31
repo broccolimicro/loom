@@ -29,6 +29,8 @@ record::record(string raw, type_space *types, flag_space *flags)
 	this->flags = flags;
 
 	parse(raw);
+
+	types->insert(pair<string, record*>(name, this));
 }
 
 record::~record()

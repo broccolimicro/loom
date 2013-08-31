@@ -119,6 +119,9 @@ void channel::parse(string chp)
 		(*flags->log_file) << endl;
 	}
 
+	vars.types->insert(pair<string, channel*>(name, this));
+
+
 	/* These variables won't automatically be instantiated as
 	 * [operator name].[var name] because they are considered
 	 * to be io variables. If you look above at the expand instantiation
@@ -129,16 +132,24 @@ void channel::parse(string chp)
 	recv = new operate();
 	probe = new operate();
 
-	send->vars = vars;
+	variable_space temp;
+	temp.types = vars.types;
+	expand_instantiation(NULL, name + " this", &temp, NULL, flags, false);
+
+	send->vars = temp;
 	send->flags = flags;
-	recv->vars = vars;
+	recv->vars = temp;
 	recv->flags = flags;
-	probe->vars = vars;
+	probe->vars = temp;
 	probe->flags = flags;
 
 	send->parse(s);
 	recv->parse(r);
 	probe->parse(p);
+
+	vars.types->insert(pair<string, operate*>(name + "." + send->name, send));
+	vars.types->insert(pair<string, operate*>(name + "." + recv->name, recv));
+	vars.types->insert(pair<string, operate*>(name + "." + probe->name, probe));
 }
 
 ostream &operator<<(ostream &os, channel s)

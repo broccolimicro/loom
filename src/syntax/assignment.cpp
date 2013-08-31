@@ -227,15 +227,27 @@ void assignment::parse()
 	else
 		cout << "Error: Instruction not handled: " << chp << endl;
 
+
+
 	flags->dec();
 }
 
-void assignment::merge()
+void assignment::simulate()
+{
+	vars->increment_pcs(logic(), true);
+}
+
+void assignment::rewrite()
 {
 
 }
 
-vector<int> assignment::generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
+void assignment::reorder()
+{
+
+}
+
+vector<int> assignment::generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
 {
 	list<pair<string, string> >::iterator ei, ej;
 	vector<int> next, end;
@@ -250,6 +262,7 @@ vector<int> assignment::generate_states(petri *n, vector<int> f, map<int, int> p
 		(*flags->log_file) << flags->tab << "Assignment " << chp << endl;
 
 	net  = n;
+	prs = p;
 	from = f;
 
 	pbranch_id = net->pbranch_count;
@@ -280,10 +293,6 @@ vector<int> assignment::generate_states(petri *n, vector<int> f, map<int, int> p
 	uid.push_back(net->insert_dummy(allends, pbranch, cbranch, this));
 
 	return uid;
-}
-
-void assignment::insert_instr(int uid, int nid, instruction *instr)
-{
 }
 
 void assignment::print_hse(string t, ostream *fout)

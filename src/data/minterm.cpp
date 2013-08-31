@@ -247,7 +247,56 @@ int minterm::diff_count(minterm s)
 		a = a + (a >> 16);
 		count += a & 0x0000003F;
 	}
+
 	return count;
+}
+
+pair<int, int> minterm::xdiff_count(minterm s)
+{
+	if (s.size > size)
+		resize(s.size, vX);
+	else if (size > s.size)
+		s.resize(size, vX);
+
+	uint32_t a, b, c, d;
+	int xcount0 = 0;
+	int xcount1 = 0;
+	for (size_t i = 0; i < values.size(); i++)
+	{
+		a = values[i] & 0x55555555 & (values[i] >> 1);
+
+		b = s.values[i] & 0x55555555 & (s.values[i] >> 1);
+
+		c = a & ~b;
+		d = b & ~a;
+
+		c = (c & 0x33333333) + ((c >> 2) & 0x33333333);
+		c = (c & 0x0F0F0F0F) + ((c >> 4) & 0x0F0F0F0F);
+		c = c + (c >> 8);
+		c = c + (c >> 16);
+		xcount0 += c & 0x0000003F;
+
+		d = (d & 0x33333333) + ((d >> 2) & 0x33333333);
+		d = (d & 0x0F0F0F0F) + ((d >> 4) & 0x0F0F0F0F);
+		d = d + (d >> 8);
+		d = d + (d >> 16);
+		xcount1 += d & 0x0000003F;
+	}
+
+	return pair<int, int>(xcount0, xcount1);
+}
+
+minterm minterm::xoutnulls()
+{
+	minterm result;
+	result.size = size;
+	uint32_t a;
+	for (int i = 0; i < (int)values.size(); i++)
+	{
+		a = ~values[i] & (~values[i] >> 1) & 0x55555555;
+		result.values.push_back(values[i] | a | (a << 1));
+	}
+	return result;
 }
 
 minterm minterm::mask()
@@ -288,6 +337,25 @@ void minterm::push_back(uint32_t v)
 
 	values[i] = (values[i] & ~mask) | (v & mask);
 	size++;
+}
+
+vector<minterm> minterm::expand(vector<int> uids)
+{
+	vector<minterm> r1;
+
+	r1.push_back(*this);
+	for (int i = 0; i < (int)uids.size(); i++)
+	{
+		for (int j = r1.size()-1; j >= 0; j--)
+		{
+			if (r1[j].val(uids[i]) == 2)
+			{
+				r1.push_back(r1[j] & minterm(uids[i], 0));
+				r1[j] &= minterm(uids[i], 1);
+			}
+		}
+	}
+	return r1;
 }
 
 minterm::minterm(uint32_t val)
@@ -612,78 +680,6 @@ minterm minterm::operator|(uint32_t s)
 		return minterm(1);
 }
 
-bool minterm::operator==(minterm s)
-{
-	if (s.size > size)
-		resize(s.size, vX);
-	else if (size > s.size)
-		s.resize(size, vX);
-
-	bool result = true;
-
-	for (size_t i = 0; i < values.size() && i < s.values.size(); i++)
-		result = result && (values[i] == s.values[i]);
-
-	return result;
-}
-
-bool minterm::operator!=(minterm s)
-{
-	if (s.size > size)
-		resize(s.size, vX);
-	else if (size > s.size)
-		s.resize(size, vX);
-
-	bool result = false;
-
-	for (size_t i = 0; i < values.size(); i++)
-		result = result || (values[i] != s.values[i]);
-
-	return result;
-}
-
-bool minterm::operator==(uint32_t s)
-{
-	bool zero = false, one = true;
-	int i;
-	for (i = 0; i < (int)values.size()-1; i++)
-	{
-		zero = zero || (((values[i]>>1) | values[i] | v1) != vX);
-		one = one && ((((~values[i]>>1) | (~values[i])) & v0) == 0);
-	}
-	if ((int)values.size() > 0)
-	{
-		zero = zero || (((values[i]>>1) | values[i] | v1 | ~(vX << (32 - ((size&0x0000000F) << 1)))) != vX);
-		one = one && ((((~values[i]>>1) | (~values[i])) & (v0 << (32 - ((size&0x0000000F) << 1)))) == 0);
-	}
-
-	if (((s == 0) && zero) || ((s == 1) && one))
-		return true;
-	else
-		return false;
-}
-
-bool minterm::operator!=(uint32_t s)
-{
-	bool zero = false, one = true;
-	int i = 0;
-	for (i = 0; i < (int)values.size()-1; i++)
-	{
-		zero = zero || (((values[i]>>1) | values[i] | v1) != vX);
-		one = one && ((((~values[i]>>1) | (~values[i])) & v0) == 0);
-	}
-	if ((int)values.size() > 0)
-	{
-		zero = zero || (((values[i]>>1) | values[i] | v1 | ~(vX << (32 - ((size&0x0000000F) << 1)))) != vX);
-		one = one && ((((~values[i]>>1) | (~values[i])) & (v0 << (32 - ((size&0x0000000F) << 1)))) == 0);
-	}
-
-	if (((s == 0) && zero) || ((s == 1) && one))
-		return false;
-	else
-		return true;
-}
-
 bool minterm::constant()
 {
 	bool zero = false, one = true;
@@ -745,14 +741,15 @@ string minterm::print(variable_space *vars, string prefix)
 				first = true;
 			}
 		}
-		if (((v>>30)&3) != 3 && ((int)i*16 + 15) < size)
+
+		if ((v&3) != 3 && ((int)i*16 + 15) < size)
 		{
 			if (first)
 				res += "&";
 			if (vars != NULL)
-				res += tbl[(v>>30)&3] + prefix + vars->get_name(i*16 + 15);
+				res += tbl[v&3] + prefix + vars->get_name(i*16 + 15);
 			else
-				res += tbl[(v>>30)&3] + prefix + "x" + to_string(i*16 + 15);
+				res += tbl[v&3] + prefix + "x" + to_string(i*16 + 15);
 			first = true;
 		}
 	}
@@ -761,4 +758,204 @@ string minterm::print(variable_space *vars, string prefix)
 		res = "1";
 
 	return res;
+}
+
+string minterm::print_assign(variable_space *vars, string prefix)
+{
+	string res;
+	string res2;
+	bool first = false;
+
+	string tbl[4] = {"", "0", "1", ""};
+	uint32_t v;
+	for (size_t i = 0; i < values.size(); i++)
+	{
+		v = values[i];
+		for (int j = 15; j > 0; j--)
+		{
+			if (((v>>(2*j))&3) != 3 && ((v>>(2*j))&3) != 0 && ((int)i*16 + (15-j)) < size)
+			{
+				if (first)
+				{
+					res += ",";
+					res2 += ",";
+				}
+
+				if (vars != NULL)
+					res += prefix + vars->get_name(i*16 + (15-j));
+				else
+					res += prefix + "x" + to_string(i*16 + (15-j));
+				res2 += tbl[(v>>(2*j))&3];
+
+				first = true;
+			}
+		}
+		if (((v>>30)&3) != 3 && ((v>>30)&3) != 0 && ((int)i*16 + 15) < size)
+		{
+			if (first)
+			{
+				res += ",";
+				res2 += ",";
+			}
+
+			if (vars != NULL)
+				res += prefix + vars->get_name(i*16 + 15);
+			else
+				res += prefix + "x" + to_string(i*16 + 15);
+			res2 += tbl[(v>>30)&3];
+
+			first = true;
+		}
+	}
+
+	res += ":=" + res2;
+
+	if (res2 == "")
+		return "skip";
+
+	return res;
+}
+
+bool operator==(minterm s1, minterm s2)
+{
+	if (s2.size > s1.size)
+		s1.resize(s2.size, vX);
+	else if (s1.size > s2.size)
+		s2.resize(s1.size, vX);
+
+	bool result = true;
+
+	for (size_t i = 0; i < s1.values.size() && i < s2.values.size(); i++)
+		result = result && (s1.values[i] == s2.values[i]);
+
+	return result;
+}
+
+bool operator!=(minterm s1, minterm s2)
+{
+	if (s2.size > s1.size)
+		s1.resize(s2.size, vX);
+	else if (s1.size > s2.size)
+		s2.resize(s1.size, vX);
+
+	bool result = false;
+
+	for (size_t i = 0; i < s1.values.size(); i++)
+		result = result || (s1.values[i] != s2.values[i]);
+
+	return result;
+}
+
+bool operator==(minterm s1, uint32_t s2)
+{
+	bool zero = false, one = true;
+	int i;
+	for (i = 0; i < (int)s1.values.size()-1; i++)
+	{
+		zero = zero || (((s1.values[i]>>1) | s1.values[i] | v1) != vX);
+		one = one && ((((~s1.values[i]>>1) | (~s1.values[i])) & v0) == 0);
+	}
+	if ((int)s1.values.size() > 0)
+	{
+		zero = zero || (((s1.values[i]>>1) | s1.values[i] | v1 | ~(vX << (32 - ((s1.size&0x0000000F) << 1)))) != vX);
+		one = one && ((((~s1.values[i]>>1) | (~s1.values[i])) & (v0 << (32 - ((s1.size&0x0000000F) << 1)))) == 0);
+	}
+
+	if (((s2 == 0) && zero) || ((s2 == 1) && one))
+		return true;
+	else
+		return false;
+}
+
+bool operator!=(minterm s1, uint32_t s2)
+{
+	bool zero = false, one = true;
+	int i = 0;
+	for (i = 0; i < (int)s1.values.size()-1; i++)
+	{
+		zero = zero || (((s1.values[i]>>1) | s1.values[i] | v1) != vX);
+		one = one && ((((~s1.values[i]>>1) | (~s1.values[i])) & v0) == 0);
+	}
+	if ((int)s1.values.size() > 0)
+	{
+		zero = zero || (((s1.values[i]>>1) | s1.values[i] | v1 | ~(vX << (32 - ((s1.size&0x0000000F) << 1)))) != vX);
+		one = one && ((((~s1.values[i]>>1) | (~s1.values[i])) & (v0 << (32 - ((s1.size&0x0000000F) << 1)))) == 0);
+	}
+
+	if (((s2 == 0) && zero) || ((s2 == 1) && one))
+		return false;
+	else
+		return true;
+}
+
+bool operator<(minterm s1, minterm s2)
+{
+	if (s2.size > s1.size)
+		s1.resize(s2.size, vX);
+	else if (s1.size > s2.size)
+		s2.resize(s1.size, vX);
+
+	for (int i = 0; i < (int)s1.values.size(); i++)
+	{
+		if (s1.values[i] < s2.values[i])
+			return true;
+		else if (s1.values[i] > s2.values[i])
+			return false;
+	}
+
+	return false;
+}
+
+bool operator>(minterm s1, minterm s2)
+{
+	if (s2.size > s1.size)
+		s1.resize(s2.size, vX);
+	else if (s1.size > s2.size)
+		s2.resize(s1.size, vX);
+
+	for (int i = 0; i < (int)s1.values.size(); i++)
+	{
+		if (s1.values[i] > s2.values[i])
+			return true;
+		else if (s1.values[i] < s2.values[i])
+			return false;
+	}
+
+	return false;
+}
+
+bool operator<=(minterm s1, minterm s2)
+{
+	if (s2.size > s1.size)
+		s1.resize(s2.size, vX);
+	else if (s1.size > s2.size)
+		s2.resize(s1.size, vX);
+
+	for (int i = 0; i < (int)s1.values.size(); i++)
+	{
+		if (s1.values[i] < s2.values[i])
+			return true;
+		else if (s1.values[i] > s2.values[i])
+			return false;
+	}
+
+	return true;
+}
+
+bool operator>=(minterm s1, minterm s2)
+{
+	if (s2.size > s1.size)
+		s1.resize(s2.size, vX);
+	else if (s1.size > s2.size)
+		s2.resize(s1.size, vX);
+
+	for (int i = 0; i < (int)s1.values.size(); i++)
+	{
+		if (s1.values[i] > s2.values[i])
+			return true;
+		else if (s1.values[i] < s2.values[i])
+			return false;
+	}
+
+	return true;
 }

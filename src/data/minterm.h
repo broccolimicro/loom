@@ -41,11 +41,16 @@ struct minterm
 	bool conflict(minterm s);
 
 	int diff_count(minterm s);
+	pair<int, int> xdiff_count(minterm s);
+
+	minterm xoutnulls();
 
 	minterm mask();
 	minterm inverse();
 
 	void push_back(uint32_t v);
+
+	vector<minterm> expand(vector<int> uids);
 
 	// EXTERNAL FUNCTIONS
 	minterm(uint32_t val);
@@ -89,19 +94,23 @@ struct minterm
 	minterm operator|(uint32_t s);
 	minterm operator&(uint32_t s);
 
-	bool operator==(minterm s);
-	bool operator!=(minterm s);
-
-	bool operator==(uint32_t s);
-	bool operator!=(uint32_t s);
-
 	bool constant();
 
 	minterm operator>>(minterm t);
 
 	string print(variable_space *vars, string prefix = "");
+	string print_assign(variable_space *vars, string prefix = "");
 };
 
+bool operator==(minterm s1, minterm s2);
+bool operator!=(minterm s1, minterm s2);
 
+bool operator==(minterm s1, uint32_t s2);
+bool operator!=(minterm s1, uint32_t s2);
+
+bool operator<(minterm s1, minterm s2);
+bool operator>(minterm s1, minterm s2);
+bool operator<=(minterm s1, minterm s2);
+bool operator>=(minterm s1, minterm s2);
 
 #endif

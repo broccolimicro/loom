@@ -106,13 +106,27 @@ void debug::parse()
 		cout << "Error: illegal debug function " << type << "." << endl;
 }
 
-void debug::merge()
+void debug::simulate()
 {
 
 }
 
-vector<int> debug::generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
+void debug::rewrite()
 {
+
+}
+
+void debug::reorder()
+{
+
+}
+
+vector<int> debug::generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
+{
+	net = n;
+	prs = p;
+	from = f;
+
 	if (type == "assert")
 		for (int i = 0; i < (int)f.size(); i++)
 			(*n)[f[i]].assertions.push_back(logic("~(" + chp + ")", vars));
@@ -135,11 +149,6 @@ void debug::generate_class_requirements()
 		vars->enforcements = vars->enforcements >> logic(chp, vars);
 	else
 		cout << "Error: Illegal debug function type " << type << "." << endl;
-}
-
-void debug::insert_instr(int uid, int nid, instruction *instr)
-{
-
 }
 
 void debug::print_hse(string t, ostream *fout)

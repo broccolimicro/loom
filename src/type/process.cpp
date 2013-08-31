@@ -22,9 +22,11 @@ process::process()
 	_kind = "process";
 	chp = "";
 	is_inline = false;
-	net.vars = &vars;
 	def.parent = NULL;
 	flags = NULL;
+	net.vars = &vars;
+	net.prs = &prs;
+	prs.vars = &vars;
 }
 
 process::process(string raw, type_space *types, flag_space *flags)
@@ -33,10 +35,15 @@ process::process(string raw, type_space *types, flag_space *flags)
 	vars.types = types;
 	this->flags = flags;
 	is_inline = false;
-	net.vars = &vars;
 	def.parent = NULL;
+	net.vars = &vars;
+	net.prs = &prs;
+	prs.vars = &vars;
+	net.flags = flags;
 
 	parse(raw);
+
+	types->insert(pair<string, process*>(name, this));
 }
 
 process::~process()
@@ -64,10 +71,11 @@ void process::parse(string raw)
 	{
 		is_inline = true;
 		raw = raw.substr(7);
-		chp = raw;
 	}
 	else
 		is_inline = false;
+
+	chp = raw;
 
 	size_t name_start = chp.find_first_of(" ")+1;
 	size_t name_end = chp.find_first_of("(");
@@ -121,9 +129,14 @@ void process::parse(string raw)
 	}
 }
 
-void process::merge()
+void process::simulate()
 {
-	def.merge();
+	def.simulate();
+}
+
+void process::rewrite()
+{
+	def.rewrite();
 
 	if (flags->log_merged_hse())
 	{
@@ -169,24 +182,40 @@ void process::reshuffle()
 void process::generate_states()
 {
 	(*flags->log_file) << "Process" << endl;
+
 	net.vars = &vars;
+	net.prs = &prs;
+	prs.vars = &vars;
 	net.flags = flags;
 
-	vector<int> start;
+	vector<int> start, end;
 	start.push_back(net.insert_place(start, map<int, int>(), map<int, int>(), NULL));
 	net.M0.push_back(start[0]);
-	net.connect(def.generate_states(&net, start,  map<int, int>(), map<int, int>()), start);
+	end = def.generate_states(&net, &prs, start,  map<int, int>(), map<int, int>());
+	if (is_inline)
+		net.connect(end, net.M0);
+
+	for (map<string, variable>::iterator i = vars.global.begin(); i != vars.global.end(); i++)
+		if (!i->second.driven)
+			vars.reset = vars.reset.smooth(i->second.uid);
+
+	cout << "EXCL" << endl;
+	for (int i = 0; i < (int)prs.excl.size(); i++)
+	{
+		for (int j = 0; j < (int)prs.excl[i].first.size(); j++)
+			cout << vars.get_name(prs.excl[i].first[j]) << " ";
+		cout << prs.excl[i].second << endl;
+	}
 
 	do
 	{
 		net.gen_mutables();
+		net.print_mutables();
 		net.update();
 		print_dot(flags->log_file);
 	} while(net.trim());
 
 	net.check_assertions();
-
-	net.gen_tails();
 
 	(*flags->log_file) << "Branches: " << name << endl;
 	net.print_branch_ids(flags->log_file);
@@ -194,15 +223,17 @@ void process::generate_states()
 
 bool process::insert_state_vars()
 {
-	map<int, list<vector<int> > >::iterator i;
+	map<int, list<vector<int> > >::iterator i, l;
 	list<vector<int> >::iterator lj;
 	map<int, int>::iterator m, n;
 	list<path>::iterator li;
 	vector<int> arcs, uptrans, downtrans, ia, oa, jstart, istart;
 	vector<pair<vector<int>, vector<int> > > ip;
 	int ium, idm, vid, j, k;
+	int ind_max;
 	string vname;
 
+	net.print_dot(flags->log_file, name);
 	net.gen_tails();
 	net.gen_conflicts();
 	net.gen_conditional_places();
@@ -211,6 +242,23 @@ bool process::insert_state_vars()
 	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
 	{
 		(*flags->log_file) << i->first << ": ";
+		for (lj = i->second.begin(); lj != i->second.end(); lj++)
+		{
+			(*flags->log_file) << "{";
+			for (j = 0; j < (int)lj->size(); j++)
+				(*flags->log_file) << (*lj)[j] << " ";
+			(*flags->log_file) << "} ";
+		}
+		(*flags->log_file) << endl;
+	}
+
+	ind_max = 0;
+	(*flags->log_file) << "Indistinguishables: " << name << endl;
+	for (i = net.indistinguishable.begin(); i != net.indistinguishable.end(); i++)
+	{
+		(*flags->log_file) << i->first << ": ";
+		if ((int)i->second.size() > ind_max)
+			ind_max = (int)i->second.size();
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
 			(*flags->log_file) << "{";
@@ -276,11 +324,23 @@ bool process::insert_state_vars()
 			}
 			(*flags->log_file) << "}" << endl;
 			uptrans.clear();
+			for (l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
+			{
+				for (j = 0; j < (int)net.arcs.size(); j++)
+					if (up_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
+						up_paths.total.nodes[j] += ind_max - (int)l->second.size();
+			}
 			(*flags->log_file) << up_paths.total << endl;
 			while (up_paths.size() > 0 && (ium = net.closest_input(up_paths.total.maxes(), up_paths.total.to, path(net.arcs.size())).second) != -1)
 			{
 				uptrans.push_back(ium);
 				up_paths = up_paths.avoidance(ium);
+				for (l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
+				{
+					for (j = 0; j < (int)net.arcs.size(); j++)
+						if (up_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
+							up_paths.total.nodes[j] += ind_max - (int)l->second.size();
+				}
 				(*flags->log_file) << up_paths.total << endl;
 			}
 
@@ -300,11 +360,25 @@ bool process::insert_state_vars()
 			}
 			(*flags->log_file) << "}" << endl;
 			downtrans.clear();
+			for (l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
+			{
+				for (j = 0; j < (int)net.arcs.size(); j++)
+					if (down_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
+						down_paths.total.nodes[j] += ind_max - (int)l->second.size();
+
+			}
 			(*flags->log_file) << down_paths.total << endl;
 			while (down_paths.size() > 0 && (idm = net.closest_input(down_paths.total.maxes(), down_paths.total.to, path(net.arcs.size())).second) != -1)
 			{
 				downtrans.push_back(idm);
 				down_paths = down_paths.avoidance(idm);
+				for (l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
+				{
+					for (j = 0; j < (int)net.arcs.size(); j++)
+						if (down_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
+							down_paths.total.nodes[j] += ind_max - (int)l->second.size();
+
+				}
 				(*flags->log_file) << down_paths.total << endl;
 			}
 			(*flags->log_file) << endl;
@@ -352,7 +426,7 @@ bool process::insert_state_vars()
 
 bool process::insert_bubbleless_state_vars()
 {
-	map<int, list<vector<int> > >::iterator i;
+	map<int, list<vector<int> > >::iterator i, l;
 	list<vector<int> >::iterator lj;
 	map<int, int>::iterator m, n;
 	vector<int> li;
@@ -361,6 +435,7 @@ bool process::insert_bubbleless_state_vars()
 	vector<int> arcs, uptrans, downtrans, ia, oa, istart, jstart, iend, jend;
 	vector<pair<vector<int>, vector<int> > > ip;
 	int ium, idm, vid, j, k;
+	int ind_max;
 	string vname;
 
 	net.print_dot(flags->log_file, name);
@@ -373,6 +448,23 @@ bool process::insert_bubbleless_state_vars()
 	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
 	{
 		(*flags->log_file) << i->first << ": ";
+		for (lj = i->second.begin(); lj != i->second.end(); lj++)
+		{
+			(*flags->log_file) << "{";
+			for (j = 0; j < (int)lj->size(); j++)
+				(*flags->log_file) << (*lj)[j] << " ";
+			(*flags->log_file) << "} ";
+		}
+		(*flags->log_file) << endl;
+	}
+
+	ind_max = 0;
+	(*flags->log_file) << "Indistinguishables: " << name << endl;
+	for (i = net.indistinguishable.begin(); i != net.indistinguishable.end(); i++)
+	{
+		(*flags->log_file) << i->first << ": ";
+		if ((int)i->second.size() > ind_max)
+			ind_max = (int)i->second.size();
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
 			(*flags->log_file) << "{";
@@ -495,11 +587,23 @@ bool process::insert_bubbleless_state_vars()
 			}
 			(*flags->log_file) << "}" << endl;
 			uptrans.clear();
+			for (l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
+			{
+				for (j = 0; j < (int)net.arcs.size(); j++)
+					if (up_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
+						up_paths.total.nodes[j] += ind_max - (int)l->second.size();
+			}
 			(*flags->log_file) << up_paths.total << endl;
 			while (up_paths.size() > 0 && (ium = net.closest_input(up_paths.total.maxes(), up_paths.total.to, path(net.arcs.size())).second) != -1)
 			{
 				uptrans.push_back(ium);
 				up_paths = up_paths.avoidance(ium);
+				for (l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
+				{
+					for (j = 0; j < (int)net.arcs.size(); j++)
+						if (up_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
+							up_paths.total.nodes[j] += ind_max - (int)l->second.size();
+				}
 				(*flags->log_file) << up_paths.total << endl;
 			}
 
@@ -519,11 +623,23 @@ bool process::insert_bubbleless_state_vars()
 			}
 			(*flags->log_file) << "}" << endl;
 			downtrans.clear();
+			for (l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
+			{
+				for (j = 0; j < (int)net.arcs.size(); j++)
+					if (down_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
+						down_paths.total.nodes[j] += ind_max - (int)l->second.size();
+			}
 			(*flags->log_file) << down_paths.total << endl;
 			while (down_paths.size() > 0 && (idm = net.closest_input(down_paths.total.maxes(), down_paths.total.to, path(net.arcs.size())).second) != -1)
 			{
 				downtrans.push_back(idm);
 				down_paths = down_paths.avoidance(idm);
+				for (l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
+				{
+					for (j = 0; j < (int)net.arcs.size(); j++)
+						if (down_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
+							down_paths.total.nodes[j] += ind_max - (int)l->second.size();
+				}
 				(*flags->log_file) << down_paths.total << endl;
 			}
 			(*flags->log_file) << endl;
@@ -669,9 +785,9 @@ void process::generate_prs()
 	net.gen_senses();
 	for (map<string, variable>::iterator vi = vars.global.begin(); vi != vars.global.end(); vi++)
 		if (vi->second.driven)
-			prs.push_back(rule(vi->second.uid, &net, &vars, flags, true));
+			prs.insert(rule(vi->second.uid, &net, &vars, flags, true));
 
-	if (flags->log_base_prs())
+	if (flags->log_base_prs() && kind() == "process")
 	{
 		(*flags->log_file) << "Production Rules: " << name << endl;
 		print_prs(flags->log_file);
@@ -683,9 +799,9 @@ void process::generate_bubbleless_prs()
 	net.gen_senses();
 	for (map<string, variable>::iterator vi = vars.global.begin(); vi != vars.global.end(); vi++)
 		if (vi->second.driven)
-			prs.push_back(rule(vi->second.uid, &net, &vars, flags, false));
+			prs.insert(rule(vi->second.uid, &net, &vars, flags, false));
 
-	if (flags->log_base_prs())
+	if (flags->log_base_prs() && kind() == "process")
 	{
 		(*flags->log_file) << "Production Rules: " << name << endl;
 		print_prs(flags->log_file);
@@ -749,7 +865,7 @@ void process::parse_prs(string raw)
 	for (pi = pairs.begin(); pi != pairs.end(); pi++)
 	{
 		cout << pi->first << ",{" << pi->second.first << ", " << pi->second.second << "}" << endl;
-		prs.push_back(rule(pi->second.first, pi->second.second, pi->first, &vars, &net, flags));
+		prs.insert(rule(pi->second.first, pi->second.second, pi->first, &vars, &net, flags));
 	}
 }
 
@@ -766,7 +882,7 @@ void process::elaborate_prs()
 
 	for (i = 0; i < (int)prs.size(); i++)
 	{
-		sat = (prs[i].up & logic(prs[i].uid, 0)).allsat();
+		sat = (prs[i].up() & logic(prs[i].uid, 0)).allsat();
 		//sat = net.values.allsat(prs[i].up);
 		for (si = sat.begin(); si != sat.end(); si++)
 		{
@@ -778,7 +894,7 @@ void process::elaborate_prs()
 			net.T[utrans].active = true;
 		}
 
-		sat = (prs[i].down & logic(prs[i].uid, 1)).allsat();
+		sat = (prs[i].down() & logic(prs[i].uid, 1)).allsat();
 		//sat = net.values.allsat(prs[i].down);
 		for (si = sat.begin(); si != sat.end(); si++)
 		{
@@ -863,11 +979,6 @@ void process::print_dot(ostream *fout)
 	}
 }
 
-void process::print_petrify()
-{
-	net.print_petrify(name);
-}
-
 void process::print_prs(ostream *fout)
 {
 	bool individual = false;
@@ -881,7 +992,8 @@ void process::print_prs(ostream *fout)
 	map<string, variable>::iterator vi;
 	type_space::iterator ki;
 	for (size_t i = 0; i < prs.size(); i++)
-		(*fout) << prs[i];
+		if (prs[i].vars != NULL)
+			(*fout) << prs[i];
 
 	(*fout) << "/* Environment */" << endl;
 	for (vi = vars.label.begin(); vi != vars.label.end(); vi++)

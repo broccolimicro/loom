@@ -24,11 +24,14 @@ struct rule
 	variable_space *vars;
 
 	int uid;
-	logic up, down;
+	logic guards[2];
 
 	flag_space *flags;
 
 	rule &operator=(rule r);
+
+	logic &up();
+	logic &down();
 
 	void gen_minterms();
 	void gen_bubbleless_minterms();

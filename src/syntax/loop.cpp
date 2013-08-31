@@ -193,69 +193,105 @@ void loop::parse()
 	flags->dec();
 }
 
-void loop::merge()
+void loop::simulate()
+{
+
+}
+
+void loop::rewrite()
 {
 	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
-		i->second->merge();
-		i->first->merge();
+		i->second->rewrite();
+		i->first->rewrite();
 	}
 }
 
-vector<int> loop::generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
+void loop::reorder()
+{
+
+}
+
+vector<int> loop::generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
 {
 	list<pair<sequential*, guard*> >::iterator instr_iter;
 	vector<int> start, end;
 	string antiguard = "";
+	string bvname;
+	vector<string> bvnames;
+	vector<int> bvuids;
+	int ncbranch_count;
+	int i, k;
+	bool first;
 
 	flags->inc();
 	if (flags->log_base_state_space())
 		(*flags->log_file) << flags->tab << "Loop " << chp << endl;
 
 	net = n;
+	prs = p;
 	from = f;
 
-	for (instr_iter = instrs.begin(); instr_iter != instrs.end(); instr_iter++)
+	ncbranch_count = net->cbranch_count;
+	net->cbranch_count++;
+	for (instr_iter = instrs.begin(), k = instrs.size()-1; instr_iter != instrs.end(); instr_iter++, k--)
 	{
+		/*if (type == choice)
+		{
+			bvname = "_bv" + to_string(ncbranch_count) + "_" + to_string(k);
+			bvnames.push_back(bvname);
+			bvuids.push_back(vars->insert(variable(bvname, "node", 1, false, flags)));
+			prs->rules.push_back(rule(instr_iter->second->chp, "~(" + instr_iter->second->chp + ")", bvname, vars, net, flags));
+			instr_iter->second->chp = "(" + instr_iter->second->chp + ")&" + bvname;
+		}*/
+
 		start.clear();
 		end.clear();
-		start = instr_iter->second->generate_states(net, from, pbranch, cbranch);
+		start = instr_iter->second->generate_states(net, prs, from, pbranch, cbranch);
 		end.push_back(net->insert_place(start, pbranch, cbranch, this));
-		end = instr_iter->first->generate_states(net, end, pbranch, cbranch);
+		end = instr_iter->first->generate_states(net, prs, end, pbranch, cbranch);
 		net->connect(end, from);
 		antiguard += string(antiguard != "" ? "&" : "") + "~(" + instr_iter->second->chp + ")";
 	}
+
+	/*if (type == choice)
+	{
+		bvname = "";
+		for (i = 0; i < (int)bvnames.size(); i++)
+		{
+			if (i != 0)
+				bvname += "|";
+
+			first = true;
+			for (k = 0; k < (int)bvnames.size(); k++)
+			{
+				if (!first && i != k)
+					bvname += "&";
+
+				if (i != k)
+				{
+					bvname += "~" + bvnames[k];
+					first = false;
+				}
+			}
+		}
+
+		vars->enforcements = vars->enforcements >> logic(bvname, vars);
+		prs->excl.push_back(pair<vector<int>, int>(bvuids, 1));
+		for (k = 0; k < (int)bvuids.size(); k++)
+			prs->excl.push_back(pair<vector<int>, int>(vector<int>(1, bvuids[k]), 0));
+
+		antiguard = "(" + antiguard + ")";
+		for (i = 0; i < (int)bvnames.size(); i++)
+			antiguard += "&~" + bvnames[i];
+	}*/
+
 	uid.push_back(net->insert_transition(f, logic(antiguard, vars), pbranch, cbranch, this));
+
 	flags->dec();
 
 	return uid;
-}
-
-void loop::insert_instr(int uid, int nid, instruction *instr)
-{
-	/*instr->uid = nid;
-	instr->from = uid;
-
-	list<pair<sequential*, guard*> >::iterator i, k;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		if (i->second->uid == uid)
-		{
-			i->first->instrs.front()->from = nid;
-			i->first->instrs.push_front(instr);
-			return;
-		}
-		else if (i->first->uid == uid)
-		{
-			i->first->instrs.push_back(instr);
-			i->first->uid = nid;
-			return;
-		}
-	}
-
-	for (i = instrs.begin(); i != instrs.end(); i++)
-		i->first->insert_instr(uid, nid, instr);*/
 }
 
 void loop::print_hse(string t, ostream *fout)

@@ -354,8 +354,14 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 	if (op == "#")
 	{
 		instruction *probe = expand_instantiation(ret, type + " " + name, vars, NULL, flags, true);
-		C.first = probe->chp;
+		if (probe->chp.find_first_of("&|~") != probe->chp.npos)
+			C.first = "(" + probe->chp + ")";
+		else
+			C.first = probe->chp;
 		delete probe;
+		delete ret;
+		probe = NULL;
+		ret = NULL;
 	}
 	else
 		ret->push(expand_instantiation(ret, type + " " + name, vars, NULL, flags, true));

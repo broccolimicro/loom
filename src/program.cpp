@@ -63,7 +63,8 @@ void program::compile()
 		if (flags.hse())
 		{
 			parse(prgm);
-			merge();
+			//simulate();
+			rewrite();
 			//project();
 			//decompose();
 			//reshuffle();
@@ -161,31 +162,16 @@ void program::parse(string chp)
 				// Is this a process?
 				if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "process ") == 0 ||
 					cleaned_chp.compare(j-cleaned_chp.begin(), 15, "inline process ") == 0)
-				{
 					p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &types, &flags);
-					types.insert(pair<string, process*>(p->name, p));
-				}
 				// Is this an operator?
 				else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "operator") == 0)
-				{
 					o = new operate(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &types, &flags);
-					types.insert(pair<string, operate*>(o->name, o));
-				}
 				// This isn't a process, is it a record?
 				else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "record ") == 0)
-				{
 					r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &types, &flags);
-					types.insert(pair<string, record*>(r->name, r));
-				}
 				// Is it a channel definition?
 				else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "channel ") == 0)
-				{
 					c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &types, &flags);
-					types.insert(pair<string, channel*>(c->name, c));
-					types.insert(pair<string, operate*>(c->name + "." + c->send->name, c->send));
-					types.insert(pair<string, operate*>(c->name + "." + c->recv->name, c->recv));
-					types.insert(pair<string, operate*>(c->name + "." + c->probe->name, c->probe));
-				}
 				// This isn't either a process or a record, this is an error.
 				else
 				{
@@ -199,28 +185,13 @@ void program::parse(string chp)
 					// Make sure we don't miss the next record or process though.
 					if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "process ") == 0 ||
 						cleaned_chp.compare(j-cleaned_chp.begin(), 15, "inline process ") == 0)
-					{
 						p = new process(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &types, &flags);
-						types.insert(pair<string, process*>(p->name, p));
-					}
 					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "operator") == 0)
-					{
 						o = new operate(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &types, &flags);
-						types.insert(pair<string, operate*>(o->name, o));
-					}
 					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 7, "record ") == 0)
-					{
 						r = new record(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &types, &flags);
-						types.insert(pair<string, record*>(r->name, r));
-					}
 					else if (cleaned_chp.compare(j-cleaned_chp.begin(), 8, "channel ") == 0)
-					{
 						c = new channel(cleaned_chp.substr(j-cleaned_chp.begin(), i-j+1), &types, &flags);
-						types.insert(pair<string, channel*>(c->name, c));
-						types.insert(pair<string, operate*>(c->name + "." + c->send->name, c->send));
-						types.insert(pair<string, operate*>(c->name + "." + c->recv->name, c->recv));
-						types.insert(pair<string, operate*>(c->name + "." + c->probe->name, c->probe));
-					}
 				}
 			}
 			j = i+1;
@@ -228,12 +199,20 @@ void program::parse(string chp)
 	}
 }
 
-void program::merge()
+void program::simulate()
 {
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
 		if (i->second->kind() == "process" || i->second->kind() == "operate")
-			((process*)i->second)->merge();
+			((process*)i->second)->simulate();
+}
+
+void program::rewrite()
+{
+	type_space::iterator i;
+	for (i = types.begin(); i != types.end(); i++)
+		if (i->second->kind() == "process" || i->second->kind() == "operate")
+			((process*)i->second)->rewrite();
 }
 
 // TODO Projection algorithm - when do we need to do projection? when shouldn't we do projection?
@@ -277,7 +256,7 @@ void program::insert_state_vars()
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
 		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
-			for (int j = 0; j < 3 && ((process*)i->second)->insert_state_vars(); j++);
+			for (int j = 0; j < 100 && ((process*)i->second)->insert_state_vars(); j++);
 }
 
 void program::insert_bubbleless_state_vars()
@@ -285,7 +264,7 @@ void program::insert_bubbleless_state_vars()
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
 		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
-			for (int j = 0; j < 3 && ((process*)i->second)->insert_bubbleless_state_vars(); j++);
+			for (int j = 0; j < 100 && ((process*)i->second)->insert_bubbleless_state_vars(); j++);
 }
 
 void program::generate_prs()
@@ -330,14 +309,6 @@ void program::print_dot()
 	for (i = types.begin(); i != types.end(); i++)
 		if (i->second->kind() == "process")
 			((process*)i->second)->print_dot(flags.state_file);
-}
-
-void program::print_petrify()
-{
-	type_space::iterator i;
-	for (i = types.begin(); i != types.end(); i++)
-		if (i->second->kind() == "process")
-			((process*)i->second)->print_petrify();
 }
 
 void program::print_prs()

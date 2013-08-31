@@ -45,6 +45,7 @@ struct variable_space
 	vector<string> get_driven();
 
 	vector<string> get_names();
+	bool part_of_channel(int uid);
 	vector<int> x_channel(vector<int> av);
 	void x_channel(vector<int> av, map<int, logic> *result);
 
@@ -57,6 +58,8 @@ struct variable_space
 
 	int insert(variable v);
 	void clear();
+
+	logic increment_pcs(logic t, bool active);
 
 	variable_space &operator=(variable_space s);
 

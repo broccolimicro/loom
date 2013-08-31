@@ -45,6 +45,14 @@ variable *variable_space::find(string name)
 	if (i != label.end())
 		return &(i->second);
 
+	name = "this." + name;
+	i = global.find(name);
+	if (i != global.end())
+		return &(i->second);
+	i = label.find(name);
+	if (i != label.end())
+		return &(i->second);
+
 	return NULL;
 }
 
@@ -60,16 +68,25 @@ keyword	 *variable_space::find_type(string name)
 string variable_space::get_name(int uid)
 {
 	map<string, variable>::iterator i;
+	size_t idx;
 	for (i = global.begin(); i != global.end(); i++)
 		if (i->second.uid == uid)
-			return i->second.name;
+		{
+			if ((idx = i->second.name.find("this.")) != i->second.name.npos)
+				return i->second.name.substr(0, idx) + i->second.name.substr(idx+5);
+			else
+				return i->second.name;
+		}
 	for (i = label.begin(); i != label.end(); i++)
 		if (i->second.uid == uid)
-			return i->second.name;
+		{
+			if ((idx = i->second.name.find("this.")) != i->second.name.npos)
+				return i->second.name.substr(0, idx) + i->second.name.substr(idx+5);
+			else
+				return i->second.name;
+		}
 	return "";
 }
-
-
 
 string variable_space::get_type(int uid)
 {
@@ -86,6 +103,14 @@ string variable_space::get_type(int uid)
 string variable_space::get_type(string name)
 {
 	map<string, variable>::iterator i;
+	i = global.find(name);
+	if (i != global.end())
+		return i->second.type;
+	i = label.find(name);
+	if (i != label.end())
+		return i->second.type;
+
+	name = "this." + name;
 	i = global.find(name);
 	if (i != global.end())
 		return i->second.type;
@@ -163,6 +188,14 @@ int variable_space::get_uid(string name)
 	if (i != label.end())
 		return i->second.uid;
 
+	name = "this." + name;
+	i = global.find(name);
+	if (i != global.end())
+		return i->second.uid;
+	i = label.find(name);
+	if (i != label.end())
+		return i->second.uid;
+
 	return -1;
 }
 
@@ -176,6 +209,13 @@ int variable_space::get_width(string name)
 	if (i != label.end())
 		return i->second.width;
 
+	name = "this." + name;
+	i = global.find(name);
+	if (i != global.end())
+		return i->second.width;
+	i = label.find(name);
+	if (i != label.end())
+		return i->second.width;
 	return 0;
 }
 
@@ -193,11 +233,46 @@ vector<string> variable_space::get_names()
 {
 	vector<string> ret(global.size());
 	map<string, variable>::iterator gi;
+	size_t idx;
 
 	for (gi = global.begin(); gi != global.end(); gi++)
+	{
 		ret[gi->second.uid] = gi->first;
+		if ((idx = ret[gi->second.uid].find("this.")) != ret[gi->second.uid].npos)
+			ret[gi->second.uid] = ret[gi->second.uid].substr(0, idx) + ret[gi->second.uid].substr(idx+5);
+	}
 
 	return ret;
+}
+
+bool variable_space::part_of_channel(int uid)
+{
+	string name, vkind;
+	size_t n;
+	variable *v;
+	keyword *k;
+
+	map<string, variable>::iterator j;
+	for (j = global.begin(); j != global.end() && name == ""; j++)
+		if (j->second.uid == uid)
+			name =  j->second.name;
+	for (j = label.begin(); j != label.end() && name == ""; j++)
+		if (j->second.uid == uid)
+			name = j->second.name;
+
+	for (n = name.find_last_of("."); n != name.npos; n = name.substr(0, n).find_last_of("."))
+	{
+		v = find(name.substr(0, n));
+		if (v != NULL)
+		{
+			k = find_type(v->type);
+
+			if (k != NULL && k->kind() == "channel")
+				return true;
+		}
+	}
+
+	return false;
 }
 
 /* x_channel()
@@ -218,7 +293,14 @@ vector<int> variable_space::x_channel(vector<int> av)
 	vector<int> result;
 	for (int i = 0; i < (int)av.size(); i++)
 	{
-		name = get_name(av[i]);
+		name = "";
+		map<string, variable>::iterator j;
+		for (j = global.begin(); j != global.end() && name == ""; j++)
+			if (j->second.uid == av[i])
+				name =  j->second.name;
+		for (j = label.begin(); j != label.end() && name == ""; j++)
+			if (j->second.uid == av[i])
+				name = j->second.name;
 
 		for (n = name.find_last_of("."); n != name.npos; n = name.substr(0, n).find_last_of("."))
 		{
@@ -267,7 +349,7 @@ void variable_space::x_channel(vector<int> av, map<int, logic> *result)
 string variable_space::unique_name(string prefix)
 {
 	int id = 0;
-	while (global.find(prefix + to_string(id)) != global.end() || label.find(prefix + to_string(id)) != label.end())
+	while (find(prefix + to_string(id)) != NULL)
 		id++;
 
 	return prefix + to_string(id);
@@ -290,6 +372,7 @@ map<string, string> variable_space::instantiate(string parent, bool parent_arg, 
 
 	map<string, string> rename;
 	vector<int> id_change(s->global.size(), 0);
+	size_t idx;
 
 	variable v;
 	map<string, variable>::iterator i;
@@ -298,11 +381,14 @@ map<string, string> variable_space::instantiate(string parent, bool parent_arg, 
 		if (i->second.arg == arg)
 		{
 			v = i->second;
+			if ((idx = v.name.find("this.")) != v.name.npos)
+				v.name = v.name.substr(0, idx) + v.name.substr(idx+5);
 			rename.insert(pair<string, string>(v.name, parent + "." + v.name));
 			v.name = parent + "." + v.name;
 			v.uid = global.size();
 			v.arg = parent_arg;
 			v.reset = i->second.reset;
+			v.driven = false;
 			global.insert(pair<string, variable>(v.name, v));
 			id_change[i->second.uid] = get_uid(v.name);
 			if (v.reset.size() > 0)
@@ -317,6 +403,8 @@ map<string, string> variable_space::instantiate(string parent, bool parent_arg, 
 			v = i->second;
 			rename.insert(pair<string, string>(v.name, parent + "." + v.name));
 			v.name = parent + "." + v.name;
+			if ((idx = v.name.find(".this")) != v.name.npos)
+				v.name = v.name.substr(0, idx) + v.name.substr(idx+5);
 			v.uid = label.size();
 			v.arg = parent_arg;
 			label.insert(pair<string, variable>(v.name, v));
@@ -338,6 +426,7 @@ map<string, string> variable_space::call(string parent, bool parent_arg, variabl
 
 	map<string, string> rename;
 	vector<int> id_change(s->global.size(), 0);
+	size_t idx;
 
 	variable v;
 	map<string, variable>::iterator i;
@@ -346,11 +435,14 @@ map<string, string> variable_space::call(string parent, bool parent_arg, variabl
 		if (i->second.name.find("call") != string::npos)
 		{
 			v = i->second;
+			if ((idx = v.name.find("this.")) != v.name.npos)
+				v.name = v.name.substr(0, idx) + v.name.substr(idx+5);
 			rename.insert(pair<string, string>(v.name, parent + "." + v.name));
 			v.name = parent + "." + v.name;
 			v.uid = global.size();
 			v.arg = parent_arg;
 			v.reset = i->second.reset;
+			v.driven = false;
 			global.insert(pair<string, variable>(v.name, v));
 			id_change[i->second.uid] = get_uid(v.name);
 			if (v.reset.size() > 0)
@@ -363,6 +455,8 @@ map<string, string> variable_space::call(string parent, bool parent_arg, variabl
 		if (i->second.name.find("call") != string::npos)
 		{
 			v = i->second;
+			if ((idx = v.name.find(".this")) != v.name.npos)
+				v.name = v.name.substr(0, idx) + v.name.substr(idx+5);
 			rename.insert(pair<string, string>(v.name, parent + "." + v.name));
 			v.name = parent + "." + v.name;
 			v.uid = label.size();
@@ -431,6 +525,16 @@ void variable_space::clear()
 	reset = 1;
 }
 
+logic variable_space::increment_pcs(logic t, bool active)
+{
+	map<string, variable>::iterator i;
+	for (i = label.begin(); i != label.end(); i++)
+		if (i->second.type.find_first_of("?!") != i->second.type.npos)
+			cout << "LOOK " << i->second.type << " " << i->second.name << endl;
+
+	return logic();
+}
+
 variable_space &variable_space::operator=(variable_space s)
 {
 	global = s.global;
@@ -464,7 +568,7 @@ ostream &operator<<(ostream &os, variable_space s)
 	for (i = 0; i < s.global.size(); i++)
 	{
 		v = s.find((int)i);
-		os << v->type << " " << v->name << " UID:" << v->uid << " Arg:" << v->arg << "\n";
+		os << v->type << " " << v->name << " UID:" << v->uid << " Arg:" << v->arg << " Driven: " << v->driven << "\n";
 	}
 
 	map<string, variable>::iterator vi;

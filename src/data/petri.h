@@ -17,6 +17,7 @@
 
 struct instruction;
 struct variable_space;
+struct rule_space;
 
 struct node
 {
@@ -45,6 +46,7 @@ struct petri
 	~petri();
 
 	variable_space *vars;
+	rule_space *prs;
 	flag_space *flags;
 	vector<node> S;
 	vector<node> T;
@@ -95,7 +97,7 @@ struct petri
 	void propogate_marking_backward(int from, vector<bool> *covered);
 
 	bool updateplace(int p, int i = 0);
-	int update(int p, vector<bool> *covered, int i = 0);
+	int update(int p, vector<bool> *covered, int i = 0, bool immune = false);
 	void update();
 	void check_assertions();
 	void update_tail(int p);
@@ -192,7 +194,6 @@ struct petri
 	node &operator[](int i);
 
 	void print_dot(ostream *fout, string name);
-	void print_petrify(string name);
 
 	void print_mutables();
 	void print_branch_ids(ostream *fout);

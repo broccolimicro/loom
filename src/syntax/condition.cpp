@@ -193,8 +193,17 @@ void condition::parse()
 	flags->dec();
 }
 
+void condition::simulate()
+{
+	list<pair<sequential*, guard*> >::iterator i;
+	for (i = instrs.begin(); i != instrs.end(); i++)
+	{
+
+	}
+}
+
 // TODO Bug in merge code somewhere
-void condition::merge()
+void condition::rewrite()
 {
 	list<pair<sequential*, guard*> >::iterator i, j;
 	list<instruction*>::iterator ii;
@@ -206,7 +215,7 @@ void condition::merge()
 
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
-		if (i->first->instrs.size() > 0 && i->first->instrs.front()->kind() == "condition")
+		if (i->first->instrs.size() > 0 && i->first->instrs.front()->kind() == "condition" && (((condition*)i->first->instrs.front())->type == type || instrs.size() == 1 || ((condition*)i->first->instrs.front())->instrs.size() == 1))
 		{
 			front = (condition*)i->first->instrs.front();
 			i->first->instrs.pop_front();
@@ -242,25 +251,106 @@ void condition::merge()
 		instrs.push_back(*i);
 	add.clear();
 
+	vector<string> vl;
+	vector<int> stable;
+	vector<int> monotonic;
+	vector<int> unstable;
+	variable *v;
+	int k;
+	canonical ugexp, dgexp, gexp;
+	string g, ng;
+
+	if (type == choice)
+	{
+		for (i = instrs.begin(); i != instrs.end(); i++)
+		{
+			stable.clear();
+			monotonic.clear();
+			unstable.clear();
+
+			vl = extract_names(i->second->chp);
+			for (k = 0; k < (int)vl.size(); k++)
+			{
+				v = vars->find(vl[k]);
+				if (v != NULL && v->driven)
+					stable.push_back(v->uid);
+				else if (v != NULL && !v->driven && vars->part_of_channel(v->uid))
+					monotonic.push_back(v->uid);
+				else if (v != NULL && !v->driven)
+					unstable.push_back(v->uid);
+				else
+					cout << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << ". Cannot find variable " << vl[k] << "." << endl;
+			}
+
+			if (stable.size() > 0)
+			{
+				gexp = canonical(i->second->chp, vars).smooth(monotonic).smooth(unstable);
+				ugexp = canonical(i->second->chp, vars).restrict(gexp);
+				dgexp = canonical(i->second->chp, vars).restrict(~gexp);
+				cout << "Stable " << gexp.print(vars) << "\t" << ugexp.print(vars) << "\t" << dgexp.print(vars) << endl;
+			}
+			else if (monotonic.size() > 0)
+			{
+				gexp = canonical(i->second->chp, vars).smooth(unstable);
+				ugexp = canonical(i->second->chp, vars).restrict(gexp);
+				dgexp = canonical(i->second->chp, vars).restrict(~gexp);
+				cout << "Monotonic " << gexp.print(vars) << "\t" << ugexp.print(vars) << "\t" << dgexp.print(vars) << endl;
+			}
+			else if (unstable.size() > 0)
+			{
+				gexp = canonical(i->second->chp, vars);
+				cout << "Unstable " << gexp.print(vars) << endl;
+			}
+			else
+				cout << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
+		}
+
+		for (i = instrs.begin(); i != instrs.end(); i++)
+		{
+			j = i;
+			for (j++; j != instrs.end(); j++)
+				if ((logic(i->second->chp, vars) & logic(j->second->chp, vars)) != 0)
+					cout << "Error: Conflicting guards in a thin bar conditional {" << i->second->chp << ", " << j->second->chp << "}." << endl;
+		}
+	}
+	else if (type == mutex)
+		for (i = instrs.begin(); i != instrs.end(); i++)
+		{
+			j = i;
+			for (j++; j != instrs.end(); j++)
+				if ((logic(i->second->chp, vars) & logic(j->second->chp, vars)) != 0)
+					cout << "Error: Conflicting guards in a thick bar conditional {" << i->second->chp << ", " << j->second->chp << "}." << endl;
+		}
+
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
-		i->second->merge();
-		i->first->merge();
+		i->second->rewrite();
+		i->first->rewrite();
 	}
 }
 
-vector<int> condition::generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
+void condition::reorder()
+{
+
+}
+
+vector<int> condition::generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
 {
 	list<pair<sequential*, guard*> >::iterator instr_iter;
 	vector<int> start, end;
 	map<int, int> ncbranch;
 	int ncbranch_count;
-	int k;
+	string bvname;
+	vector<string> bvnames;
+	vector<int> bvuids;
+	int i, k;
+	bool first;
 
 	if (flags->log_base_state_space())
 		(*flags->log_file) << flags->tab << "Conditional " << chp << endl;
 
 	net = n;
+	prs = p;
 	from = f;
 
 	ncbranch_count = net->cbranch_count;
@@ -271,41 +361,52 @@ vector<int> condition::generate_states(petri *n, vector<int> f, map<int, int> pb
 		if (instrs.size() > 1)
 			ncbranch.insert(pair<int, int>(ncbranch_count, (int)k));
 
+		/*if (type == choice)
+		{
+			bvname = "_bv" + to_string(ncbranch_count) + "_" + to_string(k);
+			bvnames.push_back(bvname);
+			bvuids.push_back(vars->insert(variable(bvname, "node", 1, false, flags)));
+			prs->insert(rule(instr_iter->second->chp, "~(" + instr_iter->second->chp + ")", bvname, vars, net, flags));
+			instr_iter->second->chp = "(" + instr_iter->second->chp + ")&" + bvname;
+		}*/
+
 		end.clear();
 		start.clear();
-		start = instr_iter->second->generate_states(net, from, pbranch, ncbranch);
+		start = instr_iter->second->generate_states(net, prs, from, pbranch, ncbranch);
 		end.push_back(net->insert_place(start, pbranch, ncbranch, this));
-		start = instr_iter->first->generate_states(net, end, pbranch, ncbranch);
+		start = instr_iter->first->generate_states(net, prs, end, pbranch, ncbranch);
 		uid.insert(uid.end(), start.begin(), start.end());
 	}
 
-	return uid;
-}
-
-void condition::insert_instr(int uid, int nid, instruction *instr)
-{
-	/*instr->uid = nid;
-	instr->from = uid;
-
-	list<pair<sequential*, guard*> >::iterator i, k;
-	for (i = instrs.begin(); i != instrs.end(); i++)
+	/*if (type == choice)
 	{
-		if (i->second->uid == uid)
+		bvname = "";
+		for (i = 0; i < (int)bvnames.size(); i++)
 		{
-			i->first->instrs.front()->from = nid;
-			i->first->instrs.push_front(instr);
-			return;
-		}
-		else if (i->first->uid == uid)
-		{
-			i->first->instrs.push_back(instr);
-			i->first->uid = nid;
-			return;
-		}
-	}
+			if (i != 0)
+				bvname += "|";
 
-	for (i = instrs.begin(); i != instrs.end(); i++)
-		i->first->insert_instr(uid, nid, instr);*/
+			first = true;
+			for (k = 0; k < (int)bvnames.size(); k++)
+			{
+				if (!first && i != k)
+					bvname += "&";
+
+				if (i != k)
+				{
+					bvname += "~" + bvnames[k];
+					first = false;
+				}
+			}
+		}
+
+		vars->enforcements = vars->enforcements >> logic(bvname, vars);
+		prs->excl.push_back(pair<vector<int>, int>(bvuids, 1));
+		for (k = 0; k < (int)bvuids.size(); k++)
+			prs->excl.push_back(pair<vector<int>, int>(vector<int>(1, bvuids[k]), 0));
+	}*/
+
+	return uid;
 }
 
 void condition::print_hse(string t, ostream *fout)

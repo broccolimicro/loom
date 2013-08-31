@@ -51,6 +51,7 @@ struct canonical
 
 	canonical smooth(int var);
 	canonical smooth(vector<int> vars);
+	canonical restrict(canonical r);
 	void extract(map<int, canonical> *result);
 	map<int, canonical> extract();
 
@@ -92,6 +93,7 @@ struct canonical
 	canonical operator>>(canonical t);
 
 	string print(variable_space *v, string prefix = "");
+	string print_assign(variable_space *v, string prefix = "");
 };
 
 

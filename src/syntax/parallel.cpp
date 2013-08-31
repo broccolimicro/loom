@@ -16,6 +16,7 @@
 #include "condition.h"
 #include "loop.h"
 #include "debug.h"
+#include "skip.h"
 
 parallel::parallel()
 {
@@ -159,7 +160,9 @@ void parallel::parse()
 			// This sub sequential is an assignment instruction.
 			else if ((raw_instr.find(":=") != raw_instr.npos || raw_instr[raw_instr.length()-1] == '+' || raw_instr[raw_instr.length()-1] == '-') && raw_instr.length() > 0)
 				push(expand_assignment(raw_instr));
-			else if (raw_instr.find("skip") == raw_instr.npos && raw_instr.length() > 0)
+			else if (raw_instr == "skip")
+				push(new skip(this, raw_instr, vars, flags));
+			else if (raw_instr.length() > 0)
 				push(new guard(this, raw_instr, vars, flags));
 
 			j = i+2;
@@ -175,14 +178,24 @@ void parallel::parse()
 	flags->dec();
 }
 
-void parallel::merge()
+void parallel::simulate()
+{
+
+}
+
+void parallel::rewrite()
 {
 	list<instruction*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
-		(*i)->merge();
+		(*i)->rewrite();
 }
 
-vector<int> parallel::generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
+void parallel::reorder()
+{
+
+}
+
+vector<int> parallel::generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
 {
 	list<instruction*>::iterator i, j;
 	vector<int> next, end;
@@ -196,6 +209,7 @@ vector<int> parallel::generate_states(petri *n, vector<int> f, map<int, int> pbr
 		(*flags->log_file) << flags->tab << "Parallel " << chp << endl;
 
 	net  = n;
+	prs = p;
 	from = f;
 
 	npbranch_count = net->pbranch_count;
@@ -211,66 +225,12 @@ vector<int> parallel::generate_states(petri *n, vector<int> f, map<int, int> pbr
 		for (l = 0; l < (int)next.size(); l++)
 			net->S[next[l]].pbranch = npbranch;
 
-		end = (*i)->generate_states(net, next, npbranch, cbranch);
+		end = (*i)->generate_states(net, prs, next, npbranch, cbranch);
 		allends.push_back(net->insert_place(end, npbranch, cbranch, this));
 	}
 	uid.push_back(net->insert_dummy(allends, pbranch, cbranch, this));
 
 	return uid;
-}
-
-void parallel::insert_instr(int uid, int nid, instruction *instr)
-{
-	/*instr->uid = nid;
-	instr->from = uid;
-
-	sequential *b;
-	instruction* j;
-	list<instruction*>::iterator i, k;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		j = *i;
-		if (j->uid == uid)
-		{
-			if (j->kind() != "sequential")
-			{
-				b = new sequential();
-				b->from = j->from;
-				b->instrs.push_back(j);
-				b->chp = j->chp + ";" + instr->chp;
-				b->parent = this;
-				b->space = space;
-				b->vars = vars;
-				b->verbosity = verbosity;
-				b->tab = tab;
-				instrs.remove(*i);
-				instrs.push_back(b);
-			}
-			else
-				b = (sequential*)j;
-
-			b->instrs.push_back(instr);
-			b->uid = nid;
-			return;
-		}
-	}
-
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		j = *i;
-		if (j->kind() == "parallel")
-			((parallel*)j)->insert_instr(uid, nid, instr);
-		else if (j->kind() == "loop")
-			((loop*)j)->insert_instr(uid, nid, instr);
-		else if (j->kind() == "condition")
-			((condition*)j)->insert_instr(uid, nid, instr);
-		else if (j->kind() == "guard")
-			((guard*)j)->insert_instr(uid, nid, instr);
-		else if (j->kind() == "sequential")
-			((sequential*)j)->insert_instr(uid, nid, instr);
-		else if (j->kind() == "assignment")
-			((assignment*)j)->insert_instr(uid, nid, instr);
-	}*/
 }
 
 void parallel::print_hse(string t, ostream *fout)

@@ -20,6 +20,7 @@ variable::variable()
 	driven = false;
 	arg = false;
 	flags = NULL;
+	pc = vector<int>(1, 0);
 }
 
 variable::variable(string name, string type, uint16_t width, bool arg, flag_space *flags)
@@ -33,6 +34,7 @@ variable::variable(string name, string type, uint16_t width, bool arg, flag_spac
 	this->driven = false;
 	this->arg = arg;
 	this->flags = flags;
+	pc = vector<int>(1, 0);
 }
 
 variable::variable(string chp, bool arg, flag_space *flags)
@@ -42,6 +44,7 @@ variable::variable(string chp, bool arg, flag_space *flags)
 	this->arg = arg;
 	this->flags = flags;
 	this->driven = false;
+	pc = vector<int>(1, 0);
 
 	parse(chp);
 }
@@ -52,6 +55,7 @@ variable::~variable()
 	type = "";
 	width = 0;
 	fixed = false;
+	pc = vector<int>(1, 0);
 }
 
 variable &variable::operator=(variable v)
@@ -66,6 +70,7 @@ variable &variable::operator=(variable v)
 	driven = v.driven;
 	arg = v.arg;
 	flags = v.flags;
+	pc = v.pc;
 
 	return *this;
 }

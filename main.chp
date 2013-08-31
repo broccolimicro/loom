@@ -1,6 +1,7 @@
 #include "channel.chp"
+#include "math.chp"
 
-inline process mux1b2(achan4p1b A, achan4p1b B, achan4p1b S, achan4p1b O)
+inline process cmerge1b2(achan4p1b A, achan4p1b B, achan4p1b S, achan4p1b O)
 {
 	node<1> s;
 	node<1> o;
@@ -25,9 +26,86 @@ inline process fifo1b(achan4p1b L, achan4p1b R)
 	*[L?i;R!i]
 }
 
-operator^(node<1> s, node<1> a, node<1> b)
+inline process fifo2b(achan4p2b L, achan4p2b R)
 {
-	s := a&~b | ~a&b;
+	node<2> i;
+	
+	*[L?i;R!i]
+}
+/*
+inline process reg1b(achan4p1bp R, achan4p1b W)
+{
+	node<1> val;
+	node<1> temp1;
+	node<1> temp2;
+
+	temp1+;temp2+;
+	*[
+		[	#R&temp1&temp2 -> R!val
+		|	#W&(temp1|temp2) -> W?val
+		]
+	]
+}
+
+inline process reg2b(achan4p2b R, achan4p2b W)
+{
+	node<2> val;
+
+	*[
+		[	#R -> R!val
+		|	#W -> W?val
+		]
+	]
+}
+*/
+inline process fork0b(achan4p0b L, achan4p0b R1, achan4p0b R2)
+{
+	*[L?;(R1!||R2!)]
+}
+
+inline process fork1b(achan4p1b L, achan4p1b R1, achan4p1b R2)
+{
+	node<1> val;
+	
+	*[L?val;(R1!val||R2!val)]
+}
+
+inline process fork2b(achan4p2b L, achan4p2b R1, achan4p2b R2)
+{
+	node<2> val;
+	
+	*[L?val;(R1!val||R2!val)]
+}
+/*
+inline process merge0b2(achan4p0b L1, achan4p0b L2, achan4p0b R)
+{
+	*[
+		[	#L1 -> L1?;R!
+		|	#L2 -> L2?;R!
+		]
+	]
+}
+
+inline process merge1b2(achan4p1b L1, achan4p1b L2, achan4p1b R)
+{
+	node<1> val;
+
+	*[
+		[	#L1 -> L1?val;R!val
+		|	#L2 -> L2?val;R!val
+		]
+	]
+}
+
+inline process merge2b2(achan4p2b L1, achan4p2b L2, achan4p2b R)
+{
+	node<2> val;
+	
+	*[
+		[	#L1 -> L1?val;R!val
+		|	#L2 -> L2?val;R!val
+		]
+	]
 }
 
 inline process test(achan4p0b L, achan4p0b R)
@@ -35,5 +113,7 @@ inline process test(achan4p0b L, achan4p0b R)
 	node<1> x;
 	node<1> y;
 	node<1> z;
-	*[[x^y -> z+[]~(x^y) -> z-]]
+	[x^y -> z+[]~(x^y) -> z-]
 }
+
+*/

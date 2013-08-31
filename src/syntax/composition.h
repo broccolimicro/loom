@@ -20,7 +20,6 @@ struct composition : instruction
 	void init(string chp, variable_space *vars, flag_space *flags);
 	void clear();
 
-	virtual void insert_instr(int uid, int nid, instruction *instr) = 0;
 	virtual void push(instruction *i) = 0;
 
 	instruction *expand_assignment(string chp);

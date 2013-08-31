@@ -38,11 +38,11 @@ struct debug : instruction
 
 	void expand_shortcuts();
 	void parse();
-	void merge();
-	vector<int> generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch);
+	void simulate();
+	void rewrite();
+	void reorder();
+	vector<int> generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch);
 	void generate_class_requirements();
-
-	void insert_instr(int uid, int nid, instruction *instr);
 
 	void print_hse(string t, ostream *fout = &cout);
 };

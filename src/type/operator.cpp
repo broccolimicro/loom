@@ -34,6 +34,8 @@ operate::operate(string raw, type_space *types, flag_space *flags)
 	this->flags = flags;
 
 	parse(raw);
+
+	types->insert(pair<string, operate*>(name, this));
 }
 
 operate::~operate()
@@ -134,8 +136,8 @@ void operate::print_prs(ostream *fout, string prefix, vector<string> driven)
 {
 	map<string, variable>::iterator vi;
 	type_space::iterator ki;
-	for (size_t i = 0; i < prs.size(); i++)
-		if (find(driven.begin(), driven.end(), prefix + vars.get_name(i)) == driven.end())
+	for (size_t i = 0; i < prs.rules.size(); i++)
+		if (find(driven.begin(), driven.end(), prefix + vars.get_name(i)) == driven.end() && prs[i].vars != NULL)
 			prs[i].print(*fout, prefix);
 }
 

@@ -5,11 +5,6 @@ operator&(node<1> s, node<1> a, node<1> b)
 	];
 }
 
-operator&(node<2> s, node<2> a, node<2> b)
-{
-	s[0],s[1] := a[0]&b[0],a[1]&b[1];
-}
-
 operator|(node<1> s, node<1> a, node<1> b)
 {
 	[    a | b -> s+
@@ -17,21 +12,11 @@ operator|(node<1> s, node<1> a, node<1> b)
 	];
 }
 
-operator|(node<2> s, node<2> a, node<2> b)
-{
-	s[0],s[1] := a[0]|b[0],a[1]|b[1];
-}
-
 operator~(node<1> s, node<1> a)
 {
 	[  ~a -> s+
 	[]  a -> s-
 	];
-}
-
-operator~(node<2> s, node<2> a)
-{
-	s[0],s[1] := ~a[0],~a[1];
 }
 
 operator^(node<1> s, node<1> a, node<1> b)

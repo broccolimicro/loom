@@ -171,6 +171,7 @@ void canonical::clear()
  */
 void canonical::mccluskey()
 {
+	canonical temp;
 	vector<minterm> implicants;
 	vector<minterm> primes;
 	vector<size_t> essentials;
@@ -181,21 +182,21 @@ void canonical::mccluskey()
 
 	vector<int> count;
 	int count_sum;
+	vector<int> vl;
 
 	map<size_t, vector<size_t> > cov, Tcov;
 	vector<size_t>::iterator ci;
 
 	size_t max_count = implicants.size();
 	size_t choice;
+	pair<int, int> xdiff;
+	int diff;
 
 	for (i = 0; i < terms.size(); i++)
-	{
 		if (terms[i] != 0)
-		{
-			t[1].push_back(terms[i]);
 			implicants.push_back(terms[i]);
-		}
-	}
+
+	t[1] = implicants;
 	terms.clear();
 
 	/**
@@ -211,10 +212,28 @@ void canonical::mccluskey()
 		{
 			for (j = i+1; j < t[1].size(); j++)
 			{
-				if (t[1][i].diff_count(t[1][j]) <= 1)
+				xdiff = t[1][i].xdiff_count(t[1][j]);
+				diff = t[1][i].diff_count(t[1][j]);
+				if ((diff <= 1 && xdiff.first + xdiff.second <= 1) ||
+					(xdiff.first == 0 && diff - xdiff.second == 0) ||
+					(xdiff.second == 0 && diff - xdiff.first == 0))
 				{
 					implicant = t[1][i] | t[1][j];
 					count[i]++;
+					count[j]++;
+					if (find(t[0].begin(), t[0].end(), implicant) == t[0].end())
+						t[0].push_back(implicant);
+				}
+				else if (xdiff.first == 0 && diff - xdiff.second == 1)
+				{
+					implicant = (t[1][i] & t[1][j]).xoutnulls();
+					count[i]++;
+					if (find(t[0].begin(), t[0].end(), implicant) == t[0].end())
+						t[0].push_back(implicant);
+				}
+				else if (xdiff.second == 0 && diff - xdiff.first == 1)
+				{
+					implicant = (t[1][i] & t[1][j]).xoutnulls();
 					count[j]++;
 					if (find(t[0].begin(), t[0].end(), implicant) == t[0].end())
 						t[0].push_back(implicant);
@@ -340,6 +359,17 @@ canonical canonical::smooth(vector<int> vars)
 	canonical result;
 	for (int i = 0; i < (int)terms.size(); i++)
 		result.terms.push_back(terms[i].smooth(vars));
+	result.mccluskey();
+	return result;
+}
+
+canonical canonical::restrict(canonical r)
+{
+	canonical result;
+	for (int i = 0; i < (int)terms.size(); i++)
+		for (int j = 0; j < (int)r.terms.size(); j++)
+			if ((terms[i] & r.terms[j]) != 0)
+				result.terms.push_back(terms[i].smooth(r.terms[j].vars()));
 	result.mccluskey();
 	return result;
 }
@@ -541,6 +571,8 @@ canonical canonical::operator&(uint32_t c)
 
 bool canonical::operator==(canonical c)
 {
+	sort(terms.begin(), terms.end());
+	sort(c.terms.begin(), c.terms.end());
 	bool result = (terms.size() == c.terms.size());
 	for (int i = 0; i < (int)terms.size() && result; i++)
 		result = result && (terms[i] == c.terms[i]);
@@ -549,6 +581,8 @@ bool canonical::operator==(canonical c)
 
 bool canonical::operator!=(canonical c)
 {
+	sort(terms.begin(), terms.end());
+	sort(c.terms.begin(), c.terms.end());
 	bool result = (terms.size() == c.terms.size());
 	for (int i = 0; i < (int)terms.size() && result; i++)
 		result = result && (terms[i] == c.terms[i]);
@@ -632,5 +666,15 @@ string canonical::print(variable_space *vars, string prefix)
 		res += terms[i].print(vars, prefix);
 	}
 	return res;
+}
+
+string canonical::print_assign(variable_space *v, string prefix)
+{
+	if (terms.size() > 1)
+		cout << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
+	else if (terms.size() == 1)
+		return terms[0].print_assign(v, prefix);
+	else
+		return "skip";
 }
 

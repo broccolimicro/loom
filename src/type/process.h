@@ -30,7 +30,7 @@ struct process : keyword
 
 	string					chp;	// the raw process definition
 	parallel				def;	// the chp that defined this process
-	vector<rule>			prs;
+	rule_space				prs;
 	variable_space			vars;
 	list<string>			args;
 	petri					net;
@@ -41,7 +41,8 @@ struct process : keyword
 	process &operator=(process p);
 
 	void parse(string raw);
-	void merge();
+	void simulate();
+	void rewrite();
 	void project();
 	void decompose();
 	void reshuffle();
@@ -58,7 +59,6 @@ struct process : keyword
 
 	void print_hse(ostream *fout = &cout);
 	void print_dot(ostream *fout = &cout);
-	void print_petrify();
 	void print_prs(ostream *fout = &cout);
 };
 

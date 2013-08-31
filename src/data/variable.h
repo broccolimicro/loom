@@ -30,6 +30,7 @@ struct variable
 	bool		driven;		// keep track of whether or not this variable is driven within this process
 	bool		arg;		// Is this variable an argument variable into a process?
 	vector<int>	reset;
+	vector<int> pc;			// Program counter: This helps to determine whether a guard is monotonic or just completely unstable
 
 	list<string> inputs;
 

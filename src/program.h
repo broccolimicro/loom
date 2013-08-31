@@ -34,7 +34,8 @@ struct program
 	void compile();
 
 	void parse(string chp);
-	void merge();
+	void simulate();
+	void rewrite();
 	void project();
 	void decompose();
 	void reshuffle();
@@ -48,7 +49,6 @@ struct program
 
 	void print_hse();
 	void print_dot();
-	void print_petrify();
 	void print_prs();
 };
 

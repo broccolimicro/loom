@@ -78,7 +78,8 @@ instruction *guard::duplicate(instruction *parent, variable_space *vars, map<str
 			k = instr->chp.npos;
 	}
 
-	instr->chp = canonical(instr->chp, vars).print(vars);
+	instr->solution = logic(instr->chp, vars);
+	instr->chp = instr->solution.print(vars);
 
 	return instr;
 }
@@ -96,29 +97,37 @@ void guard::parse()
 	flags->dec();
 }
 
-void guard::merge()
+void guard::simulate()
 {
-	chp = canonical(chp, vars).print(vars);
+
+	vars->increment_pcs(logic(chp, vars), false);
 }
 
-vector<int> guard::generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
+void guard::rewrite()
+{
+	chp = logic(chp, vars).print(vars);
+}
+
+void guard::reorder()
+{
+
+}
+
+vector<int> guard::generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
 {
 	flags->inc();
 	from = f;
 	net = n;
-	chp = canonical(chp, vars).print(vars);
+	prs = p;
+	solution = logic(chp, vars);
 
 	if (flags->log_base_state_space())
 		(*flags->log_file) << flags->tab << "Guard " << chp << endl;
 
-	uid.push_back(net->insert_transition(from, logic(chp, vars), pbranch, cbranch, this));
+	uid.push_back(net->insert_transition(from, solution, pbranch, cbranch, this));
 	flags->dec();
 
 	return uid;
-}
-
-void guard::insert_instr(int uid, int nid, instruction *instr)
-{
 }
 
 void guard::print_hse(string t, ostream *fout)

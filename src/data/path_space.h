@@ -33,6 +33,7 @@ struct path_space
 	void inc(int i);
 	void zero(int i);
 	void zero(vector<int> i);
+	void sub(int i, int v);
 
 	int coverage_count(int n);
 	int coverage_count(vector<int> n);

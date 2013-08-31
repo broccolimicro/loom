@@ -130,6 +130,19 @@ void path_space::zero(vector<int> i)
 		total[i[j]] = 0;
 }
 
+void path_space::sub(int i, int v)
+{
+	list<path>::iterator pi;
+	int j;
+	for (pi = paths.begin(); pi != paths.end(); pi++)
+	{
+		(*pi)[i] -= v;
+		if (pi->empty())
+			pi = paths.erase(pi);
+	}
+	total[i] -= v;
+}
+
 int path_space::coverage_count(int n)
 {
 	return total[n];

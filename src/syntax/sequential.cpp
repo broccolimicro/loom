@@ -18,6 +18,7 @@
 #include "condition.h"
 #include "loop.h"
 #include "debug.h"
+#include "skip.h"
 
 sequential::sequential()
 {
@@ -166,7 +167,9 @@ void sequential::parse()
 			// This sub sequential is an assignment instruction.
 			else if ((raw_instr.find(":=") != raw_instr.npos || raw_instr[raw_instr.length()-1] == '+' || raw_instr[raw_instr.length()-1] == '-') && raw_instr.length() > 0)
 				push(expand_assignment(raw_instr));
-			else if (raw_instr.find("skip") == raw_instr.npos && raw_instr.length() > 0)
+			else if (raw_instr == "skip")
+				push(new skip(this, raw_instr, vars, flags));
+			else if (raw_instr.length() > 0)
 				push(new guard(this, raw_instr, vars, flags));
 
 			j = i+1;
@@ -182,7 +185,15 @@ void sequential::parse()
 	flags->dec();
 }
 
-void sequential::merge()
+void sequential::simulate()
+{
+	list<instruction*>::iterator i;
+
+	for (i = instrs.begin(); i != instrs.end(); i++)
+		(*i)->simulate();
+}
+
+void sequential::rewrite()
 {
 	list<instruction*>::iterator i, j;
 	list<pair<sequential*, guard*> >::iterator k;
@@ -192,6 +203,11 @@ void sequential::merge()
 	condition *ic, *jc;
 	assignment *ia, *ja;
 	int conflict_count;
+
+	if ((*j)->kind() == "skip")
+	{
+		j = instrs.erase(j);
+	}
 
 	for (j++; j != instrs.end(); j++)
 	{
@@ -204,7 +220,7 @@ void sequential::merge()
 			{
 				for (k = jc->instrs.begin(); k != jc->instrs.end(); k++)
 					k->second->chp = canonical("(" + ic->instrs.front().second->chp + ")&(" + k->second->chp + ")", vars).print(vars);
-				instrs.remove(*i);
+				instrs.erase(i);
 				//delete (condition*)(*i);
 			}
 		}
@@ -233,14 +249,23 @@ void sequential::merge()
 				//delete (assignment*)*i;
 			}*/
 		}
+		if ((*j)->kind() == "skip")
+		{
+			j = instrs.erase(j);
+		}
 		i = j;
 	}
 
 	for (j = instrs.begin(); j != instrs.end(); j++)
-		(*j)->merge();
+		(*j)->rewrite();
 }
 
-vector<int> sequential::generate_states(petri *n, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
+void sequential::reorder()
+{
+
+}
+
+vector<int> sequential::generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
 {
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
@@ -255,6 +280,7 @@ vector<int> sequential::generate_states(petri *n, vector<int> f, map<int, int> p
 		(*flags->log_file) << flags->tab << "Sequential " << chp << endl;
 
 	net  = n;
+	prs = p;
 	from = f;
 	if (instrs.size() == 0)
 		uid.push_back(net->insert_dummy(from, pbranch, cbranch, this));
@@ -271,53 +297,12 @@ vector<int> sequential::generate_states(petri *n, vector<int> f, map<int, int> p
 			else
 				next = uid;
 
-			uid	= instr->generate_states(net, next, pbranch, cbranch);
+			uid	= instr->generate_states(net, prs, next, pbranch, cbranch);
 			trans = (next != uid);
 		}
 	}
 	flags->dec();
 	return uid;
-}
-
-void sequential::insert_instr(int uid, int nid, instruction *instr)
-{
-	/*instr->uid = nid;
-	instr->from = uid;
-
-	instruction *j;
-	list<instruction*>::iterator i;
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		j = *i;
-		if (j->uid == uid)
-		{
-			i++;
-			if (i == instrs.end())
-				instrs.push_back(instr);
-			else
-				instrs.insert(i, instr);
-			// TODO Set the from field here
-
-			return;
-		}
-	}
-
-	for (i = instrs.begin(); i != instrs.end(); i++)
-	{
-		j = *i;
-		if (j->kind() == "parallel")
-			((parallel*)j)->insert_instr(uid, nid, instr);
-		else if (j->kind() == "loop")
-			((loop*)j)->insert_instr(uid, nid, instr);
-		else if (j->kind() == "condition")
-			((condition*)j)->insert_instr(uid, nid, instr);
-		else if (j->kind() == "guard")
-			((guard*)j)->insert_instr(uid, nid, instr);
-		else if (j->kind() == "sequential")
-			((sequential*)j)->insert_instr(uid, nid, instr);
-		else if (j->kind() == "assignment")
-			((assignment*)j)->insert_instr(uid, nid, instr);
-	}*/
 }
 
 void sequential::print_hse(string t, ostream *fout)
