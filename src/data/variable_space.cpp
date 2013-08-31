@@ -289,7 +289,6 @@ vector<int> variable_space::x_channel(vector<int> av)
 	variable *g;
 	keyword *k;
 	channel *c;
-	int id;
 	vector<int> result;
 	for (int i = 0; i < (int)av.size(); i++)
 	{
@@ -318,7 +317,7 @@ vector<int> variable_space::x_channel(vector<int> av)
 						g = find(v->name + "." + vi->second.name);
 						if (g == NULL)
 							cout << "Error: Could not find " << v->name + "." + vi->second.name << endl;
-						else if (!g->driven && std::find(av.begin(), av.end(), id) == av.end())
+						else if (!g->driven && std::find(av.begin(), av.end(), g->uid) == av.end())
 							result.push_back(g->uid);
 					}
 				}

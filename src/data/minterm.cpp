@@ -790,7 +790,7 @@ string minterm::print_assign(variable_space *vars, string prefix)
 				first = true;
 			}
 		}
-		if (((v>>30)&3) != 3 && ((v>>30)&3) != 0 && ((int)i*16 + 15) < size)
+		if ((v&3) != 3 && (v&3) != 0 && ((int)i*16 + 15) < size)
 		{
 			if (first)
 			{
@@ -802,7 +802,7 @@ string minterm::print_assign(variable_space *vars, string prefix)
 				res += prefix + vars->get_name(i*16 + 15);
 			else
 				res += prefix + "x" + to_string(i*16 + 15);
-			res2 += tbl[(v>>30)&3];
+			res2 += tbl[v&3];
 
 			first = true;
 		}
