@@ -32,32 +32,7 @@ inline process fifo2b(achan4p2b L, achan4p2b R)
 	
 	*[L?i;R!i]
 }
-/*
-inline process reg1b(achan4p1bp R, achan4p1b W)
-{
-	node<1> val;
-	node<1> temp1;
-	node<1> temp2;
 
-	temp1+;temp2+;
-	*[
-		[	#R&temp1&temp2 -> R!val
-		|	#W&(temp1|temp2) -> W?val
-		]
-	]
-}
-
-inline process reg2b(achan4p2b R, achan4p2b W)
-{
-	node<2> val;
-
-	*[
-		[	#R -> R!val
-		|	#W -> W?val
-		]
-	]
-}
-*/
 inline process fork0b(achan4p0b L, achan4p0b R1, achan4p0b R2)
 {
 	*[L?;(R1!||R2!)]
@@ -76,13 +51,37 @@ inline process fork2b(achan4p2b L, achan4p2b R1, achan4p2b R2)
 	
 	*[L?val;(R1!val||R2!val)]
 }
-/*
+
+/*	Non-deterministic selection is not supported yet
+
+inline process reg1b(achan4p1bp R, achan4p1b W)
+{
+	node<1> val;
+
+	*[
+		[	#R -> R!val
+		|	#W -> W?val
+		]
+	]
+}
+
+inline process reg2b(achan4p2b R, achan4p2b W)
+{
+	node<2> val;
+
+	*[
+		[	#R -> R!val
+		|	#W -> W?val
+		]
+	]
+}
+
 inline process merge0b2(achan4p0b L1, achan4p0b L2, achan4p0b R)
 {
 	*[
-		[	#L1 -> L1?;R!
-		|	#L2 -> L2?;R!
-		]
+		[	#L1 -> L1?
+		|	#L2 -> L2?
+		]; R!
 	]
 }
 
@@ -91,9 +90,9 @@ inline process merge1b2(achan4p1b L1, achan4p1b L2, achan4p1b R)
 	node<1> val;
 
 	*[
-		[	#L1 -> L1?val;R!val
-		|	#L2 -> L2?val;R!val
-		]
+		[	#L1 -> L1?val
+		|	#L2 -> L2?val
+		]; R!val
 	]
 }
 
@@ -102,18 +101,10 @@ inline process merge2b2(achan4p2b L1, achan4p2b L2, achan4p2b R)
 	node<2> val;
 	
 	*[
-		[	#L1 -> L1?val;R!val
-		|	#L2 -> L2?val;R!val
-		]
+		[	#L1 -> L1?val
+		|	#L2 -> L2?val
+		]; R!val
 	]
-}
-
-inline process test(achan4p0b L, achan4p0b R)
-{
-	node<1> x;
-	node<1> y;
-	node<1> z;
-	[x^y -> z+[]~(x^y) -> z-]
 }
 
 */
