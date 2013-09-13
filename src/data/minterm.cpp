@@ -821,6 +821,49 @@ string minterm::print_assign(variable_space *vars, string prefix)
 	return res;
 }
 
+string minterm::print_with_quotes(variable_space *vars, string prefix)
+{
+        string res;
+        bool first = false;
+
+        string tbl[4] = {"!", "~", "", ""};
+        uint32_t v;
+        for (size_t i = 0; i < values.size(); i++)
+        {
+                v = values[i];
+                for (int j = 15; j > 0; j--)
+                {
+                        if (((v>>(2*j))&3) != 3 && ((int)i*16 + (15-j)) < size)
+                        {
+                                if (first)
+                                        res += "&";
+                                if (vars != NULL)
+                                        res += tbl[(v>>(2*j))&3] + "\"" + prefix + vars->get_name(i*16 + (15-j)) + "\"";
+                                else
+                                        res += tbl[(v>>(2*j))&3] + "\"" + prefix + "x" + to_string(i*16 + (15-j)) + "\"";
+                                first = true;
+                        }
+                }
+
+                if ((v&3) != 3 && ((int)i*16 + 15) < size)
+                {
+                        if (first)
+                                res += "&";
+                        if (vars != NULL)
+                                res += tbl[v&3] + "\"" + prefix + vars->get_name(i*16 + 15) + "\"";
+                        else
+                                res += tbl[v&3] + "\"" + prefix + "x" + to_string(i*16 + 15) + "\"";
+                        first = true;
+                }
+        }
+
+        if (res == "")
+                res = "1";
+
+        return res;
+}
+
+
 bool operator==(minterm s1, minterm s2)
 {
 	if (s2.size > s1.size)

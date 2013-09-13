@@ -443,9 +443,9 @@ void rule::print(ostream &os, string prefix)
 		names[i] = prefix + names[i];
 
 	if (guards[1] != -1)
-		os << guards[1].print(vars, prefix) << " -> " << names[uid] << "+" << endl;
+		os << guards[1].print_with_quotes(vars, prefix) << " -> \"" << names[uid] << "\"+" << endl;
 	if (guards[0] != -1)
-		os << guards[0].print(vars, prefix) << " -> " << names[uid] << "-" << endl;
+		os << guards[0].print_with_quotes(vars, prefix) << " -> \"" << names[uid] << "\"-" << endl;
 }
 
 //Print the rule in the following format:
@@ -455,9 +455,9 @@ ostream &operator<<(ostream &os, rule r)
 {
 	vector<string> names = r.vars->get_names();
 	if (r.guards[1] != -1)
-		os << r.guards[1].print(r.vars) << " -> " << names[r.uid] << "+" << endl;
+		os << r.guards[1].print_with_quotes(r.vars) << " -> \"" << names[r.uid] << "\"+" << endl;
 	if (r.guards[0] != -1)
-		os << r.guards[0].print(r.vars) << " -> " << names[r.uid] << "-" << endl;
+		os << r.guards[0].print_with_quotes(r.vars) << " -> \"" << names[r.uid] << "\"-" << endl;
 
     return os;
 }

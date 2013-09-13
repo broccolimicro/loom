@@ -691,3 +691,19 @@ string canonical::print_assign(variable_space *v, string prefix)
 		return "skip";
 }
 
+string canonical::print_with_quotes(variable_space *vars, string prefix)
+{
+	if (terms.size() == 0)
+                return "0";
+        else if (terms.size() == 1 && terms[0] == 1)
+                return "1";
+
+        string res;
+        for (int i = 0; i < (int)terms.size(); i++)
+        {
+                if (i != 0)
+                        res += "|";
+                res += terms[i].print_with_quotes(vars, prefix);
+        }
+        return res;
+}

@@ -97,6 +97,7 @@ struct canonical
 
 	string print(variable_space *v, string prefix = "");
 	string print_assign(variable_space *v, string prefix = "");
+	string print_with_quotes(variable_space *v, string prefix = "");
 };
 
 

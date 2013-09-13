@@ -100,6 +100,7 @@ struct minterm
 
 	string print(variable_space *vars, string prefix = "");
 	string print_assign(variable_space *vars, string prefix = "");
+	string print_with_quotes(variable_space *vars, string prefix = "");
 };
 
 bool operator==(minterm s1, minterm s2);
