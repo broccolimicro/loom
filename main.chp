@@ -12,13 +12,13 @@
 		];
 		O!o
 	]
-}
+}*/
 
 inline process fifo0b(achan4p0b L, achan4p0b R)
 {
 	*[L?;R!]
 }
-*/
+
 inline process fifo1b(achan4p1b L, achan4p1b R)
 {
 	node<1> i;
@@ -61,9 +61,9 @@ inline process reg1b(pchan4p1b R, achan4p1b W)
 		|	#W -> W?val
 		]
 	]
-}*/
+}
 
-/*inline process reg2b(pchan4p2b R, achan4p2b W)
+inline process reg2b(pchan4p2b R, achan4p2b W)
 {
 	node<2> val;
 

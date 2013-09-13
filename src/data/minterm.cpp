@@ -474,7 +474,7 @@ minterm minterm::refactor(vector<int> ids)
 	return result;
 }
 
-minterm minterm::smooth(int var)
+minterm minterm::hide(int var)
 {
 	minterm result = *this;
 	if (var < size)
@@ -484,7 +484,7 @@ minterm minterm::smooth(int var)
 	return result;
 }
 
-minterm minterm::smooth(vector<int> vars)
+minterm minterm::hide(vector<int> vars)
 {
 	minterm result = *this;
 	for (int i = 0; i < (int)vars.size(); i++)

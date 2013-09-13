@@ -466,7 +466,8 @@ bool petri::updateplace(int p, int i)
 	vector<int> oa = output_nodes(p);
 	vector<int> ip;
 	vector<int> vl;
-	int k, j;
+	vector<logic> options;
+	int l, k, j;
 	logic t(0);
 	logic o;
 	bool fireup, firedown;
@@ -488,18 +489,24 @@ bool petri::updateplace(int p, int i)
 		}
 
 		(*flags->log_file) << "}>>" << T[index(ia[k])].index.print(vars) << " = (" << (t >> T[index(ia[k])].index).print(vars) << ")\t";
-		S[p].index |= (t >> T[index(ia[k])].index);
+		options.push_back(t >> T[index(ia[k])].index);
+	}
+
+	for (k = 0; k < (int)options.size(); k++)
+	{
+		t = 1;
+		for (l = 0, t = 1; l < (int)options.size(); l++)
+			t &= ((l == k) ? options[l] : ~options[l]);
+		S[p].index |= t;
 	}
 
 	(*flags->log_file) << S[p].index.print(vars) << " ";
 
 	for (ji = S[p].mutables.begin(); ji != S[p].mutables.end(); ji++)
 		if ((S[p].index & ji->second) != S[p].index)
-			S[p].index = S[p].index.smooth(ji->first);
+			S[p].index = S[p].index.hide(ji->first);
 
 	(*flags->log_file) << S[p].index.print(vars) << " ";
-
-	S[p].index = prs->apply(S[p].index);
 
 	if (S[p].index != 0)
 	{
@@ -1377,7 +1384,7 @@ void petri::gen_conflicts()
 				t = t & T[index(oa[j])].index;
 			}
 		unique(&vl);
-		s1 = S[i].index.smooth(vl);
+		s1 = S[i].index.hide(vl);
 
 		for (j = 0; j < (int)S.size(); j++)
 		{
@@ -1441,7 +1448,7 @@ void petri::gen_bubbleless_conflicts()
 				tp &= T[index(oa[j])].negative;
 			}
 		unique(&vl);
-		sp1 = S[i].positive.smooth(vl);
+		sp1 = S[i].positive.hide(vl);
 
 		// NEGATIVE
 		vl.clear();
@@ -1452,7 +1459,7 @@ void petri::gen_bubbleless_conflicts()
 				tn &= T[index(oa[j])].positive;
 			}
 		unique(&vl);
-		sn1 = S[i].negative.smooth(vl);
+		sn1 = S[i].negative.hide(vl);
 
 		for (j = 0; j < (int)S.size(); j++)
 		{

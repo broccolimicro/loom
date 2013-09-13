@@ -37,8 +37,8 @@ struct bdd
 
 	bdd refactor(vector<int> ids);
 
-	bdd smooth(int var);
-	bdd smooth(vector<int> vars);
+	bdd hide(int var);
+	bdd hide(vector<int> vars);
 	void extract(map<int, bdd> *result);
 	map<int, bdd> extract();
 

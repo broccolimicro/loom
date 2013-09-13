@@ -49,8 +49,8 @@ struct canonical
 
 	canonical refactor(vector<int> ids);
 
-	canonical smooth(int var);
-	canonical smooth(vector<int> vars);
+	canonical hide(int var);
+	canonical hide(vector<int> vars);
 	canonical restrict(canonical r);
 	void extract(map<int, canonical> *result);
 	map<int, canonical> extract();

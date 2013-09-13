@@ -94,7 +94,7 @@ vector<int> path::maxes()
 
 int path::max()
 {
-	int r;
+	int r = -1;
 	int t = -1;
 	int i;
 	for (i = 0; i < (int)nodes.size(); i++)

@@ -291,7 +291,7 @@ void condition::rewrite()
 				cout << "Stable" << endl;
 				for (k = 0; k < (int)stable.size(); k++)
 					cout << vars->get_name(stable[k]) << endl;
-				gexp = canonical(i->second->chp, vars).smooth(monotonic).smooth(unstable);
+				gexp = canonical(i->second->chp, vars).hide(monotonic).hide(unstable);
 				ugexp = canonical(i->second->chp, vars).restrict(gexp);
 				dgexp = canonical(i->second->chp, vars).restrict(~gexp);
 				copy = i->first;
@@ -322,7 +322,7 @@ void condition::rewrite()
 			}
 			else if ((unstable.size() > 0 && monotonic.size() > 0) || (unstable.size() > 0 && stable.size() > 0))
 			{
-				gexp = canonical(i->second->chp, vars).smooth(unstable);
+				gexp = canonical(i->second->chp, vars).hide(unstable);
 				ugexp = canonical(i->second->chp, vars).restrict(gexp);
 				dgexp = canonical(i->second->chp, vars).restrict(~gexp);
 				copy = i->first;

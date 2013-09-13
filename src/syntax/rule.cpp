@@ -118,7 +118,7 @@ pair<int, logic> rule::closest_transition(int p, logic c, logic g, logic mg, vec
 
 		if (net->is_trans(net->arcs[next[0]].second))
 		{
-			temp = net->T[net->index(net->arcs[next[0]].second)].index.smooth(uid) & g;
+			temp = net->T[net->index(net->arcs[next[0]].second)].index.hide(uid) & g;
 			if ((temp & mg) != 0 && ((temp & c) == 0 || find(tail.begin(), tail.end(), net->arcs[next[0]].first) != tail.end()))
 			{
 				//cout << "end" << endl;
@@ -347,7 +347,7 @@ void rule::gen_minterms()
 					t = t & net->S[ia[j]].index;
 				}
 
-				t = t.smooth(vl);
+				t = t.hide(vl);
 				//guards[1] = guards[1] | t;
 
 				covered.clear();
@@ -369,7 +369,7 @@ void rule::gen_minterms()
 					implicants[0].push_back(ia[j]);
 					t = t & net->S[ia[j]].index;
 				}
-				t = t.smooth(vl);
+				t = t.hide(vl);
 				//guards[0] = guards[0] | t;
 
 				covered.clear();
@@ -406,7 +406,7 @@ void rule::gen_bubbleless_minterms()
 				for (j = 0, t = 1; j < (int)ia.size(); j++)
 					t = t & net->S[ia[j]].negative;
 
-				t = t.smooth(vl);
+				t = t.hide(vl);
 				guards[1] = guards[1] | t;
 			}
 
@@ -416,7 +416,7 @@ void rule::gen_bubbleless_minterms()
 				for (j = 0, t = 1; j < (int)ia.size(); j++)
 					t = t & net->S[ia[j]].positive;
 
-				t = t.smooth(vl);
+				t = t.hide(vl);
 				guards[0] = guards[0] | t;
 			}
 		}

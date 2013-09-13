@@ -176,7 +176,7 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 					ia = net->input_nodes(tid);
 					for (k = 0, t = 1; k < (int)ia.size(); k++)
 						t = t & net->S[ia[k]].index;
-					t = t.smooth(vl);
+					t = t.hide(vl);
 
 					covered.clear();
 					/*cout << "Start " << net->T[net->index(tid)].index.print(vars) <<  " ";

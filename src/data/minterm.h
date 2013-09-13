@@ -63,8 +63,8 @@ struct minterm
 
 	minterm refactor(vector<int> ids);
 
-	minterm smooth(int var);
-	minterm smooth(vector<int> vars);
+	minterm hide(int var);
+	minterm hide(vector<int> vars);
 	void extract(map<int, minterm> *result);
 	map<int, minterm> extract();
 

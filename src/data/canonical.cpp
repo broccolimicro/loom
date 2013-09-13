@@ -343,21 +343,21 @@ canonical canonical::refactor(vector<int> ids)
 	return result;
 }
 
-canonical canonical::smooth(int var)
+canonical canonical::hide(int var)
 {
 	canonical result;
 	int i;
 	for (i = 0; i < (int)terms.size(); i++)
-		result.terms.push_back(terms[i].smooth(var));
+		result.terms.push_back(terms[i].hide(var));
 	result.mccluskey();
 	return result;
 }
 
-canonical canonical::smooth(vector<int> vars)
+canonical canonical::hide(vector<int> vars)
 {
 	canonical result;
 	for (int i = 0; i < (int)terms.size(); i++)
-		result.terms.push_back(terms[i].smooth(vars));
+		result.terms.push_back(terms[i].hide(vars));
 	result.mccluskey();
 	return result;
 }
@@ -368,7 +368,7 @@ canonical canonical::restrict(canonical r)
 	for (int i = 0; i < (int)terms.size(); i++)
 		for (int j = 0; j < (int)r.terms.size(); j++)
 			if ((terms[i] & r.terms[j]) != 0)
-				result.terms.push_back(terms[i].smooth(r.terms[j].vars()));
+				result.terms.push_back(terms[i].hide(r.terms[j].vars()));
 	result.mccluskey();
 	return result;
 }

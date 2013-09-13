@@ -33,8 +33,8 @@ struct node
 	bool active;
 
 	logic index;
-	logic positive;	// Negative sense variables are smoothed out
-	logic negative;	// Positive sense variables are smoothed out
+	logic positive;	// Negative sense variables are hideed out
+	logic negative;	// Positive sense variables are hideed out
 
 	logic assumptions;
 	vector<logic> assertions;

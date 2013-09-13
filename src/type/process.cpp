@@ -197,7 +197,7 @@ void process::generate_states()
 
 	for (map<string, variable>::iterator i = vars.global.begin(); i != vars.global.end(); i++)
 		if (!i->second.driven)
-			vars.reset = vars.reset.smooth(i->second.uid);
+			vars.reset = vars.reset.hide(i->second.uid);
 
 	cout << "EXCL" << endl;
 	for (int i = 0; i < (int)prs.excl.size(); i++)
@@ -926,9 +926,9 @@ void process::elaborate_prs()
 
 	for (i = 0; i < (int)net.S.size(); i++)
 		for (j = 0; j < (int)net.S.size(); j++)
-			if (i != j && !net.connected(i, j) && net.values.apply_and(net.values.smooth(net.S[i].index, inactive), net.S[j].index) > 1)
+			if (i != j && !net.connected(i, j) && net.values.apply_and(net.values.hide(net.S[i].index, inactive), net.S[j].index) > 1)
 			{
-				ufrom = net.values.smooth(net.S[j].index, active);
+				ufrom = net.values.hide(net.S[j].index, active);
 				utrans = net.insert_transition(i, ufrom, map<int, int>(), NULL);
 				net.connect(utrans, j);
 			}*/

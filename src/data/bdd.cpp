@@ -88,12 +88,12 @@ bdd bdd::refactor(vector<int> ids)
 /**
  * \brief	Smoothes the variable whose index is j out of the expression represented by u.
  * \details	Given a binary boolean expression f whose index is u and a variable x whose index is j, this calculates f(x = 0) + f(x = 1).
- * \param	u		An index into T that represent the expression to smooth.
- * \param	j		A variable index that represents the variable being smoothed. Can be obtained with variable_space::get_uid(), variable::uid, or bdd_package::var().
+ * \param	u		An index into T that represent the expression to hide.
+ * \param	j		A variable index that represents the variable being hideed. Can be obtained with variable_space::get_uid(), variable::uid, or bdd_package::var().
  * \return	An index into T that identifies the top of the bdd_package that represents the resulting expression.
  * \see		restrict() and [Implicit State Enumeration of Finite State Machines using BDD's](http://pdf.aminer.org/000/283/307/implicit_state_enumeration_of_finite_state_machines_using_bdd_packages.pdf)
  */
-bdd bdd::smooth(int var)
+bdd bdd::hide(int var)
 {
 	unordered_map<pair<uint32_t, uint32_t>, uint32_t> G;
 	return bdd(pkg.apply(&bitwise_or, pkg.restrict(idx, var, 0), pkg.restrict(idx, var, 1), &G));
@@ -101,16 +101,16 @@ bdd bdd::smooth(int var)
 
 /**
  * \brief	Smoothes the set of variables whose indices are in j out of the expression represented by u.
- * \param	u		An index into T that represent the expression to smooth.
- * \param	j		A set of variable indices that represent the variables being smoothed. Can be obtained with variable_space::get_uid(), variable::uid, or bdd_package::var().
+ * \param	u		An index into T that represent the expression to hide.
+ * \param	j		A set of variable indices that represent the variables being hideed. Can be obtained with variable_space::get_uid(), variable::uid, or bdd_package::var().
  * \return	An index into T that identifies the top of the bdd_package that represents the resulting expression.
- * \see		smooth() and [Implicit State Enumeration of Finite State Machines using BDD's](http://pdf.aminer.org/000/283/307/implicit_state_enumeration_of_finite_state_machines_using_bdd_packages.pdf)
+ * \see		hide() and [Implicit State Enumeration of Finite State Machines using BDD's](http://pdf.aminer.org/000/283/307/implicit_state_enumeration_of_finite_state_machines_using_bdd_packages.pdf)
  */
-bdd bdd::smooth(vector<int> vars)
+bdd bdd::hide(vector<int> vars)
 {
 	bdd ret = *this;
 	for (int i = 0; i < (int)vars.size(); i++)
-		ret = ret.smooth(vars[i]);
+		ret = ret.hide(vars[i]);
 
 	return ret;
 }
@@ -120,7 +120,7 @@ bdd bdd::smooth(vector<int> vars)
  * \brief	extracts every variable from the expression represented by u into a map that maps variable indices to values.
  * \param	u		An index into T that represents the expression from which to extract all variable's values.
  * \param	result	The resulting map from variable indices to values.
- * \see		smooth() and extract().
+ * \see		hide() and extract().
  */
 void bdd::extract(map<int, bdd> *result)
 {
@@ -136,7 +136,7 @@ void bdd::extract(map<int, bdd> *result)
  * \brief	extracts every variable from the expression represented by u into a map that maps variable indices to values.
  * \param	u		An index into T that represents the expression from which to extract all variable's values.
  * \param	result	The resulting map from variable indices to values.
- * \see		smooth() and extract().
+ * \see		hide() and extract().
  */
 map<int, bdd> bdd::extract()
 {
@@ -154,9 +154,9 @@ map<int, bdd> bdd::extract()
 /**
  * \brief	Smoothes out all inverted variables on a per-minterm basis.
  * \details	Given a binary boolean expression f whose index is u, for every variable x0, x1, ..., xn this calculates fn such that fi = (fi-1(xi = 0) + xi*fi-1(xi = 1)) and f-1 = f.
- * \param	u		An index into T that represent the expression to smooth.
+ * \param	u		An index into T that represent the expression to hide.
  * \return	An index into T that identifies the top of the bdd_package that represents the resulting expression.
- * \see		get_neg(), restrict(), and smooth().
+ * \see		get_neg(), restrict(), and hide().
  */
 bdd bdd::pabs()
 {
@@ -173,9 +173,9 @@ bdd bdd::pabs()
 /**
  * \brief	Smoothes out all non-inverted variables on a per-minterm basis.
  * \details	Given a binary boolean expression f whose index is u, for every variable x0, x1, ..., xn this calculates fn such that fi = (~xi*fi-1(xi = 0) + fi-1(xi = 1)) and f-1 = f.
- * \param	u		An index into T that represent the expression to smooth.
+ * \param	u		An index into T that represent the expression to hide.
  * \return	An index into T that identifies the top of the bdd_package that represents the resulting expression.
- * \see		get_pos(), restrict(), and smooth().
+ * \see		get_pos(), restrict(), and hide().
  */
 bdd bdd::nabs()
 {
@@ -262,10 +262,10 @@ bdd bdd::operator()(int var, uint32_t val)
 
 /**
  * \brief	Smoothes every variable whose index is not j out of the expression represented by u.
- * \param	u		An index into T that represents the expression to smooth.
- * \param	j		A variable index that represents the one variable not being smoothed. Can be obtained with variable_space::get_uid(), variable::uid, or bdd_package::var().
+ * \param	u		An index into T that represents the expression to hide.
+ * \param	j		A variable index that represents the one variable not being hideed. Can be obtained with variable_space::get_uid(), variable::uid, or bdd_package::var().
  * \return	An index into T that identifies the top of the bdd_package that represents the resulting expression.
- * \see		smooth().
+ * \see		hide().
  */
 bdd bdd::operator[](int var)
 {
@@ -275,7 +275,7 @@ bdd bdd::operator[](int var)
 	pkg.vars(idx, &vl);
 	for (int i = 0; i < (int)vl.size(); i++)
 		if (vl[i] != var)
-			ret = ret.smooth(vl[i]);
+			ret = ret.hide(vl[i]);
 
 	return ret;
 }
@@ -362,7 +362,7 @@ bool bdd::constant()
 bdd bdd::operator>>(bdd b)
 {
 	unordered_map<pair<uint32_t, uint32_t>, uint32_t> G;
-	return bdd(pkg.apply(&bitwise_and, smooth(b.vars()).idx, b.idx, &G));
+	return bdd(pkg.apply(&bitwise_and, hide(b.vars()).idx, b.idx, &G));
 }
 
 /**

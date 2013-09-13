@@ -137,7 +137,7 @@ string variable_space::get_info(string name)
 	size_t s = name.npos;
 	size_t d = name.npos;
 	string min, max;
-	int l, h;
+	int l = 0, h = 0;
 	if (name.find("..") != name.npos)
 	{
 		s = name.find_first_of("[]");
