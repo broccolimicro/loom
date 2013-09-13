@@ -85,6 +85,9 @@ struct canonical
 	bool operator==(canonical c);
 	bool operator!=(canonical c);
 
+	bool operator==(minterm c);
+	bool operator!=(minterm c);
+
 	bool operator==(uint32_t c);
 	bool operator!=(uint32_t c);
 

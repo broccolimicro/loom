@@ -113,7 +113,6 @@ void program::parse(string chp)
 	string::iterator i, j;
 	string cleaned_chp = "";
 	string word;
-	string error;
 	int error_start, error_len;
 
 	process *p;
@@ -175,11 +174,9 @@ void program::parse(string chp)
 				// This isn't either a process or a record, this is an error.
 				else
 				{
-					error = "Error: CHP block outside of process.\nIgnoring block:\t";
 					error_start = j-cleaned_chp.begin();
 					error_len = min(min(cleaned_chp.find("process ", error_start), cleaned_chp.find("record ", error_start)), cleaned_chp.find("channel ", error_start)) - error_start;
-					error += cleaned_chp.substr(error_start, error_len);
-					cout << error << endl;
+					cout << "Error: CHP block outside of process." << endl << "Ignoring block:\t" << cleaned_chp.substr(error_start, error_len) << endl;
 					j += error_len;
 
 					// Make sure we don't miss the next record or process though.

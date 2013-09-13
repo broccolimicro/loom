@@ -25,6 +25,7 @@ struct rule
 
 	int uid;
 	logic guards[2];
+	vector<int> implicants[2];
 
 	flag_space *flags;
 
@@ -33,6 +34,8 @@ struct rule
 	logic &up();
 	logic &down();
 
+	pair<int, logic> closest_transition(int p, logic c, logic g, logic mg, vector<int> tail, vector<bool> *covered, int i = 0);
+	pair<int, logic> strengthen(int p, vector<bool> *covered, logic g, logic mg, int t, vector<int> tail, int i = 0);
 	void gen_minterms();
 	void gen_bubbleless_minterms();
 

@@ -75,6 +75,7 @@ list<path>::iterator path_space::erase(list<path>::iterator i)
 {
 	for (int j = 0; j < i->size(); j++)
 		total[j] -= (*i)[j];
+
 	return paths.erase(i);
 }
 

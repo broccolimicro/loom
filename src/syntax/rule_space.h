@@ -27,7 +27,13 @@ struct rule_space
 	rule &operator[](int i);
 
 	void apply_one_of(logic *s, vector<int> a, int v);
-	logic apply(logic s);
+	logic apply(logic s, logic covered = logic(), string t = "");
+
+	void generate_minterms(petri *net, flag_space *flags);
+	void check(petri *net);
+
+	void print(ostream *fout);
+	void print_enable_graph(ostream *fout, petri *net, string name);
 };
 
 #endif

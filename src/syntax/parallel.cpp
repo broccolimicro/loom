@@ -210,7 +210,8 @@ vector<int> parallel::generate_states(petri *n, rule_space *p, vector<int> f, ma
 
 	net  = n;
 	prs = p;
-	from = f;
+	l = net->insert_dummy(f, pbranch, cbranch, this);
+	from = vector<int>(1, net->insert_place(l, pbranch, cbranch, this));
 
 	npbranch_count = net->pbranch_count;
 	net->pbranch_count++;
@@ -237,15 +238,15 @@ void parallel::print_hse(string t, ostream *fout)
 {
 	if (instrs.size() > 1)
 	{
-		(*fout) << "\n" << t << "(\n" << t + "\t";
+		(*fout) << endl << t << "(" << endl << t + "\t";
 		list<instruction*>::iterator i;
 		for (i = instrs.begin(); i != instrs.end(); i++)
 		{
 			if (i != instrs.begin())
-				(*fout) << "||\n\t" << t;
+				(*fout) << "||" << endl << "\t" << t;
 			(*i)->print_hse(t + "\t", fout);
 		}
-		(*fout) << "\n" << t << ")";
+		(*fout) << endl << t << ")";
 	}
 	else if (instrs.size() == 1)
 	{

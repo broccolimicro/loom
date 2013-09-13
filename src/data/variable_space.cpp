@@ -552,12 +552,12 @@ void variable_space::print(string t, ostream *fout)
 	for (i = 0; i < global.size(); i++)
 	{
 		v = find((int)i);
-		(*fout) << t << v->type << " " << v->name << " UID:" << v->uid << " Arg:" << v->arg << "\n";
+		(*fout) << t << v->type << " " << v->name << " UID:" << v->uid << " Arg:" << v->arg << endl;
 	}
 
 	map<string, variable>::iterator vi;
 	for (vi = label.begin(); vi != label.end(); vi++)
-		(*fout) << t << vi->second.type << " " << vi->first << "\n";
+		(*fout) << t << vi->second.type << " " << vi->first << endl;
 }
 
 ostream &operator<<(ostream &os, variable_space s)
@@ -567,12 +567,12 @@ ostream &operator<<(ostream &os, variable_space s)
 	for (i = 0; i < s.global.size(); i++)
 	{
 		v = s.find((int)i);
-		os << v->type << " " << v->name << " UID:" << v->uid << " Arg:" << v->arg << " Driven: " << v->driven << "\n";
+		os << v->type << " " << v->name << " UID:" << v->uid << " Arg:" << v->arg << " Driven: " << v->driven << endl;
 	}
 
 	map<string, variable>::iterator vi;
 	for (vi = s.label.begin(); vi != s.label.end(); vi++)
-		os << vi->second.type << " " << vi->first << "\n";
+		os << vi->second.type << " " << vi->first << endl;
 
 	return os;
 }

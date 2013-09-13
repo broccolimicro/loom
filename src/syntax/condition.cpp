@@ -154,7 +154,7 @@ void condition::parse()
 		if (!guarded && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) != '|' && *(i-1) != '|') || (i == chp.end() && type == choice)))
 		{
 			if (flags->log_base_hse())
-				(*flags->log_file) << flags->tab << "Choice\n";
+				(*flags->log_file) << flags->tab << "Choice" << endl;
 			if (type == unknown)
 				type = choice;
 			else if (type == mutex)
@@ -172,7 +172,7 @@ void condition::parse()
 		else if (!guarded && depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '[' && *(i+1) == ']') || i == chp.end()))
 		{
 			if (flags->log_base_hse())
-				(*flags->log_file) << flags->tab << "Mutex\n";
+				(*flags->log_file) << flags->tab << "Mutex" << endl;
 			if (type == unknown)
 				type = mutex;
 			else if (type == choice)
@@ -251,7 +251,7 @@ void condition::rewrite()
 		instrs.push_back(*i);
 	add.clear();
 
-	vector<string> vl;
+	/*vector<string> vl;
 	vector<int> stable;
 	vector<int> monotonic;
 	vector<int> unstable;
@@ -268,10 +268,14 @@ void condition::rewrite()
 			monotonic.clear();
 			unstable.clear();
 
+			cout << i->second->chp << endl;
 			vl = extract_names(i->second->chp);
 			for (k = 0; k < (int)vl.size(); k++)
 			{
+				cout << "LOOK " << vl[k];
+
 				v = vars->find(vl[k]);
+				cout << " " << v->name << " " << v->uid << endl;
 				if (v != NULL && v->driven)
 					stable.push_back(v->uid);
 				else if (v != NULL && !v->driven && vars->part_of_channel(v->uid))
@@ -282,24 +286,71 @@ void condition::rewrite()
 					cout << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << ". Cannot find variable " << vl[k] << "." << endl;
 			}
 
-			if (stable.size() > 0)
+			if (monotonic.size() > 0 && stable.size() > 0)
 			{
+				cout << "Stable" << endl;
+				for (k = 0; k < (int)stable.size(); k++)
+					cout << vars->get_name(stable[k]) << endl;
 				gexp = canonical(i->second->chp, vars).smooth(monotonic).smooth(unstable);
 				ugexp = canonical(i->second->chp, vars).restrict(gexp);
 				dgexp = canonical(i->second->chp, vars).restrict(~gexp);
+				copy = i->first;
+				i->first = new sequential();
+				i->first->flags = flags;
+				i->first->parent = this;
+				i->first->prs = prs;
+				i->first->vars = vars;
+				i->first->net = net;
+
+				front = new condition();
+				front->flags = flags;
+				front->parent = i->first;
+				front->prs = prs;
+				front->vars = vars;
+				front->net = net;
+				front->type = choice;
+				if (ugexp != 0)
+					front->instrs.push_back(pair<sequential*, guard*>((sequential*)copy->duplicate(front, vars, map<string, string>()), new guard(front, ugexp.print(vars), vars, flags)));
+				if (dgexp != 0)
+					front->instrs.push_back(pair<sequential*, guard*>((sequential*)copy->duplicate(front, vars, map<string, string>()), new guard(front, dgexp.print(vars), vars, flags)));
+
+				delete copy;
+
+				i->first->push(front);
+				i->second->chp = gexp.print(vars);
 				cout << "Stable " << gexp.print(vars) << "\t" << ugexp.print(vars) << "\t" << dgexp.print(vars) << endl;
 			}
-			else if (monotonic.size() > 0)
+			else if ((unstable.size() > 0 && monotonic.size() > 0) || (unstable.size() > 0 && stable.size() > 0))
 			{
 				gexp = canonical(i->second->chp, vars).smooth(unstable);
 				ugexp = canonical(i->second->chp, vars).restrict(gexp);
 				dgexp = canonical(i->second->chp, vars).restrict(~gexp);
+				copy = i->first;
+				i->first = new sequential();
+				i->first->flags = flags;
+				i->first->parent = this;
+				i->first->prs = prs;
+				i->first->vars = vars;
+				i->first->net = net;
+
+				front = new condition();
+				front->flags = flags;
+				front->parent = i->first;
+				front->prs = prs;
+				front->vars = vars;
+				front->net = net;
+				front->type = choice;
+				if (ugexp != 0)
+					front->instrs.push_back(pair<sequential*, guard*>((sequential*)copy->duplicate(front, vars, map<string, string>()), new guard(front, ugexp.print(vars), vars, flags)));
+				if (dgexp != 0)
+					front->instrs.push_back(pair<sequential*, guard*>((sequential*)copy->duplicate(front, vars, map<string, string>()), new guard(front, dgexp.print(vars), vars, flags)));
+
+				delete copy;
+
+				i->first->push(front);
+				i->second->chp = gexp.print(vars);
+
 				cout << "Monotonic " << gexp.print(vars) << "\t" << ugexp.print(vars) << "\t" << dgexp.print(vars) << endl;
-			}
-			else if (unstable.size() > 0)
-			{
-				gexp = canonical(i->second->chp, vars);
-				cout << "Unstable " << gexp.print(vars) << endl;
 			}
 			else
 				cout << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
@@ -320,7 +371,7 @@ void condition::rewrite()
 			for (j++; j != instrs.end(); j++)
 				if ((logic(i->second->chp, vars) & logic(j->second->chp, vars)) != 0)
 					cout << "Error: Conflicting guards in a thick bar conditional {" << i->second->chp << ", " << j->second->chp << "}." << endl;
-		}
+		}*/
 
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
@@ -361,14 +412,14 @@ vector<int> condition::generate_states(petri *n, rule_space *p, vector<int> f, m
 		if (instrs.size() > 1)
 			ncbranch.insert(pair<int, int>(ncbranch_count, (int)k));
 
-		/*if (type == choice)
+		if (type == choice)
 		{
 			bvname = "_bv" + to_string(ncbranch_count) + "_" + to_string(k);
 			bvnames.push_back(bvname);
 			bvuids.push_back(vars->insert(variable(bvname, "node", 1, false, flags)));
 			prs->insert(rule(instr_iter->second->chp, "~(" + instr_iter->second->chp + ")", bvname, vars, net, flags));
 			instr_iter->second->chp = "(" + instr_iter->second->chp + ")&" + bvname;
-		}*/
+		}
 
 		end.clear();
 		start.clear();
@@ -378,7 +429,7 @@ vector<int> condition::generate_states(petri *n, rule_space *p, vector<int> f, m
 		uid.insert(uid.end(), start.begin(), start.end());
 	}
 
-	/*if (type == choice)
+	if (type == choice)
 	{
 		bvname = "";
 		for (i = 0; i < (int)bvnames.size(); i++)
@@ -404,7 +455,7 @@ vector<int> condition::generate_states(petri *n, rule_space *p, vector<int> f, m
 		prs->excl.push_back(pair<vector<int>, int>(bvuids, 1));
 		for (k = 0; k < (int)bvuids.size(); k++)
 			prs->excl.push_back(pair<vector<int>, int>(vector<int>(1, bvuids[k]), 0));
-	}*/
+	}
 
 	return uid;
 }
@@ -412,7 +463,7 @@ vector<int> condition::generate_states(petri *n, rule_space *p, vector<int> f, m
 void condition::print_hse(string t, ostream *fout)
 {
 	if (instrs.size() > 1)
-		(*fout) << "\n" << t;
+		(*fout) << endl << t;
 	(*fout) << "[";
 	if (instrs.size() > 1)
 		(*fout) << "\t";
@@ -423,7 +474,7 @@ void condition::print_hse(string t, ostream *fout)
 		if (i != instrs.begin() && type == mutex)
 		{
 			if (instrs.size() > 1)
-				(*fout) << "\n" << t;
+				(*fout) << endl << t;
 			(*fout) << "[]";
 			if (instrs.size() > 1)
 				(*fout) << "\t";
@@ -431,7 +482,7 @@ void condition::print_hse(string t, ostream *fout)
 		else if (i != instrs.begin() && type == choice)
 		{
 			if (instrs.size() > 1)
-				(*fout) << "\n" << t;
+				(*fout) << endl << t;
 			(*fout) << "|";
 			if (instrs.size() > 1)
 				(*fout) << "\t";
@@ -444,6 +495,6 @@ void condition::print_hse(string t, ostream *fout)
 		}
 	}
 	if (instrs.size() > 1)
-		(*fout) << "\n" << t;
+		(*fout) << endl << t;
 	(*fout) << "]";
 }

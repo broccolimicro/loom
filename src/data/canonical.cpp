@@ -251,7 +251,6 @@ void canonical::mccluskey()
 		t[1] = t[0];
 	}
 
-
 	/**
 	 * 2.	Use those prime implicants in a prime implicant chart to find the essential prime implicants of the expression, as well as other prime implicants that are necessary to cover the expression.
 	 */
@@ -536,7 +535,11 @@ canonical canonical::operator&(canonical c)
 	int i, j;
 	for (i = 0; i < (int)terms.size(); i++)
 		for (j = 0; j < (int)c.terms.size(); j++)
+		{
 			result.terms.push_back(terms[i] & c.terms[j]);
+			if (result.terms.size() >= 128)
+				result.mccluskey();
+		}
 	result.mccluskey();
 	return result;
 }
@@ -587,6 +590,16 @@ bool canonical::operator!=(canonical c)
 	for (int i = 0; i < (int)terms.size() && result; i++)
 		result = result && (terms[i] == c.terms[i]);
 	return !result;
+}
+
+bool canonical::operator==(minterm c)
+{
+	return (terms.size() == 1 && terms[0] == c);
+}
+
+bool canonical::operator!=(minterm c)
+{
+	return (terms.size() != 1 || terms[0] != c);
 }
 
 bool canonical::operator==(uint32_t c)

@@ -306,10 +306,7 @@ minterm minterm::mask()
 	if (values.size() > 0)
 	{
 		for (i = 0; i < (int)values.size(); i++)
-		{
 			result.values.push_back(((((values[i]>>1)&v0)^(values[i]&v0)) | ((values[i]&v1)^((values[i]<<1)&v1))));
-			printf("%08X->%08X\n", values[i], result.values.back());
-		}
 		result.size = size;
 		return result;
 	}
@@ -360,8 +357,16 @@ vector<minterm> minterm::expand(vector<int> uids)
 
 minterm::minterm(uint32_t val)
 {
-	values.push_back(itom(val));
-	size = 16;
+	if (val == 0)
+	{
+		values = vector<uint32_t>(1, 0);
+		size = 1;
+	}
+	else if (val == 1)
+	{
+		values = vector<uint32_t>();
+		size = 0;
+	}
 }
 
 minterm::minterm(int var, uint32_t val)

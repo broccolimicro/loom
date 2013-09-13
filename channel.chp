@@ -28,6 +28,27 @@ channel achan4p0b
 	}
 }
 
+channel pchan4p0b
+{
+	node<1> r := 0;
+	node<1> a := 0;
+	
+	operator!()
+	{
+		[a]; r+; [~a]; r-; 
+	}
+	
+	operator?()
+	{
+		a+; [r]; a-; [~r];
+	}
+	
+	operator#()
+	{
+		a
+	}
+}
+
 channel achan4p1b
 {
 	dualrail r;
@@ -53,7 +74,7 @@ channel achan4p1b
 	}
 }
 
-channel achan4p1bp
+channel pchan4p1b
 {
 	dualrail r;
 	node<1> a := 0;
@@ -114,5 +135,42 @@ channel achan4p2b
 	operator#()
 	{
 		(r1.t|r1.f)&(r2.t|r2.f)
+	}
+}
+
+channel pchan4p2b
+{
+	dualrail r1;
+	dualrail r2;
+	node<1> a := 0;
+	
+	operator!(node<2> i)
+	{		
+		[a];(
+			[	i[0]	-> r1.t+;
+			[]	~i[0]	-> r1.f+;
+			]||
+			[	i[1]	-> r2.t+; 
+			[]	~i[1]	-> r2.f+;
+			]
+		);
+		[~a]; r1.t-;r1.f-;r2.t-;r2.f-;
+	}
+	
+	operator?(node<2> i)
+	{
+		a+;(
+			[ r1.t&~r1.f -> i[0]+
+			[]~r1.t&r1.f -> i[0]-
+			]||
+			[ r2.t&~r2.f -> i[1]+
+			[]~r2.t&r2.f -> i[1]-
+			]
+		); a-; [~r1.t & ~r1.f & ~r2.t & ~r2.f];
+	}
+	
+	operator#()
+	{
+		a
 	}
 }

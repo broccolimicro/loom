@@ -5,61 +5,6 @@
  *      Author: Ned Bingham and Nicholas Kramer
  *
  *  DO NOT DISTRIBUTE
- *
- * 	Variable Definition
- * 	x1,x2,...,xn:=E1,E2,...,En
- *
- *  x+
- *  x-
- *
- *	Expression Operators
- *  | & ~ < > == ~=
- *
- *  Composition Operators
- *  ; || *
- *
- *	Order of Operations
- *	()
- *
- *	Loops
- * 	*[g1->s1[]g2->s2[]...[]gn->sn]
- *  *[g1->s1|g2->s2|...|gn->sn]
- *  *[s1]
- *
- *	conditions
- *   [g1->s1[]g2->s2[]...[]gn->sn]
- *   [g1->s1|g2->s2|...|gn->sn]
- *   [g1]
- *
- *  Replication
- *   <op i : n..m : s(i)>
- *
- *	Communication
- * 	 x!y
- * 	 x?y
- * 	 x#
- *
- *	Miscellaneous
- * 	 skip
- *
- *	Assertion
- * 	 {...}
- *
- *	Process Definition and Function Block Definitions
- * 	proc ...(...){...}
- *
- * 	Record Definition
- * 	record ...{...}
- *
- * 	channel Definition
- * 	channel ...{...}
- *
- *	Data Types
- * 	int<...> ...
- *
- *	Preprocessor
- * 	 #
- *
  */
 
 #include "common.h"

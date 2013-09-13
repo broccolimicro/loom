@@ -1394,7 +1394,7 @@ void petri::gen_conflicts()
 			if (i != j && psiblings(i, j) < 0 && find(S[i].tail.begin(), S[i].tail.end(), j) == S[i].tail.end() && (s1 & S[j].index) != 0)
 			{
 				// is it a conflicting state? (e.g. not vacuous)
-				if (S[i].active && ((t & S[j].index) == 0 || (oa.size() > 0 && T[index(oa[0])].active && (t & T[index(oa[0])].index) == 0)))
+				if (S[i].active && ((~t & S[i].index & S[j].index) != 0 || (oa.size() > 0 && T[index(oa[0])].active && (t & T[index(oa[0])].index) == 0)))
 					add_conflict_pair(&conflicts, i, j);
 
 				// it is at least an indistinguishable state at this point
@@ -1483,7 +1483,7 @@ void petri::gen_bubbleless_conflicts()
 				if (i != j && !parallel && find(S[i].tail.begin(), S[i].tail.end(), j) == S[i].tail.end() && (sp1 & S[j].index) != 0)
 				{
 					// is it a conflicting state? (e.g. not vacuous)
-					if (S[i].active && ((tp & S[j].index) == 0 || (oa.size() > 0 && T[index(oa[0])].active && (tp & T[index(oa[0])].index) == 0)))
+					if (S[i].active && ((~tp & sp1 & S[j].index) != 0 || (oa.size() > 0 && T[index(oa[0])].active && (tp & T[index(oa[0])].index) == 0)))
 						add_conflict_pair(&positive_conflicts, i, j);
 
 					// it is at least an indistinguishable state at this point
@@ -1494,7 +1494,7 @@ void petri::gen_bubbleless_conflicts()
 				if (i != j && !parallel && find(S[i].tail.begin(), S[i].tail.end(), j) == S[i].tail.end() && (sn1 & S[j].index) != 0)
 				{
 					// is it a conflicting state? (e.g. not vacuous)
-					if (S[i].active && ((tn & S[j].index) == 0 || (oa.size() > 0 && T[index(oa[0])].active && (tn & T[index(oa[0])].index) == 0)))
+					if (S[i].active && ((~tn & sn1 & S[j].index) != 0 || (oa.size() > 0 && T[index(oa[0])].active && (tn & T[index(oa[0])].index) == 0)))
 						add_conflict_pair(&negative_conflicts, i, j);
 
 					// it is at least an indistinguishable state at this point
@@ -1596,8 +1596,51 @@ void petri::gen_tails()
 	for (int i = 0; i < (int)T.size(); i++)
 		T[i].tail.clear();
 
-	for (int i = 0; i < (int)T.size(); i++)
-		update_tail(trans_id(i));
+	vector<int> ia, oa;
+	vector<int> old;
+	logic s;
+	int i, j;
+	bool done = false;
+	while (!done)
+	{
+		done = true;
+		for (i = 0; i < (int)arcs.size(); i++)
+		{
+			if (is_trans(arcs[i].first) && !T[index(arcs[i].first)].active)
+			{
+				old = S[arcs[i].second].tail;
+				S[arcs[i].second].tail.insert(S[arcs[i].second].tail.end(), T[index(arcs[i].first)].tail.begin(), T[index(arcs[i].first)].tail.end());
+				unique(&S[arcs[i].second].tail);
+				done = done && (old == S[arcs[i].second].tail);
+			}
+			// If an active transition might be vacuous, you can still apply the "You might as well be here" logic
+			else if (is_trans(arcs[i].first) && T[index(arcs[i].first)].active)
+			{
+				ia = input_nodes(arcs[i].first);
+				oa = output_nodes(arcs[i].first);
+				for (j = 0, s = 1; j < (int)ia.size(); j++)
+					s &= S[ia[j]].index;
+				for (j = 0; j < (int)oa.size(); j++)
+					s &= S[oa[j]].index;
+
+				if (s != 0)
+				{
+					old = S[arcs[i].second].tail;
+					S[arcs[i].second].tail.insert(S[arcs[i].second].tail.end(), T[index(arcs[i].first)].tail.begin(), T[index(arcs[i].first)].tail.end());
+					unique(&S[arcs[i].second].tail);
+					done = done && (old == S[arcs[i].second].tail);
+				}
+			}
+			else if (is_place(arcs[i].first))
+			{
+				old = T[index(arcs[i].second)].tail;
+				T[index(arcs[i].second)].tail.push_back(arcs[i].first);
+				T[index(arcs[i].second)].tail.insert(T[index(arcs[i].second)].tail.end(), S[arcs[i].first].tail.begin(), S[arcs[i].first].tail.end());
+				unique(&T[index(arcs[i].second)].tail);
+				done = done && (old == T[index(arcs[i].second)].tail);
+			}
+		}
+	}
 }
 
 void petri::gen_arcs()
@@ -1694,7 +1737,7 @@ bool petri::trim()
 		 * conditional merge, and removing the transition that acts as the parallel
 		 * merge would break the parallel block.
 		 */
-		else if (vacuous && ia.size() == 1 && output_nodes(ia[0]).size() == 1 && (input_nodes(ia[0]).size() == 1 || output_nodes(trans_id(i)).size() == 1))
+		else if (vacuous && ia.size() == 1 && oa.size() == 1 && output_nodes(ia[0]).size() == 1 && (input_nodes(ia[0]).size() == 1 || output_nodes(trans_id(i)).size() == 1) && input_nodes(oa[0]).size() == 1 && (output_nodes(oa[0]).size() == 1 || input_nodes(trans_id(i)).size() == 1))
 		{
 			for (k = 0; k < (int)oa.size(); k++)
 			{
@@ -2087,6 +2130,15 @@ int petri::arc_paths(int from, vector<int> to, vector<int> ex, path_space *t, pa
 	list<path>::iterator pi;
 	bool immune = false;
 
+	/*cout << string(i, '\t') << "Arc Paths " << from << " -> {";
+	for (j = 0; j < (int)to.size(); j++)
+	{
+		if (j != 0)
+			cout << ", ";
+		cout << to[j];
+	}
+	cout << "}" << endl;
+	*/
 	if (i == 0)
 	{
 		t->paths.front().from.push_back(from);
@@ -2097,22 +2149,40 @@ int petri::arc_paths(int from, vector<int> to, vector<int> ex, path_space *t, pa
 
 	while (1)
 	{
-		if (find(ex.begin(), ex.end(), next[0]) != ex.end())
-			return -1;
+		//cout << string(i, '\t') << next[0] << " ";
 
-		for (pi = t->paths.begin(); pi != t->paths.end(); pi++)
+		if (find(ex.begin(), ex.end(), next[0]) != ex.end())
+		{
+			//cout << "EX " << t->total << endl;
+			return -1;
+		}
+
+		for (pi = t->paths.begin(); pi != t->paths.end();)
+		{
 			if ((*pi)[next[0]] > 0)
 				pi = t->erase(pi);
+			else
+				pi++;
+		}
 
 		if (t->paths.size() == 0)
+		{
+			//cout << "ALREADY COVERED " << t->total << endl;
 			return -1;
+		}
 
 		if (!immune && i != 0 && is_trans(arcs[next[0]].first) && input_arcs(arcs[next[0]].first).size() > 1)
+		{
+			//cout << "PARALLEL MERGE " << t->total << endl;
 			return next[0];
+		}
 
 		for (cpi = conditional_places.begin(); !immune && i != 0 && cpi != conditional_places.end(); cpi++)
 			if (arcs[next[0]].first == cpi->second.first)
+			{
+				//cout << "CONDITIONAL MERGE " << t->total << endl;
 				return next[0];
+			}
 
 		t->inc(next[0]);
 
@@ -2124,6 +2194,7 @@ int petri::arc_paths(int from, vector<int> to, vector<int> ex, path_space *t, pa
 					pi->to.push_back(to[j]);
 					p->push_back(pi->mask());
 				}
+				//cout << "END " << t->total << endl;
 				return -1;
 			}
 
@@ -2134,6 +2205,8 @@ int petri::arc_paths(int from, vector<int> to, vector<int> ex, path_space *t, pa
 				if (arcs[curr[k]].second == arcs[j].first)
 					next.push_back(j);
 		unique(&next);
+
+		//cout << "\t" << t->total << endl;
 
 		immune = false;
 		if (next.size() > 1)
@@ -2160,7 +2233,10 @@ int petri::arc_paths(int from, vector<int> to, vector<int> ex, path_space *t, pa
 		}
 
 		if (next.size() < 1)
+		{
+			//cout << "KILL" << endl;
 			return -1;
+		}
 	}
 }
 
@@ -2514,7 +2590,7 @@ node &petri::operator[](int i)
 
 void petri::print_dot(ostream *fout, string name)
 {
-	int i, j;
+	int i, j, k;
 	string label;
 	gen_arcs();
 	(*fout) << "digraph " << name << endl;
@@ -2523,15 +2599,17 @@ void petri::print_dot(ostream *fout, string name)
 	for (i = 0; i < (int)S.size(); i++)
 		if (!dead(i))
 		{
+			(*fout) << "\tS" << i << " [label=\"" << to_string(i) << " ";
 			label = S[i].index.print(vars);
 
-			for (j = 0; j < (int)label.size(); j++)
+			for (j = 0, k = 0; j < (int)label.size(); j++)
 				if (label[j] == '|')
-					label = label.substr(0, j+1) + "\\n" + label.substr(j+1);
+				{
+					(*fout) << label.substr(k, j+1 - k) << "\\n";
+					k = j+1;
+				}
 
-			label = to_string(i) + " " + label;
-
-			(*fout) << "\tS" << i << " [label=\"" << label << "\"];" << endl;
+			(*fout) << label.substr(k) << "\"];" << endl;
 		}
 
 	for (i = 0; i < (int)T.size(); i++)

@@ -319,7 +319,7 @@ map<int, uint32_t> bdd_package::anysat(uint32_t u)
 	map<int, uint32_t> temp;
 	if (u == 0)
 	{
-		cout << "Error: Put something here.\n";
+		cout << "Error: Put something here." << endl;
 		return res;
 	}
 	else if (u == 1)

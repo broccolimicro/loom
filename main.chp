@@ -1,7 +1,7 @@
 #include "channel.chp"
 #include "math.chp"
 
-inline process cmerge1b2(achan4p1b A, achan4p1b B, achan4p1b S, achan4p1b O)
+/*inline process cmerge1b2(achan4p1b A, achan4p1b B, achan4p1b S, achan4p1b O)
 {
 	node<1> s;
 	node<1> o;
@@ -18,14 +18,14 @@ inline process fifo0b(achan4p0b L, achan4p0b R)
 {
 	*[L?;R!]
 }
-
+*/
 inline process fifo1b(achan4p1b L, achan4p1b R)
 {
 	node<1> i;
 	
 	*[L?i;R!i]
 }
-
+/*
 inline process fifo2b(achan4p2b L, achan4p2b R)
 {
 	node<2> i;
@@ -52,9 +52,7 @@ inline process fork2b(achan4p2b L, achan4p2b R1, achan4p2b R2)
 	*[L?val;(R1!val||R2!val)]
 }
 
-/*	Non-deterministic selection is not supported yet
-
-inline process reg1b(achan4p1bp R, achan4p1b W)
+inline process reg1b(pchan4p1b R, achan4p1b W)
 {
 	node<1> val;
 
@@ -63,9 +61,9 @@ inline process reg1b(achan4p1bp R, achan4p1b W)
 		|	#W -> W?val
 		]
 	]
-}
+}*/
 
-inline process reg2b(achan4p2b R, achan4p2b W)
+/*inline process reg2b(pchan4p2b R, achan4p2b W)
 {
 	node<2> val;
 
@@ -105,6 +103,4 @@ inline process merge2b2(achan4p2b L1, achan4p2b L2, achan4p2b R)
 		|	#L2 -> L2?val
 		]; R!val
 	]
-}
-
-*/
+}*/

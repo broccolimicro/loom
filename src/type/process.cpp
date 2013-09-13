@@ -284,7 +284,9 @@ bool process::insert_state_vars()
 			istart = net.start_path(i->first, *lj);
 			jstart = net.start_path(*lj, vector<int>(1, i->first));
 
+			//cout << "Up" << endl;
 			net.get_paths(istart, *lj, &up_paths);
+			//cout << "Down" << endl;
 			net.get_paths(jstart, vector<int>(1, i->first), &down_paths);
 
 			up_inv = up_paths.inverse();
@@ -782,15 +784,16 @@ bool process::insert_bubbleless_state_vars()
 
 void process::generate_prs()
 {
-	net.gen_senses();
-	for (map<string, variable>::iterator vi = vars.global.begin(); vi != vars.global.end(); vi++)
-		if (vi->second.driven)
-			prs.insert(rule(vi->second.uid, &net, &vars, flags, true));
+	//cout << "Generating " << name << endl;
+	//print_dot(&cout);
+	prs.generate_minterms(&net, flags);
 
 	if (flags->log_base_prs() && kind() == "process")
 	{
 		(*flags->log_file) << "Production Rules: " << name << endl;
 		print_prs(flags->log_file);
+		//prs.print_enable_graph(flags->log_file, &net, name);
+		prs.check(&net);
 	}
 }
 
@@ -989,11 +992,9 @@ void process::print_prs(ostream *fout)
 	}
 
 	(*fout) << "/* Process " << name << " */" << endl;
+	prs.print(fout);
 	map<string, variable>::iterator vi;
 	type_space::iterator ki;
-	for (size_t i = 0; i < prs.size(); i++)
-		if (prs[i].vars != NULL)
-			(*fout) << prs[i];
 
 	(*fout) << "/* Environment */" << endl;
 	for (vi = vars.label.begin(); vi != vars.label.end(); vi++)

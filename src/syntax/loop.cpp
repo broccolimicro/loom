@@ -153,7 +153,7 @@ void loop::parse()
 		if (!guarded && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) != '|' && *(i-1) != '|') || (i == chp.end() && type == choice)))
 		{
 			if (flags->log_base_hse())
-				(*flags->log_file) << flags->tab << "Choice\n";
+				(*flags->log_file) << flags->tab << "Choice" << endl;
 			if (type == unknown)
 				type = choice;
 			else if (type == mutex)
@@ -171,7 +171,7 @@ void loop::parse()
 		else if (!guarded && depth[0] == 0 && depth[1] <= 1 && depth[2] == 0 && ((*i == '[' && *(i+1) == ']') || i == chp.end()))
 		{
 			if (flags->log_base_hse())
-				(*flags->log_file) << flags->tab << "Mutex\n";
+				(*flags->log_file) << flags->tab << "Mutex" << endl;
 			if (type == unknown)
 				type = mutex;
 			else if (type == choice)
@@ -237,14 +237,14 @@ vector<int> loop::generate_states(petri *n, rule_space *p, vector<int> f, map<in
 	net->cbranch_count++;
 	for (instr_iter = instrs.begin(), k = instrs.size()-1; instr_iter != instrs.end(); instr_iter++, k--)
 	{
-		/*if (type == choice)
+		if (type == choice)
 		{
 			bvname = "_bv" + to_string(ncbranch_count) + "_" + to_string(k);
 			bvnames.push_back(bvname);
 			bvuids.push_back(vars->insert(variable(bvname, "node", 1, false, flags)));
 			prs->rules.push_back(rule(instr_iter->second->chp, "~(" + instr_iter->second->chp + ")", bvname, vars, net, flags));
 			instr_iter->second->chp = "(" + instr_iter->second->chp + ")&" + bvname;
-		}*/
+		}
 
 		start.clear();
 		end.clear();
@@ -255,7 +255,7 @@ vector<int> loop::generate_states(petri *n, rule_space *p, vector<int> f, map<in
 		antiguard += string(antiguard != "" ? "&" : "") + "~(" + instr_iter->second->chp + ")";
 	}
 
-	/*if (type == choice)
+	if (type == choice)
 	{
 		bvname = "";
 		for (i = 0; i < (int)bvnames.size(); i++)
@@ -285,7 +285,7 @@ vector<int> loop::generate_states(petri *n, rule_space *p, vector<int> f, map<in
 		antiguard = "(" + antiguard + ")";
 		for (i = 0; i < (int)bvnames.size(); i++)
 			antiguard += "&~" + bvnames[i];
-	}*/
+	}
 
 	uid.push_back(net->insert_transition(f, logic(antiguard, vars), pbranch, cbranch, this));
 
@@ -296,14 +296,14 @@ vector<int> loop::generate_states(petri *n, rule_space *p, vector<int> f, map<in
 
 void loop::print_hse(string t, ostream *fout)
 {
-	(*fout) << "\n" << t << "*[";
+	(*fout) << endl << t << "*[";
 	list<pair<sequential*, guard*> >::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)
 	{
 		if (i != instrs.begin() && type == mutex)
-			(*fout) << "\n" << t << "[]";
+			(*fout) << endl << t << "[]";
 		else if (i != instrs.begin() && type == choice)
-			(*fout) << "\n" << t << "|";
+			(*fout) << endl << t << "|";
 		if (instrs.size() > 1 || i->second->chp != "1")
 		{
 			i->second->print_hse(t + "\t", fout);
