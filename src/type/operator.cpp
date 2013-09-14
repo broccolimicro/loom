@@ -85,6 +85,8 @@ void operate::parse(string raw)
 		(*flags->log_file) << "\tInputs:\t" << io_sequential << endl;
 	}
 
+	vars.insert(variable("reset", "node", 1, true, flags));
+
 	for (i = io_sequential.begin(), j = io_sequential.begin(); i != io_sequential.end(); i++)
 	{
 		if (*(i+1) == ',' || i+1 == io_sequential.end())

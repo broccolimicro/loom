@@ -140,6 +140,7 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 	int i, j, k, tid;
 	logic t;
 	vector<bool> covered;
+	minterm reset;
 
 	rules.resize(vars->global.size());
 	for (int i = 0; i < (int)net->T.size(); i++)
@@ -156,6 +157,19 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 		}
 	}
 
+	int r = vars->get_uid("reset");
+
+	for (j = 0; j < (int)net->M0.size(); j++)
+	{
+		for (k = 0; k < (int)net->S[net->M0[j]].index.terms.size(); k++)
+		{
+			if (j == 0 && k == 0)
+				reset = net->S[net->M0[j]].index.terms[k];
+			else
+				reset |= net->S[net->M0[j]].index.terms[k];
+		}
+	}
+
 	for (map<string, variable>::iterator vi = vars->global.begin(); vi != vars->global.end(); vi++)
 		if (vi->second.driven)
 		{
@@ -167,6 +181,7 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 			rules[vi->second.uid].guards[0] = 0;
 
 			for (i = 0; i < 2; i++)
+			{
 				for (j = 0; j < (int)rules[vi->second.uid].implicants[i].size(); j++)
 				{
 					tid = rules[vi->second.uid].implicants[i][j];
@@ -188,6 +203,18 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 							rules[vi->second.uid].guards[i] |= rules[vi->second.uid].strengthen(k, &covered, logic(1), t, i, net->T[net->index(tid)].tail).second;
 					//cout << endl;
 				}
+			}
+
+			if (reset.val(vi->second.uid) == 1)
+			{
+				rules[vi->second.uid].guards[1] |= logic(r, 1);
+				rules[vi->second.uid].guards[0] &= logic(r, 0);
+			}
+			else
+			{
+				rules[vi->second.uid].guards[0] |= logic(r, 1);
+				rules[vi->second.uid].guards[1] &= logic(r, 0);
+			}
 		}
 }
 
@@ -213,7 +240,7 @@ void rule_space::check(petri *net)
 					if (net->psiblings(i, rules[j].implicants[k][l]) != -1)
 						para = true;
 
-				temp = rules[j].guards[k] & net->S[i].index;
+				temp = rules[j].guards[k] & net->S[i].index & logic(vars->get_uid("reset"), 0);
 				if (!para && rules[j].vars != NULL && temp != 0 && vars->find(rules[j].uid)->driven)
 				{
 					ok = false;
