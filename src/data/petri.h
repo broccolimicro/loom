@@ -32,12 +32,21 @@ struct node
 	map<int, int> cbranch;
 	bool active;
 
+	bool definitely_vacuous;
+	bool possibly_vacuous;
+	bool definitely_invacuous;
+
 	logic index;
 	logic positive;	// Negative sense variables are hideed out
 	logic negative;	// Positive sense variables are hideed out
 
 	logic assumptions;
 	vector<logic> assertions;
+
+	bool is_in_tail(int idx);
+	void add_to_tail(int idx);
+	void add_to_tail(vector<int> idx);
+	void apply_mutables();
 };
 
 struct petri
@@ -100,7 +109,6 @@ struct petri
 	int update(int p, vector<bool> *covered, int i = 0, bool immune = false);
 	void update();
 	void check_assertions();
-	void update_tail(int p);
 	void connect(vector<int> from, vector<int> to);
 	void connect(vector<int> from, int to);
 	void connect(int from, vector<int> to);

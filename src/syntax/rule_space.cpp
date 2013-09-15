@@ -141,18 +141,19 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 	logic t;
 	vector<bool> covered;
 	minterm reset;
+	map<int, logic> mutables;
 
 	rules.resize(vars->global.size());
-	for (int i = 0; i < (int)net->T.size(); i++)
+	for (i = 0; i < (int)net->T.size(); i++)
 	{
 		vl.clear();
 		net->T[i].index.vars(&vl);
 		unique(&vl);
-		for (int j = 0; net->T[i].active && j < (int)vl.size(); j++)
+		for (j = 0; net->T[i].active && j < (int)vl.size(); j++)
 		{
-			if ((net->T[i].index & logic(vl[j], 0)) != 0)
+			if ((net->T[i].index & logic(vl[j], 1)) == 0)
 				rules[vl[j]].implicants[0].push_back(net->trans_id(i));
-			else
+			else if ((net->T[i].index & logic(vl[j], 0)) == 0)
 				rules[vl[j]].implicants[1].push_back(net->trans_id(i));
 		}
 	}
@@ -179,6 +180,8 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 			rules[vi->second.uid].flags = flags;
 			rules[vi->second.uid].guards[1] = 0;
 			rules[vi->second.uid].guards[0] = 0;
+			rules[vi->second.uid].explicit_guards[1] = 0;
+			rules[vi->second.uid].explicit_guards[0] = 0;
 
 			for (i = 0; i < 2; i++)
 			{
@@ -190,18 +193,22 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 					unique(&vl);
 					ia = net->input_nodes(tid);
 					for (k = 0, t = 1; k < (int)ia.size(); k++)
-						t = t & net->S[ia[k]].index;
+					{
+						t &= net->S[ia[k]].index;
+						mutables = (k == 0 ? net->S[ia[k]].mutables : intersect(mutables, net->S[ia[k]].mutables));
+					}
 					t = t.hide(vl);
+					rules[vi->second.uid].explicit_guards[i] |= t;
 
 					covered.clear();
-					/*cout << "Start " << net->T[net->index(tid)].index.print(vars) <<  " ";
+					cout << "Start " << net->T[net->index(tid)].index.print(vars) <<  " ";
 					for (k = 0; k < (int)net->T[net->index(tid)].tail.size(); k++)
 						cout << net->T[net->index(tid)].tail[k] << " ";
-					cout << endl;*/
+					cout << endl;
 					for (k = 0; k < (int)net->arcs.size(); k++)
 						if (net->arcs[k].second == tid)
-							rules[vi->second.uid].guards[i] |= rules[vi->second.uid].strengthen(k, &covered, logic(1), t, i, net->T[net->index(tid)].tail).second;
-					//cout << endl;
+							rules[vi->second.uid].guards[i] |= rules[vi->second.uid].strengthen(k, &covered, logic(1), t, i, net->T[net->index(tid)].tail, mutables).second;
+					cout << endl;
 				}
 			}
 
@@ -221,52 +228,74 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 void rule_space::check(petri *net)
 {
 	int i, j, k, l, m;
-	vector<int> oa;
+	vector<int> oa, ia;
 	bool ok;
 	bool error;
-	logic temp;
+	logic applied_guard;
 	logic oguard;
+	logic temp;
 	bool para;
+	bool imp;
 
 	error = false;
 	for (i = 0; i < (int)net->S.size(); i++)
 	{
 		oa = net->output_nodes(i);
 		for (j = 0; j < (int)rules.size(); j++)
-			for (k = 0; k < 2; k++)
+			for (k = 0; k < 2 && rules[j].vars != NULL && vars->find(rules[j].uid)->driven; k++)
 			{
 				para = false;
 				for (l = 0; l < (int)rules[j].implicants[k].size() && !para; l++)
 					if (net->psiblings(i, rules[j].implicants[k][l]) != -1)
 						para = true;
 
-				temp = rules[j].guards[k] & net->S[i].index & logic(vars->get_uid("reset"), 0);
-				if (!para && rules[j].vars != NULL && temp != 0 && vars->find(rules[j].uid)->driven)
+				imp = false;
+				for (l = 0; l < (int)oa.size() && !imp; l++)
+					if (find(rules[j].implicants[k].begin(), rules[j].implicants[k].end(), oa[l]) != rules[j].implicants[k].end())
+						imp = true;
+
+				applied_guard = rules[j].guards[k] & net->S[i].index & logic(vars->get_uid("reset"), 0);
+				// Does it fire when it shouldn't?
+				if (!imp && !para && applied_guard != 0)
 				{
 					ok = false;
-					for (l = 0; l < (int)oa.size() && !ok; l++)
-						if (net->T[net->index(oa[l])].active && (net->T[net->index(oa[l])].index & logic(rules[j].uid, 1-k)) == 0)
-							ok = true;
-
-					if ((temp & logic(rules[j].uid, 1-k)) == 0)
+					// check if firing is vacuous
+					temp = logic(rules[j].uid, 1-k);
+					if (is_mutex(&applied_guard, &temp))
 						ok = true;
 
-					for (l = 0; l < (int)net->T.size() && !ok; l++)
-						if ((net->T[l].index & logic(rules[j].uid, 1-k)) == 0 && find(net->T[l].tail.begin(), net->T[l].tail.end(), i) != net->T[l].tail.end())
+					// check if firing is inside the tail and check to make sure that if it is in the tail,
+					// it is correctly separated by the guards
+					for (l = 0; l < (int)rules[j].implicants[k].size() && !ok; l++)
+						if (net->T[rules[j].implicants[k][l]].is_in_tail(i))
 						{
 							oguard = 0;
 							for (m = 0; m < (int)oa.size(); m++)
 								oguard |= net->T[net->index(oa[m])].index;
+							oguard = ~oguard;
 
-							if ((temp & ~oguard) == 0)
-								ok = true;
+							ok = (ok || is_mutex(&applied_guard, &oguard));
 						}
 
 					if (!ok)
 					{
-						cout << "Error: " << vars->get_name(rules[j].uid) << (k == 0 ? "-" : "+") << "\tconflicts with state " << i << "\t" << temp.print(vars) << endl;
+						cout << "Error: " << vars->get_name(rules[j].uid) << (k == 0 ? "-" : "+") << "\tfires when it shouldn't at state " << i << "\t" << applied_guard.print(vars) << endl;
 						error = true;
 					}
+				}
+				// Does it fire when it should?
+				else if ((imp || para) && applied_guard == 0 && !is_mutex(&rules[j].explicit_guards[k], &net->S[i].index))
+				{
+					cout << "Error: " << vars->get_name(rules[j].uid) << (k == 0 ? "-" : "+") << "\tdoesn't fire when it should in " << (para ? "parallel " : "") << (imp ? "implicant " : "") << "state " << i << "\t";
+					for (l = 0; l < (int)rules[j].guards[k].terms.size(); l++)
+						for (m = 0; m < (int)net->S[i].index.terms.size(); m++)
+						{
+							if (l != 0 || m != 0)
+								cout << " | ";
+							cout << (rules[j].guards[k].terms[l] & net->S[i].index.terms[m]).print(vars);
+						}
+					cout << endl;
+					error = true;
 				}
 			}
 	}
@@ -308,7 +337,7 @@ void rule_space::print_enable_graph(ostream *fout, petri *net, string name)
 		if (!net->dead(i))
 		{
 			(*fout) << "\tS" << i << " [label=\"" << to_string(i) << " ";
-			label = net->S[i].index.print(vars);
+			/*label = net->S[i].index.print(vars);
 
 			for (j = 0, k = 0; j < (int)label.size(); j++)
 				if (label[j] == '|')
@@ -317,13 +346,13 @@ void rule_space::print_enable_graph(ostream *fout, petri *net, string name)
 					k = j+1;
 				}
 
-			(*fout) << label.substr(k) << "\\n";
+			(*fout) << label.substr(k) << "\\n";*/
 
 			for (j = 0; j < (int)rules.size(); j++)
 			{
-				if (rules[j].vars != NULL && (rules[j].guards[0] & net->S[i].index) != 0)
+				if (rules[j].vars != NULL && !is_mutex(&rules[j].guards[0], &net->S[i].index))
 					cout << vars->get_name(rules[j].uid) << "-, ";
-				if (rules[j].vars != NULL && (rules[j].guards[1] & net->S[i].index) != 0)
+				if (rules[j].vars != NULL && !is_mutex(&rules[j].guards[1], &net->S[i].index))
 					cout << vars->get_name(rules[j].uid) << "+, ";
 			}
 

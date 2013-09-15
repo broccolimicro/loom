@@ -10,11 +10,6 @@
 #include "variable_space.h"
 #include "../common.h"
 
-#define v_ 0x00000000
-#define v0 0x55555555
-#define v1 0xAAAAAAAA
-#define vX 0xFFFFFFFF
-
 inline uint32_t itom(int v)
 {
 	v = (v&3) + 1;

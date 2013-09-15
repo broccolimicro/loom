@@ -1,4 +1,5 @@
 /*
+
  * common.h
  *
  * Common is a collection of functions not specific to the compiler that
@@ -84,6 +85,29 @@ vector<t> intersect(vector<t> v1, vector<t> v2)
 			i++;
 			j++;
 		}
+	}
+
+	return result;
+}
+
+template <class k, class v>
+map<k, v> intersect(map<k, v> A, map<k, v> B)
+{
+	map<k, v> result;
+	typename map<k, v>::iterator ai = A.begin(), bi = B.begin();
+	while (ai != A.end() && bi != B.end())
+	{
+		if (ai->first == bi->first)
+		{
+			if (ai->second == bi->second)
+				result.insert(*ai);
+			ai++;
+			bi++;
+		}
+		else if (ai->first > bi->first)
+			bi++;
+		else if (bi->first > ai->first)
+			ai++;
 	}
 
 	return result;

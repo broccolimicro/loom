@@ -23,6 +23,9 @@ node::node(logic index, bool active, map<int, int> pbranch, map<int, int> cbranc
 {
 	this->index = index;
 	this->active = active;
+	this->definitely_invacuous = false;
+	this->possibly_vacuous = true;
+	this->definitely_vacuous = false;
 	this->pbranch = pbranch;
 	this->cbranch = cbranch;
 	this->owner = owner;
@@ -32,6 +35,31 @@ node::node(logic index, bool active, map<int, int> pbranch, map<int, int> cbranc
 node::~node()
 {
 	owner = NULL;
+}
+
+bool node::is_in_tail(int idx)
+{
+	return (find(tail.begin(), tail.end(), idx) != tail.end());
+}
+
+void node::add_to_tail(int idx)
+{
+	tail.push_back(idx);
+	unique(&tail);
+}
+
+void node::add_to_tail(vector<int> idx)
+{
+	tail.insert(tail.end(), idx.begin(), idx.end());
+	unique(&tail);
+}
+
+void node::apply_mutables()
+{
+	map<int, logic>::iterator ji;
+	for (ji = mutables.begin(); ji != mutables.end(); ji++)
+		if ((index & ji->second) != index)
+			index = index.hide(ji->first);
 }
 
 petri::petri()
@@ -490,6 +518,9 @@ bool petri::updateplace(int p, int i)
 
 		(*flags->log_file) << "}>>" << T[index(ia[k])].index.print(vars) << " = (" << (t >> T[index(ia[k])].index).print(vars) << ")\t";
 		options.push_back(t >> T[index(ia[k])].index);
+		T[index(ia[k])].definitely_invacuous = is_mutex(&t, &options.back());
+		T[index(ia[k])].possibly_vacuous = !T[index(ia[k])].definitely_invacuous;
+		T[index(ia[k])].definitely_vacuous = (t == options.back());
 	}
 
 	for (k = 0; k < (int)options.size(); k++)
@@ -502,9 +533,7 @@ bool petri::updateplace(int p, int i)
 
 	(*flags->log_file) << S[p].index.print(vars) << " ";
 
-	for (ji = S[p].mutables.begin(); ji != S[p].mutables.end(); ji++)
-		if ((S[p].index & ji->second) != S[p].index)
-			S[p].index = S[p].index.hide(ji->first);
+	S[p].apply_mutables();
 
 	(*flags->log_file) << S[p].index.print(vars) << " ";
 
@@ -705,57 +734,6 @@ void petri::check_assertions()
 		for (int j = 0; j < (int)vars->requirements.size(); j++)
 			if ((S[i].index & vars->requirements[j]) != 0)
 				cout << "Error: Requirement " << (~vars->requirements[j]).print(vars) << " fails at state " << i << " with a state encoding of " << S[i].index.print(vars) << "." << endl;
-	}
-}
-
-void petri::update_tail(int p)
-{
-	vector<int> old_tail;
-	vector<int> ia, oa;
-	int i;
-	logic s(0);
-	if (is_trans(p))
-	{
-		old_tail = T[index(p)].tail;
-		T[index(p)].tail.clear();
-
-		ia = input_nodes(p);
-		s = 1;
-		for (i = 0, s = 1; i < (int)ia.size(); i++)
-			s = s & S[ia[i]].index;
-		s = s & T[index(p)].index;
-		for (i = 0; (!T[index(p)].active || s != 0) && i < (int)ia.size(); i++)
-		{
-			T[index(p)].tail.insert(T[index(p)].tail.end(), S[ia[i]].tail.begin(), S[ia[i]].tail.end());
-			T[index(p)].tail.push_back(ia[i]);
-		}
-		unique(&T[index(p)].tail);
-
-		if (T[index(p)].tail != old_tail)
-		{
-			old_tail.clear();
-			oa = output_nodes(p);
-			for (i = 0; i < (int)oa.size(); i++)
-				update_tail(oa[i]);
-		}
-	}
-	else
-	{
-		old_tail = S[p].tail;
-		S[p].tail.clear();
-
-		ia = input_nodes(p);
-		for (i = 0; i < (int)ia.size(); i++)
-			S[p].tail.insert(S[p].tail.end(), T[index(ia[i])].tail.begin(), T[index(ia[i])].tail.end());
-		unique(&S[p].tail);
-
-		if (S[p].tail != old_tail)
-		{
-			old_tail.clear();
-			oa = output_nodes(p);
-			for (i = 0; i < (int)oa.size(); i++)
-				update_tail(oa[i]);
-		}
 	}
 }
 
@@ -1364,6 +1342,7 @@ void petri::gen_conflicts()
 	vector<int> temp;
 	int i, j;
 	logic t(0);
+	logic nt(0);
 
 	logic s1(0);
 
@@ -1388,7 +1367,6 @@ void petri::gen_conflicts()
 
 		for (j = 0; j < (int)S.size(); j++)
 		{
-			oa = output_nodes(j);
 			/* States are conflicting if:
 			 *  - they are not the same state
 			 *  - one is not in the tail of another (the might as well be here case)
@@ -1398,10 +1376,12 @@ void petri::gen_conflicts()
 			 */
 
 			// INDEX
-			if (i != j && psiblings(i, j) < 0 && find(S[i].tail.begin(), S[i].tail.end(), j) == S[i].tail.end() && (s1 & S[j].index) != 0)
+			if (i != j && psiblings(i, j) < 0 && !S[i].is_in_tail(j) && !is_mutex(&s1, &S[j].index))
 			{
+				oa = output_nodes(j);
+				nt = ~t;
 				// is it a conflicting state? (e.g. not vacuous)
-				if (S[i].active && ((~t & S[i].index & S[j].index) != 0 || (oa.size() > 0 && T[index(oa[0])].active && (t & T[index(oa[0])].index) == 0)))
+				if (S[i].active && (!is_mutex(&nt, &S[i].index, &S[j].index) || (oa.size() > 0 && T[index(oa[0])].active && is_mutex(&t, &T[index(oa[0])].index))))
 					add_conflict_pair(&conflicts, i, j);
 
 				// it is at least an indistinguishable state at this point
@@ -1487,7 +1467,7 @@ void petri::gen_bubbleless_conflicts()
 
 				parallel = (psiblings(i, j) >= 0);
 				// POSITIVE
-				if (i != j && !parallel && find(S[i].tail.begin(), S[i].tail.end(), j) == S[i].tail.end() && (sp1 & S[j].index) != 0)
+				if (i != j && !parallel && !S[i].is_in_tail(j) && (sp1 & S[j].index) != 0)
 				{
 					// is it a conflicting state? (e.g. not vacuous)
 					if (S[i].active && ((~tp & sp1 & S[j].index) != 0 || (oa.size() > 0 && T[index(oa[0])].active && (tp & T[index(oa[0])].index) == 0)))
@@ -1498,7 +1478,7 @@ void petri::gen_bubbleless_conflicts()
 				}
 
 				// NEGATIVE
-				if (i != j && !parallel && find(S[i].tail.begin(), S[i].tail.end(), j) == S[i].tail.end() && (sn1 & S[j].index) != 0)
+				if (i != j && !parallel && !S[i].is_in_tail(j) && (sn1 & S[j].index) != 0)
 				{
 					// is it a conflicting state? (e.g. not vacuous)
 					if (S[i].active && ((~tn & sn1 & S[j].index) != 0 || (oa.size() > 0 && T[index(oa[0])].active && (tn & T[index(oa[0])].index) == 0)))
@@ -1605,7 +1585,6 @@ void petri::gen_tails()
 
 	vector<int> ia, oa;
 	vector<int> old;
-	logic s;
 	int i, j;
 	bool done = false;
 	while (!done)
@@ -1613,37 +1592,18 @@ void petri::gen_tails()
 		done = true;
 		for (i = 0; i < (int)arcs.size(); i++)
 		{
-			if (is_trans(arcs[i].first) && !T[index(arcs[i].first)].active)
+			// State A->T is in the tail of T1 if A -> T -> Tail of T1 and T is either not active or not invacuous
+			if (is_trans(arcs[i].first) && (!T[index(arcs[i].first)].active || T[index(arcs[i].first)].possibly_vacuous))
 			{
 				old = S[arcs[i].second].tail;
-				S[arcs[i].second].tail.insert(S[arcs[i].second].tail.end(), T[index(arcs[i].first)].tail.begin(), T[index(arcs[i].first)].tail.end());
-				unique(&S[arcs[i].second].tail);
+				S[arcs[i].second].add_to_tail(T[index(arcs[i].first)].tail);
 				done = done && (old == S[arcs[i].second].tail);
-			}
-			// If an active transition might be vacuous, you can still apply the "You might as well be here" logic
-			else if (is_trans(arcs[i].first) && T[index(arcs[i].first)].active)
-			{
-				ia = input_nodes(arcs[i].first);
-				oa = output_nodes(arcs[i].first);
-				for (j = 0, s = 1; j < (int)ia.size(); j++)
-					s &= S[ia[j]].index;
-				for (j = 0; j < (int)oa.size(); j++)
-					s &= S[oa[j]].index;
-
-				if (s != 0)
-				{
-					old = S[arcs[i].second].tail;
-					S[arcs[i].second].tail.insert(S[arcs[i].second].tail.end(), T[index(arcs[i].first)].tail.begin(), T[index(arcs[i].first)].tail.end());
-					unique(&S[arcs[i].second].tail);
-					done = done && (old == S[arcs[i].second].tail);
-				}
 			}
 			else if (is_place(arcs[i].first))
 			{
 				old = T[index(arcs[i].second)].tail;
-				T[index(arcs[i].second)].tail.push_back(arcs[i].first);
-				T[index(arcs[i].second)].tail.insert(T[index(arcs[i].second)].tail.end(), S[arcs[i].first].tail.begin(), S[arcs[i].first].tail.end());
-				unique(&T[index(arcs[i].second)].tail);
+				T[index(arcs[i].second)].add_to_tail(arcs[i].first);
+				T[index(arcs[i].second)].add_to_tail(S[arcs[i].first].tail);
 				done = done && (old == T[index(arcs[i].second)].tail);
 			}
 		}
@@ -1694,18 +1654,6 @@ bool petri::trim()
 		for (j = 0, v = 1; j < (int)ia.size(); j++)
 			v &= S[ia[j]].index;
 
-		/* The problem with this "vacuous" check is that while it may be locally vacuous,
-		 * it can be globally invacuous. For example, If you have *[S1; x-; S2] where
-		 * S1 and S2 don't modify the value of x, then x will always be 0 and the x-
-		 * transition will be locally vacuous. However, if you then remove the x- transition
-		 * and have *[S1;S2], you no longer know the value of x. Therefore, the x- transition
-		 * is globally invacuous.
-		 */
-		vacuous = true;
-		for (k = 0; k < (int)oa.size() && vacuous; k++)
-			if ((S[oa[k]].index & v) != v)
-				vacuous = false;
-
 		// Impossible and dangling transitions
 		/**
 		 * A transition is "impossible" when it can never fire, regardless of the state
@@ -1743,8 +1691,15 @@ bool petri::trim()
 		 * of the petri-net. You essentially have a parallel merge right before a
 		 * conditional merge, and removing the transition that acts as the parallel
 		 * merge would break the parallel block.
+		 *
+		 * The problem with this "vacuous" check is that while it may be locally vacuous,
+		 * it can be globally invacuous. For example, If you have *[S1; x-; S2] where
+		 * S1 and S2 don't modify the value of x, then x will always be 0 and the x-
+		 * transition will be locally vacuous. However, if you then remove the x- transition
+		 * and have *[S1;S2], you no longer know the value of x. Therefore, the x- transition
+		 * is globally invacuous.
 		 */
-		else if (vacuous && ia.size() == 1 && oa.size() == 1 && output_nodes(ia[0]).size() == 1 && (input_nodes(ia[0]).size() == 1 || output_nodes(trans_id(i)).size() == 1) && input_nodes(oa[0]).size() == 1 && (output_nodes(oa[0]).size() == 1 || input_nodes(trans_id(i)).size() == 1))
+		else if (T[index(i)].definitely_vacuous && ia.size() == 1 && oa.size() == 1 && output_nodes(ia[0]).size() == 1 && (input_nodes(ia[0]).size() == 1 || output_nodes(trans_id(i)).size() == 1) && input_nodes(oa[0]).size() == 1 && (output_nodes(oa[0]).size() == 1 || input_nodes(trans_id(i)).size() == 1))
 		{
 			for (k = 0; k < (int)oa.size(); k++)
 			{
@@ -1764,7 +1719,7 @@ bool petri::trim()
 			T.erase(T.begin() + i);
 			result = true;
 		}
-		/*else if (vacuous && oa.size() == 1 && input_nodes(oa[0]).size() == 1 && (output_nodes(oa[0]).size() == 1 || input_nodes(trans_id(i)).size() == 1))
+		/*else if (T[index(i)].definitely_vacuous && oa.size() == 1 && input_nodes(oa[0]).size() == 1 && (output_nodes(oa[0]).size() == 1 || input_nodes(trans_id(i)).size() == 1))
 		{
 			for (j = 0; j < (int)ia.size(); j++)
 			{

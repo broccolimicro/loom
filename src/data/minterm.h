@@ -13,6 +13,16 @@
 struct canonical;
 struct variable_space;
 
+#define v_ 0x00000000
+#define v0 0x55555555
+#define v1 0xAAAAAAAA
+#define vX 0xFFFFFFFF
+
+uint32_t itom(int v);
+int mtoi(uint32_t v);
+uint32_t vidx(int v);
+uint32_t vmsk(int v);
+
 struct minterm
 {
 	minterm();

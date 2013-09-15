@@ -401,6 +401,20 @@ map<int, canonical> canonical::extract()
 	return result;
 }
 
+uint32_t canonical::val(int uid)
+{
+	uint32_t v = 0;
+	for (int i = 0; i < (int)terms.size(); i++)
+	{
+		if (uid >= terms[i].size)
+			terms[i].resize(uid+1, 0xFFFFFFFF);
+
+		v |= terms[i].values[uid>>4];
+	}
+
+	return mtoi(v >> vidx(uid));
+}
+
 canonical canonical::pabs()
 {
 	canonical result;
@@ -706,4 +720,27 @@ string canonical::print_with_quotes(variable_space *vars, string prefix)
                 res += terms[i].print_with_quotes(vars, prefix);
         }
         return res;
+}
+
+bool is_mutex(canonical *c0, canonical *c1)
+{
+	int i, j;
+	for (i = 0; i < (int)c0->terms.size(); i++)
+		for (j = 0; j < (int)c1->terms.size(); j++)
+			if ((c0->terms[i] & c1->terms[j]) != 0)
+				return false;
+
+	return true;
+}
+
+bool is_mutex(canonical *c0, canonical *c1, canonical *c2)
+{
+	int i, j, k;
+	for (i = 0; i < (int)c0->terms.size(); i++)
+		for (j = 0; j < (int)c1->terms.size(); j++)
+			for (k = 0; k < (int)c2->terms.size(); k++)
+			if ((c0->terms[i] & c1->terms[j] & c2->terms[k]) != 0)
+				return false;
+
+	return true;
 }

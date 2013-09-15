@@ -54,6 +54,7 @@ struct canonical
 	canonical restrict(canonical r);
 	void extract(map<int, canonical> *result);
 	map<int, canonical> extract();
+	uint32_t val(int uid);
 
 	canonical pabs();
 	canonical nabs();
@@ -100,6 +101,7 @@ struct canonical
 	string print_with_quotes(variable_space *v, string prefix = "");
 };
 
-
+bool is_mutex(canonical *c0, canonical *c1);
+bool is_mutex(canonical *c0, canonical *c1, canonical *c2);
 
 #endif
