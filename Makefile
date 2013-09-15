@@ -7,7 +7,7 @@ OBJS	= src/data/bdd_package.o src/data/bdd.o src/data/canonical.o src/data/minte
 
 LIBS	=
 
-TARGET	= haystack.exe
+TARGET	= haystack
 
 $(TARGET):	$(OBJS)
 	$(CXX) -o $(TARGET) $(OBJS) $(LIBS)

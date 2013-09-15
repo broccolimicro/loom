@@ -17,6 +17,8 @@ rule::rule()
 	guards[1] = 0;
 	explicit_guards[0] = 0;
 	explicit_guards[1] = 0;
+	implicants[0] = vector<int>();
+	implicants[1] = vector<int>();
 	vars = NULL;
 	net = NULL;
 	flags = NULL;
@@ -29,6 +31,8 @@ rule::rule(int uid)
 	guards[1] = 0;
 	explicit_guards[0] = 0;
 	explicit_guards[1] = 0;
+	implicants[0] = vector<int>();
+        implicants[1] = vector<int>();
 	vars = NULL;
 	net = NULL;
 	flags = NULL;
@@ -40,6 +44,8 @@ rule::rule(int uid, petri *g, variable_space *v, flag_space *flags, bool bubble)
 	this->vars = v;
 	this->net = g;
 	this->flags = flags;
+	implicants[0] = vector<int>();
+        implicants[1] = vector<int>();
 
 	if (bubble)
 		gen_minterms();
@@ -52,6 +58,8 @@ rule::rule(string u, string d, string v, variable_space *vars, petri *net, flag_
 	this->net = net;
 	this->vars = vars;
 	this->flags = flags;
+	implicants[0] = vector<int>();
+        implicants[1] = vector<int>();
 
 	gen_variables(u, vars, flags);
 	gen_variables(d, vars, flags);
@@ -72,6 +80,8 @@ rule::~rule()
 	guards[1] = 0;
 	explicit_guards[0] = 0;
 	explicit_guards[1] = 0;
+	implicants[0] = vector<int>();
+        implicants[1] = vector<int>();
 	vars = NULL;
 	net = NULL;
 	flags = NULL;
@@ -84,6 +94,8 @@ rule &rule::operator=(rule r)
 	guards[0] = r.guards[0];
 	explicit_guards[0] = r.explicit_guards[0];
 	explicit_guards[1] = r.explicit_guards[1];
+	implicants[0] = r.implicants[0];
+        implicants[1] = r.implicants[1];
 	vars = r.vars;
 	net = r.net;
 	flags = r.flags;

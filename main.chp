@@ -52,7 +52,7 @@ inline process fork2b(achan4p2b L, achan4p2b R1, achan4p2b R2)
 	*[L?val;(R1!val||R2!val)]
 }
 
-inline process reg1b(pchan4p1b R, achan4p1b W)
+/*inline process reg1b(pchan4p1b R, achan4p1b W)
 {
 	node<1> val;
 
