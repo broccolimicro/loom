@@ -104,24 +104,24 @@ pair<int, logic> rule::closest_transition(int p, logic conflicting_state, logic 
 	if (covered->size() < net->arcs.size())
 		covered->resize(net->arcs.size(), false);
 
-	cout << "\n" << string(i, '\t') << "Closest Transition " << p << endl;
+	//cout << "\n" << string(i, '\t') << "Closest Transition " << p << endl;
 
 	next.push_back(p);
 
 	while (1)
 	{
-		cout << string(i, '\t') << next[0] << " ";
+		//cout << string(i, '\t') << next[0] << " ";
 
 		if (!immune && i != 0 && net->is_trans(net->arcs[next[0]].first) && net->input_arcs(net->arcs[next[0]].first).size() > 1)
 		{
-			cout << "pmerge" << endl;
+			//cout << "pmerge" << endl;
 			return pair<int, logic>(next[0], rule_guard);
 		}
 
 		for (cpi = net->conditional_places.begin(); !immune && i != 0 && cpi != net->conditional_places.end(); cpi++)
 			if (net->arcs[next[0]].first == cpi->second.first)
 			{
-				cout << "cmerge" << endl;
+				//cout << "cmerge" << endl;
 				return pair<int, logic>(next[0], rule_guard);
 			}
 
@@ -149,7 +149,7 @@ pair<int, logic> rule::closest_transition(int p, logic conflicting_state, logic 
 			temp = t & rule_guard;
 			if ((temp & implicant_state) != 0 && ((temp & conflicting_state) == 0 || find(tail.begin(), tail.end(), net->arcs[next[0]].first) != tail.end()))
 			{
-				cout << "end" << endl;
+				//cout << "end" << endl;
 				return pair<int, logic>(-1, temp);
 			}
 		}
@@ -162,7 +162,7 @@ pair<int, logic> rule::closest_transition(int p, logic conflicting_state, logic 
 
 		(*covered)[next[0]] = true;*/
 
-		cout << endl;
+		//cout << endl;
 
 		curr = next;
 		next.clear();
@@ -215,7 +215,7 @@ pair<int, logic> rule::closest_transition(int p, logic conflicting_state, logic 
 
 		if (next.size() < 1)
 		{
-			cout << "kill" << endl;
+			//cout << "kill" << endl;
 			return pair<int, logic>(-1, rule_guard);
 		}
 	}
@@ -238,29 +238,29 @@ pair<int, logic> rule::strengthen(int p, vector<bool> *covered, logic rule_guard
 	if (covered->size() < net->arcs.size())
 		covered->resize(net->arcs.size(), false);
 
-	cout << string(i, '\t') << "Strengthen " << p << endl;
+	//cout << string(i, '\t') << "Strengthen " << p << endl;
 
 	next.push_back(p);
 
 	while (1)
 	{
-		cout << string(i, '\t') << next[0] << " " << rule_guard.print(vars) << " " << implicant_state.print(vars) << " ";
+		//cout << string(i, '\t') << next[0] << " " << rule_guard.print(vars) << " " << implicant_state.print(vars) << " ";
 
 		if ((*covered)[next[0]])
 		{
-			cout << "cov" << endl;
+			//cout << "cov" << endl;
 			return pair<int, logic>(-1, rule_guard);
 		}
 
 		if (!immune && i != 0 && net->is_trans(net->arcs[next[0]].second) && net->output_arcs(net->arcs[next[0]].second).size() > 1)
 		{
-			cout << "pmerge" << endl;
+			//cout << "pmerge" << endl;
 			return pair<int, logic>(next[0], rule_guard);
 		}
 
 		for (cpi = net->conditional_places.begin(); !immune && i != 0 && cpi != net->conditional_places.end(); cpi++)
 			if (net->arcs[next[0]].second == cpi->second.second)			{
-				cout << "cmerge" << endl;
+				//cout << "cmerge" << endl;
 				return pair<int, logic>(next[0], rule_guard);
 			}
 
@@ -283,7 +283,7 @@ pair<int, logic> rule::strengthen(int p, vector<bool> *covered, logic rule_guard
 
 		(*covered)[next[0]] = true;
 
-		cout << endl;
+		//cout << endl;
 
 		curr = next;
 		next.clear();
@@ -336,7 +336,7 @@ pair<int, logic> rule::strengthen(int p, vector<bool> *covered, logic rule_guard
 
 		if (next.size() < 1)
 		{
-			cout << "kill" << endl;
+			//cout << "kill" << endl;
 			return pair<int, logic>(-1, rule_guard);
 		}
 	}

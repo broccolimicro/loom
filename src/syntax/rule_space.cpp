@@ -9,12 +9,12 @@
 
 rule_space::rule_space()
 {
-
+	vars = NULL;
 }
 
 rule_space::~rule_space()
 {
-
+	vars = NULL;
 }
 
 void rule_space::insert(rule r)
