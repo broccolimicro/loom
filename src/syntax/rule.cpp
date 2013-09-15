@@ -129,6 +129,19 @@ pair<int, logic> rule::closest_transition(int p, logic conflicting_state, logic 
 		{
 			t = net->T[net->index(net->arcs[next[0]].second)].index.hide(uid);
 
+			/* There is a problem here with regard to channel variables.
+			 *
+			 * Example:
+			 *
+			 * [R.a]; R.r1.t-; R.r1.f-; R.r2.t-; R.r2.f-; [~R.a]
+			 *               ^        ^        ^        ^
+			 * R.a is a mutable for the the marked states, this means that
+			 * we incorrectly lose information about R.a. The logic goes as follows:
+			 * If R.r1.t- actually allowed R.a to change it's value, that means that
+			 * the following three assignments were vacuous. If R.r1.f- actually allowed
+			 * R.a to change it's value, then the following two assignments were vacuous.
+			 * And so on...
+			 */
 			for (ji = mutables.begin(); ji != mutables.end(); ji++)
 				if ((t & ji->second) != t)
 					t = t.hide(ji->first);
