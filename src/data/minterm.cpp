@@ -10,7 +10,7 @@
 #include "variable_space.h"
 #include "../common.h"
 
-inline uint32_t itom(int v)
+uint32_t itom(int v)
 {
 	v = (v&3) + 1;
 	return	(v << 0 ) | (v << 2 ) | (v << 4 ) | (v << 6 ) |
@@ -19,17 +19,17 @@ inline uint32_t itom(int v)
 			(v << 24) | (v << 26) | (v << 28) | (v << 30);
 }
 
-inline int mtoi(uint32_t v)
+int mtoi(uint32_t v)
 {
 	return (v&3) - 1;
 }
 
-inline uint32_t vidx(int v)
+uint32_t vidx(int v)
 {
 	return (30 - ((v & 0x0000000F)<<1));
 }
 
-inline uint32_t vmsk(int v)
+uint32_t vmsk(int v)
 {
 	return (0x00000003 << (30 - ((v & 0x0000000F)<<1)));
 }
