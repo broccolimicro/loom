@@ -201,14 +201,14 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 					rules[vi->second.uid].explicit_guards[i] |= t;
 
 					covered.clear();
-					cout << "Start " << net->T[net->index(tid)].index.print(vars) <<  " ";
-					for (k = 0; k < (int)net->T[net->index(tid)].tail.size(); k++)
-						cout << net->T[net->index(tid)].tail[k] << " ";
-					cout << endl;
+					//cout << "Start " << net->T[net->index(tid)].index.print(vars) <<  " ";
+					//for (k = 0; k < (int)net->T[net->index(tid)].tail.size(); k++)
+					//	cout << net->T[net->index(tid)].tail[k] << " ";
+					//cout << endl;
 					for (k = 0; k < (int)net->arcs.size(); k++)
 						if (net->arcs[k].second == tid)
 							rules[vi->second.uid].guards[i] |= rules[vi->second.uid].strengthen(k, &covered, logic(1), t, i, net->T[net->index(tid)].tail, mutables).second;
-					cout << endl;
+					//cout << endl;
 				}
 			}
 
