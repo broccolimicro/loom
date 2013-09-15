@@ -267,7 +267,7 @@ void rule_space::check(petri *net)
 					// check if firing is inside the tail and check to make sure that if it is in the tail,
 					// it is correctly separated by the guards
 					for (l = 0; l < (int)rules[j].implicants[k].size() && !ok; l++)
-						if (net->T[rules[j].implicants[k][l]].is_in_tail(i))
+						if (net->T[net->index(rules[j].implicants[k][l])].is_in_tail(i))
 						{
 							oguard = 0;
 							for (m = 0; m < (int)oa.size(); m++)
