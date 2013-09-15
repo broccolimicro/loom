@@ -112,6 +112,7 @@ pair<int, logic> rule::closest_transition(int p, logic conflicting_state, logic 
 	bool immune = false;
 	logic temp, t;
 	map<int, logic>::iterator ji;
+	bool in_tail;
 
 	if (covered->size() < net->arcs.size())
 		covered->resize(net->arcs.size(), false);
@@ -140,7 +141,7 @@ pair<int, logic> rule::closest_transition(int p, logic conflicting_state, logic 
 		if (net->is_trans(net->arcs[next[0]].second))
 		{
 			t = net->T[net->index(net->arcs[next[0]].second)].index.hide(uid);
-
+			in_tail = (find(tail.begin(), tail.end(), net->arcs[next[0]].first) != tail.end());
 			/* There is a problem here with regard to channel variables.
 			 *
 			 * Example:
@@ -154,12 +155,12 @@ pair<int, logic> rule::closest_transition(int p, logic conflicting_state, logic 
 			 * R.a to change it's value, then the following two assignments were vacuous.
 			 * And so on...
 			 */
-			for (ji = mutables.begin(); ji != mutables.end(); ji++)
+			for (ji = mutables.begin(); ji != mutables.end() && !in_tail; ji++)
 				if ((t & ji->second) != t)
 					t = t.hide(ji->first);
 
 			temp = t & rule_guard;
-			if ((temp & implicant_state) != 0 && ((temp & conflicting_state) == 0 || find(tail.begin(), tail.end(), net->arcs[next[0]].first) != tail.end()))
+			if ((temp & implicant_state) != 0 && ((temp & conflicting_state) == 0 || in_tail))
 			{
 				//cout << "end" << endl;
 				return pair<int, logic>(-1, temp);
