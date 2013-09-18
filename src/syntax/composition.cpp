@@ -85,8 +85,11 @@ instruction *composition::expand_assignment(string chp)
 		{
 			result = expand_expression(i->second, i->first);
 			i->second = result.first;
-			result.second->parent = p;
-			p->push(result.second);
+			if (result.second != NULL)
+			{
+				result.second->parent = p;
+				p->push(result.second);
+			}
 			remove.push_back(*i);
 		}
 		else if (v != NULL)

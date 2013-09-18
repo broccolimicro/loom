@@ -431,62 +431,6 @@ void petri::remove_place(vector<int> from)
 		remove_place(from[i]);
 }
 
-void petri::propogate_marking_forward(int from, vector<bool> *covered)
-{
-	vector<int> ot = output_nodes(from);
-	vector<int> op, ip;
-	bool success;
-	int i, j;
-	for (i = 0; i < (int)ot.size(); i++)
-	{
-		if (T[index(ot[i])].index == 1 && !(*covered)[index(ot[i])])
-		{
-			(*covered)[index(ot[i])] = true;
-			ip = input_nodes(ot[i]);
-			success = true;
-			for (j = 0; j < (int)ip.size() && success; j++)
-				if (find(M0.begin(), M0.end(), ip[j]) == M0.end())
-					success = false;
-
-			if (success)
-			{
-				op = output_nodes(ot[i]);
-				M0.insert(M0.end(), op.begin(), op.end());
-				for (j = 0; j < (int)op.size(); j++)
-					propogate_marking_forward(op[j], covered);
-			}
-		}
-	}
-}
-
-void petri::propogate_marking_backward(int from, vector<bool> *covered)
-{
-	vector<int> it = input_nodes(from);
-	vector<int> ip, op;
-	bool success;
-	int i, j;
-	for (i = 0; i < (int)it.size(); i++)
-	{
-		if (T[index(it[i])].index == 1 && !(*covered)[index(it[i])])
-		{
-			(*covered)[index(it[i])] = true;
-			op = output_nodes(it[i]);
-			success = true;
-			for (j = 0; j < (int)op.size() && success; j++)
-				if (find(M0.begin(), M0.end(), op[j]) == M0.end())
-					success = false;
-
-			if (success)
-			{
-				ip = input_nodes(it[i]);
-				M0.insert(M0.end(), ip.begin(), ip.end());
-				for (j = 0; j < (int)ip.size(); j++)
-					propogate_marking_backward(ip[j], covered);
-			}
-		}
-	}
-}
-
 bool petri::updateplace(int p, int i)
 {
 	map<int, logic>::iterator ji;
@@ -498,7 +442,6 @@ bool petri::updateplace(int p, int i)
 	int l, k, j;
 	logic t(0);
 	logic o;
-	bool fireup, firedown;
 
 	o = S[p].index;
 	S[p].index = 0;
@@ -517,7 +460,10 @@ bool petri::updateplace(int p, int i)
 		}
 
 		(*flags->log_file) << "}>>" << T[index(ia[k])].index.print(vars) << " = (" << (t >> T[index(ia[k])].index).print(vars) << ")\t";
-		options.push_back(t >> T[index(ia[k])].index);
+		if (T[index(ia[k])].active)
+			options.push_back(t >> T[index(ia[k])].index);
+		else
+			options.push_back(t & T[index(ia[k])].index);
 		T[index(ia[k])].definitely_invacuous = is_mutex(&t, &options.back());
 		T[index(ia[k])].possibly_vacuous = !T[index(ia[k])].definitely_invacuous;
 		T[index(ia[k])].definitely_vacuous = (t == options.back());
@@ -655,19 +601,7 @@ void petri::update()
 	int i, j, k;
 	int s = (int)M0.size();
 	vector<bool> covered;
-	vector<int> M = M0;
 	vector<int> r1, r2;
-
-	/*for (i = 0; i < s; i++)
-	{
-		covered.clear();
-		covered.resize(T.size(), false);
-		propogate_marking_forward(i, &covered);
-		covered.clear();
-		covered.resize(T.size(), false);
-		propogate_marking_backward(i, &covered);
-	}
-	unique(&M0);*/
 
 	gen_arcs();
 
@@ -677,7 +611,7 @@ void petri::update()
 	cout << "} " << vars->reset.print(vars) << endl;
 	for (i = 0; i < (int)S.size(); i++)
 	{
-		if (find(M.begin(), M.end(), i) != M.end())
+		if (find(M0.begin(), M0.end(), i) != M0.end())
 			S[i].index = vars->reset & vars->enforcements;
 		else
 			S[i].index = 0;
@@ -688,11 +622,11 @@ void petri::update()
 	covered.resize(S.size(), false);
 
 	k = 0;
-	if (M.size() > 1)
+	if (M0.size() > 1)
 		k++;
-	for (i = 0; i < (int)M.size(); i++)
+	for (i = 0; i < (int)M0.size(); i++)
 	{
-		ia = output_nodes(M[i]);
+		ia = output_nodes(M0[i]);
 		if (ia.size() > 1)
 			k++;
 		r1.clear();
@@ -715,7 +649,7 @@ void petri::update()
 		}
 	}
 
-	if (M.size() > 1)
+	if (M0.size() > 1)
 		k--;
 
 	unique(&r2);
@@ -1265,6 +1199,7 @@ void petri::gen_mutables()
 	vector<int> ia;
 
 	map<int, int>::iterator bi, bj;
+	map<string, variable>::iterator vi;
 
 	for (i = 0; i < (int)S.size(); i++)
 	{
@@ -1282,6 +1217,11 @@ void petri::gen_mutables()
 			if (T[index(ia[j])].active)
 				vars->x_channel(T[index(ia[j])].index.vars(), &S[i].mutables);
 	}
+
+	for (vi = vars->global.begin(); vi != vars->global.end(); vi++)
+		if (vi->first != "reset" && vi->second.arg && !vars->part_of_channel(vi->second.uid))
+			for (i = 0; i < (int)M0.size(); i++)
+				S[M0[i]].mutables.insert(pair<int, logic>(vi->second.uid, logic(0)));
 }
 
 void petri::gen_conditional_places()
@@ -1402,8 +1342,8 @@ void petri::gen_bubbleless_conflicts()
 	vector<int> vl;
 	vector<int> temp;
 	int i, j;
-	logic tp(0), sp1(0);
-	logic tn(0), sn1(0);
+	logic tp(0), ntp(0), sp1(0);
+	logic tn(0), ntn(0), sn1(0);
 	bool parallel;
 	bool strict;
 
@@ -1467,10 +1407,11 @@ void petri::gen_bubbleless_conflicts()
 
 				parallel = (psiblings(i, j) >= 0);
 				// POSITIVE
-				if (i != j && !parallel && !S[i].is_in_tail(j) && (sp1 & S[j].index) != 0)
+				if (i != j && !parallel && !S[i].is_in_tail(j) && !is_mutex(&sp1, &S[j].index))
 				{
 					// is it a conflicting state? (e.g. not vacuous)
-					if (S[i].active && ((~tp & sp1 & S[j].index) != 0 || (oa.size() > 0 && T[index(oa[0])].active && (tp & T[index(oa[0])].index) == 0)))
+					ntp = ~tp;
+					if (S[i].active && (!is_mutex(&ntp, &sp1, &S[j].index) || (oa.size() > 0 && T[index(oa[0])].active && is_mutex(&tp, &T[index(oa[0])].index))))
 						add_conflict_pair(&positive_conflicts, i, j);
 
 					// it is at least an indistinguishable state at this point
@@ -1478,10 +1419,11 @@ void petri::gen_bubbleless_conflicts()
 				}
 
 				// NEGATIVE
-				if (i != j && !parallel && !S[i].is_in_tail(j) && (sn1 & S[j].index) != 0)
+				if (i != j && !parallel && !S[i].is_in_tail(j) && !is_mutex(&sn1, &S[j].index))
 				{
 					// is it a conflicting state? (e.g. not vacuous)
-					if (S[i].active && ((~tn & sn1 & S[j].index) != 0 || (oa.size() > 0 && T[index(oa[0])].active && (tn & T[index(oa[0])].index) == 0)))
+					ntn = ~tn;
+					if (S[i].active && (!is_mutex(&ntn, &sn1, &S[j].index) || (oa.size() > 0 && T[index(oa[0])].active && is_mutex(&tn, &T[index(oa[0])].index))))
 						add_conflict_pair(&negative_conflicts, i, j);
 
 					// it is at least an indistinguishable state at this point
@@ -1585,7 +1527,7 @@ void petri::gen_tails()
 
 	vector<int> ia, oa;
 	vector<int> old;
-	int i, j;
+	int i;
 	bool done = false;
 	while (!done)
 	{
@@ -2540,7 +2482,6 @@ vector<int> petri::end_path(vector<int> to, vector<int> ex)
 
 	return result;
 }
-
 
 node &petri::operator[](int i)
 {

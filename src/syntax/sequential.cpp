@@ -195,6 +195,9 @@ void sequential::simulate()
 
 void sequential::rewrite()
 {
+	if (instrs.size() == 0)
+		return;
+
 	list<instruction*>::iterator i, j;
 	list<pair<sequential*, guard*> >::iterator k;
 	list<pair<string, string> >::iterator m, n;

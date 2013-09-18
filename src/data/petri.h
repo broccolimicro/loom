@@ -11,6 +11,7 @@
 #include "bdd.h"
 #include "path_space.h"
 #include "../flag_space.h"
+#include "program_counter.h"
 
 #ifndef petri_h
 #define petri_h
@@ -26,7 +27,7 @@ struct node
 	~node();
 
 	instruction *owner;
-	map<int, logic> mutables;	// The set of variables whose value we cannot know
+	map<int, logic> mutables;
 	vector<int> tail;		// The set of inactive states preceding an active state
 	map<int, int> pbranch;
 	map<int, int> cbranch;
@@ -101,9 +102,6 @@ struct petri
 
 	void remove_place(int from);
 	void remove_place(vector<int> from);
-
-	void propogate_marking_forward(int from, vector<bool> *covered);
-	void propogate_marking_backward(int from, vector<bool> *covered);
 
 	bool updateplace(int p, int i = 0);
 	int update(int p, vector<bool> *covered, int i = 0, bool immune = false);

@@ -551,7 +551,9 @@ bool process::insert_bubbleless_state_vars()
 			istart = net.start_path(i->first, *lj);
 			jstart = net.start_path(*lj, vector<int>(1, i->first));
 
+			//cout << "Up" << endl;
 			net.get_paths(istart, *lj, &up_paths);
+			//cout << "Down" << endl;
 			net.get_paths(jstart, vector<int>(1, i->first), &down_paths);
 
 			up_inv = up_paths.inverse();
@@ -632,6 +634,7 @@ bool process::insert_bubbleless_state_vars()
 				for (j = 0; j < (int)net.arcs.size(); j++)
 					if (down_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
 						down_paths.total.nodes[j] += ind_max - (int)l->second.size();
+
 			}
 			(*flags->log_file) << down_paths.total << endl;
 			while (down_paths.size() > 0 && (idm = net.closest_input(down_paths.total.maxes(), down_paths.total.to, path(net.arcs.size())).second) != -1)
@@ -643,6 +646,7 @@ bool process::insert_bubbleless_state_vars()
 					for (j = 0; j < (int)net.arcs.size(); j++)
 						if (down_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
 							down_paths.total.nodes[j] += ind_max - (int)l->second.size();
+
 				}
 				(*flags->log_file) << down_paths.total << endl;
 			}
@@ -677,8 +681,8 @@ bool process::insert_bubbleless_state_vars()
 			net.get_paths(jstart, vector<int>(1, i->first), &down_paths);
 			net.get_paths(istart, *lj, &up_paths);
 
-			uptrans = down_paths.total.to;
-			downtrans = up_paths.total.to;
+			uptrans = up_paths.total.from;
+			downtrans = down_paths.total.from;
 
 			(*flags->log_file) << "Down: {";
 			for (j = 0; j < (int)down_paths.total.from.size(); j++)
@@ -724,8 +728,8 @@ bool process::insert_bubbleless_state_vars()
 			net.get_paths(jstart, vector<int>(1, i->first), &up_paths);
 			net.get_paths(istart, *lj, &down_paths);
 
-			uptrans = down_paths.total.to;
-			downtrans = up_paths.total.to;
+			uptrans = up_paths.total.from;
+			downtrans = down_paths.total.from;
 
 			(*flags->log_file) << "Up: {";
 			for (j = 0; j < (int)up_paths.total.from.size(); j++)
@@ -794,7 +798,6 @@ void process::generate_prs()
 	{
 		(*flags->log_file) << "Production Rules: " << name << endl;
 		print_prs(flags->log_file);
-		//prs.print_enable_graph(flags->log_file, &net, name);
 		prs.check(&net);
 	}
 }

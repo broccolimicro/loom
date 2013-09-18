@@ -19,8 +19,37 @@ operator~(node<1> s, node<1> a)
 	];
 }
 
+
+operator==(node<1> s, node<1> a, node<1> b)
+{
+	s := a & b | ~a & ~b;
+}
+
+operator==(node<1> s, node<2> a, node<2> b)
+{
+	s := (a[0]==b[0])&(a[1]==b[1]);
+}
+
+operator==(node<1> s, node<3> a, node<3> b)
+{
+	s := (a[0]&b[0] | ~a[0]&~b[0]) & (a[1]&b[1] | ~a[1]&~b[1]) & (a[2]&b[2] | ~a[2]&~b[2]);
+}
+
+
 operator^(node<1> s, node<1> a, node<1> b)
 {
 	s := a&~b | ~a&b;
 }
 
+operator+(node<3> s, node<3> a, node<3> b)
+{
+	node<2> c;
+	node<2> axorb;
+	s[0] := a[0]^b[0];
+	c[0] := a[0] & b[0];
+	axorb[0] = a[1]^b[1];
+	s[1] := axorb[0]^c[0];
+	c[1] := axorb[0]&c[0] | a[1]&b[1];
+	axorb[1] = a[2]^b[2];
+	s[2] := axorb[1]^c[1];
+}
