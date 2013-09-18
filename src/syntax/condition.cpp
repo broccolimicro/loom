@@ -412,14 +412,14 @@ vector<int> condition::generate_states(petri *n, rule_space *p, vector<int> f, m
 		if (instrs.size() > 1)
 			ncbranch.insert(pair<int, int>(ncbranch_count, (int)k));
 
-		if (type == choice)
+		/*if (type == choice)
 		{
 			bvname = "_bv" + to_string(ncbranch_count) + "_" + to_string(k);
 			bvnames.push_back(bvname);
 			bvuids.push_back(vars->insert(variable(bvname, "node", 1, false, flags)));
 			prs->insert(rule(instr_iter->second->chp, "~(" + instr_iter->second->chp + ")", bvname, vars, net, flags));
 			instr_iter->second->chp = "(" + instr_iter->second->chp + ")&" + bvname;
-		}
+		}*/
 
 		end.clear();
 		start.clear();
@@ -429,7 +429,7 @@ vector<int> condition::generate_states(petri *n, rule_space *p, vector<int> f, m
 		uid.insert(uid.end(), start.begin(), start.end());
 	}
 
-	if (type == choice)
+	/*if (type == choice)
 	{
 		bvname = "";
 		for (i = 0; i < (int)bvnames.size(); i++)
@@ -455,7 +455,7 @@ vector<int> condition::generate_states(petri *n, rule_space *p, vector<int> f, m
 		prs->excl.push_back(pair<vector<int>, int>(bvuids, 1));
 		for (k = 0; k < (int)bvuids.size(); k++)
 			prs->excl.push_back(pair<vector<int>, int>(vector<int>(1, bvuids[k]), 0));
-	}
+	}*/
 
 	return uid;
 }

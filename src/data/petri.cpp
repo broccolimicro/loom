@@ -438,7 +438,7 @@ bool petri::updateplace(int p, int i)
 	vector<int> oa = output_nodes(p);
 	vector<int> ip;
 	vector<int> vl;
-	vector<logic> options;
+	logic result;
 	int l, k, j;
 	logic t(0);
 	logic o;
@@ -461,20 +461,13 @@ bool petri::updateplace(int p, int i)
 
 		(*flags->log_file) << "}>>" << T[index(ia[k])].index.print(vars) << " = (" << (t >> T[index(ia[k])].index).print(vars) << ")\t";
 		if (T[index(ia[k])].active)
-			options.push_back(t >> T[index(ia[k])].index);
+			result = (t >> T[index(ia[k])].index);
 		else
-			options.push_back(t & T[index(ia[k])].index);
-		T[index(ia[k])].definitely_invacuous = is_mutex(&t, &options.back());
+			result = (t & T[index(ia[k])].index);
+		S[p].index |= result;
+		T[index(ia[k])].definitely_invacuous = is_mutex(&t, &result);
 		T[index(ia[k])].possibly_vacuous = !T[index(ia[k])].definitely_invacuous;
-		T[index(ia[k])].definitely_vacuous = (t == options.back());
-	}
-
-	for (k = 0; k < (int)options.size(); k++)
-	{
-		t = 1;
-		for (l = 0, t = 1; l < (int)options.size(); l++)
-			t &= ((l == k) ? options[l] : ~options[l]);
-		S[p].index |= t;
+		T[index(ia[k])].definitely_vacuous = (t == result);
 	}
 
 	(*flags->log_file) << S[p].index.print(vars) << " ";

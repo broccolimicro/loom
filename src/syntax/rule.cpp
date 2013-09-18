@@ -170,7 +170,7 @@ pair<int, logic> rule::closest_transition(int p, logic conflicting_state, logic 
 		/*if ((*covered)[next[0]])
 		{
 			cout << "covered" << endl;
-			return pair<int, logic>(-1, g);
+			return pair<int, logic>(-1, rule_guard);
 		}
 
 		(*covered)[next[0]] = true;*/
