@@ -15,9 +15,9 @@ struct path_space
 	path_space(int s);
 	path_space(path p);
 	path_space(int s, int f, int t);
-	path_space(int s, int f, vector<int> t);
-	path_space(int s, vector<int> f, int t);
-	path_space(int s, vector<int> f, vector<int> t);
+	path_space(int s, int f, svector<int> t);
+	path_space(int s, svector<int> f, int t);
+	path_space(int s, svector<int> f, svector<int> t);
 	~path_space();
 
 	list<path> paths;
@@ -32,12 +32,12 @@ struct path_space
 	void clear();
 	void inc(int i);
 	void zero(int i);
-	void zero(vector<int> i);
+	void zero(svector<int> i);
 	void sub(int i, int v);
 
 	int coverage_count(int n);
-	int coverage_count(vector<int> n);
-	vector<int> coverage_maxes();
+	int coverage_count(svector<int> n);
+	svector<int> coverage_maxes();
 	int coverage_max();
 	path get_mask();
 	void apply_mask(path m);

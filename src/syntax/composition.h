@@ -17,14 +17,14 @@ struct composition : instruction
 
 	list<instruction*> instrs;		// an ordered list of instructions in sequential
 
-	void init(string chp, variable_space *vars, flag_space *flags);
+	void init(sstring chp, variable_space *vars, flag_space *flags);
 	void clear();
 
 	virtual void push(instruction *i) = 0;
 
-	instruction *expand_assignment(string chp);
-	instruction *expand_condition(string chp);
-	instruction *expand_loop(string chp);
+	instruction *expand_assignment(sstring chp);
+	instruction *expand_condition(sstring chp);
+	instruction *expand_loop(sstring chp);
 };
 
 #endif

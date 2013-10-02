@@ -18,7 +18,7 @@ skip::skip()
 	_kind = "skip";
 }
 
-skip::skip(instruction *parent, string chp, variable_space *vars, flag_space *flags)
+skip::skip(instruction *parent, sstring chp, variable_space *vars, flag_space *flags)
 {
 	this->_kind		= "skip";
 	this->chp		= chp;
@@ -35,7 +35,7 @@ skip::~skip()
 /* This copies a skip to another process and replaces
  * all of the specified variables.
  */
-instruction *skip::duplicate(instruction *parent, variable_space *vars, map<string, string> convert)
+instruction *skip::duplicate(instruction *parent, variable_space *vars, smap<sstring, sstring> convert)
 {
 	skip *instr;
 
@@ -70,7 +70,7 @@ void skip::reorder()
 
 }
 
-vector<int> skip::generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
+svector<int> skip::generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch)
 {
 	flags->inc();
 	from = f;
@@ -86,7 +86,7 @@ vector<int> skip::generate_states(petri *n, rule_space *p, vector<int> f, map<in
 	return uid;
 }
 
-void skip::print_hse(string t, ostream *fout)
+void skip::print_hse(sstring t, ostream *fout)
 {
 	(*fout) << chp;
 }

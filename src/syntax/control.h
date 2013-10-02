@@ -29,7 +29,7 @@ struct control : instruction
 
 	void clear();
 
-	pair<string, instruction*> expand_guard(string chp);
+	pair<sstring, instruction*> expand_guard(sstring chp);
 };
 
 #endif

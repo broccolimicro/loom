@@ -26,12 +26,12 @@ bdd::bdd(int var, uint32_t val)
 	this->idx = pkg.mk(var, !val, val);
 }
 
-bdd::bdd(map<int, uint32_t> vals)
+bdd::bdd(smap<int, uint32_t> vals)
 {
 	this->idx = pkg.build(vals);
 }
 
-bdd::bdd(string exp, variable_space *v)
+bdd::bdd(sstring exp, variable_space *v)
 {
 	this->idx = pkg.build(exp, v);
 }
@@ -66,23 +66,22 @@ int bdd::var()
 	return pkg.T[idx].i;
 }
 
-vector<int> bdd::vars()
+svector<int> bdd::vars()
 {
-	vector<int> ret;
+	svector<int> ret;
 	pkg.vars(idx, &ret);
-	unique(&ret);
-	return ret;
+	return ret.unique();
 }
 
-void bdd::vars(vector<int> *var_list)
+void bdd::vars(svector<int> *var_list)
 {
 	pkg.vars(idx, var_list);
-	unique(var_list);
+	var_list->unique();
 }
 
-bdd bdd::refactor(vector<int> ids)
+bdd bdd::refactor(svector<int> ids)
 {
-
+	return bdd();
 }
 
 /**
@@ -106,10 +105,10 @@ bdd bdd::hide(int var)
  * \return	An index into T that identifies the top of the bdd_package that represents the resulting expression.
  * \see		hide() and [Implicit State Enumeration of Finite State Machines using BDD's](http://pdf.aminer.org/000/283/307/implicit_state_enumeration_of_finite_state_machines_using_bdd_packages.pdf)
  */
-bdd bdd::hide(vector<int> vars)
+bdd bdd::hide(svector<int> vars)
 {
 	bdd ret = *this;
-	for (int i = 0; i < (int)vars.size(); i++)
+	for (int i = 0; i < vars.size(); i++)
 		ret = ret.hide(vars[i]);
 
 	return ret;
@@ -122,13 +121,13 @@ bdd bdd::hide(vector<int> vars)
  * \param	result	The resulting map from variable indices to values.
  * \see		hide() and extract().
  */
-void bdd::extract(map<int, bdd> *result)
+void bdd::extract(smap<int, bdd> *result)
 {
-	vector<int> vl;
+	svector<int> vl;
 	int i;
 
 	vars(&vl);
-	for (i = 0; i < (int)vl.size(); i++)
+	for (i = 0; i < vl.size(); i++)
 		result->insert(pair<int, bdd>(vl[i], (*this)[vl[i]]));
 }
 
@@ -138,14 +137,14 @@ void bdd::extract(map<int, bdd> *result)
  * \param	result	The resulting map from variable indices to values.
  * \see		hide() and extract().
  */
-map<int, bdd> bdd::extract()
+smap<int, bdd> bdd::extract()
 {
-	map<int, bdd> result;
-	vector<int> vl;
+	smap<int, bdd> result;
+	svector<int> vl;
 	int i;
 
 	vars(&vl);
-	for (i = 0; i < (int)vl.size(); i++)
+	for (i = 0; i < vl.size(); i++)
 		result.insert(pair<int, bdd>(vl[i], (*this)[vl[i]]));
 
 	return result;
@@ -160,11 +159,11 @@ map<int, bdd> bdd::extract()
  */
 bdd bdd::pabs()
 {
-	vector<int> vl;
+	svector<int> vl;
 	bdd ret = *this;
 
 	vars(&vl);
-	for (int i = 0; i < (int)vl.size(); i++)
+	for (int i = 0; i < vl.size(); i++)
 		ret = ((ret(vl[i], 1) & bdd(vl[i], 1)) | ret(vl[i], 0));
 
 	return ret;
@@ -179,11 +178,11 @@ bdd bdd::pabs()
  */
 bdd bdd::nabs()
 {
-	vector<int> vl;
+	svector<int> vl;
 	bdd ret = *this;
 
 	vars(&vl);
-	for (int i = 0; i < (int)vl.size(); i++)
+	for (int i = 0; i < vl.size(); i++)
 		ret = ((ret(vl[i], 0) & bdd(vl[i], 0)) | ret(vl[i], 1));
 
 	return ret;
@@ -200,12 +199,12 @@ int bdd::satcount()
 	return powi(2, pkg.T[idx].i)*pkg.count(idx);
 }
 
-map<int, uint32_t> bdd::anysat()
+smap<int, uint32_t> bdd::anysat()
 {
 	return pkg.anysat(idx);
 }
 
-vector<map<int, uint32_t> > bdd::allsat()
+svector<smap<int, uint32_t> > bdd::allsat()
 {
 	return pkg.allsat(idx);
 }
@@ -269,11 +268,11 @@ bdd bdd::operator()(int var, uint32_t val)
  */
 bdd bdd::operator[](int var)
 {
-	vector<int> vl;
+	svector<int> vl;
 	bdd ret = *this;
 
 	pkg.vars(idx, &vl);
-	for (int i = 0; i < (int)vl.size(); i++)
+	for (int i = 0; i < vl.size(); i++)
 		if (vl[i] != var)
 			ret = ret.hide(vl[i]);
 
@@ -368,14 +367,14 @@ bdd bdd::operator>>(bdd b)
 /**
  * \brief	Prints a canonical boolean representation of the bdd_package at a given index to a stream.
  * \param	u		An index into T that represent the bdd_package to print.
- * \param	vars	A vector of variable names indexed by variable index.
+ * \param	vars	A vec of variable names indexed by variable index.
  */
-string bdd::print(variable_space *v)
+sstring bdd::print(variable_space *v)
 {
-	vector<map<int, uint32_t> > sat = allsat();
-	vector<map<int, uint32_t> >::iterator i;
-	map<int, uint32_t>::iterator j;
-	string ret;
+	svector<smap<int, uint32_t> > sat = allsat();
+	svector<smap<int, uint32_t> >::iterator i;
+	smap<int, uint32_t>::iterator j;
+	sstring ret;
 
 	if (sat.size() == 0)
 		ret +="0";
@@ -392,7 +391,7 @@ string bdd::print(variable_space *v)
 		{
 			if (j != i->begin())
 				ret +="&";
-			ret +=(j->second ? string("") : string("~")) + v->get_name(j->first);
+			ret +=(j->second ? sstring("") : sstring("~")) + v->get_name(j->first);
 		}
 	}
 

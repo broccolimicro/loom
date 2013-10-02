@@ -33,7 +33,7 @@ struct program
 
 	void compile();
 
-	void parse(string chp);
+	void parse(sstring chp);
 	void simulate();
 	void rewrite();
 	void project();

@@ -14,25 +14,25 @@ struct path
 {
 	path(int s);
 	path(int s, int f, int t);
-	path(int s, int f, vector<int> t);
-	path(int s, vector<int> f, int t);
-	path(int s, vector<int> f, vector<int> t);
+	path(int s, int f, svector<int> t);
+	path(int s, svector<int> f, int t);
+	path(int s, svector<int> f, svector<int> t);
 	~path();
 
-	vector<int> from, to;
-	vector<int> nodes;
+	svector<int> from, to;
+	svector<int> nodes;
 
 	int size();
 	void clear();
 	bool contains(int n);
 	void set(int n);
 	bool empty();
-	vector<int> maxes();
+	svector<int> maxes();
 	int max();
 	path inverse();
 	path mask();
-	vector<int>::iterator begin();
-	vector<int>::iterator end();
+	svector<int>::iterator begin();
+	svector<int>::iterator end();
 
 	path &operator=(path p);
 

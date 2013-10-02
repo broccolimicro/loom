@@ -20,21 +20,21 @@ path::path(int s, int f, int t)
 	to.push_back(t);
 }
 
-path::path(int s, int f, vector<int> t)
+path::path(int s, int f, svector<int> t)
 {
 	nodes.resize(s, 0);
 	from.push_back(f);
 	to.insert(to.end(), t.begin(), t.end());
 }
 
-path::path(int s, vector<int> f, int t)
+path::path(int s, svector<int> f, int t)
 {
 	nodes.resize(s, 0);
 	from.insert(from.end(), f.begin(), f.end());
 	to.push_back(t);
 }
 
-path::path(int s, vector<int> f, vector<int> t)
+path::path(int s, svector<int> f, svector<int> t)
 {
 	nodes.resize(s, 0);
 	from.insert(from.end(), f.begin(), f.end());
@@ -76,11 +76,11 @@ bool path::empty()
 	return true;
 }
 
-vector<int> path::maxes()
+svector<int> path::maxes()
 {
-	vector<int> r;
+	svector<int> r;
 	int t = -1;
-	size_t i;
+	int i;
 	for (i = 0; i < nodes.size(); i++)
 		if (nodes[i] > t)
 			t = nodes[i];
@@ -135,12 +135,12 @@ path path::mask()
 	return result;
 }
 
-vector<int>::iterator path::begin()
+svector<int>::iterator path::begin()
 {
 	return nodes.begin();
 }
 
-vector<int>::iterator path::end()
+svector<int>::iterator path::end()
 {
 	return nodes.end();
 }
@@ -161,7 +161,7 @@ int &path::operator[](int i)
 
 ostream &operator<<(ostream &os, path p)
 {
-	vector<int>::iterator i;
+	svector<int>::iterator i;
 	for (i = p.begin(); i != p.end(); i++)
 		os << *i << " ";
 	return os;

@@ -24,7 +24,7 @@ channel::channel()
 	probe = NULL;
 }
 
-channel::channel(string chp, type_space *types, flag_space *flags)
+channel::channel(sstring chp, type_space *types, flag_space *flags)
 {
 	_kind = "channel";
 	vars.types = types;
@@ -50,19 +50,19 @@ channel &channel::operator=(channel r)
 	return *this;
 }
 
-void channel::parse(string chp)
+void channel::parse(sstring chp)
 {
 	int name_start = chp.find_first_of(" ")+1;
 	int name_end = chp.find_first_of("{");
 	int sequential_start = chp.find_first_of("{")+1;
 	int sequential_end = chp.length()-1;
-	string::iterator i, j;
-	string io_sequential;
-	string raw;
+	sstring::iterator i, j;
+	sstring io_sequential;
+	sstring raw;
 
-	string s = "", r = "", p = "";
+	sstring s = "", r = "", p = "";
 
-	map<string, variable> expansion;
+	smap<sstring, variable> expansion;
 
 	name = chp.substr(name_start, name_end - name_start);
 	io_sequential = chp.substr(sequential_start, sequential_end - sequential_start);
@@ -75,7 +75,7 @@ void channel::parse(string chp)
 	}
 
 	int depth[3] = {0};
-	string instr;
+	sstring instr;
 	for (i = io_sequential.begin(), j = io_sequential.begin(); i != io_sequential.end(); i++)
 	{
 		if (*i == '(')
@@ -94,7 +94,7 @@ void channel::parse(string chp)
 		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == ';')
 		{
 			instr = io_sequential.substr(j-io_sequential.begin(), i - j);
-			if (instr.find_first_of("{}") != string::npos)
+			if (instr.find_first_of("{}") != sstring::npos)
 				debug(NULL, instr, &vars, flags).generate_class_requirements();
 			else
 				expand_instantiation(NULL, instr, &vars, NULL, flags, false);
@@ -119,7 +119,7 @@ void channel::parse(string chp)
 		(*flags->log_file) << endl;
 	}
 
-	vars.types->insert(pair<string, channel*>(name, this));
+	vars.types->insert(pair<sstring, channel*>(name, this));
 
 
 	/* These variables won't automatically be instantiated as
@@ -147,9 +147,9 @@ void channel::parse(string chp)
 	recv->parse(r);
 	probe->parse(p);
 
-	vars.types->insert(pair<string, operate*>(name + "." + send->name, send));
-	vars.types->insert(pair<string, operate*>(name + "." + recv->name, recv));
-	vars.types->insert(pair<string, operate*>(name + "." + probe->name, probe));
+	vars.types->insert(pair<sstring, operate*>(name + "." + send->name, send));
+	vars.types->insert(pair<sstring, operate*>(name + "." + recv->name, recv));
+	vars.types->insert(pair<sstring, operate*>(name + "." + probe->name, probe));
 }
 
 ostream &operator<<(ostream &os, channel s)

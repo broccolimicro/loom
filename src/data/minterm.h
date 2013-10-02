@@ -26,10 +26,10 @@ uint32_t vmsk(int v);
 struct minterm
 {
 	minterm();
-	minterm(string str);
+	minterm(sstring str);
 	~minterm();
 
-	vector<uint32_t> values;
+	svector<uint32_t> values;
 	int size;
 
 
@@ -60,30 +60,30 @@ struct minterm
 
 	void push_back(uint32_t v);
 
-	vector<minterm> expand(vector<int> uids);
+	svector<minterm> expand(svector<int> uids);
 
 	// EXTERNAL FUNCTIONS
 	minterm(uint32_t val);
 	minterm(int var, uint32_t val);
-	minterm(map<int, uint32_t> vals);
-	minterm(string exp, variable_space *vars);
+	minterm(smap<int, uint32_t> vals);
+	minterm(sstring exp, variable_space *vars);
 
-	vector<int> vars();
-	void vars(vector<int> *var_list);
+	svector<int> vars();
+	void vars(svector<int> *var_list);
 
-	minterm refactor(vector<int> ids);
+	minterm refactor(svector<int> ids);
 
 	minterm hide(int var);
-	minterm hide(vector<int> vars);
-	void extract(map<int, minterm> *result);
-	map<int, minterm> extract();
+	minterm hide(svector<int> vars);
+	void extract(smap<int, minterm> *result);
+	smap<int, minterm> extract();
 
 	minterm pabs();
 	minterm nabs();
 
 	int satcount();
-	map<int, uint32_t> anysat();
-	vector<map<int, uint32_t> > allsat();
+	smap<int, uint32_t> anysat();
+	svector<smap<int, uint32_t> > allsat();
 
 	minterm &operator=(minterm s);
 	minterm &operator=(uint32_t s);
@@ -108,9 +108,9 @@ struct minterm
 
 	minterm operator>>(minterm t);
 
-	string print(variable_space *vars, string prefix = "");
-	string print_assign(variable_space *vars, string prefix = "");
-	string print_with_quotes(variable_space *vars, string prefix = "");
+	sstring print(variable_space *vars, sstring prefix = "");
+	sstring print_assign(variable_space *vars, sstring prefix = "");
+	sstring print_with_quotes(variable_space *vars, sstring prefix = "");
 };
 
 bool operator==(minterm s1, minterm s2);

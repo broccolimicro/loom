@@ -13,7 +13,7 @@ assignment::assignment()
 	_kind = "assignment";
 }
 
-assignment::assignment(instruction *parent, string chp, variable_space *vars, flag_space *flags)
+assignment::assignment(instruction *parent, sstring chp, variable_space *vars, flag_space *flags)
 {
 	this->_kind		= "assignment";
 	this->chp		= chp;
@@ -35,7 +35,7 @@ assignment::~assignment()
  * This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *assignment::duplicate(instruction *parent, variable_space *vars, map<string, string> convert)
+instruction *assignment::duplicate(instruction *parent, variable_space *vars, smap<sstring, sstring> convert)
 {
 	assignment *instr;
 
@@ -46,12 +46,12 @@ instruction *assignment::duplicate(instruction *parent, variable_space *vars, ma
 	instr->expr			= this->expr;
 	instr->parent		= parent;
 
-	size_t idx;
-	string rep;
+	int idx;
+	sstring rep;
 
-	map<string, string>::iterator i, j;
-	list<pair<string, string> >::iterator e;
-	size_t k = 0, min, curr;
+	smap<sstring, sstring>::iterator i, j;
+	list<pair<sstring, sstring> >::iterator e;
+	int k = 0, min, curr;
 	while (k != instr->chp.npos)
 	{
 		j = convert.end();
@@ -60,7 +60,7 @@ instruction *assignment::duplicate(instruction *parent, variable_space *vars, ma
 		for (i = convert.begin(); i != convert.end(); i++)
 		{
 			curr = find_name(instr->chp, i->first, k);
-			if (curr < min)
+			if (curr < min && curr >= 0)
 			{
 				min = curr;
 				j = i;
@@ -96,7 +96,7 @@ instruction *assignment::duplicate(instruction *parent, variable_space *vars, ma
 			for (i = convert.begin(); i != convert.end(); i++)
 			{
 				curr = find_name(e->first, i->first, k);
-				if (curr < min)
+				if (curr < min && curr >= 0)
 				{
 					min = curr;
 					j = i;
@@ -129,7 +129,7 @@ instruction *assignment::duplicate(instruction *parent, variable_space *vars, ma
 			for (i = convert.begin(); i != convert.end(); i++)
 			{
 				curr = find_name(e->second, i->first, k);
-				if (curr < min)
+				if (curr < min && curr >= 0)
 				{
 					min = curr;
 					j = i;
@@ -154,7 +154,7 @@ instruction *assignment::duplicate(instruction *parent, variable_space *vars, ma
 		}
 	}
 
-	list<pair<string, string> >::iterator ei;
+	list<pair<sstring, sstring> >::iterator ei;
 	variable *ev;
 	for (ei = instr->expr.begin(); ei != instr->expr.end(); ei++)
 	{
@@ -185,11 +185,11 @@ void assignment::expand_shortcuts()
 //TODO go through
 void assignment::parse()
 {
-	size_t middle;
-	string left_raw, right_raw;
-	size_t i, j;
-	size_t k, l;
-	string left, right;
+	int middle;
+	sstring left_raw, right_raw;
+	int i, j;
+	int k, l;
+	sstring left, right;
 	variable *v;
 
 	flags->inc();
@@ -207,7 +207,7 @@ void assignment::parse()
 		{
 			left = left_raw.substr(k, i-k);
 			right = right_raw.substr(l, j-l);
-			expr.push_back(pair<string, string>(left, right));
+			expr.push_back(pair<sstring, sstring>(left, right));
 			k = i+1;
 			l = j+1;
 
@@ -217,7 +217,7 @@ void assignment::parse()
 		}
 		left = left_raw.substr(k);
 		right = right_raw.substr(l);
-		expr.push_back(pair<string, string>(left, right));
+		expr.push_back(pair<sstring, sstring>(left, right));
 
 		v = vars->find(left);
 		if (v != NULL)
@@ -225,7 +225,7 @@ void assignment::parse()
 	}
 	// If all else fails, complain to the user.
 	else
-		cout << "Error: Instruction not handled: " << chp << endl;
+		cerr << "Error: Instruction not handled: " << chp << endl;
 
 
 
@@ -247,15 +247,15 @@ void assignment::reorder()
 
 }
 
-vector<int> assignment::generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
+svector<int> assignment::generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch)
 {
-	list<pair<string, string> >::iterator ei, ej;
-	vector<int> next, end;
-	vector<int> allends;
+	list<pair<sstring, sstring> >::iterator ei, ej;
+	svector<int> next, end;
+	svector<int> allends;
 	int pbranch_id;
-	map<int, int> npbranch;
+	smap<int, int> npbranch;
 	variable *v;
-	size_t k;
+	int k;
 	int l;
 
 	if (flags->log_base_state_space())
@@ -288,19 +288,19 @@ vector<int> assignment::generate_states(petri *n, rule_space *p, vector<int> f, 
 			allends.push_back(net->insert_place(end, npbranch, cbranch, this));
 		}
 		else
-			cout << "Error: Undefined variable " << ei->first << "." << endl;
+			cerr << "Error: Undefined variable " << ei->first << "." << endl;
 	}
 	uid.push_back(net->insert_dummy(allends, pbranch, cbranch, this));
 
 	return uid;
 }
 
-void assignment::print_hse(string t, ostream *fout)
+void assignment::print_hse(sstring t, ostream *fout)
 {
 	if (expr.size() > 1)
 		(*fout) << "(";
 
-	list<pair<string, string> >::iterator i;
+	list<pair<sstring, sstring> >::iterator i;
 	for (i = expr.begin(); i != expr.end(); i++)
 	{
 		if (i != expr.begin())

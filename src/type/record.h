@@ -22,15 +22,15 @@
 struct record : keyword
 {
 	record();
-	record(string raw, type_space *types, flag_space *flags);
+	record(sstring raw, type_space *types, flag_space *flags);
 	~record();
 
-	string					chp;
+	sstring					chp;
 	variable_space			vars;
 	flag_space				*flags;
 
 	record &operator=(record r);
-	void parse(string raw);
+	void parse(sstring raw);
 };
 
 ostream &operator<<(ostream &os, record s);

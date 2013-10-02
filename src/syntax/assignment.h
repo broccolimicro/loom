@@ -15,21 +15,21 @@
 struct assignment : instruction
 {
 	assignment();
-	assignment(instruction *parent, string chp, variable_space *vars, flag_space *flags);
+	assignment(instruction *parent, sstring chp, variable_space *vars, flag_space *flags);
 	~assignment();
 
-	list<pair<string, string> > expr;
+	list<pair<sstring, sstring> > expr;
 
-	instruction *duplicate(instruction *parent, variable_space *vars, map<string, string> convert);
+	instruction *duplicate(instruction *parent, variable_space *vars, smap<sstring, sstring> convert);
 
 	void expand_shortcuts();
 	void parse();
 	void simulate();
 	void rewrite();
 	void reorder();
-	vector<int> generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch);
+	svector<int> generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch);
 
-	void print_hse(string t = "", ostream *fout = &cout);
+	void print_hse(sstring t = "", ostream *fout = &cout);
 };
 
 #endif

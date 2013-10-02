@@ -25,7 +25,7 @@ sequential::sequential()
 	_kind = "sequential";
 }
 
-sequential::sequential(instruction *parent, string chp, variable_space *vars, flag_space *flags)
+sequential::sequential(instruction *parent, sstring chp, variable_space *vars, flag_space *flags)
 {
 	clear();
 
@@ -47,7 +47,7 @@ sequential::~sequential()
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *sequential::duplicate(instruction *parent, variable_space *vars, map<string, string> convert)
+instruction *sequential::duplicate(instruction *parent, variable_space *vars, smap<sstring, sstring> convert)
 {
 	sequential *instr;
 
@@ -57,11 +57,11 @@ instruction *sequential::duplicate(instruction *parent, variable_space *vars, ma
 	instr->flags		= flags;
 	instr->parent		= parent;
 
-	size_t idx;
-	string rep;
+	int idx;
+	sstring rep;
 
-	map<string, string>::iterator i, j;
-	size_t k = 0, min, curr;
+	smap<sstring, sstring>::iterator i, j;
+	int k = 0, min, curr;
 	while (k != instr->chp.npos)
 	{
 		j = convert.end();
@@ -70,7 +70,7 @@ instruction *sequential::duplicate(instruction *parent, variable_space *vars, ma
 		for (i = convert.begin(); i != convert.end(); i++)
 		{
 			curr = find_name(instr->chp, i->first, k);
-			if (curr < min)
+			if (curr < min && curr >= 0)
 			{
 				min = curr;
 				j = i;
@@ -107,11 +107,11 @@ void sequential::expand_shortcuts()
 
 void sequential::parse()
 {
-	string				raw_instr;	// chp of a sub sequential
-	string::iterator	i, j;
+	sstring				raw_instr;	// chp of a sub sequential
+	sstring::iterator	i, j;
 	bool				para = false;
 	int					depth[3] = {0};
-	size_t				k;
+	int				k;
 
 	flags->inc();
 	if (flags->log_base_hse())
@@ -137,13 +137,12 @@ void sequential::parse()
 		}
 
 		// We are in the current scope, and the current character
-		// is a semicolon or the end of the chp string. This is
+		// is a semicolon or the end of the chp sstring. This is
 		// the end of an instruction.
 		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && (*i == ';' || i == chp.end()))
 		{
-			// Get the instruction string.
+			// Get the instruction sstring.
 			raw_instr = chp.substr(j-chp.begin(), i-j);
-
 			// This sub sequential is a set of parallel sub sub sequentials. s0 || s1 || ... || sn
 			if (para && raw_instr.length() > 0)
 				push(new parallel(this, raw_instr, vars, flags));
@@ -163,7 +162,10 @@ void sequential::parse()
 				push(expand_instantiation(this, raw_instr, vars, NULL, flags, true));
 			// This sub sequential is a communication instantiation.
 			else if ((k = raw_instr.find_first_of("?!#")) != raw_instr.npos && raw_instr.find(":=") == raw_instr.npos && raw_instr.length() > 0)
+			{
+				cout << "Here" << endl;
 				push(add_unique_variable(this, raw_instr.substr(0, k) + "._fn", "(" + (k+1 < raw_instr.length() ? raw_instr.substr(k+1) : "") + ")", vars->get_type(raw_instr.substr(0, k)) + ".operator" + raw_instr[k] + "()", vars, flags).second);
+			}
 			// This sub sequential is an assignment instruction.
 			else if ((raw_instr.find(":=") != raw_instr.npos || raw_instr[raw_instr.length()-1] == '+' || raw_instr[raw_instr.length()-1] == '-') && raw_instr.length() > 0)
 				push(expand_assignment(raw_instr));
@@ -176,7 +178,7 @@ void sequential::parse()
 			para = false;
 		}
 		// We are in the current scope, and the current character
-		// is a parallel bar or the end of the chp string. This is
+		// is a parallel bar or the end of the chp sstring. This is
 		// the middle of a parallel sub sequential.
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) == '|') || i == chp.end()))
 			para = true;
@@ -200,7 +202,7 @@ void sequential::rewrite()
 
 	list<instruction*>::iterator i, j;
 	list<pair<sequential*, guard*> >::iterator k;
-	list<pair<string, string> >::iterator m, n;
+	list<pair<sstring, sstring> >::iterator m, n;
 	i = instrs.begin();
 	j = instrs.begin();
 	condition *ic, *jc;
@@ -268,14 +270,14 @@ void sequential::reorder()
 
 }
 
-vector<int> sequential::generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
+svector<int> sequential::generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch)
 {
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
-	vector<int> next;
-	map<map<int, int>, vector<int> > groups;
-	map<map<int, int>, vector<int> >::iterator gi;
-	map<int, int>::iterator mi, mj;
+	svector<int> next;
+	smap<smap<int, int>, svector<int> > groups;
+	smap<smap<int, int>, svector<int> >::iterator gi;
+	smap<int, int>::iterator mi, mj;
 	bool trans = true;
 
 	flags->inc();
@@ -308,7 +310,7 @@ vector<int> sequential::generate_states(petri *n, rule_space *p, vector<int> f, 
 	return uid;
 }
 
-void sequential::print_hse(string t, ostream *fout)
+void sequential::print_hse(sstring t, ostream *fout)
 {
 	list<instruction*>::iterator i;
 	for (i = instrs.begin(); i != instrs.end(); i++)

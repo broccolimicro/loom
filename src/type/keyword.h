@@ -21,23 +21,23 @@
 struct keyword
 {
 protected:
-	string _kind;
+	sstring _kind;
 
 public:
 
 	keyword();
-	keyword(string n);
+	keyword(sstring n);
 	~keyword();
 
-	string name;
+	sstring name;
 
-	string kind();
+	sstring kind();
 
 	keyword &operator=(keyword k);
 };
 
-typedef map<string, keyword*> type_space;
+typedef smap<sstring, keyword*> type_space;
 
-bool contains(string s, type_space m);
+bool contains(sstring s, type_space m);
 
 #endif

@@ -17,7 +17,7 @@ debug::debug()
 	_kind = "debug";
 }
 
-debug::debug(instruction *parent, string chp, variable_space *vars, flag_space *flags)
+debug::debug(instruction *parent, sstring chp, variable_space *vars, flag_space *flags)
 {
 	_kind = "debug";
 
@@ -35,7 +35,7 @@ debug::~debug()
 	_kind = "debug";
 }
 
-instruction *debug::duplicate(instruction *parent, variable_space *vars, map<string, string> convert)
+instruction *debug::duplicate(instruction *parent, variable_space *vars, smap<sstring, sstring> convert)
 {
 	debug *instr;
 
@@ -46,11 +46,11 @@ instruction *debug::duplicate(instruction *parent, variable_space *vars, map<str
 	instr->parent		= parent;
 	instr->type			= type;
 
-	size_t idx;
-	string rep;
+	int idx;
+	sstring rep;
 
-	map<string, string>::iterator i, j;
-	size_t k = 0, min, curr;
+	smap<sstring, sstring>::iterator i, j;
+	int k = 0, min, curr;
 	while (k != instr->chp.npos)
 	{
 		j = convert.end();
@@ -59,7 +59,7 @@ instruction *debug::duplicate(instruction *parent, variable_space *vars, map<str
 		for (i = convert.begin(); i != convert.end(); i++)
 		{
 			curr = find_name(instr->chp, i->first, k);
-			if (curr < min)
+			if (curr < min && curr >= 0)
 			{
 				min = curr;
 				j = i;
@@ -96,14 +96,14 @@ void debug::expand_shortcuts()
 
 void debug::parse()
 {
-	size_t open = chp.find_first_of("{");
-	size_t close = chp.find_first_of("}");
+	int open = chp.find_first_of("{");
+	int close = chp.find_first_of("}");
 
 	type = chp.substr(0, open);
 	chp = chp.substr(open+1, close - open - 1);
 
 	if (type != "assert" && type != "require" && type != "assume" && type != "enforce")
-		cout << "Error: illegal debug function " << type << "." << endl;
+		cerr << "Error: illegal debug function " << type << "." << endl;
 }
 
 void debug::simulate()
@@ -121,7 +121,7 @@ void debug::reorder()
 
 }
 
-vector<int> debug::generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
+svector<int> debug::generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch)
 {
 	net = n;
 	prs = p;
@@ -148,10 +148,10 @@ void debug::generate_class_requirements()
 	else if (type == "enforce")
 		vars->enforcements = vars->enforcements >> logic(chp, vars);
 	else
-		cout << "Error: Illegal debug function type " << type << "." << endl;
+		cerr << "Error: Illegal debug function type " << type << "." << endl;
 }
 
-void debug::print_hse(string t, ostream *fout)
+void debug::print_hse(sstring t, ostream *fout)
 {
 	(*fout) << type << "{" << chp << "}";
 }

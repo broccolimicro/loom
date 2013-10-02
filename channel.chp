@@ -1,5 +1,3 @@
-#include "math.chp"
-
 record dualrail
 {
 	node<1> t := 0;
@@ -28,7 +26,7 @@ channel achan4p0b
 	}
 }
 
-channel pchan4p0b
+/*channel pchan4p0b
 {
 	node<1> r := 0;
 	node<1> a := 0;
@@ -47,7 +45,7 @@ channel pchan4p0b
 	{
 		a
 	}
-}
+}*/
 
 channel achan4p1b
 {
@@ -74,7 +72,7 @@ channel achan4p1b
 	}
 }
 
-channel pchan4p1b
+/*channel pchan4p1b
 {
 	dualrail r;
 	node<1> a := 0;
@@ -99,9 +97,9 @@ channel pchan4p1b
 	{
 		a
 	}
-}
+}*/
 
-channel achan4p2b
+/*channel achan4p2b
 {
 	dualrail r1;
 	dualrail r2;
@@ -173,4 +171,4 @@ channel pchan4p2b
 	{
 		a
 	}
-}
+}*/

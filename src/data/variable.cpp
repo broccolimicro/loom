@@ -20,12 +20,12 @@ variable::variable()
 	driven = false;
 	arg = false;
 	flags = NULL;
-	pc = vector<int>(1, 0);
+	pc = svector<int>(1, 0);
 }
 
-variable::variable(string name, string type, uint16_t width, bool arg, flag_space *flags)
+variable::variable(sstring name, sstring type, uint16_t width, bool arg, flag_space *flags)
 {
-	this->chp = type + "<" + to_string(width) + ">" + name;
+	this->chp = type + "<" + sstring(width) + ">" + name;
 	this->name = name;
 	this->type = type;
 	this->width = width;
@@ -34,17 +34,17 @@ variable::variable(string name, string type, uint16_t width, bool arg, flag_spac
 	this->driven = false;
 	this->arg = arg;
 	this->flags = flags;
-	pc = vector<int>(1, 0);
+	pc = svector<int>(1, 0);
 }
 
-variable::variable(string chp, bool arg, flag_space *flags)
+variable::variable(sstring chp, bool arg, flag_space *flags)
 {
 	this->chp = chp;
 	this->uid = -1;
 	this->arg = arg;
 	this->flags = flags;
 	this->driven = false;
-	pc = vector<int>(1, 0);
+	pc = svector<int>(1, 0);
 
 	parse(chp);
 }
@@ -55,7 +55,7 @@ variable::~variable()
 	type = "";
 	width = 0;
 	fixed = false;
-	pc = vector<int>(1, 0);
+	pc = svector<int>(1, 0);
 }
 
 variable &variable::operator=(variable v)
@@ -75,38 +75,38 @@ variable &variable::operator=(variable v)
 	return *this;
 }
 
-void variable::parse(string chp)
+void variable::parse(sstring chp)
 {
 	this->chp = chp;
 
-	string input;
+	sstring input;
 
-	size_t width_start = find_first_of_l0(chp, "< ");
-	size_t name_start = find_first_of_l0(chp, "> ");
-	size_t input_start = find_first_of_l0(chp, "(", name_start);
-	size_t input_end = find_first_of_l0(chp, ")", input_start);
-	size_t reset_start = find_first_of_l0(chp, ":=", name_start);
+	int width_start = chp.find_first_of_l0("< ");
+	int name_start = chp.find_first_of_l0("> ");
+	int input_start = chp.find_first_of_l0("(", name_start);
+	int input_end = chp.find_first_of_l0(")", input_start);
+	int reset_start = chp.find_first_of_l0(":=", name_start);
 
 	if (flags->log_base_hse())
 		(*flags->log_file) << flags->tab << "Variable: " << chp << endl;
 
 	if (input_start != chp.npos)
 	{
-		string temp;
+		sstring temp;
 		name = chp.substr(name_start+1, input_start - (name_start+1));
 		input = chp.substr(input_start+1, input_end - (input_start+1));
 		inputs.push_back(input.substr(0, input.find_first_of(",")));
-		for (size_t i = input.find_first_of(","); i != input.npos; i = input.find_first_of(",", i+1))
+		for (int i = input.find_first_of(","); i != input.npos; i = input.find_first_of(",", i+1))
 			inputs.push_back(input.substr(i+1, input.find_first_of(",", i+1) - i-1));
 	}
 	else if (reset_start != chp.npos)
 	{
-		string temp;
+		sstring temp;
 		name = chp.substr(name_start+1, reset_start - (name_start+1));
 		temp = chp.substr(reset_start+2);
 
 		if (temp.find_first_of("acdefghijklmnopqrstuvwyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()-=_+|\\}]{[?/>.<, \t~`") != temp.npos)
-			cout << "Error: Invalid reset value " << temp << " for variable " << name << "." << endl;
+			cerr << "Error: Invalid reset value " << temp << " for variable " << name << "." << endl;
 		else
 		{
 			if (temp[1] == 'x')
@@ -146,9 +146,9 @@ void variable::parse(string chp)
 	}
 }
 
-ostream &operator<<(ostream &os, map<string, variable> g)
+ostream &operator<<(ostream &os, smap<sstring, variable> g)
 {
-	map<string, variable>::iterator i;
+	smap<sstring, variable>::iterator i;
 	for (i = g.begin(); i != g.end(); i++)
 		os << i->first << " ";
 

@@ -40,11 +40,11 @@ minterm::minterm()
 	size = 0;
 }
 
-minterm::minterm(string str)
+minterm::minterm(sstring str)
 {
 	size = 0;
 	uint32_t val = 0;
-	for (string::iterator ch = str.begin(); ch != str.end(); ch++)
+	for (sstring::iterator ch = str.begin(); ch != str.end(); ch++)
 	{
 		val = (val << 2) | (~(uint32_t)(*ch) & 0x00000001) | ((((uint32_t)(*ch) >> 5) ^ ((uint32_t)(*ch) << 1)) & 0x00000002);
 		size++;
@@ -188,7 +188,7 @@ bool minterm::subset(minterm s)
 		s.resize(size, vX);
 
 	bool result = true;
-	for (size_t i = 0; i < values.size(); i++)
+	for (int i = 0; i < values.size(); i++)
 		result = result && ((values[i] & s.values[i]) == s.values[i]);
 	return result;
 }
@@ -203,7 +203,7 @@ bool minterm::conflict(minterm s)
 
 	bool result = true;
 	uint32_t C;
-	size_t i;
+	int i;
 	if (values.size() > 0)
 	{
 		for (i = 0; i < values.size() - 1; i++)
@@ -228,7 +228,7 @@ int minterm::diff_count(minterm s)
 
 	uint32_t a;
 	int count = 0;
-	for (size_t i = 0; i < values.size(); i++)
+	for (int i = 0; i < values.size(); i++)
 	{
 		// XOR to see what bits are different
 		a = values[i] ^ s.values[i];
@@ -256,7 +256,7 @@ pair<int, int> minterm::xdiff_count(minterm s)
 	uint32_t a, b, c, d;
 	int xcount0 = 0;
 	int xcount1 = 0;
-	for (size_t i = 0; i < values.size(); i++)
+	for (int i = 0; i < values.size(); i++)
 	{
 		a = values[i] & 0x55555555 & (values[i] >> 1);
 
@@ -312,7 +312,7 @@ minterm minterm::mask()
 minterm minterm::inverse()
 {
 	minterm result;
-	for (size_t i = 0; i < values.size(); i++)
+	for (int i = 0; i < values.size(); i++)
 		result.values.push_back((((values[i] << 1) & v1) | ((values[i] >> 1) & v0)));
 	result.size = size;
 	return result;
@@ -331,9 +331,9 @@ void minterm::push_back(uint32_t v)
 	size++;
 }
 
-vector<minterm> minterm::expand(vector<int> uids)
+svector<minterm> minterm::expand(svector<int> uids)
 {
-	vector<minterm> r1;
+	svector<minterm> r1;
 
 	r1.push_back(*this);
 	for (int i = 0; i < (int)uids.size(); i++)
@@ -354,12 +354,12 @@ minterm::minterm(uint32_t val)
 {
 	if (val == 0)
 	{
-		values = vector<uint32_t>(1, 0);
+		values = svector<uint32_t>(1, 0);
 		size = 1;
 	}
 	else if (val == 1)
 	{
-		values = vector<uint32_t>();
+		values = svector<uint32_t>();
 		size = 0;
 	}
 }
@@ -377,10 +377,10 @@ minterm::minterm(int var, uint32_t val)
 	values[w] = (values[w] & ~m) | (v & m);
 }
 
-minterm::minterm(map<int, uint32_t> vals)
+minterm::minterm(smap<int, uint32_t> vals)
 {
 	size = vals.rbegin()->first;
-	map<int, uint32_t>::iterator i;
+	smap<int, uint32_t>::iterator i;
 	uint32_t w		= size >> 4;
 	uint32_t l		= vidx(size);
 	uint32_t m;
@@ -396,12 +396,12 @@ minterm::minterm(map<int, uint32_t> vals)
 	size++;
 }
 
-minterm::minterm(string exp, variable_space *vars)
+minterm::minterm(sstring exp, variable_space *vars)
 {
-	string var;
+	sstring var;
 	uint32_t value;
 	int uid;
-	size_t k, l;
+	int k, l;
 	uint32_t s = vars->size();
 	uint32_t w = s >> 4, i;
 
@@ -437,16 +437,16 @@ minterm::minterm(string exp, variable_space *vars)
 				return;
 			}
 			else if (var != "1" && var != "0")
-				cout << "Error: Undefined variable \"" << var << "\"." << endl;
+				cerr << "Error: Undefined variable \"" << var << "\"." << endl;
 
 			l = k+1;
 		}
 	}
 }
 
-vector<int> minterm::vars()
+svector<int> minterm::vars()
 {
-	vector<int> result;
+	svector<int> result;
 	for (int i = 0; i < size; i++)
 		if (get(i) != vX)
 			result.push_back(i);
@@ -454,14 +454,14 @@ vector<int> minterm::vars()
 	return result;
 }
 
-void minterm::vars(vector<int> *var_list)
+void minterm::vars(svector<int> *var_list)
 {
 	for (int i = 0; i < size; i++)
 		if (get(i) != vX)
 			var_list->push_back(i);
 }
 
-minterm minterm::refactor(vector<int> ids)
+minterm minterm::refactor(svector<int> ids)
 {
 	minterm result;
 	for (int i = 0; i < (int)ids.size(); i++)
@@ -479,7 +479,7 @@ minterm minterm::hide(int var)
 	return result;
 }
 
-minterm minterm::hide(vector<int> vars)
+minterm minterm::hide(svector<int> vars)
 {
 	minterm result = *this;
 	for (int i = 0; i < (int)vars.size(); i++)
@@ -492,7 +492,7 @@ minterm minterm::hide(vector<int> vars)
 	return result;
 }
 
-void minterm::extract(map<int, minterm> *result)
+void minterm::extract(smap<int, minterm> *result)
 {
 	uint32_t v;
 	for (int i = 0; i < size; i++)
@@ -503,9 +503,9 @@ void minterm::extract(map<int, minterm> *result)
 	}
 }
 
-map<int, minterm> minterm::extract()
+smap<int, minterm> minterm::extract()
 {
-	map<int, minterm> result;
+	smap<int, minterm> result;
 	uint32_t v;
 	for (int i = 0; i < size; i++)
 	{
@@ -545,9 +545,9 @@ int minterm::satcount()
 	return 1;
 }
 
-map<int, uint32_t> minterm::anysat()
+smap<int, uint32_t> minterm::anysat()
 {
-	map<int, uint32_t> result;
+	smap<int, uint32_t> result;
 	uint32_t v;
 	for (int i = 0; i < size; i++)
 	{
@@ -558,9 +558,9 @@ map<int, uint32_t> minterm::anysat()
 	return result;
 }
 
-vector<map<int, uint32_t> > minterm::allsat()
+svector<smap<int, uint32_t> > minterm::allsat()
 {
-	return vector<map<int, uint32_t> >(1, anysat());
+	return svector<smap<int, uint32_t> >(1, anysat());
 }
 
 minterm &minterm::operator=(minterm s)
@@ -625,7 +625,7 @@ minterm minterm::operator&(minterm s)
 		s.resize(size, vX);
 
 	minterm result;
-	for (size_t i = 0; i < values.size(); i++)
+	for (int i = 0; i < values.size(); i++)
 		result.values.push_back(values[i] & s.values[i]);
 	result.size = size;
 
@@ -641,7 +641,7 @@ minterm minterm::operator|(minterm s)
 		s.resize(size, vX);
 
 	minterm result;
-	for (size_t i = 0; i < values.size(); i++)
+	for (int i = 0; i < values.size(); i++)
 		result.values.push_back(values[i] | s.values[i]);
 	result.size = size;
 
@@ -718,14 +718,14 @@ minterm minterm::operator>>(minterm t)
 	return result;
 }
 
-string minterm::print(variable_space *vars, string prefix)
+sstring minterm::print(variable_space *vars, sstring prefix)
 {
-	string res;
+	sstring res;
 	bool first = false;
 
-	string tbl[4] = {"!", "~", "", ""};
+	sstring tbl[4] = {"!", "~", "", ""};
 	uint32_t v;
-	for (size_t i = 0; i < values.size(); i++)
+	for (int i = 0; i < values.size(); i++)
 	{
 		v = values[i];
 		for (int j = 15; j > 0; j--)
@@ -737,7 +737,7 @@ string minterm::print(variable_space *vars, string prefix)
 				if (vars != NULL)
 					res += tbl[(v>>(2*j))&3] + prefix + vars->get_name(i*16 + (15-j));
 				else
-					res += tbl[(v>>(2*j))&3] + prefix + "x" + to_string(i*16 + (15-j));
+					res += tbl[(v>>(2*j))&3] + prefix + "x" + sstring(i*16 + (15-j));
 				first = true;
 			}
 		}
@@ -749,7 +749,7 @@ string minterm::print(variable_space *vars, string prefix)
 			if (vars != NULL)
 				res += tbl[v&3] + prefix + vars->get_name(i*16 + 15);
 			else
-				res += tbl[v&3] + prefix + "x" + to_string(i*16 + 15);
+				res += tbl[v&3] + prefix + "x" + sstring(i*16 + 15);
 			first = true;
 		}
 	}
@@ -760,15 +760,15 @@ string minterm::print(variable_space *vars, string prefix)
 	return res;
 }
 
-string minterm::print_assign(variable_space *vars, string prefix)
+sstring minterm::print_assign(variable_space *vars, sstring prefix)
 {
-	string res;
-	string res2;
+	sstring res;
+	sstring res2;
 	bool first = false;
 
-	string tbl[4] = {"", "0", "1", ""};
+	sstring tbl[4] = {"", "0", "1", ""};
 	uint32_t v;
-	for (size_t i = 0; i < values.size(); i++)
+	for (int i = 0; i < values.size(); i++)
 	{
 		v = values[i];
 		for (int j = 15; j > 0; j--)
@@ -784,7 +784,7 @@ string minterm::print_assign(variable_space *vars, string prefix)
 				if (vars != NULL)
 					res += prefix + vars->get_name(i*16 + (15-j));
 				else
-					res += prefix + "x" + to_string(i*16 + (15-j));
+					res += prefix + "x" + sstring(i*16 + (15-j));
 				res2 += tbl[(v>>(2*j))&3];
 
 				first = true;
@@ -801,7 +801,7 @@ string minterm::print_assign(variable_space *vars, string prefix)
 			if (vars != NULL)
 				res += prefix + vars->get_name(i*16 + 15);
 			else
-				res += prefix + "x" + to_string(i*16 + 15);
+				res += prefix + "x" + sstring(i*16 + 15);
 			res2 += tbl[v&3];
 
 			first = true;
@@ -816,14 +816,14 @@ string minterm::print_assign(variable_space *vars, string prefix)
 	return res;
 }
 
-string minterm::print_with_quotes(variable_space *vars, string prefix)
+sstring minterm::print_with_quotes(variable_space *vars, sstring prefix)
 {
-        string res;
+        sstring res;
         bool first = false;
 
-        string tbl[4] = {"!", "~", "", ""};
+        sstring tbl[4] = {"!", "~", "", ""};
         uint32_t v;
-        for (size_t i = 0; i < values.size(); i++)
+        for (int i = 0; i < values.size(); i++)
         {
                 v = values[i];
                 for (int j = 15; j > 0; j--)
@@ -835,7 +835,7 @@ string minterm::print_with_quotes(variable_space *vars, string prefix)
                                 if (vars != NULL)
                                         res += tbl[(v>>(2*j))&3] + "\"" + prefix + vars->get_name(i*16 + (15-j)) + "\"";
                                 else
-                                        res += tbl[(v>>(2*j))&3] + "\"" + prefix + "x" + to_string(i*16 + (15-j)) + "\"";
+                                        res += tbl[(v>>(2*j))&3] + "\"" + prefix + "x" + sstring(i*16 + (15-j)) + "\"";
                                 first = true;
                         }
                 }
@@ -847,7 +847,7 @@ string minterm::print_with_quotes(variable_space *vars, string prefix)
                         if (vars != NULL)
                                 res += tbl[v&3] + "\"" + prefix + vars->get_name(i*16 + 15) + "\"";
                         else
-                                res += tbl[v&3] + "\"" + prefix + "x" + to_string(i*16 + 15) + "\"";
+                                res += tbl[v&3] + "\"" + prefix + "x" + sstring(i*16 + 15) + "\"";
                         first = true;
                 }
         }
@@ -868,7 +868,7 @@ bool operator==(minterm s1, minterm s2)
 
 	bool result = true;
 
-	for (size_t i = 0; i < s1.values.size() && i < s2.values.size(); i++)
+	for (int i = 0; i < s1.values.size() && i < s2.values.size(); i++)
 		result = result && (s1.values[i] == s2.values[i]);
 
 	return result;
@@ -883,7 +883,7 @@ bool operator!=(minterm s1, minterm s2)
 
 	bool result = false;
 
-	for (size_t i = 0; i < s1.values.size(); i++)
+	for (int i = 0; i < s1.values.size(); i++)
 		result = result || (s1.values[i] != s2.values[i]);
 
 	return result;

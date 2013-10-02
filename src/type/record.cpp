@@ -22,7 +22,7 @@ record::record()
 	_kind = "record";
 }
 
-record::record(string raw, type_space *types, flag_space *flags)
+record::record(sstring raw, type_space *types, flag_space *flags)
 {
 	_kind = "record";
 	vars.types = types;
@@ -30,7 +30,7 @@ record::record(string raw, type_space *types, flag_space *flags)
 
 	parse(raw);
 
-	types->insert(pair<string, record*>(name, this));
+	types->insert(pair<sstring, record*>(name, this));
 }
 
 record::~record()
@@ -49,7 +49,7 @@ record &record::operator=(record r)
 	return *this;
 }
 
-void record::parse(string raw)
+void record::parse(sstring raw)
 {
 	chp = raw;
 
@@ -57,10 +57,10 @@ void record::parse(string raw)
 	int name_end = chp.find_first_of("{");
 	int sequential_start = chp.find_first_of("{")+1;
 	int sequential_end = chp.length()-1;
-	string::iterator i, j;
-	string io_sequential;
+	sstring::iterator i, j;
+	sstring io_sequential;
 
-	map<string, variable> expansion;
+	smap<sstring, variable> expansion;
 
 	name = chp.substr(name_start, name_end - name_start);
 	io_sequential = chp.substr(sequential_start, sequential_end - sequential_start);
@@ -72,13 +72,13 @@ void record::parse(string raw)
 		(*flags->log_file) << "\tSequential: " << io_sequential << endl;
 	}
 
-	string instr;
+	sstring instr;
 	for (i = io_sequential.begin(), j = io_sequential.begin(); i != io_sequential.end(); i++)
 	{
 		if (*(i+1) == ';')
 		{
 			instr = io_sequential.substr(j-io_sequential.begin(), i+1 - j);
-			if (instr.find_first_of("{}") != string::npos)
+			if (instr.find_first_of("{}") != sstring::npos)
 				debug(NULL, instr, &vars, flags).generate_class_requirements();
 			else
 				expand_instantiation(NULL, instr, &vars, NULL, flags, false);

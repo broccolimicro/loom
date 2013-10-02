@@ -23,17 +23,17 @@ path_space::path_space(int s, int f, int t) : total(s, f, t)
 
 }
 
-path_space::path_space(int s, int f, vector<int> t) : total(s, f, t)
+path_space::path_space(int s, int f, svector<int> t) : total(s, f, t)
 {
 
 }
 
-path_space::path_space(int s, vector<int> f, int t) : total(s, f, t)
+path_space::path_space(int s, svector<int> f, int t) : total(s, f, t)
 {
 
 }
 
-path_space::path_space(int s, vector<int> f, vector<int> t) : total(s, f, t)
+path_space::path_space(int s, svector<int> f, svector<int> t) : total(s, f, t)
 {
 
 }
@@ -116,7 +116,7 @@ void path_space::zero(int i)
 	total[i] = 0;
 }
 
-void path_space::zero(vector<int> i)
+void path_space::zero(svector<int> i)
 {
 	list<path>::iterator pi;
 	int j;
@@ -149,7 +149,7 @@ int path_space::coverage_count(int n)
 	return total[n];
 }
 
-int path_space::coverage_count(vector<int> n)
+int path_space::coverage_count(svector<int> n)
 {
 	int i;
 	int m = 0;
@@ -159,7 +159,7 @@ int path_space::coverage_count(vector<int> n)
 	return m;
 }
 
-vector<int> path_space::coverage_maxes()
+svector<int> path_space::coverage_maxes()
 {
 	return total.maxes();
 }

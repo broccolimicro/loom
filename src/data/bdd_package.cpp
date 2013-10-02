@@ -22,7 +22,7 @@ bdd_package::~bdd_package()
  * \param	u	An index into T that represents the expression to analyze.
  * \param	l	The resulting list of variable indices.
  */
-void bdd_package::vars(uint32_t u, vector<int> *var_list)
+void bdd_package::vars(uint32_t u, svector<int> *var_list)
 {
 	if (u > 1)
 	{
@@ -62,15 +62,15 @@ uint32_t bdd_package::mk(int i, uint32_t l, uint32_t h)
 }
 
 /**
- * \brief	Parses the given string expression and constructs a bdd_package representation of it.
+ * \brief	Parses the given sstring expression and constructs a bdd_package representation of it.
  * \pre		All variable names used in e must be previously defined in vars.
- * \param	e		A string representation of a boolean expression.
+ * \param	e		A sstring representation of a boolean expression.
  * \param	vars	The database of variables used to parse e.
  * \param	i		The variable index at which to start. For internal use only.
  * \return	An index into T that identifies the top of the bdd_package that represents e.
  * \see		mk() and [An Introduction to Binary Decision Diagrams](https://www.itu.dk/courses/AVA/E2005/bdd_package-eap.pdf)
  */
-uint32_t bdd_package::build(string exp, variable_space *V, int i)
+uint32_t bdd_package::build(sstring exp, variable_space *V, int i)
 {
 	if (i == 0)
 		exp = demorgan(exp, -1, false);
@@ -134,9 +134,9 @@ uint32_t bdd_package::build(minterm t)
  * \return	An index into T that identifies the top of the bdd_package that represents t.
  * \see		mk() and [An Introduction to Binary Decision Diagrams](https://www.itu.dk/courses/AVA/E2005/bdd_package-eap.pdf)
  */
-uint32_t bdd_package::build(map<int, uint32_t> t)
+uint32_t bdd_package::build(smap<int, uint32_t> t)
 {
-	map<int, uint32_t>::reverse_iterator it;
+	smap<int, uint32_t>::reverse_iterator it;
 	uint32_t p = 1;
 	for (it = t.rbegin(); it != t.rend(); it++)
 	{
@@ -313,13 +313,13 @@ int bdd_package::count(uint32_t u)
  * \return	A state encoding represented by a list of (variable index, value) pairs.
  * \see		allsat().
  */
-map<int, uint32_t> bdd_package::anysat(uint32_t u)
+smap<int, uint32_t> bdd_package::anysat(uint32_t u)
 {
-	map<int, uint32_t> res;
-	map<int, uint32_t> temp;
+	smap<int, uint32_t> res;
+	smap<int, uint32_t> temp;
 	if (u == 0)
 	{
-		cout << "Error: Put something here." << endl;
+		cerr << "Error: Put something here." << endl;
 		return res;
 	}
 	else if (u == 1)
@@ -346,16 +346,16 @@ map<int, uint32_t> bdd_package::anysat(uint32_t u)
  * \return	A list of state encodings.
  * \see		anysat().
  */
-vector<map<int, uint32_t> > bdd_package::allsat(uint32_t u)
+svector<smap<int, uint32_t> > bdd_package::allsat(uint32_t u)
 {
-	vector<map<int, uint32_t> > res;
-	vector<map<int, uint32_t> > temp;
-	vector<map<int, uint32_t> >::iterator i;
+	svector<smap<int, uint32_t> > res;
+	svector<smap<int, uint32_t> > temp;
+	svector<smap<int, uint32_t> >::iterator i;
 	if (u == 0)
 		return res;
 	else if (u == 1)
 	{
-		res.push_back(map<int, uint32_t>());
+		res.push_back(smap<int, uint32_t>());
 		return res;
 	}
 	else
@@ -378,7 +378,7 @@ vector<map<int, uint32_t> > bdd_package::allsat(uint32_t u)
  * \param	u		An index into T that represent the bdd_package to print.
  * \param	tab		The starting level of indentation.
  */
-void bdd_package::print(uint32_t u, string tab)
+void bdd_package::print(uint32_t u, sstring tab)
 {
 	cout << tab << u << " -> {" << T[u].i << ", " << T[u].l << ", " << T[u].h << "}" << endl;
 	if (u > 1)
@@ -389,20 +389,20 @@ void bdd_package::print(uint32_t u, string tab)
 }
 
 /**
- * \brief	Prints a binary representation of the bdd_package at a given index to a string.
+ * \brief	Prints a binary representation of the bdd_package at a given index to a sstring.
  * \details	In a given minterm, the variable is either non-inverted (1), inverted (0), unknown (X), or impossible (_).
  * \param	u		An index into T that represent the bdd_package to print.
- * \param	vars	A vector of variable names indexed by variable index.
+ * \param	vars	A vec of variable names indexed by variable index.
  */
-/*string bdd_package::trace(uint32_t u, vector<string> vars)
+/*sstring bdd_package::trace(uint32_t u, svector<sstring> vars)
 {
 	list<list<pair<int, int> > > sat = allsat(u);
 	list<list<pair<int, int> > >::iterator i;
 	list<pair<int, int> >::iterator j;
-	string ret, temp;
+	sstring ret, temp;
 
 	if (sat.size() == 0)
-		return string(vars.size(), '_');
+		return sstring(vars.size(), '_');
 
 	for (i = sat.begin(); i != sat.end(); i++)
 	{
@@ -410,12 +410,12 @@ void bdd_package::print(uint32_t u, string tab)
 			ret += "|";
 
 		if (i->size() == 0)
-			string(vars.size(), 'X');
+			sstring(vars.size(), 'X');
 
-		temp = string(vars.size(), 'X');
+		temp = sstring(vars.size(), 'X');
 		for (j = i->begin(); j != i->end(); j++)
 		{
-			if ((int)temp.size() <= j->first)
+			if (temp.size() <= j->first)
 				temp.resize(j->first+1, 'X');
 			temp[j->first] = (j->second ? '1' : '0');
 		}

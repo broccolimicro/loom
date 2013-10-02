@@ -20,13 +20,13 @@ struct flag_space
 	uint32_t optimization;
 	uint32_t log;
 
-	vector<ifstream*>	input_files;
+	svector<ifstream*>	input_files;
 	ofstream			*output_file;
 	ofstream			*state_file;
 	ofstream			*hse_file;
 	ofstream			*log_file;
 
-	string tab;
+	sstring tab;
 
 	// Debug
 	void set_pre();

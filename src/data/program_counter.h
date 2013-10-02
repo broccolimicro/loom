@@ -20,7 +20,7 @@ struct program_counter
 
 	petri *net;
 	int index;
-	vector<int> last;
+	svector<int> last;
 	logic delta;
 };
 
@@ -38,8 +38,8 @@ struct program_counter_space
 	program_counter_space(petri *net, int idx);
 	~program_counter_space();
 
-	vector<program_counter> pcs;
-	vector<bool> cov;
+	svector<program_counter> pcs;
+	svector<bool> cov;
 
 	void check_size(int s);
 

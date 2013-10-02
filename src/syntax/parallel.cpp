@@ -23,7 +23,7 @@ parallel::parallel()
 	chp = "";
 	_kind = "parallel";
 }
-parallel::parallel(instruction *parent, string chp, variable_space *vars, flag_space *flags)
+parallel::parallel(instruction *parent, sstring chp, variable_space *vars, flag_space *flags)
 {
 	clear();
 
@@ -45,7 +45,7 @@ parallel::~parallel()
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *parallel::duplicate(instruction *parent, variable_space *vars, map<string, string> convert)
+instruction *parallel::duplicate(instruction *parent, variable_space *vars, smap<sstring, sstring> convert)
 {
 	parallel *instr;
 
@@ -55,11 +55,11 @@ instruction *parallel::duplicate(instruction *parent, variable_space *vars, map<
 	instr->flags		= flags;
 	instr->parent		= parent;
 
-	size_t idx;
-	string rep;
+	int idx;
+	sstring rep;
 
-	map<string, string>::iterator i, j;
-	size_t k = 0, min, curr;
+	smap<sstring, sstring>::iterator i, j;
+	int k = 0, min, curr;
 	while (k != instr->chp.npos)
 	{
 		j = convert.end();
@@ -68,7 +68,7 @@ instruction *parallel::duplicate(instruction *parent, variable_space *vars, map<
 		for (i = convert.begin(); i != convert.end(); i++)
 		{
 			curr = find_name(instr->chp, i->first, k);
-			if (curr < min)
+			if (curr < min && curr >= 0)
 			{
 				min = curr;
 				j = i;
@@ -78,7 +78,9 @@ instruction *parallel::duplicate(instruction *parent, variable_space *vars, map<
 		if (j != convert.end())
 		{
 			rep = j->second;
+			cout << "Replacing " << instr->chp << " " << min << " " << j->first << " " << rep << endl;
 			instr->chp.replace(min, j->first.length(), rep);
+			cout << " done" << endl;
 			if (instr->chp[min + rep.length()] == '[' && instr->chp[min + rep.length()-1] == ']')
 			{
 				idx = instr->chp.find_first_of("]", min + rep.length()) + 1;
@@ -92,6 +94,7 @@ instruction *parallel::duplicate(instruction *parent, variable_space *vars, map<
 			k = instr->chp.npos;
 	}
 
+	cout << "Recursing" << endl;
 	list<instruction*>::iterator l;
 	for (l = instrs.begin(); l != instrs.end(); l++)
 		instr->instrs.push_back((*l)->duplicate(instr, vars, convert));
@@ -106,11 +109,11 @@ void parallel::expand_shortcuts()
 
 void parallel::parse()
 {
-	string				raw_instr;	// chp of a sub sequential
-	string::iterator	i, j;
+	sstring				raw_instr;	// chp of a sub sequential
+	sstring::iterator	i, j;
 	bool				semicolon = false;
 	int					depth[3] = {0};
-	size_t				k;
+	int				k;
 
 	flags->inc();
 	if (flags->log_base_hse())
@@ -133,11 +136,11 @@ void parallel::parse()
 			depth[2]--;
 
 		// We are in the current scope, and the current character
-		// is a semicolon or the end of the chp string. This is
+		// is a semicolon or the end of the chp sstring. This is
 		// the end of a sequential.
 		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) == '|') || i == chp.end()))
 		{
-			// Get the sequential string.
+			// Get the sequential sstring.
 			raw_instr = chp.substr(j-chp.begin(), i-j);
 
 			// This sub sequential is a set of parallel sub sub sequentials. s0 || s1 || ... || sn
@@ -169,7 +172,7 @@ void parallel::parse()
 			semicolon = false;
 		}
 		// We are in the current scope, and the current character
-		// is a parallel bar or the end of the chp string. This is
+		// is a parallel bar or the end of the chp sstring. This is
 		// the middle of a parallel sub sequential.
 		else if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && (*i == ';' || i == chp.end()))
 			semicolon = true;
@@ -195,14 +198,14 @@ void parallel::reorder()
 
 }
 
-vector<int> parallel::generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
+svector<int> parallel::generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch)
 {
 	list<instruction*>::iterator i, j;
-	vector<int> next, end;
-	vector<int> allends;
-	map<int, int> npbranch;
+	svector<int> next, end;
+	svector<int> allends;
+	smap<int, int> npbranch;
 	int npbranch_count;
-	size_t k;
+	int k;
 	int l;
 
 	if (flags->log_base_state_space())
@@ -211,7 +214,7 @@ vector<int> parallel::generate_states(petri *n, rule_space *p, vector<int> f, ma
 	net  = n;
 	prs = p;
 	l = net->insert_dummy(f, pbranch, cbranch, this);
-	from = vector<int>(1, net->insert_place(l, pbranch, cbranch, this));
+	from = svector<int>(1, net->insert_place(l, pbranch, cbranch, this));
 
 	npbranch_count = net->pbranch_count;
 	net->pbranch_count++;
@@ -234,7 +237,7 @@ vector<int> parallel::generate_states(petri *n, rule_space *p, vector<int> f, ma
 	return uid;
 }
 
-void parallel::print_hse(string t, ostream *fout)
+void parallel::print_hse(sstring t, ostream *fout)
 {
 	if (instrs.size() > 1)
 	{

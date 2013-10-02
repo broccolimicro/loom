@@ -29,25 +29,25 @@ struct bdd
 
 	bdd(uint32_t val);
 	bdd(int var, uint32_t val);
-	bdd(map<int, uint32_t> vals);
-	bdd(string exp, variable_space *v);
+	bdd(smap<int, uint32_t> vals);
+	bdd(sstring exp, variable_space *v);
 
-	vector<int> vars();
-	void vars(vector<int> *var_list);
+	svector<int> vars();
+	void vars(svector<int> *var_list);
 
-	bdd refactor(vector<int> ids);
+	bdd refactor(svector<int> ids);
 
 	bdd hide(int var);
-	bdd hide(vector<int> vars);
-	void extract(map<int, bdd> *result);
-	map<int, bdd> extract();
+	bdd hide(svector<int> vars);
+	void extract(smap<int, bdd> *result);
+	smap<int, bdd> extract();
 
 	bdd pabs();
 	bdd nabs();
 
 	int satcount();
-	map<int, uint32_t> anysat();
-	vector<map<int, uint32_t> > allsat();
+	smap<int, uint32_t> anysat();
+	svector<smap<int, uint32_t> > allsat();
 
 	bdd &operator=(bdd b);
 	bdd &operator=(uint32_t b);
@@ -78,7 +78,7 @@ struct bdd
 
 	bdd operator>>(bdd b);
 
-	string print(variable_space *v);
+	sstring print(variable_space *v);
 };
 
 #endif

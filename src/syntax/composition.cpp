@@ -42,7 +42,7 @@ composition::~composition()
 	instrs.clear();
 }
 
-void composition::init(string chp, variable_space *vars, flag_space *flags)
+void composition::init(sstring chp, variable_space *vars, flag_space *flags)
 {
 	clear();
 
@@ -69,13 +69,13 @@ void composition::clear()
 	instrs.clear();
 }
 
-instruction *composition::expand_assignment(string chp)
+instruction *composition::expand_assignment(sstring chp)
 {
 	parallel *p = new parallel(this, "", vars, flags);
 	assignment *a = new assignment(p, chp, vars, flags);
-	pair<string, instruction*> result;
-	list<pair<string, string> >::iterator i;
-	list<pair<string, string> > remove;
+	pair<sstring, instruction*> result;
+	list<pair<sstring, sstring> >::iterator i;
+	list<pair<sstring, sstring> > remove;
 	variable *v;
 
 	for (i = a->expr.begin(); i != a->expr.end(); i++)
@@ -117,17 +117,17 @@ instruction *composition::expand_assignment(string chp)
 	return p;
 }
 
-instruction *composition::expand_condition(string chp)
+instruction *composition::expand_condition(sstring chp)
 {
 	sequential *s = new sequential(this, "", vars, flags);
 	parallel *p = new parallel(s, "", vars, flags);
 	condition *a = new condition(s, chp, vars, flags);
-	pair<string, instruction*> result;
+	pair<sstring, instruction*> result;
 	list<pair<sequential*, guard*> >::iterator i;
 
 	for (i = a->instrs.begin(); i != a->instrs.end(); i++)
 	{
-		if (i->second->chp.find_first_of("&|~^=<>/+-*?#()") != string::npos)
+		if (i->second->chp.find_first_of("&|~^=<>/+-*?#()") != sstring::npos)
 		{
 			result = a->expand_guard(i->second->chp);
 			i->second->chp = result.first;
@@ -153,16 +153,16 @@ instruction *composition::expand_condition(string chp)
 	return s;
 }
 
-instruction *composition::expand_loop(string chp)
+instruction *composition::expand_loop(sstring chp)
 {
 	sequential *s = new sequential(this, "", vars, flags);
 	parallel *p = new parallel(s, "", vars, flags);
 	loop *a = new loop(s, chp, vars, flags);
-	pair<string, instruction*> result;
+	pair<sstring, instruction*> result;
 	list<pair<sequential*, guard*> >::iterator i;
 
 	for (i = a->instrs.begin(); i != a->instrs.end(); i++)
-		if (i->second->chp.find_first_of("&|~^=<>/+-*?#()") != string::npos)
+		if (i->second->chp.find_first_of("&|~^=<>/+-*?#()") != sstring::npos)
 		{
 			result = a->expand_guard(i->second->chp);
 			i->second->chp = result.first;

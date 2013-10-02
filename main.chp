@@ -1,7 +1,38 @@
 #include "channel.chp"
-#include "math.chp"
 
-/*inline process cmerge1b2(achan4p1b A, achan4p1b B, achan4p1b S, achan4p1b O)
+/*inline process wchb(achan4p1b R, achan4p1b L)
+{
+	*[
+		[	R.a & L.r.t -> R.r.t+
+		[]	R.a & L.r.f -> R.r.f+
+		]; L.a-; [~R.a & ~L.r.t & ~L.r.f]; (R.r.t-||R.r.f-); L.a+
+	]
+}
+
+inline process pchb(achan4p1b R, achan4p1b L)
+{
+	*[
+		[	R.a & L.r.t -> R.r.t+ 
+		[]	R.a & L.r.f -> R.r.f+
+		]; L.a-; [~R.a]; R.r.t-; R.r.f-; [~L.r.t & ~L.r.f]; L.a+
+	]
+}
+
+inline process pcfb(achan4p1b R, achan4p1b L)
+{
+	//node<1> en;
+	*[
+		[	R.a & L.r.t -> R.r.t+ 
+		[]	R.a & L.r.f -> R.r.f+
+		]; L.a-;// en-;
+		(
+			([~R.a]; R.r.t-; R.r.f-) || 
+			([~L.r.t & ~L.r.f]; L.a+)
+		);// en+ 
+	]
+}
+
+inline process cmerge1b2(achan4p1b A, achan4p1b B, achan4p1b S, achan4p1b O)
 {
 	node<1> s;
 	node<1> o;
@@ -12,8 +43,27 @@
 		];
 		O!o
 	]
-}
-*/
+}*/
+
+/*inline process test_b(achan4p0b A, achan4p0b B, achan4p0b C) 
+{
+	node<3> val;
+
+	val := 0;
+	*[
+  		[  val == 0 -> A?
+		[] val == 1 -> B?
+		[] val == 2 -> C?
+		[] val == 3 -> C?
+		[] val == 4 -> A?
+		[] val == 5 -> B?
+		[] val == 6 -> B?
+		[] val == 7 -> A?
+		]; 
+		val := (val + 1)
+	]
+}*/
+
 inline process fifo0b(achan4p0b L, achan4p0b R)
 {
 	*[L?;R!]
@@ -26,7 +76,7 @@ inline process fifo1b(achan4p1b L, achan4p1b R)
 	*[L?i;R!i]
 }
 
-inline process fifo2b(achan4p2b L, achan4p2b R)
+/*inline process fifo2b(achan4p2b L, achan4p2b R)
 {
 	node<2> i;
 	
@@ -50,9 +100,9 @@ inline process fork2b(achan4p2b L, achan4p2b R1, achan4p2b R2)
 	node<2> val;
 	
 	*[L?val;(R1!val||R2!val)]
-}
-/*
-inline process reg1b(pchan4p1b R, achan4p1b W)
+}*/
+
+/*inline process reg1b(pchan4p1b R, achan4p1b W)
 {
 	node<1> val;
 

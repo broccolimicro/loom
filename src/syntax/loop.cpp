@@ -19,7 +19,7 @@ loop::loop()
 	_kind = "loop";
 }
 
-loop::loop(instruction *parent, string chp, variable_space *vars, flag_space *flags)
+loop::loop(instruction *parent, sstring chp, variable_space *vars, flag_space *flags)
 {
 	clear();
 
@@ -42,7 +42,7 @@ loop::~loop()
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *loop::duplicate(instruction *parent, variable_space *vars, map<string, string> convert)
+instruction *loop::duplicate(instruction *parent, variable_space *vars, smap<sstring, sstring> convert)
 {
 	loop *instr;
 
@@ -53,11 +53,11 @@ instruction *loop::duplicate(instruction *parent, variable_space *vars, map<stri
 	instr->type			= this->type;
 	instr->parent		= parent;
 
-	size_t idx;
-	string rep;
+	int idx;
+	sstring rep;
 
-	map<string, string>::iterator i, j;
-	size_t k = 0, min, curr;
+	smap<sstring, sstring>::iterator i, j;
+	int k = 0, min, curr;
 	while (k != instr->chp.npos)
 	{
 		j = convert.end();
@@ -66,7 +66,7 @@ instruction *loop::duplicate(instruction *parent, variable_space *vars, map<stri
 		for (i = convert.begin(); i != convert.end(); i++)
 		{
 			curr = find_name(instr->chp, i->first, k);
-			if (curr < min)
+			if (curr < min && curr >= 0)
 			{
 				min = curr;
 				j = i;
@@ -100,7 +100,7 @@ instruction *loop::duplicate(instruction *parent, variable_space *vars, map<stri
 void loop::expand_shortcuts()
 {
 	//Check for the shorthand *[S] and replace it with *[1 -> S]
-	string::iterator i, j;
+	sstring::iterator i, j;
 	int depth[3] = {0};
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()-1; i++)
 	{
@@ -126,9 +126,9 @@ void loop::expand_shortcuts()
 
 void loop::parse()
 {
-	string guardstr, sequentialstr;
+	sstring guardstr, sequentialstr;
 
-	string::iterator i, j, k;
+	sstring::iterator i, j, k;
 
 	flags->inc();
 
@@ -157,7 +157,7 @@ void loop::parse()
 			if (type == unknown)
 				type = choice;
 			else if (type == mutex)
-				cout << "Error: A loop can either be mutually exclusive or choice, but not both." << endl;
+				cerr << "Error: A loop can either be mutually exclusive or choice, but not both." << endl;
 
 			sequentialstr = chp.substr(j-chp.begin(), i-j);
 			k = sequentialstr.find("->") + sequentialstr.begin();
@@ -175,7 +175,7 @@ void loop::parse()
 			if (type == unknown)
 				type = mutex;
 			else if (type == choice)
-				cout << "Error: A loop can either be mutually exclusive or choice, but not both." << endl;
+				cerr << "Error: A loop can either be mutually exclusive or choice, but not both." << endl;
 
 			sequentialstr = chp.substr(j-chp.begin(), i-j);
 			k = sequentialstr.find("->") + sequentialstr.begin();
@@ -213,14 +213,14 @@ void loop::reorder()
 
 }
 
-vector<int> loop::generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
+svector<int> loop::generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch)
 {
 	list<pair<sequential*, guard*> >::iterator instr_iter;
-	vector<int> start, end;
-	string antiguard = "";
-	string bvname;
-	vector<string> bvnames;
-	vector<int> bvuids;
+	svector<int> start, end;
+	sstring antiguard = "";
+	sstring bvname;
+	svector<sstring> bvnames;
+	svector<int> bvuids;
 	int ncbranch_count;
 	int i, k;
 	bool first;
@@ -237,14 +237,14 @@ vector<int> loop::generate_states(petri *n, rule_space *p, vector<int> f, map<in
 	net->cbranch_count++;
 	for (instr_iter = instrs.begin(), k = instrs.size()-1; instr_iter != instrs.end(); instr_iter++, k--)
 	{
-		if (type == choice)
+		/*if (type == choice)
 		{
-			bvname = "_bv" + to_string(ncbranch_count) + "_" + to_string(k);
+			bvname = "_bv" + sstring(ncbranch_count) + "_" + sstring(k);
 			bvnames.push_back(bvname);
 			bvuids.push_back(vars->insert(variable(bvname, "node", 1, false, flags)));
 			prs->rules.push_back(rule(instr_iter->second->chp, "~(" + instr_iter->second->chp + ")", bvname, vars, net, flags));
 			instr_iter->second->chp = "(" + instr_iter->second->chp + ")&" + bvname;
-		}
+		}*/
 
 		start.clear();
 		end.clear();
@@ -252,10 +252,10 @@ vector<int> loop::generate_states(petri *n, rule_space *p, vector<int> f, map<in
 		end.push_back(net->insert_place(start, pbranch, cbranch, this));
 		end = instr_iter->first->generate_states(net, prs, end, pbranch, cbranch);
 		net->connect(end, from);
-		antiguard += string(antiguard != "" ? "&" : "") + "~(" + instr_iter->second->chp + ")";
+		antiguard += sstring(antiguard != "" ? "&" : "") + "~(" + instr_iter->second->chp + ")";
 	}
 
-	if (type == choice)
+	/*if (type == choice)
 	{
 		bvname = "";
 		for (i = 0; i < (int)bvnames.size(); i++)
@@ -278,14 +278,14 @@ vector<int> loop::generate_states(petri *n, rule_space *p, vector<int> f, map<in
 		}
 
 		vars->enforcements = vars->enforcements >> logic(bvname, vars);
-		prs->excl.push_back(pair<vector<int>, int>(bvuids, 1));
+		prs->excl.push_back(pair<svector<int>, int>(bvuids, 1));
 		for (k = 0; k < (int)bvuids.size(); k++)
-			prs->excl.push_back(pair<vector<int>, int>(vector<int>(1, bvuids[k]), 0));
+			prs->excl.push_back(pair<svector<int>, int>(svector<int>(1, bvuids[k]), 0));
 
 		antiguard = "(" + antiguard + ")";
 		for (i = 0; i < (int)bvnames.size(); i++)
 			antiguard += "&~" + bvnames[i];
-	}
+	}*/
 
 	uid.push_back(net->insert_transition(f, logic(antiguard, vars), pbranch, cbranch, this));
 
@@ -294,7 +294,7 @@ vector<int> loop::generate_states(petri *n, rule_space *p, vector<int> f, map<in
 	return uid;
 }
 
-void loop::print_hse(string t, ostream *fout)
+void loop::print_hse(sstring t, ostream *fout)
 {
 	(*fout) << endl << t << "*[";
 	list<pair<sequential*, guard*> >::iterator i;

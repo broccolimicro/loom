@@ -28,7 +28,7 @@ namespace std
 	template<>
 	struct hash<triple>
 	{
-		inline size_t operator()(const triple &v) const
+		inline int operator()(const triple &v) const
 		{
 			return hash_pair(v.i, hash_pair(v.l, v.h)) % 15485863;
 		}

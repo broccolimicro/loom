@@ -11,7 +11,7 @@ guard::guard()
 	_kind = "guard";
 }
 
-guard::guard(instruction *parent, string chp, variable_space *vars, flag_space *flags)
+guard::guard(instruction *parent, sstring chp, variable_space *vars, flag_space *flags)
 {
 	this->_kind		= "guard";
 	this->chp		= chp;
@@ -31,7 +31,7 @@ guard::~guard()
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *guard::duplicate(instruction *parent, variable_space *vars, map<string, string> convert)
+instruction *guard::duplicate(instruction *parent, variable_space *vars, smap<sstring, sstring> convert)
 {
 	guard *instr;
 
@@ -41,11 +41,11 @@ instruction *guard::duplicate(instruction *parent, variable_space *vars, map<str
 	instr->flags		= flags;
 	instr->parent		= parent;
 
-	size_t idx;
-	string rep;
+	int idx;
+	sstring rep;
 
-	map<string, string>::iterator i, j;
-	size_t k = 0, min, curr;
+	smap<sstring, sstring>::iterator i, j;
+	int k = 0, min, curr;
 	while (k != instr->chp.npos)
 	{
 		j = convert.end();
@@ -54,7 +54,7 @@ instruction *guard::duplicate(instruction *parent, variable_space *vars, map<str
 		for (i = convert.begin(); i != convert.end(); i++)
 		{
 			curr = find_name(instr->chp, i->first, k);
-			if (curr < min)
+			if (curr < min && curr >= 0)
 			{
 				min = curr;
 				j = i;
@@ -113,7 +113,7 @@ void guard::reorder()
 
 }
 
-vector<int> guard::generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
+svector<int> guard::generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch)
 {
 	flags->inc();
 	from = f;
@@ -130,7 +130,7 @@ vector<int> guard::generate_states(petri *n, rule_space *p, vector<int> f, map<i
 	return uid;
 }
 
-void guard::print_hse(string t, ostream *fout)
+void guard::print_hse(sstring t, ostream *fout)
 {
 	(*fout) << chp;
 }

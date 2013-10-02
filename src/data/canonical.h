@@ -19,16 +19,16 @@ struct canonical
 	canonical();
 	canonical(int s);
 	canonical(minterm m);
-	canonical(vector<minterm> m);
-	canonical(string s, variable_space *vars);
+	canonical(svector<minterm> m);
+	canonical(sstring s, variable_space *vars);
 	canonical(int var, uint32_t val);
-	canonical(map<int, uint32_t> vals);
+	canonical(smap<int, uint32_t> vals);
 	~canonical();
 
-	vector<minterm> terms;
+	svector<minterm> terms;
 
-	vector<minterm>::iterator begin();
-	vector<minterm>::iterator end();
+	svector<minterm>::iterator begin();
+	svector<minterm>::iterator end();
 
 	// INTERNAL FUNCTIONS
 	int size();
@@ -44,24 +44,24 @@ struct canonical
 	minterm mask();
 
 	// EXTERNAL FUNCTIONS
-	vector<int> vars();
-	void vars(vector<int> *var_list);
+	svector<int> vars();
+	void vars(svector<int> *var_list);
 
-	canonical refactor(vector<int> ids);
+	canonical refactor(svector<int> ids);
 
 	canonical hide(int var);
-	canonical hide(vector<int> vars);
+	canonical hide(svector<int> vars);
 	canonical restrict(canonical r);
-	void extract(map<int, canonical> *result);
-	map<int, canonical> extract();
+	void extract(smap<int, canonical> *result);
+	smap<int, canonical> extract();
 	uint32_t val(int uid);
 
 	canonical pabs();
 	canonical nabs();
 
 	int satcount();
-	map<int, uint32_t> anysat();
-	vector<map<int, uint32_t> > allsat();
+	smap<int, uint32_t> anysat();
+	svector<smap<int, uint32_t> > allsat();
 
 	canonical &operator=(canonical c);
 	canonical &operator=(minterm t);
@@ -69,6 +69,7 @@ struct canonical
 
 	canonical &operator|=(canonical c);
 	canonical &operator&=(canonical c);
+	canonical &operator^=(canonical c);
 
 	canonical &operator|=(uint32_t c);
 	canonical &operator&=(uint32_t c);
@@ -79,6 +80,8 @@ struct canonical
 	canonical operator|(canonical c);
 	canonical operator&(canonical c);
 	canonical operator~();
+	canonical operator^(canonical c);
+	canonical operator&&(canonical c);
 
 	canonical operator|(uint32_t c);
 	canonical operator&(uint32_t c);
@@ -96,9 +99,9 @@ struct canonical
 
 	canonical operator>>(canonical t);
 
-	string print(variable_space *v, string prefix = "");
-	string print_assign(variable_space *v, string prefix = "");
-	string print_with_quotes(variable_space *v, string prefix = "");
+	sstring print(variable_space *v, sstring prefix = "");
+	sstring print_assign(variable_space *v, sstring prefix = "");
+	sstring print_with_quotes(variable_space *v, sstring prefix = "");
 };
 
 bool is_mutex(canonical *c0, canonical *c1);

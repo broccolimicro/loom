@@ -33,34 +33,34 @@ instruction::~instruction()
 	flags = NULL;
 }
 
-string instruction::kind()
+sstring instruction::kind()
 {
 	return _kind;
 }
 
-pair<string, instruction*> instruction::expand_expression(string expr, string top)
+pair<sstring, instruction*> instruction::expand_expression(sstring expr, sstring top)
 {
 	if (flags->log_base_hse())
 		(*flags->log_file) << flags->tab << "Decompose: " << expr << endl;
 
-	map<string, variable>::iterator v;
+	smap<sstring, variable>::iterator v;
 	type_space::iterator k;
-	map<string, string>::iterator c;
-	list<string>::iterator s;
+	smap<sstring, sstring>::iterator c;
+	list<sstring>::iterator s;
 	list<instruction*>::iterator i;
-	list<string> ops;
-	list<string> ex;
+	list<sstring> ops;
+	list<sstring> ex;
 
-	string left, right, op = "";
+	sstring left, right, op = "";
 	operate *proc;
 
-	pair<string, instruction*> A, B, C;
+	pair<sstring, instruction*> A, B, C;
 
-	size_t p;
+	int p;
 
 	if (op == "")
 	{
-		p = find_first_of_l0(expr, "|");
+		p = expr.find_first_of_l0("|");
 		if (p != expr.npos)
 		{
 			op = "|";
@@ -71,7 +71,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 
 	if (op == "")
 	{
-		p = find_first_of_l0(expr, "&");
+		p = expr.find_first_of_l0("&");
 		if (p != expr.npos)
 		{
 			op = "&";
@@ -82,7 +82,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 
 	if (op == "")
 	{
-		p = find_first_of_l0(expr, "^");
+		p = expr.find_first_of_l0("^");
 		if (p != expr.npos)
 		{
 			op = "^";
@@ -96,7 +96,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 		ops.clear();
 		ops.push_back("==");
 		ops.push_back("~=");
-		p = find_first_of_l0(expr, ops);
+		p = expr.find_first_of_l0(ops);
 		if (p != expr.npos && expr.substr(p, 2) == "==")
 		{
 			op = "==";
@@ -116,7 +116,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 		ops.clear();
 		ops.push_back("<=");
 		ops.push_back(">=");
-		p = find_first_of_l0(expr, ops);
+		p = expr.find_first_of_l0(ops);
 		if (p != expr.npos && expr.substr(p, 2) == "<=")
 		{
 			op = "<=";
@@ -141,7 +141,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 		ex.push_back("<<");
 		ex.push_back("<=");
 		ex.push_back(">=");
-		p = find_first_of_l0(expr, ops, 0, ex);
+		p = expr.find_first_of_l0(ops, 0, ex);
 		if (p != expr.npos && expr[p] == '<')
 		{
 			op = "<";
@@ -161,7 +161,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 		ops.clear();
 		ops.push_back("<<");
 		ops.push_back(">>");
-		p = find_first_of_l0(expr, ops);
+		p = expr.find_first_of_l0(ops);
 		if (p != expr.npos && expr.substr(p, 2) == "<<")
 		{
 			op = "<<";
@@ -178,7 +178,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 
 	if (op == "")
 	{
-		p = find_first_of_l0(expr, "+-");
+		p = expr.find_first_of_l0("+-");
 		if (p != expr.npos && expr[p] == '+')
 		{
 			op = "+";
@@ -195,7 +195,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 
 	if (op == "")
 	{
-		p = find_first_of_l0(expr, "*/");
+		p = expr.find_first_of_l0("*/");
 		if (p != expr.npos && expr[p] == '*')
 		{
 			op = "*";
@@ -212,7 +212,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 
 	if (op == "")
 	{
-		p = find_first_of_l0(expr, "~");
+		p = expr.find_first_of_l0("~");
 		if (p != expr.npos)
 		{
 			op = "~";
@@ -223,7 +223,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 
 	if (op == "")
 	{
-		p = find_first_of_l0(expr, "?");
+		p = expr.find_first_of_l0("?");
 		if (p != expr.npos)
 		{
 			op = "?";
@@ -234,7 +234,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 
 	if (op == "")
 	{
-		p = find_first_of_l0(expr, "#");
+		p = expr.find_first_of_l0("#");
 		if (p != expr.npos)
 		{
 			op = "#";
@@ -243,7 +243,7 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 		}
 	}
 
-	C = pair<string, instruction*>("", (instruction*)NULL);
+	C = pair<sstring, instruction*>("", (instruction*)NULL);
 	if (expr[0] == '(' && expr[expr.length()-1] == ')' && op == "")
 	{
 		C = expand_expression(expr.substr(1, expr.length()-2), top);
@@ -252,8 +252,8 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 		return C;
 	}
 
-	A = pair<string, instruction*>(left, (instruction*)NULL);
-	B = pair<string, instruction*>(right, (instruction*)NULL);
+	A = pair<sstring, instruction*>(left, (instruction*)NULL);
+	B = pair<sstring, instruction*>(right, (instruction*)NULL);
 	if (left.find_first_of("&|~^=<>/+-*?!#()") != left.npos)
 		A = expand_expression(left, "");
 	if (right.find_first_of("&|~^=<>/+-*?!#()") != right.npos)
@@ -267,9 +267,9 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 	if (A.second == NULL && B.second == NULL && (op == "&" || op == "|" || op == "~") && top == "" &&
 	   (A.first.find_first_of("&|~") != A.first.npos || (vars->get_type(A.first) == "node" && vars->get_width(A.first) == 1) || A.first == "") &&
 	   (B.first.find_first_of("&|~") != B.first.npos || (vars->get_type(B.first) == "node" && vars->get_width(B.first) == 1) || B.first == ""))
-		return pair<string, instruction*>(A.first + op + B.first, (instruction*)NULL);
+		return pair<sstring, instruction*>(A.first + op + B.first, (instruction*)NULL);
 
-	string type = "operator" + op + "(";
+	sstring type = "operator" + op + "(";
 	if (op == "?")
 		type = vars->get_type(left) + "." + type;
 	else if (op == "#")
@@ -299,20 +299,20 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 	proc = (operate*)vars->find_type(type);
 	if (proc == NULL)
 	{
-		cout << "Error: Undefined operator " << type << " used in " << expr << "." << endl;
+		cerr << "Error: Undefined operator " << type << " used in " << expr << "." << endl;
 
 		if (A.second != NULL)
 			delete A.second;
 		if (B.second != NULL)
 			delete B.second;
 
-		return pair<string, instruction*>(expr, (instruction*)NULL);
+		return pair<sstring, instruction*>(expr, (instruction*)NULL);
 	}
 
 	sequential* ret = new sequential();
 	parallel *sub = new parallel();
 
-	string name;
+	sstring name;
 	if (op == "?")
 		name = vars->unique_name(A.first + "." + "_fn");
 	else if (op == "#")
@@ -351,6 +351,8 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 	ret->vars = vars;
 	ret->push(sub);
 
+	cout << "here" << endl;
+
 	if (op == "#")
 	{
 		instruction *probe = expand_instantiation(ret, type + " " + name, vars, NULL, flags, true);
@@ -364,7 +366,13 @@ pair<string, instruction*> instruction::expand_expression(string expr, string to
 		ret = NULL;
 	}
 	else
-		ret->push(expand_instantiation(ret, type + " " + name, vars, NULL, flags, true));
+	{
+		cout << "enter instantiation" << endl;
+		instruction *bullshit = expand_instantiation(ret, type + " " + name, vars, NULL, flags, true);
+		cout << "passed instantiation" << endl;
+		ret->push(bullshit);
+	}
+	cout << "Here" << endl;
 
-	return pair<string, instruction*>(C.first, ret);
+	return pair<sstring, instruction*>(C.first, ret);
 }

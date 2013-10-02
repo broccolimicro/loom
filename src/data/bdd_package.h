@@ -25,14 +25,14 @@ struct bdd_package
 	~bdd_package();
 
 private:
-	vector<triple> T;
+	svector<triple> T;
 	unordered_map<triple, uint32_t> H;
 
-	void vars(uint32_t u, vector<int> *var_list);
+	void vars(uint32_t u, svector<int> *var_list);
 
 	uint32_t mk(int i, uint32_t l, uint32_t h);
-	uint32_t build(map<int, uint32_t> t);
-	uint32_t build(string exp, variable_space *V, int i = 0);
+	uint32_t build(smap<int, uint32_t> t);
+	uint32_t build(sstring exp, variable_space *V, int i = 0);
 	uint32_t build(minterm t);
 	uint32_t build(canonical t, int i = 0);
 
@@ -44,10 +44,10 @@ private:
 	uint32_t restrict(uint32_t u, int j, uint32_t b);
 
 	int count(uint32_t u);
-	map<int, uint32_t> anysat(uint32_t u);
-	vector<map<int, uint32_t> > allsat(uint32_t u);
+	smap<int, uint32_t> anysat(uint32_t u);
+	svector<smap<int, uint32_t> > allsat(uint32_t u);
 
-	void print(uint32_t u, string tab = "");
+	void print(uint32_t u, sstring tab = "");
 };
 
 #endif

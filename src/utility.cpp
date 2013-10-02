@@ -8,20 +8,20 @@
 #include "utility.h"
 #include "common.h"
 
-instruction *expand_instantiation(instruction *parent, string chp, variable_space *vars, list<string> *input, flag_space *flags, bool allow_process)
+instruction *expand_instantiation(instruction *parent, sstring chp, variable_space *vars, list<sstring> *input, flag_space *flags, bool allow_process)
 {
 	keyword* type;
-	map<string, variable>::iterator mem_var;
+	smap<sstring, variable>::iterator mem_var;
 	variable v = variable(chp, !allow_process, flags);
 	variable v2;
 
-	map<string, string> rename;
-	map<string, string> rename2;
-	map<string, string>::iterator ri;
-	list<string>::iterator i, j;
-	string name,val;
+	smap<sstring, sstring> rename;
+	smap<sstring, sstring> rename2;
+	smap<sstring, sstring>::iterator ri;
+	list<sstring>::iterator i, j;
+	sstring name,val;
 	int k;
-	vector<int> reset;
+	svector<int> reset;
 	bool first;
 
 	if (input != NULL)
@@ -32,7 +32,7 @@ instruction *expand_instantiation(instruction *parent, string chp, variable_spac
 		if (allow_process)
 		{
 			reset = v.reset;
-			v.reset = vector<int>();
+			v.reset = svector<int>();
 		}
 		vars->insert(v);
 
@@ -50,8 +50,8 @@ instruction *expand_instantiation(instruction *parent, string chp, variable_spac
 
 					if (v.type.find_first_of("!?#") != v.type.npos && v.name.find_first_of(".") != v.name.npos)
 					{
-						string chname = v.name.substr(0, v.name.find_first_of("."));
-						string chtype = v.type.substr(0, v.type.find_first_of("."));
+						sstring chname = v.name.substr(0, v.name.find_first_of("."));
+						sstring chtype = v.type.substr(0, v.type.find_first_of("."));
 						keyword* ch = vars->find_type(chtype);
 						if (ch != NULL)
 						{
@@ -62,8 +62,9 @@ instruction *expand_instantiation(instruction *parent, string chp, variable_spac
 					}
 
 					for (i = v.inputs.begin(), j = p->args.begin(); i != v.inputs.end() && j != p->args.end(); i++, j++)
-						rename.insert(pair<string, string>(*j, *i));
+						rename.insert(pair<sstring, sstring>(*j, *i));
 
+					cout << "Duplicating" << endl;
 					return p->def.duplicate(parent, vars, rename);
 				}
 				else
@@ -73,7 +74,7 @@ instruction *expand_instantiation(instruction *parent, string chp, variable_spac
 				}
 			}
 			else
-				cout << "Error: Invalid use of type " << type->kind() << " in record definition." << endl;
+				cerr << "Error: Invalid use of type " << type->kind() << " in record definition." << endl;
 		}
 		else if (allow_process)
 		{
@@ -88,8 +89,8 @@ instruction *expand_instantiation(instruction *parent, string chp, variable_spac
 						val += ",";
 					}
 
-					name += v.name + "[" + to_string(k) + "]";
-					val += to_string(reset[k]);
+					name += v.name + "[" + sstring(k) + "]";
+					val += sstring(reset[k]);
 
 					first = false;
 				}
@@ -100,26 +101,27 @@ instruction *expand_instantiation(instruction *parent, string chp, variable_spac
 		}
 	}
 	else
-		cout << "Error: Invalid typename: " << v.type << endl;
+		cerr << "Error: Invalid typename: " << v.type << endl;
 
 	return NULL;
 }
 
-pair<string, instruction*> add_unique_variable(instruction *parent, string prefix, string postfix, string type, variable_space *vars, flag_space *flags)
+pair<sstring, instruction*> add_unique_variable(instruction *parent, sstring prefix, sstring postfix, sstring type, variable_space *vars, flag_space *flags)
 {
-	string name = vars->unique_name(prefix);
+	sstring name = vars->unique_name(prefix);
 
-	string dec = type;
+	sstring dec = type;
 	if (dec[dec.length()-1] != '>')
 		dec += " ";
 	dec += name;
 
-	return pair<string, instruction*>(name, expand_instantiation(parent, dec + postfix, vars, NULL, flags, true));
+	cout << "expanding " << dec + postfix << endl;
+	return pair<sstring, instruction*>(name, expand_instantiation(parent, dec + postfix, vars, NULL, flags, true));
 }
 
-size_t find_name(string subject, string search, size_t pos)
+int find_name(sstring subject, sstring search, int pos)
 {
-	size_t ret = -1 + pos;
+	int ret = -1 + pos;
 	bool alpha0, alpha1;
 
 	do
@@ -133,16 +135,16 @@ size_t find_name(string subject, string search, size_t pos)
 }
 
 // Only | & ~ operators allowed
-string demorgan(string exp, int depth, bool invert)
+sstring demorgan(sstring exp, int depth, bool invert)
 {
-	list<string> ops, ex;
+	list<sstring> ops, ex;
 
-	string left, right;
-	size_t p;
+	sstring left, right;
+	int p;
 
 	if (depth != 0)
 	{
-		p = find_first_of_l0(exp, "|");
+		p = exp.find_first_of_l0("|");
 		if (p != exp.npos)
 		{
 			left = exp.substr(0, p);
@@ -153,7 +155,7 @@ string demorgan(string exp, int depth, bool invert)
 				return "(" + demorgan(left, depth-1, false) + "|" + demorgan(right, depth-1, false) + ")";
 		}
 
-		p = find_first_of_l0(exp, "&");
+		p = exp.find_first_of_l0("&");
 		if (p != exp.npos)
 		{
 			left = exp.substr(0, p);
@@ -164,7 +166,7 @@ string demorgan(string exp, int depth, bool invert)
 				return demorgan(left, depth-1, false) + "&" + demorgan(right, depth-1, false);
 		}
 
-		p = find_first_of_l0(exp, "~");
+		p = exp.find_first_of_l0("~");
 		if (p != exp.npos)
 		{
 			if (invert)
@@ -183,20 +185,20 @@ string demorgan(string exp, int depth, bool invert)
 		return exp;
 }
 
-string strip(string e)
+sstring strip(sstring e)
 {
-	while (e.length() >= 2 && find_first_of_l0(e, "|&~") == e.npos && e.find_first_of("()") != e.npos)
+	while (e.length() >= 2 && e.find_first_of_l0("|&~") == e.npos && e.find_first_of("()") != e.npos)
 		e = e.substr(1, e.length() - 2);
 	return e;
 }
 
-vector<string> distribute(string exp)
+svector<sstring> distribute(sstring exp)
 {
-	vector<string> result;
-	vector<string> terms;
-	vector<string> temp0, temp1;
-	string term, tempstr;
-	size_t i, j, k, l, m, n;
+	svector<sstring> result;
+	svector<sstring> terms;
+	svector<sstring> temp0, temp1;
+	sstring term, tempstr;
+	int i, j, k, l, m, n;
 	int count, count1;
 	for (i = 0, j = 0, count = 0; i <= exp.length(); i++)
 	{
@@ -248,17 +250,17 @@ vector<string> distribute(string exp)
 	return result;
 }
 
-string flatten_slice(string slices)
+sstring flatten_slice(sstring slices)
 {
-	size_t a = slices.find_first_of("["),
+	int a = slices.find_first_of("["),
 		   b = slices.find_first_of("]"),
 		   c = slices.find_last_of("["),
 		   d = slices.find_last_of("]");
 
-	string left = slices.substr(a+1, b - (a+1));
-	string right = slices.substr(c+1, d - (c+1));
+	sstring left = slices.substr(a+1, b - (a+1));
+	sstring right = slices.substr(c+1, d - (c+1));
 
-	size_t x = left.find(".."),
+	int x = left.find(".."),
 		   y = right.find("..");
 
 	int ll, rl, rh;
@@ -279,22 +281,22 @@ string flatten_slice(string slices)
 		rh = rl;
 	}
 
-	string ret = slices.substr(0, a) + "[" + to_string(ll + rl);
+	sstring ret = slices.substr(0, a) + "[" + sstring(ll + rl);
 
 	if (rh > rl)
-		ret += ".." + to_string(ll+rh);
+		ret += ".." + sstring(ll+rh);
 
 	ret += "]";
 	return ret;
 }
 
-string restrict_exp(string exp, string var, int val)
+sstring restrict_exp(sstring exp, sstring var, int val)
 {
-	string left, right;
-	string leftres, rightres;
-	size_t p;
+	sstring left, right;
+	sstring leftres, rightres;
+	int p;
 
-	p = find_first_of_l0(exp, "|");
+	p = exp.find_first_of_l0("|");
 	if (p != exp.npos)
 	{
 		left = exp.substr(0, p);
@@ -312,7 +314,7 @@ string restrict_exp(string exp, string var, int val)
 			return leftres + "|" + rightres;
 	}
 
-	p = find_first_of_l0(exp, "&");
+	p = exp.find_first_of_l0("&");
 	if (p != exp.npos)
 	{
 		left = exp.substr(0, p);
@@ -330,7 +332,7 @@ string restrict_exp(string exp, string var, int val)
 			return leftres + "&" + rightres;
 	}
 
-	p = find_first_of_l0(exp, "~");
+	p = exp.find_first_of_l0("~");
 	if (p != exp.npos)
 	{
 		leftres = restrict_exp(exp.substr(p+1), var, val);
@@ -347,16 +349,16 @@ string restrict_exp(string exp, string var, int val)
 		return restrict_exp(exp.substr(1, exp.length()-2), var, val);
 
 	if (exp == var)
-		return to_string(val);
+		return sstring(val);
 	else
 		return exp;
 }
 
-void gen_variables(string exp, variable_space *vars, flag_space *flags)
+void gen_variables(sstring exp, variable_space *vars, flag_space *flags)
 {
-	string name;
+	sstring name;
 	int id;
-	size_t i, j;
+	int i, j;
 	for (i = exp.find_first_of("&|~()"), j = 0; i != exp.npos; j = i+1, i = exp.find_first_of("&|~()", j))
 	{
 		name = exp.substr(j, i-j);
@@ -377,11 +379,11 @@ void gen_variables(string exp, variable_space *vars, flag_space *flags)
 	}
 }
 
-vector<string> extract_names(string exp)
+svector<sstring> extract_names(sstring exp)
 {
-	vector<string> ret;
-	size_t i = string::npos, j = 0;
-	while ((i = exp.find_first_of("~&|()", i+1)) != string::npos)
+	svector<sstring> ret;
+	int i = sstring::npos, j = 0;
+	while ((i = exp.find_first_of("~&|()", i+1)) != sstring::npos)
 	{
 		if (i-j > 1)
 			ret.push_back(exp.substr(j, i-j));
@@ -391,14 +393,14 @@ vector<string> extract_names(string exp)
 	if (exp.size()-j > 1)
 		ret.push_back(exp.substr(j));
 
-	return unique(&ret);
+	return ret.unique();
 }
 
-vector<int> extract_ids(string exp, variable_space *vars)
+svector<int> extract_ids(sstring exp, variable_space *vars)
 {
-	vector<int> ret;
-	size_t i = string::npos, j = 0;
-	while ((i = exp.find_first_of("~&|()", i+1)) != string::npos)
+	svector<int> ret;
+	int i = sstring::npos, j = 0;
+	while ((i = exp.find_first_of("~&|()", i+1)) != sstring::npos)
 	{
 		if (i-j > 1)
 			ret.push_back(vars->get_uid(exp.substr(j, i-j)));
@@ -408,25 +410,25 @@ vector<int> extract_ids(string exp, variable_space *vars)
 	if (exp.size()-j > 1)
 		ret.push_back(vars->get_uid(exp.substr(j)));
 
-	return unique(&ret);
+	return ret.unique();
 }
 
-string remove_var(string exp, string var)
+sstring remove_var(sstring exp, sstring var)
 {
-	string ret = "", test;
-	size_t i = string::npos, j = 0, k;
-	while ((i = exp.find_first_of("|", i+1)) != string::npos)
+	sstring ret = "", test;
+	int i = sstring::npos, j = 0, k;
+	while ((i = exp.find_first_of("|", i+1)) != sstring::npos)
 	{
 		test = exp.substr(j, i-j);
 		k = test.find(var);
-		if (k != string::npos)
+		if (k != sstring::npos)
 		{
 			test = test.substr(0, k) + test.substr(k + var.length());
 			if (test[0] == '&')
 				test = test.substr(1);
 			else if (test[test.length() - 1] == '&')
 				test = test.substr(0, test.length()-1);
-			else if ((k = test.find("&&")) != string::npos)
+			else if ((k = test.find("&&")) != sstring::npos)
 				test = test.substr(0, k) + test.substr(k+2);
 
 			ret += (ret == "" ? test : "|" + test);
@@ -436,14 +438,14 @@ string remove_var(string exp, string var)
 
 	test = exp.substr(j);
 	k = test.find(var);
-	if (k != string::npos)
+	if (k != sstring::npos)
 	{
 		test = test.substr(0, k) + test.substr(k + var.length());
 		if (test[0] == '&')
 			test = test.substr(1);
 		else if (test[test.length() - 1] == '&')
 			test = test.substr(0, test.length()-1);
-		else if ((k = test.find("&&")) != string::npos)
+		else if ((k = test.find("&&")) != sstring::npos)
 			test = test.substr(0, k) + test.substr(k+2);
 		ret += (ret == "" ? test : "|" + test);
 	}
@@ -451,11 +453,11 @@ string remove_var(string exp, string var)
 	return ret;
 }
 
-string remove_comments(string str)
+sstring remove_comments(sstring str)
 {
 	// Remove line comments:
-	size_t comment_begin = str.find("//");
-	size_t comment_end = str.find("\n", comment_begin);
+	int comment_begin = str.find("//");
+	int comment_end = str.find("\n", comment_begin);
 	while (comment_begin != str.npos && comment_end != str.npos){
 		str = str.substr(0,comment_begin) + str.substr(comment_end);
 		comment_begin = str.find("//");
@@ -473,11 +475,11 @@ string remove_comments(string str)
 	return str;
 }
 
-string remove_whitespace(string str)
+sstring remove_whitespace(sstring str)
 {
-	string cleaned_str;
+	sstring cleaned_str;
 	// Remove extraneous whitespace
-	for (string::iterator i = str.begin(); i != str.end(); i++)
+	for (sstring::iterator i = str.begin(); i != str.end(); i++)
 	{
 		if (!sc(*i))
 			cleaned_str += *i;

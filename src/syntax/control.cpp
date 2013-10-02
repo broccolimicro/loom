@@ -53,7 +53,7 @@ void control::clear()
 	instrs.clear();
 }
 
-pair<string, instruction*> control::expand_guard(string chp)
+pair<sstring, instruction*> control::expand_guard(sstring chp)
 {
 	return expand_expression(chp, "");
 }

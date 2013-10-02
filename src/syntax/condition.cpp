@@ -18,7 +18,7 @@ condition::condition()
 	type = unknown;
 }
 
-condition::condition(instruction *parent, string chp, variable_space *vars, flag_space *flags)
+condition::condition(instruction *parent, sstring chp, variable_space *vars, flag_space *flags)
 {
 	clear();
 
@@ -42,7 +42,7 @@ condition::~condition()
 /* This copies a guard to another process and replaces
  * all of the specified variables.
  */
-instruction *condition::duplicate(instruction *parent, variable_space *vars, map<string, string> convert)
+instruction *condition::duplicate(instruction *parent, variable_space *vars, smap<sstring, sstring> convert)
 {
 	condition *instr;
 
@@ -53,11 +53,11 @@ instruction *condition::duplicate(instruction *parent, variable_space *vars, map
 	instr->type			= this->type;
 	instr->parent		= parent;
 
-	size_t idx;
-	string rep;
+	int idx;
+	sstring rep;
 
-	map<string, string>::iterator i, j;
-	size_t k = 0, min, curr;
+	smap<sstring, sstring>::iterator i, j;
+	int k = 0, min, curr;
 	while (k != instr->chp.npos)
 	{
 		j = convert.end();
@@ -66,7 +66,7 @@ instruction *condition::duplicate(instruction *parent, variable_space *vars, map
 		for (i = convert.begin(); i != convert.end(); i++)
 		{
 			curr = find_name(instr->chp, i->first, k);
-			if (curr < min)
+			if (curr < min && curr >= 0)
 			{
 				min = curr;
 				j = i;
@@ -100,7 +100,7 @@ instruction *condition::duplicate(instruction *parent, variable_space *vars, map
 void condition::expand_shortcuts()
 {
 	//Check for the shorthand [var] and replace it with [var -> skip]
-	string::iterator i, j;
+	sstring::iterator i, j;
 	int depth[3] = {0};
 	for (i = chp.begin(), j = chp.begin(); i != chp.end()-1; i++)
 	{
@@ -126,8 +126,8 @@ void condition::expand_shortcuts()
 // [G -> S]
 void condition::parse()
 {
-	string::iterator i, j, k;
-	string guardstr, sequentialstr;
+	sstring::iterator i, j, k;
+	sstring guardstr, sequentialstr;
 	bool guarded = true;
 
 	flags->inc();
@@ -158,7 +158,7 @@ void condition::parse()
 			if (type == unknown)
 				type = choice;
 			else if (type == mutex)
-				cout << "Error: A condition can either be mutually exclusive or choice, but not both." << endl;
+				cerr << "Error: A condition can either be mutually exclusive or choice, but not both." << endl;
 
 			sequentialstr = chp.substr(j-chp.begin(), i-j);
 			k = sequentialstr.find("->") + sequentialstr.begin();
@@ -176,7 +176,7 @@ void condition::parse()
 			if (type == unknown)
 				type = mutex;
 			else if (type == choice)
-				cout << "Error: A condition can either be mutually exclusive or choice, but not both." << endl;
+				cerr << "Error: A condition can either be mutually exclusive or choice, but not both." << endl;
 
 			sequentialstr = chp.substr(j-chp.begin(), i-j);
 			k = sequentialstr.find("->") + sequentialstr.begin();
@@ -224,7 +224,7 @@ void condition::rewrite()
 			for (j++; j != front->instrs.end(); j++)
 			{
 				nsequential = j->first;
-				copy = (sequential*)i->first->duplicate(this, vars, map<string, string>());
+				copy = (sequential*)i->first->duplicate(this, vars, smap<sstring, sstring>());
 				for (ii = copy->instrs.begin(); ii != copy->instrs.end(); ii++)
 					nsequential->instrs.push_back(*ii);
 				copy->instrs.clear();
@@ -251,14 +251,14 @@ void condition::rewrite()
 		instrs.push_back(*i);
 	add.clear();
 
-	/*vector<string> vl;
-	vector<int> stable;
-	vector<int> monotonic;
-	vector<int> unstable;
+	/*svector<sstring> vl;
+	svector<int> stable;
+	svector<int> monotonic;
+	svector<int> unstable;
 	variable *v;
 	int k;
 	canonical ugexp, dgexp, gexp;
-	string g, ng;
+	sstring g, ng;
 
 	if (type == choice)
 	{
@@ -283,7 +283,7 @@ void condition::rewrite()
 				else if (v != NULL && !v->driven)
 					unstable.push_back(v->uid);
 				else
-					cout << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << ". Cannot find variable " << vl[k] << "." << endl;
+					cerr << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << ". Cannot find variable " << vl[k] << "." << endl;
 			}
 
 			if (monotonic.size() > 0 && stable.size() > 0)
@@ -310,9 +310,9 @@ void condition::rewrite()
 				front->net = net;
 				front->type = choice;
 				if (ugexp != 0)
-					front->instrs.push_back(pair<sequential*, guard*>((sequential*)copy->duplicate(front, vars, map<string, string>()), new guard(front, ugexp.print(vars), vars, flags)));
+					front->instrs.push_back(pair<sequential*, guard*>((sequential*)copy->duplicate(front, vars, smap<sstring, sstring>()), new guard(front, ugexp.print(vars), vars, flags)));
 				if (dgexp != 0)
-					front->instrs.push_back(pair<sequential*, guard*>((sequential*)copy->duplicate(front, vars, map<string, string>()), new guard(front, dgexp.print(vars), vars, flags)));
+					front->instrs.push_back(pair<sequential*, guard*>((sequential*)copy->duplicate(front, vars, smap<sstring, sstring>()), new guard(front, dgexp.print(vars), vars, flags)));
 
 				delete copy;
 
@@ -341,9 +341,9 @@ void condition::rewrite()
 				front->net = net;
 				front->type = choice;
 				if (ugexp != 0)
-					front->instrs.push_back(pair<sequential*, guard*>((sequential*)copy->duplicate(front, vars, map<string, string>()), new guard(front, ugexp.print(vars), vars, flags)));
+					front->instrs.push_back(pair<sequential*, guard*>((sequential*)copy->duplicate(front, vars, smap<sstring, sstring>()), new guard(front, ugexp.print(vars), vars, flags)));
 				if (dgexp != 0)
-					front->instrs.push_back(pair<sequential*, guard*>((sequential*)copy->duplicate(front, vars, map<string, string>()), new guard(front, dgexp.print(vars), vars, flags)));
+					front->instrs.push_back(pair<sequential*, guard*>((sequential*)copy->duplicate(front, vars, smap<sstring, sstring>()), new guard(front, dgexp.print(vars), vars, flags)));
 
 				delete copy;
 
@@ -353,7 +353,7 @@ void condition::rewrite()
 				cout << "Monotonic " << gexp.print(vars) << "\t" << ugexp.print(vars) << "\t" << dgexp.print(vars) << endl;
 			}
 			else
-				cout << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
+				cerr << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
 		}
 
 		for (i = instrs.begin(); i != instrs.end(); i++)
@@ -361,7 +361,7 @@ void condition::rewrite()
 			j = i;
 			for (j++; j != instrs.end(); j++)
 				if ((logic(i->second->chp, vars) & logic(j->second->chp, vars)) != 0)
-					cout << "Error: Conflicting guards in a thin bar conditional {" << i->second->chp << ", " << j->second->chp << "}." << endl;
+					cerr << "Error: Conflicting guards in a thin bar conditional {" << i->second->chp << ", " << j->second->chp << "}." << endl;
 		}
 	}
 	else if (type == mutex)
@@ -370,7 +370,7 @@ void condition::rewrite()
 			j = i;
 			for (j++; j != instrs.end(); j++)
 				if ((logic(i->second->chp, vars) & logic(j->second->chp, vars)) != 0)
-					cout << "Error: Conflicting guards in a thick bar conditional {" << i->second->chp << ", " << j->second->chp << "}." << endl;
+					cerr << "Error: Conflicting guards in a thick bar conditional {" << i->second->chp << ", " << j->second->chp << "}." << endl;
 		}*/
 
 	for (i = instrs.begin(); i != instrs.end(); i++)
@@ -385,15 +385,15 @@ void condition::reorder()
 
 }
 
-vector<int> condition::generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch)
+svector<int> condition::generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch)
 {
-	list<pair<sequential*, guard*> >::iterator instr_iter;
-	vector<int> start, end;
-	map<int, int> ncbranch;
+	list<pair<sequential*, guard*> >::iterator instr_iter, instr_iter2;
+	svector<int> start, end;
+	smap<int, int> ncbranch;
 	int ncbranch_count;
-	string bvname;
-	vector<string> bvnames;
-	vector<int> bvuids;
+	sstring bvname;
+	svector<sstring> bvnames;
+	svector<int> bvuids;
 	int i, k;
 	bool first;
 
@@ -414,7 +414,7 @@ vector<int> condition::generate_states(petri *n, rule_space *p, vector<int> f, m
 
 		/*if (type == choice)
 		{
-			bvname = "_bv" + to_string(ncbranch_count) + "_" + to_string(k);
+			bvname = "_bv" + sstring(ncbranch_count) + "_" + sstring(k);
 			bvnames.push_back(bvname);
 			bvuids.push_back(vars->insert(variable(bvname, "node", 1, false, flags)));
 			prs->insert(rule(instr_iter->second->chp, "~(" + instr_iter->second->chp + ")", bvname, vars, net, flags));
@@ -452,15 +452,15 @@ vector<int> condition::generate_states(petri *n, rule_space *p, vector<int> f, m
 		}
 
 		vars->enforcements = vars->enforcements >> logic(bvname, vars);
-		prs->excl.push_back(pair<vector<int>, int>(bvuids, 1));
+		prs->excl.push_back(pair<svector<int>, int>(bvuids, 1));
 		for (k = 0; k < (int)bvuids.size(); k++)
-			prs->excl.push_back(pair<vector<int>, int>(vector<int>(1, bvuids[k]), 0));
+			prs->excl.push_back(pair<svector<int>, int>(svector<int>(1, bvuids[k]), 0));
 	}*/
 
 	return uid;
 }
 
-void condition::print_hse(string t, ostream *fout)
+void condition::print_hse(sstring t, ostream *fout)
 {
 	if (instrs.size() > 1)
 		(*fout) << endl << t;

@@ -11,7 +11,7 @@
 
 canonical::canonical()
 {
-	terms = vector<minterm>();
+	terms = svector<minterm>();
 }
 
 canonical::canonical(int s)
@@ -32,25 +32,25 @@ canonical::canonical(minterm m)
  * \brief	Constructor that adds all minterms in m to the canonical.
  * \param	m	All minterms to add.
  */
-canonical::canonical(vector<minterm> m)
+canonical::canonical(svector<minterm> m)
 {
 	terms = m;
 	mccluskey();
 }
 
 /**
- * \brief	A constructor that parses a string and uses it to fill the canonical expression with values.
- * \param	s		A string that represents the expression.
- * \param	vars	The variable space used to parse the string.
+ * \brief	A constructor that parses a sstring and uses it to fill the canonical expression with values.
+ * \param	s		A sstring that represents the expression.
+ * \param	vars	The variable space used to parse the sstring.
  */
-canonical::canonical(string s, variable_space *vars)
+canonical::canonical(sstring s, variable_space *vars)
 {
 	if (s == "0")
 		return;
 
-	vector<string> t = distribute(demorgan(s, -1, false));
+	svector<sstring> t = distribute(demorgan(s, -1, false));
 
-	for (int i = 0; i < (int)t.size(); i++)
+	for (int i = 0; i < t.size(); i++)
 	{
 		minterm m(t[i], vars);
 		if (m != 0)
@@ -64,7 +64,7 @@ canonical::canonical(int var, uint32_t val)
 	terms.push_back(minterm(var, val));
 }
 
-canonical::canonical(map<int, uint32_t> vals)
+canonical::canonical(smap<int, uint32_t> vals)
 {
 	terms.push_back(minterm(vals));
 }
@@ -77,7 +77,7 @@ canonical::~canonical()
 /**
  * \brief	Returns an iterator that represents the beginning of the list of minterms.
  */
-vector<minterm>::iterator canonical::begin()
+svector<minterm>::iterator canonical::begin()
 {
 	return terms.begin();
 }
@@ -85,7 +85,7 @@ vector<minterm>::iterator canonical::begin()
 /**
  * \brief	Returns an iterator that represents the end of the list of minterms.
  */
-vector<minterm>::iterator canonical::end()
+svector<minterm>::iterator canonical::end()
 {
 	return terms.end();
 }
@@ -116,7 +116,7 @@ int canonical::width()
  */
 void canonical::assign(int i, minterm t)
 {
-	if (i >= (int)terms.size())
+	if (i >= terms.size())
 		terms.resize(i+1, minterm());
 	terms[i] = t;
 }
@@ -137,10 +137,10 @@ void canonical::push_back(minterm m)
  */
 void canonical::push_up(minterm m)
 {
-	if ((int)terms.size() < m.size)
+	if (terms.size() < m.size)
 		terms.resize(m.size);
 
-	for (int i = 0; i < (int)terms.size(); i++)
+	for (int i = 0; i < terms.size(); i++)
 		terms[i].push_back(m.get(i));
 }
 
@@ -172,23 +172,23 @@ void canonical::clear()
 void canonical::mccluskey()
 {
 	canonical temp;
-	vector<minterm> implicants;
-	vector<minterm> primes;
-	vector<size_t> essentials;
-	vector<minterm> t[2] = {vector<minterm>(), vector<minterm>()};
+	svector<minterm> implicants;
+	svector<minterm> primes;
+	svector<int> essentials;
+	svector<minterm> t[2] = {svector<minterm>(), svector<minterm>()};
 	minterm implicant;
 
-	size_t i, j, k;
+	int i, j, k;
 
-	vector<int> count;
+	svector<int> count;
 	int count_sum;
-	vector<int> vl;
+	svector<int> vl;
 
-	map<size_t, vector<size_t> > cov, Tcov;
-	vector<size_t>::iterator ci;
+	smap<int, svector<int> > cov, Tcov;
+	svector<int>::iterator ci;
 
-	size_t max_count = implicants.size();
-	size_t choice;
+	int max_count = implicants.size();
+	int choice;
 	pair<int, int> xdiff;
 	int diff;
 
@@ -221,21 +221,21 @@ void canonical::mccluskey()
 					implicant = t[1][i] | t[1][j];
 					count[i]++;
 					count[j]++;
-					if (find(t[0].begin(), t[0].end(), implicant) == t[0].end())
+					if (t[0].find(implicant) == t[0].end())
 						t[0].push_back(implicant);
 				}
 				else if (xdiff.first == 0 && diff - xdiff.second == 1)
 				{
 					implicant = (t[1][i] & t[1][j]).xoutnulls();
 					count[i]++;
-					if (find(t[0].begin(), t[0].end(), implicant) == t[0].end())
+					if (t[0].find(implicant) == t[0].end())
 						t[0].push_back(implicant);
 				}
 				else if (xdiff.second == 0 && diff - xdiff.first == 1)
 				{
 					implicant = (t[1][i] & t[1][j]).xoutnulls();
 					count[j]++;
-					if (find(t[0].begin(), t[0].end(), implicant) == t[0].end())
+					if (t[0].find(implicant) == t[0].end())
 						t[0].push_back(implicant);
 				}
 			}
@@ -256,14 +256,14 @@ void canonical::mccluskey()
 	 */
 	cov.clear();
 	for (j = 0; j < implicants.size(); j++)
-		cov.insert(pair<size_t, vector<size_t> >(j, vector<size_t>()));
+		cov.insert(pair<int, svector<int> >(j, svector<int>()));
 	for (j = 0; j < implicants.size(); j++)
 	{
 		for (i = 0; i < primes.size(); i++)
 			if (primes[i].subset(implicants[j]))
 				cov[j].push_back(i);
 
-		if (cov[j].size() == 1 && find(essentials.begin(), essentials.end(), cov[j].front()) == essentials.end())
+		if (cov[j].size() == 1 && essentials.find(cov[j].front()) == essentials.end())
 		{
 			essentials.push_back(cov[j].front());
 			terms.push_back(primes[cov[j].front()]);
@@ -272,11 +272,11 @@ void canonical::mccluskey()
 
 	Tcov.clear();
 	for (j = 0; j < primes.size(); j++)
-		Tcov.insert(pair<size_t, vector<size_t> >(j, vector<size_t>()));
+		Tcov.insert(pair<int, svector<int> >(j, svector<int>()));
 	for (j = 0; j < cov.size(); j++)
 	{
 		for (i = 0; i < essentials.size(); i++)
-			if (find(cov[j].begin(), cov[j].end(), essentials[i]) != cov[j].end())
+			if (cov[j].find(essentials[i]) != cov[j].end())
 				break;
 
 		for (k = 0; i == essentials.size() && k < cov[j].size(); k++)
@@ -303,7 +303,7 @@ void canonical::mccluskey()
 			for (i = 0; i < primes.size(); i++)
 				for (j = 0; i != choice && j < Tcov[choice].size(); j++)
 				{
-					ci = find(Tcov[i].begin(), Tcov[i].end(), Tcov[choice][j]);
+					ci = Tcov[i].find(Tcov[choice][j]);
 					if (ci != Tcov[i].end())
 						Tcov[i].erase(ci);
 				}
@@ -316,29 +316,29 @@ void canonical::mccluskey()
 minterm canonical::mask()
 {
 	minterm result;
-	for (int i = 0; i < (int)terms.size(); i++)
+	for (int i = 0; i < terms.size(); i++)
 		result |= terms[i].mask();
 	return result;
 }
 
-void canonical::vars(vector<int> *var_list)
+void canonical::vars(svector<int> *var_list)
 {
-	for (int i = 0; i < (int)terms.size(); i++)
+	for (int i = 0; i < terms.size(); i++)
 		terms[i].vars(var_list);
 }
 
-vector<int> canonical::vars()
+svector<int> canonical::vars()
 {
-	vector<int> result;
-	for (int i = 0; i < (int)terms.size(); i++)
+	svector<int> result;
+	for (int i = 0; i < terms.size(); i++)
 		terms[i].vars(&result);
 	return result;
 }
 
-canonical canonical::refactor(vector<int> ids)
+canonical canonical::refactor(svector<int> ids)
 {
 	canonical result;
-	for (int i = 0; i < (int)terms.size(); i++)
+	for (int i = 0; i < terms.size(); i++)
 		result.terms.push_back(terms[i].refactor(ids));
 	return result;
 }
@@ -347,16 +347,16 @@ canonical canonical::hide(int var)
 {
 	canonical result;
 	int i;
-	for (i = 0; i < (int)terms.size(); i++)
+	for (i = 0; i < terms.size(); i++)
 		result.terms.push_back(terms[i].hide(var));
 	result.mccluskey();
 	return result;
 }
 
-canonical canonical::hide(vector<int> vars)
+canonical canonical::hide(svector<int> vars)
 {
 	canonical result;
-	for (int i = 0; i < (int)terms.size(); i++)
+	for (int i = 0; i < terms.size(); i++)
 		result.terms.push_back(terms[i].hide(vars));
 	result.mccluskey();
 	return result;
@@ -365,38 +365,38 @@ canonical canonical::hide(vector<int> vars)
 canonical canonical::restrict(canonical r)
 {
 	canonical result;
-	for (int i = 0; i < (int)terms.size(); i++)
-		for (int j = 0; j < (int)r.terms.size(); j++)
+	for (int i = 0; i < terms.size(); i++)
+		for (int j = 0; j < r.terms.size(); j++)
 			if ((terms[i] & r.terms[j]) != 0)
 				result.terms.push_back(terms[i].hide(r.terms[j].vars()));
 	result.mccluskey();
 	return result;
 }
 
-void canonical::extract(map<int, canonical> *result)
+void canonical::extract(smap<int, canonical> *result)
 {
 	minterm m;
-	vector<int> v = vars();
-	unique(&v);
+	svector<int> v = vars();
+	v.unique();
 
-	for (int i = 0; i < (int)terms.size(); i++)
+	for (int i = 0; i < terms.size(); i++)
 		m = (i == 0 ? terms[i] : m | terms[i]);
 
-	for (int i = 0; i < (int)v.size(); i++)
+	for (int i = 0; i < v.size(); i++)
 		result->insert(pair<int, canonical>(v[i], canonical(m[v[i]])));
 }
 
-map<int, canonical> canonical::extract()
+smap<int, canonical> canonical::extract()
 {
-	map<int, canonical> result;
+	smap<int, canonical> result;
 	minterm m;
-	vector<int> v = vars();
-	unique(&v);
+	svector<int> v = vars();
+	v.unique();
 
-	for (int i = 0; i < (int)terms.size(); i++)
+	for (int i = 0; i < terms.size(); i++)
 		m = (i == 0 ? terms[i] : m | terms[i]);
 
-	for (int i = 0; i < (int)v.size(); i++)
+	for (int i = 0; i < v.size(); i++)
 		result.insert(pair<int, canonical>(v[i], canonical(m[v[i]])));
 	return result;
 }
@@ -404,7 +404,7 @@ map<int, canonical> canonical::extract()
 uint32_t canonical::val(int uid)
 {
 	uint32_t v = 0;
-	for (int i = 0; i < (int)terms.size(); i++)
+	for (int i = 0; i < terms.size(); i++)
 	{
 		if (uid >= terms[i].size)
 			terms[i].resize(uid+1, 0xFFFFFFFF);
@@ -418,7 +418,7 @@ uint32_t canonical::val(int uid)
 canonical canonical::pabs()
 {
 	canonical result;
-	for (int i = 0; i < (int)terms.size(); i++)
+	for (int i = 0; i < terms.size(); i++)
 		result.push_back(terms[i].pabs());
 	result.mccluskey();
 	return result;
@@ -427,7 +427,7 @@ canonical canonical::pabs()
 canonical canonical::nabs()
 {
 	canonical result;
-	for (int i = 0; i < (int)terms.size(); i++)
+	for (int i = 0; i < terms.size(); i++)
 		result.push_back(terms[i].nabs());
 	result.mccluskey();
 	return result;
@@ -435,18 +435,18 @@ canonical canonical::nabs()
 
 int canonical::satcount()
 {
-	return (int)terms.size();
+	return terms.size();
 }
 
-map<int, uint32_t> canonical::anysat()
+smap<int, uint32_t> canonical::anysat()
 {
 	return terms[0].anysat();
 }
 
-vector<map<int, uint32_t> > canonical::allsat()
+svector<smap<int, uint32_t> > canonical::allsat()
 {
-	vector<map<int, uint32_t> > sats;
-	for (int i = 0; i < (int)terms.size(); i++)
+	svector<smap<int, uint32_t> > sats;
+	for (int i = 0; i < terms.size(); i++)
 		sats.push_back(terms[i].anysat());
 	return sats;
 }
@@ -477,9 +477,16 @@ canonical &canonical::operator|=(canonical c)
 	*this = *this | c;
 	return *this;
 }
+
 canonical &canonical::operator&=(canonical c)
 {
 	*this = *this & c;
+	return *this;
+}
+
+canonical &canonical::operator^=(canonical c)
+{
+	*this = *this ^ c;
 	return *this;
 }
 
@@ -515,7 +522,7 @@ canonical canonical::operator()(int j, uint32_t b)
 	minterm temp;
 	int i;
 	uint32_t v;
-	for (i = 0; i < (int)terms.size(); i++)
+	for (i = 0; i < terms.size(); i++)
 	{
 		v = terms[i].val(j);
 		if (v == 2 || v == b)
@@ -529,7 +536,7 @@ canonical canonical::operator[](int i)
 {
 	canonical result;
 	result.push_back(minterm());
-	for (int j = 0; j < (int)terms.size(); j++)
+	for (int j = 0; j < terms.size(); j++)
 		result.terms[0].sv_union(i, terms[j].get(i));
 	return result;
 }
@@ -547,8 +554,8 @@ canonical canonical::operator&(canonical c)
 {
 	canonical result;
 	int i, j;
-	for (i = 0; i < (int)terms.size(); i++)
-		for (j = 0; j < (int)c.terms.size(); j++)
+	for (i = 0; i < terms.size(); i++)
+		for (j = 0; j < c.terms.size(); j++)
 		{
 			result.terms.push_back(terms[i] & c.terms[j]);
 			if (result.terms.size() >= 128)
@@ -564,6 +571,26 @@ canonical canonical::operator~()
 	int i;
 	for (i = 0; i < (int)terms.size(); i++)
 		result = result & ~terms[i];
+	result.mccluskey();
+	return result;
+}
+
+canonical canonical::operator^(canonical c)
+{
+	return ((*this & ~c) | (~*this & c));
+}
+
+canonical canonical::operator&&(canonical c)
+{
+	canonical result;
+	int i, j;
+	for (i = 0; i < terms.size(); i++)
+		for (j = 0; j < c.terms.size(); j++)
+		{
+			result.terms.push_back((terms[i] & c.terms[j]).xoutnulls());
+			if (result.terms.size() >= 128)
+				result.mccluskey();
+		}
 	result.mccluskey();
 	return result;
 }
@@ -588,8 +615,8 @@ canonical canonical::operator&(uint32_t c)
 
 bool canonical::operator==(canonical c)
 {
-	sort(terms.begin(), terms.end());
-	sort(c.terms.begin(), c.terms.end());
+	terms.sort();
+	c.terms.sort();
 	bool result = (terms.size() == c.terms.size());
 	for (int i = 0; i < (int)terms.size() && result; i++)
 		result = result && (terms[i] == c.terms[i]);
@@ -598,8 +625,8 @@ bool canonical::operator==(canonical c)
 
 bool canonical::operator!=(canonical c)
 {
-	sort(terms.begin(), terms.end());
-	sort(c.terms.begin(), c.terms.end());
+	terms.sort();
+	c.terms.sort();
 	bool result = (terms.size() == c.terms.size());
 	for (int i = 0; i < (int)terms.size() && result; i++)
 		result = result && (terms[i] == c.terms[i]);
@@ -678,14 +705,14 @@ canonical canonical::operator>>(canonical c)
  * \brief	Prints the sum of minterms to stdout.
  * \param	vars	A list of variable names indexed by variable index.
  */
-string canonical::print(variable_space *vars, string prefix)
+sstring canonical::print(variable_space *vars, sstring prefix)
 {
 	if (terms.size() == 0)
 		return "0";
 	else if (terms.size() == 1 && terms[0] == 1)
 		return "1";
 
-	string res;
+	sstring res;
 	for (int i = 0; i < (int)terms.size(); i++)
 	{
 		if (i != 0)
@@ -695,24 +722,24 @@ string canonical::print(variable_space *vars, string prefix)
 	return res;
 }
 
-string canonical::print_assign(variable_space *v, string prefix)
+sstring canonical::print_assign(variable_space *v, sstring prefix)
 {
 	if (terms.size() > 1)
-		cout << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
+		cerr << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
 	else if (terms.size() == 1)
 		return terms[0].print_assign(v, prefix);
-	else
-		return "skip";
+
+	return "skip";
 }
 
-string canonical::print_with_quotes(variable_space *vars, string prefix)
+sstring canonical::print_with_quotes(variable_space *vars, sstring prefix)
 {
 	if (terms.size() == 0)
                 return "0";
         else if (terms.size() == 1 && terms[0] == 1)
                 return "1";
 
-        string res;
+        sstring res;
         for (int i = 0; i < (int)terms.size(); i++)
         {
                 if (i != 0)

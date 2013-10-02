@@ -26,16 +26,16 @@ program &program::operator=(program p)
 
 void program::compile()
 {
-	string prgm;
-	size_t i;
-	size_t open, close;
+	sstring prgm;
+	int i;
+	int open, close;
 
 	//While there are and #includes (of the form #include "foo.chp") in the program
 	if (flags.input_files.size() > 0)
 	{
 		if (flags.pre())
 		{
-			prgm = string((istreambuf_iterator<char>(*(flags.input_files[0]))),
+			prgm = sstring((istreambuf_iterator<char>(*(flags.input_files[0]))),
 						   istreambuf_iterator<char>());
 			(*flags.log_file) << prgm << endl;
 			while ((i = prgm.find("#include")) != prgm.npos)
@@ -48,7 +48,7 @@ void program::compile()
 					(*flags.log_file) << "Expanding Inclusion: " << prgm.substr(open+1, close-open-1) << endl;
 
 				ifstream s(prgm.substr(open+1, close-open-1).c_str());
-				string f((istreambuf_iterator<char>(s)),
+				sstring f((istreambuf_iterator<char>(s)),
 						 istreambuf_iterator<char>());
 
 				//Place the contents of the file where the #include statement was
@@ -107,12 +107,12 @@ void program::compile()
 	}
 }
 
-void program::parse(string chp)
+void program::parse(sstring chp)
 {
 	//TODO: THIS BREAKS IF THERE ARE NO IMPLICANTS FOR A OUTPUT
-	string::iterator i, j;
-	string cleaned_chp = "";
-	string word;
+	sstring::iterator i, j;
+	sstring cleaned_chp = "";
+	sstring word;
 	int error_start, error_len;
 
 	process *p;
@@ -122,12 +122,12 @@ void program::parse(string chp)
 
 	// Define the basic types. In this case, 'wire'
 	types.clear();
-	types.insert(pair<string, keyword*>("node", new keyword("node")));
+	types.insert(pair<sstring, keyword*>("node", new keyword("node")));
 	c = new channel("channel __sync{node<1>r;node<1>a;operator?(){[r];a+;[~r];a-}operator!(){r+;[a];r-;[~a]}operator#(){r}}", &types, &flags);
-	types.insert(pair<string, channel*>(c->name, c));
-	types.insert(pair<string, operate*>(c->name + "." + c->send->name, c->send));
-	types.insert(pair<string, operate*>(c->name + "." + c->recv->name, c->recv));
-	types.insert(pair<string, operate*>(c->name + "." + c->probe->name, c->probe));
+	types.insert(pair<sstring, channel*>(c->name, c));
+	types.insert(pair<sstring, operate*>(c->name + "." + c->send->name, c->send));
+	types.insert(pair<sstring, operate*>(c->name + "." + c->recv->name, c->recv));
+	types.insert(pair<sstring, operate*>(c->name + "." + c->probe->name, c->probe));
 
 	chp			= remove_comments(chp);
 	cleaned_chp = remove_whitespace(chp);
@@ -176,7 +176,7 @@ void program::parse(string chp)
 				{
 					error_start = j-cleaned_chp.begin();
 					error_len = min(min(cleaned_chp.find("process ", error_start), cleaned_chp.find("record ", error_start)), cleaned_chp.find("channel ", error_start)) - error_start;
-					cout << "Error: CHP block outside of process." << endl << "Ignoring block:\t" << cleaned_chp.substr(error_start, error_len) << endl;
+					cerr << "Error: CHP block outside of process." << endl << "Ignoring block:\t" << cleaned_chp.substr(error_start, error_len) << endl;
 					j += error_len;
 
 					// Make sure we don't miss the next record or process though.
@@ -217,7 +217,7 @@ void program::project()
 {
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
-		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
+		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos))
 			((process*)i->second)->project();
 }
 
@@ -226,7 +226,7 @@ void program::decompose()
 {
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
-		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
+		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos))
 			((process*)i->second)->decompose();
 }
 
@@ -235,7 +235,7 @@ void program::reshuffle()
 {
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
-		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
+		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos))
 			((process*)i->second)->reshuffle();
 }
 
@@ -244,7 +244,7 @@ void program::generate_states()
 {
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
-		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
+		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos))
 			((process*)i->second)->generate_states();
 }
 
@@ -252,7 +252,7 @@ void program::insert_state_vars()
 {
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
-		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
+		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos))
 			for (int j = 0; j < 100 && ((process*)i->second)->insert_state_vars(); j++);
 }
 
@@ -260,7 +260,7 @@ void program::insert_bubbleless_state_vars()
 {
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
-		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
+		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos))
 			for (int j = 0; j < 100 && ((process*)i->second)->insert_bubbleless_state_vars(); j++);
 }
 
@@ -268,7 +268,7 @@ void program::generate_prs()
 {
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
-		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
+		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos))
 			((process*)i->second)->generate_prs();
 }
 
@@ -276,7 +276,7 @@ void program::generate_bubbleless_prs()
 {
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
-		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != string::npos))
+		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos))
 			((process*)i->second)->generate_bubbleless_prs();
 }
 

@@ -23,14 +23,14 @@ struct rule_space;
 struct node
 {
 	node();
-	node(logic index, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	node(logic index, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
 	~node();
 
 	instruction *owner;
-	map<int, logic> mutables;
-	vector<int> tail;		// The set of inactive states preceding an active state
-	map<int, int> pbranch;
-	map<int, int> cbranch;
+	smap<int, logic> mutables;
+	svector<int> tail;		// The set of inactive states preceding an active state
+	smap<int, int> pbranch;
+	smap<int, int> cbranch;
 	bool active;
 
 	bool definitely_vacuous;
@@ -42,11 +42,11 @@ struct node
 	logic negative;	// Positive sense variables are hideed out
 
 	logic assumptions;
-	vector<logic> assertions;
+	svector<logic> assertions;
 
 	bool is_in_tail(int idx);
 	void add_to_tail(int idx);
-	void add_to_tail(vector<int> idx);
+	void add_to_tail(svector<int> idx);
 	void apply_mutables();
 };
 
@@ -58,61 +58,61 @@ struct petri
 	variable_space *vars;
 	rule_space *prs;
 	flag_space *flags;
-	vector<node> S;
-	vector<node> T;
-	matrix<int> Wp;		// <s, t> from t to s
-	matrix<int> Wn;		// <s, t> from s to t
-	vector<int> M0;		// Wp - Wn
+	svector<node> S;
+	svector<node> T;
+	//matrix<int> Wp;		// <s, t> from t to s
+	//matrix<int> Wn;		// <s, t> from s to t
+	svector<int> M0;		// Wp - Wn
 	int pbranch_count;
 	int cbranch_count;
-	vector<pair<int, int> > arcs;
+	svector<pair<int, int> > arcs;
 
-	map<int, list<vector<int> > > conflicts;
-	map<int, list<vector<int> > > indistinguishable;
-	map<int, list<vector<int> > > positive_conflicts;
-	map<int, list<vector<int> > > positive_indistinguishable;
-	map<int, list<vector<int> > > negative_conflicts;
-	map<int, list<vector<int> > > negative_indistinguishable;
+	smap<int, list<svector<int> > > conflicts;
+	smap<int, list<svector<int> > > indistinguishable;
+	smap<int, list<svector<int> > > positive_conflicts;
+	smap<int, list<svector<int> > > positive_indistinguishable;
+	smap<int, list<svector<int> > > negative_conflicts;
+	smap<int, list<svector<int> > > negative_indistinguishable;
 
-	map<int, pair<int, int> > conditional_places;
-	vector<int> variable_usage;
+	smap<int, pair<int, int> > conditional_places;
+	svector<int> variable_usage;
 
-	int new_transition(logic root, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
-	vector<int> new_transitions(vector<logic> root, bool active, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
-	int new_place(logic root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	int new_transition(logic root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	svector<int> new_transitions(svector<logic> root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	int new_place(logic root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
 
-	int insert_transition(int from, logic root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
-	int insert_transition(vector<int> from, logic root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	int insert_transition(int from, logic root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	int insert_transition(svector<int> from, logic root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
 
 	void insert_sv_at(int a, logic root);
-	void insert_sv_before(int from, logic root);
 	void insert_sv_parallel(int from, logic root);
-	void insert_sv_after(int from, logic root);
 
-	vector<int> insert_transitions(int from, vector<logic> root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
-	vector<int> insert_transitions(vector<int> from, vector<logic> root, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	svector<int> insert_transitions(int from, svector<logic> root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	svector<int> insert_transitions(svector<int> from, svector<logic> root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
 
-	int insert_dummy(int from, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
-	int insert_dummy(vector<int> from, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	int insert_dummy(int from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	int insert_dummy(svector<int> from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
 
-	int insert_place(int from, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
-	int insert_place(vector<int> from, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	int insert_place(int from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	int insert_place(svector<int> from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
 
-	vector<int> insert_places(vector<int> from, map<int, int> pbranch, map<int, int> cbranch, instruction *owner);
+	svector<int> insert_places(svector<int> from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
 
 	void remove_place(int from);
-	void remove_place(vector<int> from);
+	void remove_place(svector<int> from);
+	void remove_trans(int from);
+	void remove_trans(svector<int> from);
 
 	bool updateplace(int p, int i = 0);
-	int update(int p, vector<bool> *covered, int i = 0, bool immune = false);
+	int update(int p, svector<bool> *covered, int i = 0, bool immune = false);
 	void update();
 	void check_assertions();
-	void connect(vector<int> from, vector<int> to);
-	void connect(vector<int> from, int to);
-	void connect(int from, vector<int> to);
+	void connect(svector<int> from, svector<int> to);
+	void connect(svector<int> from, int to);
+	void connect(int from, svector<int> to);
 	void connect(int from, int to);
-	pair<int, int> closest_input(vector<int> from, vector<int> to, path p, int i = 0);
-	pair<int, int> closest_output(vector<int> from, vector<int> to, path p, int i = 0);
+	pair<int, int> closest_input(svector<int> from, svector<int> to, path p, int i = 0);
+	pair<int, int> closest_output(svector<int> from, svector<int> to, path p, int i = 0);
 
 	bool dead(int from);
 	bool is_place(int from);
@@ -120,21 +120,21 @@ struct petri
 	int  index(int from);
 	int  place_id(int idx);
 	int  trans_id(int idx);
-	logic base(vector<int> idx);
+	logic base(svector<int> idx);
 	bool connected(int from, int to);
 	int psiblings(int p0, int p1);
 	int csiblings(int p0, int p1);
 	bool same_inputs(int p0, int p1);
 	bool same_outputs(int p0, int p1);
 
-	vector<int> duplicate_nodes(vector<int> from);
+	svector<int> duplicate_nodes(svector<int> from);
 	int duplicate_node(int from);
-	int merge_places(vector<int> from);
+	int merge_places(svector<int> from);
 	int merge_places(int a, int b);
 
-	int get_split_place(int merge_place, vector<bool> *covered);
+	int get_split_place(int merge_place, svector<bool> *covered);
 
-	void add_conflict_pair(map<int, list<vector<int> > > *c, int i, int j);
+	void add_conflict_pair(smap<int, list<svector<int> > > *c, int i, int j);
 
 	void gen_mutables();
 	void gen_conditional_places();
@@ -143,7 +143,6 @@ struct petri
 	void gen_senses();
 	void trim_branch_ids();
 	void gen_tails();
-	void gen_arcs();
 
 	/**
 	 * \brief	Removes vacuous pbranches, unreachable places, and dangling, vacuous, and impossible transitions.
@@ -170,36 +169,36 @@ struct petri
 	 * \brief	If "from" is a transition this returns it's input places, and if "from" is a place this returns it's input transitions.
 	 * \sa		output_nodes()
 	 */
-	vector<int> input_nodes(int from);
+	svector<int> input_nodes(int from);
 
 	/**
 	 * \brief	If "from" is a transition this returns it's output places, and if "from" is a place this returns it's output transitions.
 	 * \sa		input_nodes()
 	 */
-	vector<int> output_nodes(int from);
+	svector<int> output_nodes(int from);
 
-	vector<int> input_arcs(int from);
-	vector<int> output_arcs(int from);
+	svector<int> input_arcs(int from);
+	svector<int> output_arcs(int from);
 
-	void get_paths(vector<int> from, vector<int> to, path_space *p);
+	void get_paths(svector<int> from, svector<int> to, path_space *p);
 
-	int arc_paths(int from, vector<int> to, vector<int> ex, path_space *t, path_space *p, int i = 0);
+	svector<int> arc_paths(int from, svector<int> to, svector<int> ex, path_space *t, path_space *p, int i = 0);
 	void filter_path_space(path_space *p);
 	void filter_path(int from, int to, path *p);
 	void zero_paths(path_space *paths, int from);
-	void zero_paths(path_space *paths, vector<int> from);
+	void zero_paths(path_space *paths, svector<int> from);
 	void zero_ins(path_space *paths, int from);
-	void zero_ins(path_space *paths, vector<int> from);
+	void zero_ins(path_space *paths, svector<int> from);
 	void zero_outs(path_space *paths, int from);
-	void zero_outs(path_space *paths, vector<int> from);
-	vector<int> start_path(int from, vector<int> ex);
-	vector<int> start_path(vector<int> from, vector<int> ex);
-	vector<int> end_path(int to, vector<int> ex);
-	vector<int> end_path(vector<int> to, vector<int> ex);
+	void zero_outs(path_space *paths, svector<int> from);
+	svector<int> start_path(int from, svector<int> ex);
+	svector<int> start_path(svector<int> from, svector<int> ex);
+	svector<int> end_path(int to, svector<int> ex);
+	svector<int> end_path(svector<int> to, svector<int> ex);
 
 	node &operator[](int i);
 
-	void print_dot(ostream *fout, string name);
+	void print_dot(ostream *fout, sstring name);
 
 	void print_mutables();
 	void print_branch_ids(ostream *fout);

@@ -190,7 +190,7 @@ int main(int argc, char **argv)
 	//fclose(log);
 
 	/*ifstream t("fifo1b.prs");
-	string prgm((istreambuf_iterator<char>(t)),
+	sstring prgm((istreambuf_iterator<char>(t)),
 				 istreambuf_iterator<char>());
 
 	process p;

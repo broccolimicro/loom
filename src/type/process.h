@@ -25,14 +25,14 @@
 struct process : keyword
 {
 	process();
-	process(string raw, type_space *types, flag_space *flags);
+	process(sstring raw, type_space *types, flag_space *flags);
 	~process();
 
-	string					chp;	// the raw process definition
+	sstring					chp;	// the raw process definition
 	parallel				def;	// the chp that defined this process
 	rule_space				prs;
 	variable_space			vars;
-	list<string>			args;
+	list<sstring>			args;
 	petri					net;
 	flag_space				*flags;
 
@@ -40,7 +40,7 @@ struct process : keyword
 
 	process &operator=(process p);
 
-	void parse(string raw);
+	void parse(sstring raw);
 	void simulate();
 	void rewrite();
 	void project();
@@ -54,7 +54,7 @@ struct process : keyword
 	void generate_bubbleless_prs();
 	void factor_prs();
 
-	void parse_prs(string raw);
+	void parse_prs(sstring raw);
 	void elaborate_prs();
 
 	void print_hse(ostream *fout = &cout);

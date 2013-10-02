@@ -61,11 +61,11 @@ bool sc(char c)
 
 // BIG ENDIAN
 
-int hex_to_int(string str)
+int hex_to_int(sstring str)
 {
 	int result = 0;
 	int mul = 1;
-	string::reverse_iterator i;
+	sstring::reverse_iterator i;
 
 	for (i = str.rbegin(), mul = 1; i != str.rend(); i++, mul *= 16)
 	{
@@ -100,10 +100,10 @@ int hex_to_int(string str)
 	return result;
 }
 
-string hex_to_bin(string str)
+sstring hex_to_bin(sstring str)
 {
-	string result = "";
-	string::iterator i;
+	sstring result = "";
+	sstring::iterator i;
 
 	for (i = str.begin(); i != str.end(); i++)
 	{
@@ -138,11 +138,11 @@ string hex_to_bin(string str)
 	return result;
 }
 
-int dec_to_int(string str)
+int dec_to_int(sstring str)
 {
 	int result = 0;
 	int mul = 1;
-	string::reverse_iterator i;
+	sstring::reverse_iterator i;
 
 	for (i = str.rbegin(), mul = 1; i != str.rend(); i++, mul *= 10)
 	{
@@ -165,9 +165,9 @@ int dec_to_int(string str)
 	return result;
 }
 
-string int_to_bin(int dec)
+sstring int_to_bin(int dec)
 {
-	string result = "";
+	sstring result = "";
 	int i = 0;
 
 	if (dec == 0)
@@ -188,7 +188,7 @@ string int_to_bin(int dec)
 	return result;
 }
 
-string dec_to_bin(string str)
+sstring dec_to_bin(sstring str)
 {
 	return int_to_bin(dec_to_int(str));
 }
@@ -211,174 +211,6 @@ unsigned int count_0bits(unsigned int x)
 	x = x + (x >> 8);
 	x = x + (x >> 16);
     return 32 - (x & 0x0000003F);
-}
-
-size_t find_first_of_l0(string subject, string search, size_t pos)
-{
-	string::iterator i, j;
-	int depth[3] = {0, 0, 0};
-	size_t ret;
-
-	for (i = subject.begin() + pos, ret = pos; i != subject.end(); i++, ret++)
-	{
-		if (*i == ')')
-			depth[0]--;
-		else if (*i == ']')
-			depth[1]--;
-		else if (*i == '}')
-			depth[2]--;
-
-		for (j = search.begin(); j != search.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0; j++)
-			if (*i == *j)
-			{
-				if (i == subject.end())
-					return subject.npos;
-				else
-					return ret;
-			}
-
-		if (*i == '(')
-			depth[0]++;
-		else if (*i == '[')
-			depth[1]++;
-		else if (*i == '{')
-			depth[2]++;
-	}
-
-	return subject.npos;
-}
-
-size_t find_first_of_l0(string subject, list<string> search, size_t pos, list<string> exclude)
-{
-	bool found;
-	string::iterator i;
-	list<string>::iterator j;
-	int depth[3] = {0, 0, 0};
-	size_t ret;
-
-	found = false;
-	for (i = subject.begin() + pos, ret = pos; i != subject.end(); i++, ret++)
-	{
-		if (*i == ')')
-			depth[0]--;
-		else if (*i == ']')
-			depth[1]--;
-		else if (*i == '}')
-			depth[2]--;
-
-		for (j = search.begin(); j != search.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && !found; j++)
-			if (subject.substr(ret, j->length()) == *j)
-				found = true;
-		for (j = exclude.begin(); j != exclude.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && found; j++)
-			if (subject.substr(ret, j->length()) == *j)
-				found = false;
-
-		if (*i == '(')
-			depth[0]++;
-		else if (*i == '[')
-			depth[1]++;
-		else if (*i == '{')
-			depth[2]++;
-
-		if (found)
-		{
-			if (i == subject.end())
-				return subject.npos;
-			else
-				return ret;
-		}
-	}
-
-	return subject.npos;
-}
-
-size_t find_last_of_l0(string subject, string search, size_t pos)
-{
-	string::reverse_iterator i, j;
-	int depth[3] = {0, 0, 0};
-	size_t ret;
-
-	if (pos == string::npos)
-		pos = 0;
-	else
-		pos = subject.length() - pos;
-
-	for (i = subject.rbegin() + pos, ret = pos; i != subject.rend(); i++, ret++)
-	{
-		if (*i == '(')
-			depth[0]--;
-		else if (*i == '[')
-			depth[1]--;
-		else if (*i == '{')
-			depth[2]--;
-
-		for (j = search.rbegin(); j != search.rend() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0; j++)
-			if (*i == *j)
-			{
-				if (i == subject.rend())
-					return subject.npos;
-				else
-					return subject.length() - ret - 1;
-			}
-
-		if (*i == ')')
-			depth[0]++;
-		else if (*i == ']')
-			depth[1]++;
-		else if (*i == '}')
-			depth[2]++;
-	}
-
-	return subject.npos;
-}
-
-size_t find_last_of_l0(string subject, list<string> search, size_t pos, list<string> exclude)
-{
-	bool found;
-	string::reverse_iterator i;
-	list<string>::iterator j;
-	int depth[3] = {0, 0, 0};
-	size_t ret;
-
-	if (pos == string::npos)
-		pos = 0;
-	else
-		pos = subject.length() - pos;
-
-	found = false;
-	for (i = subject.rbegin() + pos, ret = pos; i != subject.rend(); i++, ret++)
-	{
-		if (*i == '(')
-			depth[0]--;
-		else if (*i == '[')
-			depth[1]--;
-		else if (*i == '{')
-			depth[2]--;
-
-		for (j = search.begin(); j != search.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && !found; j++)
-			if (subject.substr(subject.length() - ret - 1 - j->length(), j->length()) == *j)
-				found = true;
-		for (j = exclude.begin(); j != exclude.end() && depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && found; j++)
-			if (subject.substr(subject.length() - ret - 1 - j->length(), j->length()) == *j)
-				found = false;
-
-		if (*i == ')')
-			depth[0]++;
-		else if (*i == ']')
-			depth[1]++;
-		else if (*i == '}')
-			depth[2]++;
-
-		if (found)
-		{
-			if (i == subject.rend())
-				return subject.npos;
-			else
-				return subject.length() - ret - 1;
-		}
-	}
-
-	return subject.npos;
 }
 
 int powi(int base, int exp)

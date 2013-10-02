@@ -91,7 +91,7 @@ BRIEF_MEMBER_DESC      = YES
 REPEAT_BRIEF           = YES
 
 # This tag implements a quasi-intelligent brief description abbreviator 
-# that is used to form the text in various listings. Each string 
+# that is used to form the text in various listings. Each sstring 
 # in this list, if found as the leading text of the brief description, will be 
 # stripped from the text and the result after processing the whole list, is 
 # used as the annotated text. Otherwise, the brief description is used as-is. 
@@ -133,7 +133,7 @@ FULL_PATH_NAMES        = YES
 
 # If the FULL_PATH_NAMES tag is set to YES then the STRIP_FROM_PATH tag 
 # can be used to strip a user-defined part of the path. Stripping is 
-# only done if one of the specified strings matches the left-hand part of 
+# only done if one of the specified sstrings matches the left-hand part of 
 # the path. The tag can be used to show relative paths in the file list. 
 # If left blank the directory from which doxygen is run is used as the 
 # path to strip. Note that you specify absolute paths here, but also 
@@ -269,11 +269,11 @@ MARKDOWN_SUPPORT       = YES
 
 AUTOLINK_SUPPORT       = YES
 
-# If you use STL classes (i.e. std::string, std::vector, etc.) but do not want 
+# If you use STL classes (i.e. std::sstring, std::vec, etc.) but do not want 
 # to include (a tag file for) the STL sources as input, then you should 
 # set this tag to YES in order to let doxygen match functions declarations and 
-# definitions whose arguments contain STL classes (e.g. func(std::string); v.s. 
-# func(std::string) {}). This also makes the inheritance and collaboration 
+# definitions whose arguments contain STL classes (e.g. func(std::sstring); v.s. 
+# func(std::sstring) {}). This also makes the inheritance and collaboration 
 # diagrams that involve STL classes more complete and accurate.
 
 BUILTIN_STL_SUPPORT    = NO
@@ -508,7 +508,7 @@ SORT_BY_SCOPE_NAME     = NO
 # do proper type resolution of all parameters of a function it will reject a 
 # match between the prototype and the implementation of a member function even 
 # if there is only one candidate or it is obvious which candidate to choose 
-# by doing a simple string match. By disabling STRICT_PROTO_MATCHING doxygen 
+# by doing a simple sstring match. By disabling STRICT_PROTO_MATCHING doxygen 
 # will still accept a match between prototype and implementation in such cases.
 
 STRICT_PROTO_MATCHING  = NO
@@ -638,7 +638,7 @@ WARN_IF_DOC_ERROR      = YES
 WARN_NO_PARAMDOC       = NO
 
 # The WARN_FORMAT tag determines the format of the warning messages that 
-# doxygen can produce. The string should contain the $file, $line, and $text 
+# doxygen can produce. The sstring should contain the $file, $line, and $text 
 # tags, which will be replaced by the file and line number from which the 
 # warning originated and the warning text. Optionally the format may contain 
 # $version, which will be replaced by the version of the file (if it could 
@@ -745,7 +745,7 @@ EXCLUDE_PATTERNS       =
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names 
 # (namespaces, classes, functions, etc.) that should be excluded from the 
 # output. The symbol name can be a fully qualified name, a word, or if the 
-# wildcard * is used, a substring. Examples: ANamespace, AClass, 
+# wildcard * is used, a subsstring. Examples: ANamespace, AClass, 
 # AClass::ANamespace, ANamespace::*Test
 
 EXCLUDE_SYMBOLS        = 
@@ -1046,16 +1046,16 @@ GENERATE_DOCSET        = NO
 
 DOCSET_FEEDNAME        = "Doxygen generated docs"
 
-# When GENERATE_DOCSET tag is set to YES, this tag specifies a string that 
+# When GENERATE_DOCSET tag is set to YES, this tag specifies a sstring that 
 # should uniquely identify the documentation set bundle. This should be a 
-# reverse domain-name style string, e.g. com.mycompany.MyDocSet. Doxygen 
+# reverse domain-name style sstring, e.g. com.mycompany.MyDocSet. Doxygen 
 # will append .docset to the name.
 
 DOCSET_BUNDLE_ID       = org.doxygen.Project
 
-# When GENERATE_PUBLISHER_ID tag specifies a string that should uniquely 
+# When GENERATE_PUBLISHER_ID tag specifies a sstring that should uniquely 
 # identify the documentation publisher. This should be a reverse domain-name 
-# style string, e.g. com.mycompany.MyDocSet.documentation.
+# style sstring, e.g. com.mycompany.MyDocSet.documentation.
 
 DOCSET_PUBLISHER_ID    = org.doxygen.Publisher
 
@@ -1593,7 +1593,7 @@ PERLMOD_LATEX          = NO
 PERLMOD_PRETTY         = YES
 
 # The names of the make variables in the generated doxyrules.make file 
-# are prefixed with the string contained in PERLMOD_MAKEVAR_PREFIX. 
+# are prefixed with the sstring contained in PERLMOD_MAKEVAR_PREFIX. 
 # This is useful so different doxyrules.make files included by the same 
 # Makefile don't overwrite each other's variables.
 

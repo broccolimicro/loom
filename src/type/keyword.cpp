@@ -12,7 +12,7 @@ keyword::keyword()
 	name = "";
 	_kind = "keyword";
 }
-keyword::keyword(string n)
+keyword::keyword(sstring n)
 {
 	name = n;
 	_kind = "keyword";
@@ -23,7 +23,7 @@ keyword::~keyword()
 	_kind = "keyword";
 }
 
-string keyword::kind()
+sstring keyword::kind()
 {
 	return _kind;
 }

@@ -30,7 +30,7 @@
 struct channel : record
 {
 	channel();
-	channel(string chp, type_space *types, flag_space *flags);
+	channel(sstring chp, type_space *types, flag_space *flags);
 	~channel();
 
 	operate *send;
@@ -38,7 +38,7 @@ struct channel : record
 	operate *probe;
 
 	channel &operator=(channel r);
-	void parse(string chp);
+	void parse(sstring chp);
 };
 
 ostream &operator<<(ostream &os, channel s);

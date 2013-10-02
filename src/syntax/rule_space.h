@@ -17,8 +17,8 @@ struct rule_space
 	rule_space();
 	~rule_space();
 
-	vector<rule> rules;
-	vector<pair<vector<int>, int> > excl;
+	svector<rule> rules;
+	svector<pair<svector<int>, int> > excl;
 	variable_space *vars;
 
 	void insert(rule r);
@@ -26,14 +26,14 @@ struct rule_space
 
 	rule &operator[](int i);
 
-	void apply_one_of(logic *s, vector<int> a, int v);
-	logic apply(logic s, logic covered = logic(), string t = "");
+	void apply_one_of(logic *s, svector<int> a, int v);
+	logic apply(logic s, logic covered = logic(), sstring t = "");
 
 	void generate_minterms(petri *net, flag_space *flags);
 	void check(petri *net);
 
 	void print(ostream *fout);
-	void print_enable_graph(ostream *fout, petri *net, string name);
+	void print_enable_graph(ostream *fout, petri *net, sstring name);
 };
 
 #endif

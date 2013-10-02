@@ -19,7 +19,7 @@
 struct instruction
 {
 protected:
-	string _kind;
+	sstring _kind;
 
 public:
 	instruction();
@@ -28,9 +28,9 @@ public:
 
 	// The raw CHP of this instruction.
 	instruction *parent;
-	vector<int> from;
-	vector<int> uid;
-	string chp;
+	svector<int> from;
+	svector<int> uid;
+	sstring chp;
 
 	// Some pointers for good use
 	variable_space *vars;
@@ -40,20 +40,20 @@ public:
 	// For outputting debugging messages
 	flag_space *flags;
 
-	string kind();
+	sstring kind();
 
-	virtual instruction *duplicate(instruction *parent, variable_space *vars, map<string, string> convert) = 0;
+	virtual instruction *duplicate(instruction *parent, variable_space *vars, smap<sstring, sstring> convert) = 0;
 
 	virtual void expand_shortcuts() = 0;
 	virtual void parse() = 0;
 	virtual void simulate() = 0;
 	virtual void rewrite() = 0;
 	virtual void reorder() = 0;
-	virtual vector<int> generate_states(petri *n, rule_space *p, vector<int> f, map<int, int> pbranch, map<int, int> cbranch) = 0;
+	virtual svector<int> generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch) = 0;
 
-	virtual void print_hse(string t, ostream *fout = &cout) = 0;
+	virtual void print_hse(sstring t, ostream *fout = &cout) = 0;
 
-	pair<string, instruction*> expand_expression(string expr, string top);
+	pair<sstring, instruction*> expand_expression(sstring expr, sstring top);
 };
 
 #endif

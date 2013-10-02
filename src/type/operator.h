@@ -25,14 +25,14 @@
 struct operate : process
 {
 	operate();
-	operate(string raw, type_space *types, flag_space *flags);
+	operate(sstring raw, type_space *types, flag_space *flags);
 	~operate();
 
 	operate &operator=(operate p);
 
-	void parse(string raw);
+	void parse(sstring raw);
 
-	void print_prs(ostream *fout, string prefix, vector<string> driven);
+	void print_prs(ostream *fout, sstring prefix, svector<sstring> driven);
 };
 
 #endif

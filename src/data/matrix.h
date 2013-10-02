@@ -17,21 +17,21 @@ struct matrix
 	{
 		this->h = h;
 		this->v = 0;
-		data.resize(h, vector<t>());
+		data.resize(h, svector<t>());
 	}
 
 	matrix(int h, int v)
 	{
 		this->h = h;
 		this->v = v;
-		data.resize(h, vector<t>(v, (t)0));
+		data.resize(h, svector<t>(v, (t)0));
 	}
 
 	~matrix()
 	{
 	}
 
-	vector<vector<t> > data;
+	svector<svector<t> > data;
 	int h, v;
 
 	template <class t2>
@@ -58,14 +58,14 @@ struct matrix
 		return *this;
 	}
 
-	vector<t> &operator[](int index)
+	svector<t> &operator[](int index)
 	{
 		return data[index];
 	}
 
-	vector<ptr<t> > operator()(int index)
+	svector<ptr<t> > operator()(int index)
 	{
-		vector<ptr<t> > result(data.size());
+		svector<ptr<t> > result(data.size());
 
 		for (int i = 0; i < data.size(); i++)
 			result[i].value = &(data[i][index]);
@@ -95,7 +95,7 @@ struct matrix
 
 	matrix<t> &swapr(int a, int b)
 	{
-		vector<t> temp = data[a];
+		svector<t> temp = data[a];
 		data[a] = data[b];
 		data[b] = temp;
 		return *this;
@@ -129,7 +129,7 @@ struct matrix
 	matrix<t> &addr()
 	{
 		v++;
-		for (size_t i = 0; i < data.size(); i++)
+		for (int i = 0; i < data.size(); i++)
 			data[i].resize(v+1, (t)0);
 
 		return *this;
@@ -138,11 +138,11 @@ struct matrix
 	matrix<t> &addc()
 	{
 		h++;
-		data.resize(h+1, vector<t>(v, (t)0));
+		data.resize(h+1, svector<t>(v, (t)0));
 		return *this;
 	}
 
-	size_t size()
+	int size()
 	{
 		return data.size();
 	}

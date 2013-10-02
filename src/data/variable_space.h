@@ -22,39 +22,39 @@ struct variable_space
 	~variable_space();
 
 	type_space *types;
-	map<string, variable> global;
-	map<string, variable> label;
-	vector<logic> requirements;
+	smap<sstring, variable> global;
+	smap<sstring, variable> label;
+	svector<logic> requirements;
 	logic enforcements;
 	logic reset;
 
 	int size();
 
 	variable *find(int uid);
-	variable *find(string name);
-	keyword	 *find_type(string name);
+	variable *find(sstring name);
+	keyword	 *find_type(sstring name);
 
-	string get_name(int uid);
-	string get_type(int uid);
+	sstring get_name(int uid);
+	sstring get_type(int uid);
 
-	string get_type(string name);
-	string get_kind(string name);
-	string get_info(string name);
-	int	   get_uid(string name);
-	int    get_width(string name);
-	vector<string> get_driven();
+	sstring get_type(sstring name);
+	sstring get_kind(sstring name);
+	sstring get_info(sstring name);
+	int	   get_uid(sstring name);
+	int    get_width(sstring name);
+	svector<sstring> get_driven();
 
-	vector<string> get_names();
+	svector<sstring> get_names();
 	bool part_of_channel(int uid);
-	vector<int> x_channel(vector<int> av);
-	void x_channel(vector<int> av, map<int, logic> *result);
+	svector<int> x_channel(svector<int> av);
+	void x_channel(svector<int> av, smap<int, logic> *result);
 
-	string unique_name(string prefix);
+	sstring unique_name(sstring prefix);
 
-	bool vdef(string str);
+	bool vdef(sstring str);
 
-	map<string, string> instantiate(string parent, bool parent_arg, variable_space* s, bool arg);
-	map<string, string> call(string parent, bool parent_arg, variable_space* s);
+	smap<sstring, sstring> instantiate(sstring parent, bool parent_arg, variable_space* s, bool arg);
+	smap<sstring, sstring> call(sstring parent, bool parent_arg, variable_space* s);
 
 	int insert(variable v);
 	void clear();
@@ -63,7 +63,7 @@ struct variable_space
 
 	variable_space &operator=(variable_space s);
 
-	void print(string t, ostream *fout = (&cout));
+	void print(sstring t, ostream *fout = (&cout));
 };
 
 ostream &operator<<(ostream &os, variable_space s);
