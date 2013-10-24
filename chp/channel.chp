@@ -26,7 +26,7 @@ channel achan4p0b
 	}
 }
 
-/*channel pchan4p0b
+channel pchan4p0b
 {
 	node<1> r := 0;
 	node<1> a := 0;
@@ -45,7 +45,7 @@ channel achan4p0b
 	{
 		a
 	}
-}*/
+}
 
 channel achan4p1b
 {
@@ -56,13 +56,13 @@ channel achan4p1b
 	{
 		[	i	-> r.t+; [a]; r.t-;
 		[]	~i	-> r.f+; [a]; r.f-;
-		]; [~a];
+		]; [~a]
 	}
 	
 	operator?(node<1> i)
 	{
-		[ r.t&~r.f -> i+
-		[]~r.t&r.f -> i-
+		[ r.t -> i+
+		[]r.f -> i-
 		]; a+; [~r.t & ~r.f]; a-;
 	}
 	
@@ -72,24 +72,23 @@ channel achan4p1b
 	}
 }
 
-/*channel pchan4p1b
+channel pchan4p1b
 {
 	dualrail r;
 	node<1> a := 0;
 	
 	operator!(node<1> i)
 	{
-		[a];
 		[	i	-> r.t+; [~a]; r.t-;
 		[]	~i	-> r.f+; [~a]; r.f-;
-		]
+		]; [a]
 	}
 	
 	operator?(node<1> i)
 	{
 		a+;
-		[ r.t&~r.f -> i+
-		[]~r.t&r.f -> i-
+		[ r.t -> i+
+		[]r.f -> i-
 		]; a-; [~r.t & ~r.f]; 
 	}
 	
@@ -97,7 +96,7 @@ channel achan4p1b
 	{
 		a
 	}
-}*/
+}
 
 /*channel achan4p2b
 {
@@ -121,11 +120,11 @@ channel achan4p1b
 	operator?(node<2> i)
 	{
 		(
-			[ r1.t&~r1.f -> i[0]+
-			[]~r1.t&r1.f -> i[0]-
+			[ r1.t & ~r1.f -> i[0]+
+			[]r1.f & ~r1.t -> i[0]-
 			]||
-			[ r2.t&~r2.f -> i[1]+
-			[]~r2.t&r2.f -> i[1]-
+			[ r2.t & ~r2.f -> i[1]+
+			[]r2.f & ~r2.t -> i[1]-
 			]
 		); a+; [~r1.t & ~r1.f & ~r2.t & ~r2.f]; a-;
 	}
@@ -152,17 +151,17 @@ channel pchan4p2b
 			[]	~i[1]	-> r2.f+;
 			]
 		);
-		[~a]; r1.t-;r1.f-;r2.t-;r2.f-;
+		[~a]; r1.t-;r1.f-;r2.t-;r2.f-
 	}
 	
 	operator?(node<2> i)
 	{
 		a+;(
-			[ r1.t&~r1.f -> i[0]+
-			[]~r1.t&r1.f -> i[0]-
+			[ r1.t & ~r1.f -> i[0]+
+			[]r1.f & ~r1.t -> i[0]-
 			]||
-			[ r2.t&~r2.f -> i[1]+
-			[]~r2.t&r2.f -> i[1]-
+			[ r2.t & ~r2.f -> i[1]+
+			[]r2.f & ~r2.t -> i[1]-
 			]
 		); a-; [~r1.t & ~r1.f & ~r2.t & ~r2.f];
 	}

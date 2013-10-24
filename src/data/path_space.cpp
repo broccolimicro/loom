@@ -159,6 +159,15 @@ int path_space::coverage_count(svector<int> n)
 	return m;
 }
 
+int path_space::length()
+{
+	int result = 999999999;
+	list<path>::iterator pi;
+	for (pi = paths.begin(); pi != paths.end(); pi++)
+		result = min(result, pi->length());
+	return result;
+}
+
 svector<int> path_space::coverage_maxes()
 {
 	return total.maxes();
@@ -236,6 +245,25 @@ path_space &path_space::operator=(path_space s)
 	paths = s.paths;
 	total = s.total;
 	return *this;
+}
+
+void path_space::print_bounds(ostream &fout, string name)
+{
+	fout << name << ": {";
+	for (int j = 0; j < (int)total.from.size(); j++)
+	{
+		if (j != 0)
+			fout << ", ";
+		fout << total.from[j];
+	}
+	fout << "} -> {";
+	for (int j = 0; j < (int)total.to.size(); j++)
+	{
+		if (j != 0)
+			fout << ", ";
+		fout << total.to[j];
+	}
+	fout << "}" << endl;
 }
 
 int &path_space::operator[](int i)

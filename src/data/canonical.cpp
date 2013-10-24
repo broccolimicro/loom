@@ -99,17 +99,6 @@ int canonical::size()
 }
 
 /**
- * \brief	Returns the total number of variables contained in this canonical expression.
- */
-int canonical::width()
-{
-	if (terms.size() > 0)
-		return terms[0].size;
-	else
-		return 0;
-}
-
-/**
  * \brief	Sets the term located at index i in this canonical expression equal to t.
  * \param	i	The index of the term to assign.
  * \param	t	The new minterm to use.
@@ -343,6 +332,15 @@ canonical canonical::refactor(svector<int> ids)
 	return result;
 }
 
+canonical canonical::refactor(svector<pair<int, int> > ids)
+{
+	canonical result;
+	for (int i = 0; i < terms.size(); i++)
+		result.terms.push_back(terms[i].refactor(ids));
+	return result;
+}
+
+
 canonical canonical::hide(int var)
 {
 	canonical result;
@@ -453,6 +451,7 @@ svector<smap<int, uint32_t> > canonical::allsat()
 
 canonical &canonical::operator=(canonical c)
 {
+	this->terms.clear();
 	this->terms = c.terms;
 	return *this;
 }
@@ -534,11 +533,10 @@ canonical canonical::operator()(int j, uint32_t b)
 
 canonical canonical::operator[](int i)
 {
-	canonical result;
-	result.push_back(minterm());
+	minterm result;
 	for (int j = 0; j < terms.size(); j++)
-		result.terms[0].sv_union(i, terms[j].get(i));
-	return result;
+		result.sv_union(i, terms[j].get(i));
+	return canonical(result);
 }
 
 canonical canonical::operator|(canonical c)
@@ -724,12 +722,14 @@ sstring canonical::print(variable_space *vars, sstring prefix)
 
 sstring canonical::print_assign(variable_space *v, sstring prefix)
 {
-	if (terms.size() > 1)
-		cerr << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
-	else if (terms.size() == 1)
-		return terms[0].print_assign(v, prefix);
-
-	return "skip";
+	string result = "";
+	for (int i = 0; i < terms.size(); i++)
+	{
+		if (i != 0)
+			result += ", ";
+		result += terms[i].print_assign(v, prefix);
+	}
+	return result == "" ? "skip" : result;
 }
 
 sstring canonical::print_with_quotes(variable_space *vars, sstring prefix)
@@ -770,4 +770,21 @@ bool is_mutex(canonical *c0, canonical *c1, canonical *c2)
 				return false;
 
 	return true;
+}
+
+bool mergible(canonical *c0, canonical *c1)
+{
+	for (int i = 0; i < c0->terms.size(); i++)
+	{
+		for (int j = 0; j < c1->terms.size(); j++)
+		{
+			pair<int, int> xdiff = c0->terms[i].xdiff_count(c1->terms[j]);
+			int diff = c0->terms[i].diff_count(c1->terms[j]);
+			if ((diff <= 1 && xdiff.first + xdiff.second <= 1) ||
+				(xdiff.first == 0 && diff - xdiff.second <= 1) ||
+				(xdiff.second == 0 && diff - xdiff.first <= 1))
+				return true;
+		}
+	}
+	return false;
 }

@@ -20,7 +20,8 @@ struct flag_space
 	uint32_t optimization;
 	uint32_t log;
 
-	svector<ifstream*>	input_files;
+	sstring				working_directory;
+	svector<pair<sstring, ifstream*> >	input_files;
 	ofstream			*output_file;
 	ofstream			*state_file;
 	ofstream			*hse_file;

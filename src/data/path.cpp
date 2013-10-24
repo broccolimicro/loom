@@ -135,6 +135,14 @@ path path::mask()
 	return result;
 }
 
+int path::length()
+{
+	int result = 0;
+	for (int i = 0; i < nodes.size(); i++)
+		result += nodes[i];
+	return result;
+}
+
 svector<int>::iterator path::begin()
 {
 	return nodes.begin();

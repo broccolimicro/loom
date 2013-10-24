@@ -41,10 +41,12 @@ struct program
 	void reshuffle();
 
 	void generate_states();
+	void trim_states();
 	void insert_state_vars();
 	void insert_bubbleless_state_vars();
 	void generate_prs();
 	void generate_bubbleless_prs();
+	void bubble_reshuffle();
 	void factor_prs();
 
 	void print_hse();

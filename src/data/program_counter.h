@@ -8,6 +8,7 @@
 #ifndef program_counter_h
 #define program_counter_h
 
+#include "../common.h"
 #include "canonical.h"
 
 struct petri;
@@ -15,35 +16,47 @@ struct petri;
 struct program_counter
 {
 	program_counter();
-	program_counter(petri *net, int idx);
+	program_counter(sstring name, petri *from, petri *to, int pc);
+	program_counter(program_counter l, int p);
 	~program_counter();
 
+	sstring name;
 	petri *net;
-	int index;
-	svector<int> last;
-	logic delta;
+
+	int pc;
+	svector<minterm>		 firings;
+	svector<int>			 indices;
+	svector<pair<int, int> > arcs;
+	svector<int>			 begin;
+
+	svector<pair<int, int> > forward_factors;
+	svector<pair<int, int> > reverse_factors;
+	svector<int>			 hidden;
+
+	minterm mute();
+	logic translate(logic state);
+	void update(logic state);
+	void reset();
+
+	logic &index();
+	bool is_active();
+	bool is_place();
+	bool is_trans();
 };
 
-/**
- * This represents one particular combination of paths through the
- * state space. All program counters must be able to make progress
- * for there not to be deadlock. Program counters are added to a space
- * upon a parallel split and removed upon a parallel merge. Different
- * spaces are created to handle conditional splits, where each space
- * represents a different choice for the path taken.
- */
 struct program_counter_space
 {
 	program_counter_space();
-	program_counter_space(petri *net, int idx);
 	~program_counter_space();
 
 	svector<program_counter> pcs;
-	svector<bool> cov;
 
-	void check_size(int s);
+	void simulate(petri *net, logic state, int i = 0);
+	logic mute(logic state);
+	void reset();
 
-	program_counter_space &operator=(program_counter_space s);
+	void increment(int i);
+	int check_merges(int j);
 };
 
 #endif

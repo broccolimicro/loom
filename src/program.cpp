@@ -35,7 +35,7 @@ void program::compile()
 	{
 		if (flags.pre())
 		{
-			prgm = sstring((istreambuf_iterator<char>(*(flags.input_files[0]))),
+			prgm = sstring((istreambuf_iterator<char>(*(flags.input_files[0].second))),
 						   istreambuf_iterator<char>());
 			(*flags.log_file) << prgm << endl;
 			while ((i = prgm.find("#include")) != prgm.npos)
@@ -47,9 +47,12 @@ void program::compile()
 				if (flags.log_precompile())
 					(*flags.log_file) << "Expanding Inclusion: " << prgm.substr(open+1, close-open-1) << endl;
 
-				ifstream s(prgm.substr(open+1, close-open-1).c_str());
+				cout << flags.input_files[0].first << endl;
+				ifstream s(flags.input_files[0].first + "/" + prgm.substr(open+1, close-open-1).c_str());
 				sstring f((istreambuf_iterator<char>(s)),
 						 istreambuf_iterator<char>());
+				if (!s.is_open())
+					cerr << "Error: File not found " << flags.input_files[0].first + "/" + prgm.substr(open+1, close-open-1) << endl;
 
 				//Place the contents of the file where the #include statement was
 				prgm = prgm.substr(0, i) + f + prgm.substr(close+1);
@@ -72,7 +75,10 @@ void program::compile()
 
 		// HSE to State Space
 		if (flags.sse())
+		{
 			generate_states();
+			trim_states();
+		}
 		else if (flags.hse())
 			print_hse();
 
@@ -85,6 +91,7 @@ void program::compile()
 		if (flags.prsb())
 		{
 			generate_prs();
+			//bubble_reshuffle();
 			//factor_prs();
 
 			print_hse();
@@ -239,13 +246,28 @@ void program::reshuffle()
 			((process*)i->second)->reshuffle();
 }
 
-// TODO There is a problem with the interaction of scribe variables with bubbleless reshuffling because scribe variables insert bubbles
 void program::generate_states()
 {
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
-		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos))
+		if (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos)
+			((operate*)i->second)->generate_states();
+
+	for (i = types.begin(); i != types.end(); i++)
+		if (i->second->kind() == "process")
 			((process*)i->second)->generate_states();
+}
+
+void program::trim_states()
+{
+	type_space::iterator i;
+	for (i = types.begin(); i != types.end(); i++)
+		if (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos)
+			((operate*)i->second)->trim_states();
+
+	for (i = types.begin(); i != types.end(); i++)
+		if (i->second->kind() == "process")
+			((process*)i->second)->trim_states();
 }
 
 void program::insert_state_vars()
@@ -278,6 +300,14 @@ void program::generate_bubbleless_prs()
 	for (i = types.begin(); i != types.end(); i++)
 		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos))
 			((process*)i->second)->generate_bubbleless_prs();
+}
+
+void program::bubble_reshuffle()
+{
+	type_space::iterator i;
+	for (i = types.begin(); i != types.end(); i++)
+		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos))
+			((process*)i->second)->bubble_reshuffle();
 }
 
 /* TODO: Factoring - production rules should be relatively short.

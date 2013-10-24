@@ -6,7 +6,6 @@
  */
 
 #include "../common.h"
-#include "matrix.h"
 #include "canonical.h"
 #include "bdd.h"
 #include "path_space.h"
@@ -41,13 +40,18 @@ struct node
 	logic positive;	// Negative sense variables are hideed out
 	logic negative;	// Positive sense variables are hideed out
 
+	logic tail_index;
+
 	logic assumptions;
 	svector<logic> assertions;
 
 	bool is_in_tail(int idx);
 	void add_to_tail(int idx);
 	void add_to_tail(svector<int> idx);
+
 	void apply_mutables();
+
+	pair<int, int> sense_count();
 };
 
 struct petri
@@ -58,6 +62,7 @@ struct petri
 	variable_space *vars;
 	rule_space *prs;
 	flag_space *flags;
+	program_counter_space env;
 	svector<node> S;
 	svector<node> T;
 	//matrix<int> Wp;		// <s, t> from t to s
@@ -73,6 +78,11 @@ struct petri
 	smap<int, list<svector<int> > > positive_indistinguishable;
 	smap<int, list<svector<int> > > negative_conflicts;
 	smap<int, list<svector<int> > > negative_indistinguishable;
+	int max_indistinguishables;
+	int max_positive_indistinguishables;
+	int max_negative_indistinguishables;
+
+	smap<int, svector<int> > isochronics;
 
 	smap<int, pair<int, int> > conditional_places;
 	svector<int> variable_usage;
@@ -103,8 +113,8 @@ struct petri
 	void remove_trans(int from);
 	void remove_trans(svector<int> from);
 
-	bool updateplace(int p, int i = 0);
-	int update(int p, svector<bool> *covered, int i = 0, bool immune = false);
+	bool updateplace(int pc, int i = 0);
+	int update(int pc, svector<bool> *covered, int i = 0, bool immune = false);
 	void update();
 	void check_assertions();
 	void connect(svector<int> from, svector<int> to);
@@ -120,6 +130,7 @@ struct petri
 	int  index(int from);
 	int  place_id(int idx);
 	int  trans_id(int idx);
+	sstring node_name(int idx);
 	logic base(svector<int> idx);
 	bool connected(int from, int to);
 	int psiblings(int p0, int p1);
@@ -143,6 +154,9 @@ struct petri
 	void gen_senses();
 	void trim_branch_ids();
 	void gen_tails();
+	smap<pair<int, int>, pair<bool, bool> > gen_isochronics();
+
+	logic get_effective_state_encoding(int place, int observer);
 
 	/**
 	 * \brief	Removes vacuous pbranches, unreachable places, and dangling, vacuous, and impossible transitions.
@@ -170,15 +184,25 @@ struct petri
 	 * \sa		output_nodes()
 	 */
 	svector<int> input_nodes(int from);
+	svector<int> input_nodes(svector<int> from);
 
 	/**
 	 * \brief	If "from" is a transition this returns it's output places, and if "from" is a place this returns it's output transitions.
 	 * \sa		input_nodes()
 	 */
 	svector<int> output_nodes(int from);
+	svector<int> output_nodes(svector<int> from);
 
 	svector<int> input_arcs(int from);
+	svector<int> input_arcs(svector<int> from);
 	svector<int> output_arcs(int from);
+	svector<int> output_arcs(svector<int> from);
+
+	svector<int> increment_arcs(svector<int> a);
+	svector<int> decrement_arcs(svector<int> a);
+
+	pair<int, int> get_input_sense_count(int idx);
+	pair<int, int> get_input_sense_count(svector<int> idx);
 
 	void get_paths(svector<int> from, svector<int> to, path_space *p);
 
@@ -202,6 +226,13 @@ struct petri
 
 	void print_mutables();
 	void print_branch_ids(ostream *fout);
+
+	void print_conflicts(ostream &fout, string name);
+	void print_indistinguishables(ostream &fout, string name);
+	void print_positive_conflicts(ostream &fout, string name);
+	void print_positive_indistinguishables(ostream &fout, string name);
+	void print_negative_conflicts(ostream &fout, string name);
+	void print_negative_indistinguishables(ostream &fout, string name);
 };
 
 #endif

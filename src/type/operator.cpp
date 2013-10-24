@@ -134,6 +134,37 @@ void operate::parse(sstring raw)
 	}
 }
 
+void operate::generate_states()
+{
+	process::generate_states();
+
+	svector<int> to_hide;
+	for (list<sstring>::iterator i = args.begin(); i != args.end(); i++)
+		for (smap<sstring, variable>::iterator j = vars.global.begin(); j != vars.global.end(); j++)
+			if (j->second.name.substr(0, i->size()) == *i && (j->second.name.size() == i->size() || (j->second.name.size() > i->size() && j->second.name[i->size()] == '.')))
+			{
+				j->second.driven = false;
+				to_hide.push_back(j->second.uid);
+			}
+
+	for (int i = 0; i < net.T.size(); i++)
+	{
+		net.T[i].index = net.T[i].index.hide(to_hide);
+
+		if (net.T[i].active && net.T[i].index == 1)
+			net.T[i].active = false;
+	}
+
+	for (int i = 0; i < net.S.size(); i++)
+		if ((to_hide = net.output_nodes(i)).size() > 1)
+			for (int j = 0; j < to_hide.size(); j++)
+				for (int k = j+1; k < to_hide.size(); k++)
+					if (!is_mutex(&net.T[net.index(to_hide[j])].index, &net.T[net.index(to_hide[k])].index, &vars.enforcements))
+					{
+						cerr << "Warning: We are going to need a mk_exclhi command to separate " << net.node_name(net.trans_id(i)) << " and " << net.node_name(net.trans_id(j)) << " in process " << name << "." << endl;
+					}
+}
+
 void operate::print_prs(ostream *fout, sstring prefix, svector<sstring> driven)
 {
 	smap<sstring, variable>::iterator vi;

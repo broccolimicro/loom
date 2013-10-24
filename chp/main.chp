@@ -3,9 +3,9 @@
 /*inline process wchb(achan4p1b R, achan4p1b L)
 {
 	*[
-		[	R.a & L.r.t -> R.r.t+
-		[]	R.a & L.r.f -> R.r.f+
-		]; L.a-; [~R.a & ~L.r.t & ~L.r.f]; (R.r.t-||R.r.f-); L.a+
+		[	R.a & L.r.t -> R.r.t+; 
+		[]	R.a & L.r.f -> R.r.f+;
+		]; L.a-; [~R.a & ~L.r.t & ~L.r.f]; R.r.t-; R.r.f-; L.a+
 	]
 }
 
@@ -20,15 +20,15 @@ inline process pchb(achan4p1b R, achan4p1b L)
 
 inline process pcfb(achan4p1b R, achan4p1b L)
 {
-	//node<1> en;
+	node<1> en;
 	*[
 		[	R.a & L.r.t -> R.r.t+ 
 		[]	R.a & L.r.f -> R.r.f+
-		]; L.a-;// en-;
+		]; L.a-; en-;
 		(
 			([~R.a]; R.r.t-; R.r.f-) || 
 			([~L.r.t & ~L.r.f]; L.a+)
-		);// en+ 
+		); en+ 
 	]
 }
 
@@ -43,9 +43,9 @@ inline process cmerge1b2(achan4p1b A, achan4p1b B, achan4p1b S, achan4p1b O)
 		];
 		O!o
 	]
-}*/
+}
 
-/*inline process test_b(achan4p0b A, achan4p0b B, achan4p0b C) 
+inline process test_b(achan4p0b A, achan4p0b B, achan4p0b C) 
 {
 	node<3> val;
 

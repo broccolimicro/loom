@@ -31,6 +31,7 @@ struct path
 	int max();
 	path inverse();
 	path mask();
+	int length();
 	svector<int>::iterator begin();
 	svector<int>::iterator end();
 

@@ -55,6 +55,19 @@ namespace std
 	};
 }
 
+
+svector<int> first_combination(int s);
+bool next_combination(int S, svector<int> *iter);
+
+template <class type>
+svector<type> sample(svector<type> full, svector<int> i)
+{
+	svector<type> result;
+	for (int j = 0; j < i.size(); j++)
+		result.push_back(full[i[j]]);
+	return result;
+}
+
 #define logic canonical
 
 #endif

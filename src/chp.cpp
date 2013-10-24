@@ -17,6 +17,7 @@
 int main(int argc, char **argv)
 {
 	program prgm;
+	prgm.flags.working_directory = string(argv[0]).substr(0, string(argv[0]).find_last_of("\\/"));
 
 	for (int i = 1; i < argc; i++)
 	{
@@ -177,9 +178,9 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			prgm.flags.input_files.push_back(new ifstream(argv[i]));
-			if (!prgm.flags.input_files.back()->is_open())
-				cout << "error: file not found " << argv[i] << endl;
+			prgm.flags.input_files.push_back(pair<sstring, ifstream*>(sstring(argv[i]).substr(0, sstring(argv[i]).find_last_of("\\/")), new ifstream(argv[i])));
+			if (!prgm.flags.input_files.back().second->is_open())
+				cerr << "Error: File not found " << argv[i] << endl;
 		}
 	}
 	//FILE *log = fopen("log.txt", "w");

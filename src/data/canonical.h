@@ -32,7 +32,6 @@ struct canonical
 
 	// INTERNAL FUNCTIONS
 	int size();
-	int width();
 	void assign(int i, minterm t);
 	void remove(int i);
 
@@ -48,6 +47,7 @@ struct canonical
 	void vars(svector<int> *var_list);
 
 	canonical refactor(svector<int> ids);
+	canonical refactor(svector<pair<int, int> > ids);
 
 	canonical hide(int var);
 	canonical hide(svector<int> vars);
@@ -97,6 +97,7 @@ struct canonical
 
 	bool constant();
 
+
 	canonical operator>>(canonical t);
 
 	sstring print(variable_space *v, sstring prefix = "");
@@ -106,5 +107,6 @@ struct canonical
 
 bool is_mutex(canonical *c0, canonical *c1);
 bool is_mutex(canonical *c0, canonical *c1, canonical *c2);
+bool mergible(canonical *c0, canonical *c1);
 
 #endif

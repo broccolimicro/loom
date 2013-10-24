@@ -37,12 +37,14 @@ uint32_t vmsk(int v)
 minterm::minterm()
 {
 	values.clear();
+	default_value = vX;
 	size = 0;
 }
 
 minterm::minterm(sstring str)
 {
 	size = 0;
+	default_value = vX;
 	uint32_t val = 0;
 	for (sstring::iterator ch = str.begin(); ch != str.end(); ch++)
 	{
@@ -72,7 +74,7 @@ minterm::~minterm()
 uint32_t minterm::get(int uid)
 {
 	if (uid >= size)
-		resize(uid+1, vX);
+		resize(uid+1, default_value);
 
 	uint32_t v = (values[uid>>4] >> vidx(uid)) & 3;
 	return	(v << 0 ) | (v << 2 ) | (v << 4 ) | (v << 6 ) |
@@ -84,7 +86,7 @@ uint32_t minterm::get(int uid)
 uint32_t minterm::val(int uid)
 {
 	if (uid >= size)
-		resize(uid+1, vX);
+		resize(uid+1, default_value);
 
 	return mtoi(values[uid>>4] >> vidx(uid));
 }
@@ -92,7 +94,7 @@ uint32_t minterm::val(int uid)
 void minterm::set(int uid, uint32_t v)
 {
 	if (uid >= size)
-		resize(uid+1, vX);
+		resize(uid+1, default_value);
 
 	int w = uid >> 4;
 	uint32_t m = vmsk(uid);
@@ -108,7 +110,7 @@ void minterm::resize(int s, uint32_t r)
 		w = s >> 4;
 		l = 30 - ((s & 0x0000000F)<<1);
 
-		if (w >= (int)values.size())
+		if (w >= values.size())
 			values.resize(w+1, r);
 
 		values[size >> 4] |= r & (0x3FFFFFFF >> (((size&0x0000000F)<<1) - 2));
@@ -125,32 +127,32 @@ void minterm::clear()
 
 void minterm::sv_union(int uid, uint32_t v)
 {
-	if (uid > size)
-		resize(uid+1, vX);
+	if (uid >= size)
+		resize(uid+1, default_value);
 
 	values[uid >> 4] |= (v & vmsk(uid));
 }
 
 void minterm::sv_intersect(int uid, uint32_t v)
 {
-	if (uid > size)
-		resize(uid+1, vX);
+	if (uid >= size)
+		resize(uid+1, default_value);
 
 	values[uid >> 4] &= (v | ~vmsk(uid));
 }
 
 void minterm::sv_invert(int uid)
 {
-	if (uid > size)
-		resize(uid+1, vX);
+	if (uid >= size)
+		resize(uid+1, default_value);
 
 	values[uid >> 4] ^= vmsk(uid);
 }
 
 void minterm::sv_or(int uid, uint32_t v)
 {
-	if (uid > size)
-		resize(uid+1, vX);
+	if (uid >= size)
+		resize(uid+1, default_value);
 
 	uint32_t m = vmsk(uid);
 	v = (v & m) | (v0 & ~m);
@@ -159,8 +161,8 @@ void minterm::sv_or(int uid, uint32_t v)
 
 void minterm::sv_and(int uid, uint32_t v)
 {
-	if (uid > size)
-		resize(uid+1, vX);
+	if (uid >= size)
+		resize(uid+1, default_value);
 
 	uint32_t m = vmsk(uid);
 	v = (v & m) | (v1 & ~m);
@@ -169,8 +171,8 @@ void minterm::sv_and(int uid, uint32_t v)
 
 void minterm::sv_not(int uid)
 {
-	if (uid > size)
-		resize(uid+1, vX);
+	if (uid >= size)
+		resize(uid+1, default_value);
 
 	uint32_t m0 = (0x00000001 << vidx(uid));
 	uint32_t m1 = (0x00000002 << vidx(uid));
@@ -183,9 +185,9 @@ void minterm::sv_not(int uid)
 bool minterm::subset(minterm s)
 {
 	if (s.size > size)
-		resize(s.size, vX);
+		resize(s.size, default_value);
 	else if (size > s.size)
-		s.resize(size, vX);
+		s.resize(size, s.default_value);
 
 	bool result = true;
 	for (int i = 0; i < values.size(); i++)
@@ -197,9 +199,9 @@ bool minterm::subset(minterm s)
 bool minterm::conflict(minterm s)
 {
 	if (s.size > size)
-		resize(s.size, vX);
+		resize(s.size, default_value);
 	else if (size > s.size)
-		s.resize(size, vX);
+		s.resize(size, s.default_value);
 
 	bool result = true;
 	uint32_t C;
@@ -222,9 +224,9 @@ bool minterm::conflict(minterm s)
 int minterm::diff_count(minterm s)
 {
 	if (s.size > size)
-		resize(s.size, vX);
+		resize(s.size, default_value);
 	else if (size > s.size)
-		s.resize(size, vX);
+		s.resize(size, s.default_value);
 
 	uint32_t a;
 	int count = 0;
@@ -249,9 +251,9 @@ int minterm::diff_count(minterm s)
 pair<int, int> minterm::xdiff_count(minterm s)
 {
 	if (s.size > size)
-		resize(s.size, vX);
+		resize(s.size, default_value);
 	else if (size > s.size)
-		s.resize(size, vX);
+		s.resize(size, s.default_value);
 
 	uint32_t a, b, c, d;
 	int xcount0 = 0;
@@ -352,6 +354,7 @@ svector<minterm> minterm::expand(svector<int> uids)
 
 minterm::minterm(uint32_t val)
 {
+	default_value = vX;
 	if (val == 0)
 	{
 		values = svector<uint32_t>(1, 0);
@@ -366,26 +369,28 @@ minterm::minterm(uint32_t val)
 
 minterm::minterm(int var, uint32_t val)
 {
+	default_value = vX;
 	uint32_t w		= var >> 4;
 	uint32_t l		= vidx(var);
 	uint32_t v		= itom(val);
 	uint32_t m		= 0x00000003 << l;
 
 	size = var+1;
-	values.resize(w+1, vX);
+	values.resize(w+1, default_value);
 	values[w] = (values[w] >> l) << l;
 	values[w] = (values[w] & ~m) | (v & m);
 }
 
 minterm::minterm(smap<int, uint32_t> vals)
 {
+	default_value = vX;
 	size = vals.rbegin()->first;
 	smap<int, uint32_t>::iterator i;
 	uint32_t w		= size >> 4;
 	uint32_t l		= vidx(size);
 	uint32_t m;
 
-	values.resize(w+1, vX);
+	values.resize(w+1, default_value);
 	values[w] = (values[w] >> l) << l;
 	for (i = vals.begin(); i != vals.end(); i++)
 	{
@@ -398,6 +403,7 @@ minterm::minterm(smap<int, uint32_t> vals)
 
 minterm::minterm(sstring exp, variable_space *vars)
 {
+	default_value = vX;
 	sstring var;
 	uint32_t value;
 	int uid;
@@ -469,13 +475,21 @@ minterm minterm::refactor(svector<int> ids)
 	return result;
 }
 
+minterm minterm::refactor(svector<pair<int, int> > ids)
+{
+	minterm result;
+	for (int i = 0; i < (int)ids.size(); i++)
+		result.set(ids[i].second, get(ids[i].first));
+	return result;
+}
+
 minterm minterm::hide(int var)
 {
 	minterm result = *this;
 	if (var < size)
 		result.values[var >> 4] |= vmsk(var);
 	else
-		result.resize(var+1, vX);
+		result.resize(var+1, result.default_value);
 	return result;
 }
 
@@ -487,7 +501,7 @@ minterm minterm::hide(svector<int> vars)
 		if (vars[i] < size)
 			result.values[vars[i] >> 4] |= vmsk(vars[i]);
 		else
-			result.resize(vars[i]+1, vX);
+			result.resize(vars[i]+1, result.default_value);
 	}
 	return result;
 }
@@ -565,8 +579,10 @@ svector<smap<int, uint32_t> > minterm::allsat()
 
 minterm &minterm::operator=(minterm s)
 {
+	values.clear();
 	values = s.values;
 	size = s.size;
+	default_value = s.default_value;
 	return *this;
 }
 
@@ -615,14 +631,13 @@ minterm minterm::operator()(int i, uint32_t v)
 	return result;
 }
 
-// This assumes that s1.size == s2.size
 // TODO
 minterm minterm::operator&(minterm s)
 {
 	if (s.size > size)
-		resize(s.size, vX);
+		resize(s.size, default_value);
 	else if (size > s.size)
-		s.resize(size, vX);
+		s.resize(size, s.default_value);
 
 	minterm result;
 	for (int i = 0; i < values.size(); i++)
@@ -632,13 +647,12 @@ minterm minterm::operator&(minterm s)
 	return result;
 }
 
-// This assumes that s1.size == s2.size
 minterm minterm::operator|(minterm s)
 {
 	if (s.size > size)
-		resize(s.size, vX);
+		resize(s.size, default_value);
 	else if (size > s.size)
-		s.resize(size, vX);
+		s.resize(size, s.default_value);
 
 	minterm result;
 	for (int i = 0; i < values.size(); i++)
@@ -702,9 +716,9 @@ bool minterm::constant()
 minterm minterm::operator>>(minterm t)
 {
 	if (t.size > size)
-		resize(t.size, vX);
+		resize(t.size, default_value);
 	else if (size > t.size)
-		t.resize(size, vX);
+		t.resize(size, t.default_value);
 
 	uint32_t v;
 	minterm result;
@@ -862,9 +876,9 @@ sstring minterm::print_with_quotes(variable_space *vars, sstring prefix)
 bool operator==(minterm s1, minterm s2)
 {
 	if (s2.size > s1.size)
-		s1.resize(s2.size, vX);
+		s1.resize(s2.size, s1.default_value);
 	else if (s1.size > s2.size)
-		s2.resize(s1.size, vX);
+		s2.resize(s1.size, s2.default_value);
 
 	bool result = true;
 
@@ -877,9 +891,9 @@ bool operator==(minterm s1, minterm s2)
 bool operator!=(minterm s1, minterm s2)
 {
 	if (s2.size > s1.size)
-		s1.resize(s2.size, vX);
+		s1.resize(s2.size, s1.default_value);
 	else if (s1.size > s2.size)
-		s2.resize(s1.size, vX);
+		s2.resize(s1.size, s2.default_value);
 
 	bool result = false;
 
@@ -934,9 +948,9 @@ bool operator!=(minterm s1, uint32_t s2)
 bool operator<(minterm s1, minterm s2)
 {
 	if (s2.size > s1.size)
-		s1.resize(s2.size, vX);
+		s1.resize(s2.size, s1.default_value);
 	else if (s1.size > s2.size)
-		s2.resize(s1.size, vX);
+		s2.resize(s1.size, s2.default_value);
 
 	for (int i = 0; i < (int)s1.values.size(); i++)
 	{
@@ -952,9 +966,9 @@ bool operator<(minterm s1, minterm s2)
 bool operator>(minterm s1, minterm s2)
 {
 	if (s2.size > s1.size)
-		s1.resize(s2.size, vX);
+		s1.resize(s2.size, s1.default_value);
 	else if (s1.size > s2.size)
-		s2.resize(s1.size, vX);
+		s2.resize(s1.size, s2.default_value);
 
 	for (int i = 0; i < (int)s1.values.size(); i++)
 	{
@@ -970,9 +984,9 @@ bool operator>(minterm s1, minterm s2)
 bool operator<=(minterm s1, minterm s2)
 {
 	if (s2.size > s1.size)
-		s1.resize(s2.size, vX);
+		s1.resize(s2.size, s1.default_value);
 	else if (s1.size > s2.size)
-		s2.resize(s1.size, vX);
+		s2.resize(s1.size, s2.default_value);
 
 	for (int i = 0; i < (int)s1.values.size(); i++)
 	{
@@ -988,9 +1002,9 @@ bool operator<=(minterm s1, minterm s2)
 bool operator>=(minterm s1, minterm s2)
 {
 	if (s2.size > s1.size)
-		s1.resize(s2.size, vX);
+		s1.resize(s2.size, s1.default_value);
 	else if (s1.size > s2.size)
-		s2.resize(s1.size, vX);
+		s2.resize(s1.size, s2.default_value);
 
 	for (int i = 0; i < (int)s1.values.size(); i++)
 	{

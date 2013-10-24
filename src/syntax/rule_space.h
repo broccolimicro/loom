@@ -32,6 +32,8 @@ struct rule_space
 	void generate_minterms(petri *net, flag_space *flags);
 	void check(petri *net);
 
+	smap<pair<int, int>, pair<bool, bool> > gen_bubble_reshuffle_graph();
+
 	void print(ostream *fout);
 	void print_enable_graph(ostream *fout, petri *net, sstring name);
 };

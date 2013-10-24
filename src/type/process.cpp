@@ -201,15 +201,37 @@ void process::generate_states()
 		if (!i->second.driven)
 			vars.reset = vars.reset.hide(i->second.uid);
 
-	cout << "EXCL" << endl;
+	for (smap<sstring, variable>::iterator i = vars.label.begin(); i != vars.label.end(); i++)
+	{
+		type_space::iterator j;
+		if (i->second.type.find("operator?") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
+		{
+			if (((channel*)j->second)->send->net.M0.size() > 0)
+				net.env.pcs.push_back(program_counter(i->second.name.substr(0, i->second.name.find_last_of(".")), &net, &((channel*)j->second)->send->net, ((channel*)j->second)->send->net.M0[0]));
+			else
+				cerr << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
+		}
+
+		else if (i->second.type.find("operator!") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
+		{
+			if (((channel*)j->second)->recv->net.M0.size() > 0)
+				net.env.pcs.push_back(program_counter(i->second.name.substr(0, i->second.name.find_last_of(".")), &net, &((channel*)j->second)->recv->net, ((channel*)j->second)->recv->net.M0[0]));
+			else
+				cerr << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
+		}
+	}
+
+	/*cout << "EXCL" << endl;
 	for (int i = 0; i < (int)prs.excl.size(); i++)
 	{
 		for (int j = 0; j < (int)prs.excl[i].first.size(); j++)
 			cout << vars.get_name(prs.excl[i].first[j]) << " ";
 		cout << prs.excl[i].second << endl;
-	}
+	}*/
+}
 
-	vars.print("");
+void process::trim_states()
+{
 	do
 	{
 		print_dot(flags->log_file);
@@ -220,206 +242,290 @@ void process::generate_states()
 	} while(net.trim());
 
 	net.check_assertions();
+}
 
-	(*flags->log_file) << "Branches: " << name << endl;
-	net.print_branch_ids(flags->log_file);
+void process::direct_bubble_reshuffle()
+{
+	net.print_dot(flags->log_file, name);
+	net.gen_tails();
+
+	// Generate bubble reshuffle graph
+	smap<pair<int, int>, pair<bool, bool> > bubble_graph = net.gen_isochronics();
+	svector<bool> inverted(vars.global.size(), false);
+	svector<pair<svector<int>, bool> > cycles;
+
+	// Execute bubble reshuffling algorithm
+	for (smap<pair<int, int>, pair<bool, bool> >::iterator i = bubble_graph.begin(); i != bubble_graph.end(); i++)
+		cycles.merge(reshuffle_algorithm(i, true, &bubble_graph, svector<int>(), &inverted));
+	cycles.unique();
+
+	for (int i = 1; i < cycles.size(); i++)
+		if (cycles[i].first == cycles[i-1].first)
+		{
+			cycles.erase(cycles.begin() + i);
+			cycles.erase(cycles.begin() + i-1);
+			i--;
+		}
+
+	for (int i = 0; i < cycles.size(); i++)
+		if (cycles[i].second)
+		{
+			cycles.erase(cycles.begin() + i);
+			i--;
+		}
+
+	// Remove Negative Cycles (currently negative cycles just throw an error message)
+	for (int i = 0; i < cycles.size(); i++)
+	{
+		cerr << "Error: Negative cycle found in process " << name << " ";
+		for (int j = 0; j < cycles[i].first.size(); j++)
+		{
+			if (j != 0)
+				cerr << ", ";
+			cerr << vars.get_name(cycles[i].first[j]);
+		}
+		cerr << endl;
+	}
+
+	// Apply global inversions to state space
+	cout << "Inversions: " << name << endl;
+	for (int i = 0; i < vars.global.size(); i++)
+		cout << vars.get_name(i) << " " << inverted[i] << endl;
+
+	for (smap<sstring, variable>::iterator i = vars.global.begin(); i != vars.global.end(); i++)
+		if (inverted[i->second.uid])
+		{
+			for (int j = 0; j < net.T.size(); j++)
+				for (int k = 0; k < net.T[j].index.terms.size(); k++)
+					net.T[j].index.terms[k].sv_not(i->second.uid);
+
+			for (int j = 0; j < net.S.size(); j++)
+			{
+				for (int k = 0; k < net.S[j].index.terms.size(); k++)
+					net.S[j].index.terms[k].sv_not(i->second.uid);
+
+				for (int k = 0; k < net.S[j].assumptions.terms.size(); k++)
+					net.S[j].assumptions.terms[k].sv_not(i->second.uid);
+
+				for (int k = 0; k < net.S[j].assertions.size(); k++)
+					for (int l = 0; l < net.S[j].assertions[k].terms.size(); l++)
+						net.S[j].assertions[k].terms[l].sv_not(i->second.uid);
+			}
+
+			for (int j = 0; j < vars.enforcements.terms.size(); j++)
+				vars.enforcements.terms[j].sv_not(i->second.uid);
+
+			for (int j = 0; j < vars.requirements.size(); j++)
+				for (int k = 0; k < vars.requirements[j].terms.size(); k++)
+					vars.requirements[j].terms[k].sv_not(i->second.uid);
+
+			for (int j = 0; j < vars.reset.terms.size(); j++)
+				vars.reset.terms[j].sv_not(i->second.uid);
+
+			i->second.name = vars.invert_name(i->second.name);
+			vars.global.insert(pair<sstring, variable>(vars.invert_name(i->first), i->second));
+			i->second.name = i->first;
+			i->second.uid = vars.global.size()-1;
+			/*if (!i->second.driven)
+				prs.insert(rule("~" + i->first, i->first, vars.invert_name(i->first), &vars, &net, flags));
+			else
+				prs.insert(rule("~" + vars.invert_name(i->first), vars.invert_name(i->first), i->first, &vars, &net, flags));*/
+		}
+
+	// At this point we assume that there are no negative cycles
+	// Apply local inversions to state space
+	svector<int> inputs, inputs2;
+	int idx, uid;
+	for (smap<pair<int, int>, pair<bool, bool> >::iterator i = bubble_graph.begin(); i != bubble_graph.end(); i++)
+	{
+		if (i->second.second)
+		{
+			smap<sstring, variable>::iterator vi;
+			for (vi = vars.global.begin(); vi != vars.global.end() && vi->second.uid != i->first.first; vi++);
+			smap<sstring, variable>::iterator vj = vars.global.find(vars.invert_name(vi->second.name));
+			if (vj == vars.global.end())
+			{
+				vi->second.name = vars.invert_name(vi->second.name);
+				vi->second.uid = vars.global.size();
+				uid = vi->second.uid;
+				vars.global.insert(pair<sstring, variable>(vars.invert_name(vi->first), vi->second));
+				vi->second.name = vi->first;
+				vi->second.uid = i->first.first;
+				//prs.insert(rule("~" + vi->first, vi->first, vars.invert_name(vi->first), &vars, &net, flags));
+			}
+			else
+				uid = vj->second.uid;
+
+			for (int j = 0; j < net.T.size(); j++)
+			{
+				for (int k = 0; k < net.T[j].index.terms.size() && net.T[j].active; k++)
+				{
+					if (net.T[j].index.terms[k].val(i->first.second) != 2)
+					{
+						inputs = net.input_nodes(net.trans_id(j));
+
+						for (int l = 0; l < inputs.size(); l++)
+						{
+							inputs2 = net.input_nodes(inputs[l]);
+							for (int m = 0; m < inputs2.size(); m++)
+								if (net.T[net.index(inputs2[m])].index == 1)
+								{
+									idx = inputs2[m];
+									inputs2.erase(inputs2.begin() + m);
+									m = 0;
+									inputs2.merge(net.input_nodes(net.input_nodes(idx)));
+									inputs2.unique();
+								}
+
+							for (int m = 0; m < inputs2.size(); m++)
+								if (!net.T[net.index(inputs2[m])].active)
+								{
+									for (int n = 0; n < net.T[net.index(inputs2[m])].index.terms.size(); n++)
+									{
+										net.T[net.index(inputs2[m])].index.terms[n].set(uid, net.T[net.index(inputs2[m])].index.terms[n].get(i->first.first));
+										net.T[net.index(inputs2[m])].index.terms[n].sv_not(uid);
+										//net.T[net.index(inputs2[m])].index.terms[n].set(i->first.first, vX);
+									}
+								}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	cout << "digraph g3" << endl;
+	cout << "{" << endl;
+
+	for (smap<sstring, variable>::iterator i = vars.global.begin(); i != vars.global.end(); i++)
+		cout << "\tV" << i->second.uid << " [label=\"" << i->second.name << "\"];" << endl;
+
+	for (smap<pair<int, int>, pair<bool, bool> >::iterator i = bubble_graph.begin(); i != bubble_graph.end(); i++)
+		cout << "\tV" << i->first.first << " -> V" << i->first.second << (i->second.first ? " [style=dashed]" : "") << (i->second.second ? " [arrowhead=odotnormal]" : "") << endl;
+
+	cout << "}" << endl;
+
+	net.update();
+
+	prs.print(&cout);
+	net.print_dot(&cout, name);
+}
+
+svector<pair<svector<int>, bool> > process::reshuffle_algorithm(smap<pair<int, int>, pair<bool, bool> >::iterator idx, bool forward, smap<pair<int, int>, pair<bool, bool> > *net, svector<int> cycle, svector<bool> *inverted)
+{
+	svector<pair<svector<int>, bool> > cycles;
+	svector<int> negative_cycle;
+	svector<int>::iterator found;
+
+	cycle.push_back(forward ? idx->first.first : idx->first.second);
+
+	found = cycle.find(forward ? idx->first.second : idx->first.first);
+	if (found == cycle.end())
+	{
+		if (idx->second.first && idx->second.second && forward)
+		{
+			(*inverted)[idx->first.second] = !(*inverted)[idx->first.second];
+			for (smap<pair<int, int>, pair<bool, bool> >::iterator j = net->begin(); j != net->end(); j++)
+				if (j->first.first == idx->first.second || j->first.second == idx->first.second)
+					j->second.second = !j->second.second;
+		}
+		else if (idx->second.first && idx->second.second && !forward)
+		{
+			(*inverted)[idx->first.first] = !(*inverted)[idx->first.first];
+			for (smap<pair<int, int>, pair<bool, bool> >::iterator j = net->begin(); j != net->end(); j++)
+				if (j->first.first == idx->first.first || j->first.second == idx->first.first)
+					j->second.second = !j->second.second;
+		}
+
+		for (smap<pair<int, int>, pair<bool, bool> >::iterator i = net->begin(); i != net->end(); i++)
+		{
+			if (forward && (i->first.first == idx->first.second || i->first.second == idx->first.second) && i != idx)
+				cycles.merge(reshuffle_algorithm(i, (i->first.first == idx->first.second), net, cycle, inverted));
+			else if (!forward && (i->first.first == idx->first.first || i->first.second == idx->first.first) && i != idx)
+				cycles.merge(reshuffle_algorithm(i, (i->first.first == idx->first.first), net, cycle, inverted));
+		}
+	}
+	else if (idx->second.first && idx->second.second)
+		cycles.push_back(pair<svector<int>, bool>(svector<int>(found, cycle.end()).unique(), false));
+	else
+		cycles.push_back(pair<svector<int>, bool>(svector<int>(found, cycle.end()).unique(), true));
+
+	cycles.unique();
+
+	for (int i = 1; i < cycles.size(); i++)
+		if (cycles[i].first == cycles[i-1].first)
+		{
+			cycles.erase(cycles.begin() + i);
+			cycles.erase(cycles.begin() + i-1);
+			i--;
+		}
+
+	return cycles;
 }
 
 bool process::insert_state_vars()
 {
-	smap<int, list<svector<int> > >::iterator i, l;
-	list<svector<int> >::iterator lj;
-	smap<int, int>::iterator m, n;
-	list<path>::iterator li;
-	svector<int> arcs, uptrans, downtrans, ia, oa, jstart, istart;
 	svector<pair<svector<int>, svector<int> > > ip;
-	int ium, idm, vid, j, k;
-	int ind_max;
-	sstring vname;
 
 	net.print_dot(flags->log_file, name);
 	net.gen_tails();
 	net.gen_conflicts();
 	net.gen_conditional_places();
 
-	(*flags->log_file) << "Conflicts: " << name << endl;
-	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
-	{
-		(*flags->log_file) << i->first << ": ";
-		for (lj = i->second.begin(); lj != i->second.end(); lj++)
-		{
-			(*flags->log_file) << "{";
-			for (j = 0; j < (int)lj->size(); j++)
-				(*flags->log_file) << (*lj)[j] << " ";
-			(*flags->log_file) << "} ";
-		}
-		(*flags->log_file) << endl;
-	}
-
-	ind_max = 0;
-	(*flags->log_file) << "Indistinguishables: " << name << endl;
-	for (i = net.indistinguishable.begin(); i != net.indistinguishable.end(); i++)
-	{
-		(*flags->log_file) << i->first << ": ";
-		if ((int)i->second.size() > ind_max)
-			ind_max = (int)i->second.size();
-		for (lj = i->second.begin(); lj != i->second.end(); lj++)
-		{
-			(*flags->log_file) << "{";
-			for (j = 0; j < (int)lj->size(); j++)
-				(*flags->log_file) << (*lj)[j] << " ";
-			(*flags->log_file) << "} ";
-		}
-		(*flags->log_file) << endl;
-	}
+	net.print_conflicts(*flags->log_file, name);
+	net.print_indistinguishables(*flags->log_file, name);
 
 	if (net.conflicts.size() == 0)
 		return false;
 
-	path_space up_paths(net.arcs.size()), up_temp(net.arcs.size()), up_inv(net.arcs.size()), down_paths(net.arcs.size()), down_temp(net.arcs.size()), down_inv(net.arcs.size());
-	path up_mask(net.arcs.size()), down_mask(net.arcs.size());
 	(*flags->log_file) << "PROCESS " << name << endl;
-	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
+	for (smap<int, list<svector<int> > >::iterator i = net.conflicts.begin(); i != net.conflicts.end(); i++)
 	{
-		for (lj = i->second.begin(); lj != i->second.end(); lj++)
+		for (list<svector<int> >::iterator lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
-			down_paths.clear();
-			up_paths.clear();
-			istart = net.start_path(i->first, *lj);
-			jstart = net.start_path(*lj, svector<int>(1, i->first));
+			path_space up_paths(net.arcs.size()), down_paths(net.arcs.size());
+			pair<int, int> up_sense_count, down_sense_count;
+			svector<int> uptrans, downtrans;
 
-			//cout << "Up" << endl;
-			net.get_paths(istart, *lj, &up_paths);
-			//cout << "Down" << endl;
-			net.get_paths(jstart, svector<int>(1, i->first), &down_paths);
+			generate_paths(&up_sense_count, svector<int>(1, i->first), &up_paths, &down_sense_count, *lj, &down_paths);
+			remove_invalid_split_points(up_sense_count, svector<int>(1, i->first), &up_paths, down_sense_count, *lj, &down_paths);
 
-			up_inv = up_paths.inverse();
-			down_inv = down_paths.inverse();
+			up_paths.print_bounds(*flags->log_file, "Up");
+			uptrans = choose_split_points(&up_paths, false, false);
 
-			up_mask = up_inv.get_mask();
-			down_mask = down_inv.get_mask();
-
-			up_paths.apply_mask(down_mask);
-			down_paths.apply_mask(up_mask);
-
-			net.zero_outs(&up_paths, i->first);
-			net.zero_ins(&down_paths, i->first);
-			net.zero_ins(&up_paths, *lj);
-			net.zero_outs(&down_paths, *lj);
-
-			for (j = 0; j < (int)net.arcs.size(); j++)
-				if (net.is_place(net.arcs[j].first) && net.output_nodes(net.arcs[j].first).size() > 1)
-				{
-					up_paths.zero(j);
-					down_paths.zero(j);
-				}
-
-			(*flags->log_file) << "Up: {";
-			for (j = 0; j < (int)up_paths.total.from.size(); j++)
-			{
-				if (j != 0)
-					(*flags->log_file) << ", ";
-				(*flags->log_file) << up_paths.total.from[j];
-			}
-			(*flags->log_file) << "} -> {";
-			for (j = 0; j < (int)up_paths.total.to.size(); j++)
-			{
-				if (j != 0)
-					(*flags->log_file) << ", ";
-				(*flags->log_file) << up_paths.total.to[j];
-			}
-			(*flags->log_file) << "}" << endl;
-			uptrans.clear();
-			for (l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
-			{
-				for (j = 0; j < (int)net.arcs.size(); j++)
-					if (up_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
-						up_paths.total.nodes[j] += ind_max - (int)l->second.size();
-			}
-			(*flags->log_file) << up_paths.total << endl;
-			while (up_paths.size() > 0 && (ium = net.closest_input(up_paths.total.maxes(), up_paths.total.to, path(net.arcs.size())).second) != -1)
-			{
-				uptrans.push_back(ium);
-				up_paths = up_paths.avoidance(ium);
-				for (l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
-				{
-					for (j = 0; j < (int)net.arcs.size(); j++)
-						if (up_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
-							up_paths.total.nodes[j] += ind_max - (int)l->second.size();
-				}
-				(*flags->log_file) << up_paths.total << endl;
-			}
-
-			(*flags->log_file) << "Down: {";
-			for (j = 0; j < (int)down_paths.total.from.size(); j++)
-			{
-				if (j != 0)
-					(*flags->log_file) << ", ";
-				(*flags->log_file) << down_paths.total.from[j];
-			}
-			(*flags->log_file) << "} -> {";
-			for (j = 0; j < (int)down_paths.total.to.size(); j++)
-			{
-				if (j != 0)
-					(*flags->log_file) << ", ";
-				(*flags->log_file) << down_paths.total.to[j];
-			}
-			(*flags->log_file) << "}" << endl;
-			downtrans.clear();
-			for (l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
-			{
-				for (j = 0; j < (int)net.arcs.size(); j++)
-					if (down_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
-						down_paths.total.nodes[j] += ind_max - (int)l->second.size();
-
-			}
-			(*flags->log_file) << down_paths.total << endl;
-			while (down_paths.size() > 0 && (idm = net.closest_input(down_paths.total.maxes(), down_paths.total.to, path(net.arcs.size())).second) != -1)
-			{
-				downtrans.push_back(idm);
-				down_paths = down_paths.avoidance(idm);
-				for (l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
-				{
-					for (j = 0; j < (int)net.arcs.size(); j++)
-						if (down_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
-							down_paths.total.nodes[j] += ind_max - (int)l->second.size();
-
-				}
-				(*flags->log_file) << down_paths.total << endl;
-			}
-			(*flags->log_file) << endl;
+			down_paths.print_bounds(*flags->log_file, "Down");
+			downtrans = choose_split_points(&down_paths, false, false);
 
 			vector_symmetric_compliment(&uptrans, &downtrans);
 
 			if (uptrans.size() == 0 || downtrans.size() == 0)
 			{
 				cerr << "Error: No solution for the conflict set: " << i->first << " -> {";
-				for (j = 0; j < (int)lj->size(); j++)
+				for (int j = 0; j < (int)lj->size(); j++)
 					cerr << (*lj)[j] << " ";
 				cerr << "}." << endl;
 				net.print_dot(&cout, name);
 			}
-			else if (downtrans < uptrans)
-				ip.push_back(pair<svector<int>, svector<int> >(downtrans, uptrans));
-			else
+			else if (uptrans <= downtrans)
 				ip.push_back(pair<svector<int>, svector<int> >(uptrans, downtrans));
+			else if (downtrans <= uptrans)
+				ip.push_back(pair<svector<int>, svector<int> >(downtrans, uptrans));
 		}
 	}
 
 	ip.unique();
-	logic um, dm;
-	for (j = 0; j < (int)ip.size(); j++)
+	for (int j = 0; j < (int)ip.size(); j++)
 	{
-		vname = vars.unique_name("_sv");
-		vid   = vars.insert(variable(vname, "node", 1, false, flags));
+		sstring vname = vars.unique_name("_sv");
+		int vid   = vars.insert(variable(vname, "node", 1, false, flags));
 		vars.find(vname)->driven = true;
 
-		um = logic(vid, 1);
-		dm = logic(vid, 0);
+		logic um = logic(vid, 1);
+		logic dm = logic(vid, 0);
 
-		for (k = 0; k < (int)ip[j].first.size(); k++)
+		for (int k = 0; k < (int)ip[j].first.size(); k++)
 			net.insert_sv_at(ip[j].first[k], um);
-		for (k = 0; k < (int)ip[j].second.size(); k++)
+		for (int k = 0; k < (int)ip[j].second.size(); k++)
 			net.insert_sv_at(ip[j].second[k], dm);
 	}
 
@@ -432,17 +538,7 @@ bool process::insert_state_vars()
 
 bool process::insert_bubbleless_state_vars()
 {
-	smap<int, list<svector<int> > >::iterator i, l;
-	list<svector<int> >::iterator lj;
-	smap<int, int>::iterator m, n;
-	svector<int> li;
-
-	smap<int, pair<int, int> >::iterator ci;
-	svector<int> arcs, uptrans, downtrans, ia, oa, istart, jstart, iend, jend;
 	svector<pair<svector<int>, svector<int> > > ip;
-	int ium, idm, vid, j, k;
-	int ind_max, neg_ind_max, pos_ind_max;
-	sstring vname;
 
 	net.print_dot(flags->log_file, name);
 	net.gen_tails();
@@ -450,303 +546,42 @@ bool process::insert_bubbleless_state_vars()
 	net.gen_bubbleless_conflicts();
 	net.gen_conditional_places();
 
-	(*flags->log_file) << "Conflicts: " << name << endl;
-	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
-	{
-		(*flags->log_file) << i->first << ": ";
-		for (lj = i->second.begin(); lj != i->second.end(); lj++)
-		{
-			(*flags->log_file) << "{";
-			for (j = 0; j < (int)lj->size(); j++)
-				(*flags->log_file) << (*lj)[j] << " ";
-			(*flags->log_file) << "} ";
-		}
-		(*flags->log_file) << endl;
-	}
-
-	ind_max = 0;
-	(*flags->log_file) << "Indistinguishables: " << name << endl;
-	for (i = net.indistinguishable.begin(); i != net.indistinguishable.end(); i++)
-	{
-		(*flags->log_file) << i->first << ": ";
-		if ((int)i->second.size() > ind_max)
-			ind_max = (int)i->second.size();
-		for (lj = i->second.begin(); lj != i->second.end(); lj++)
-		{
-			(*flags->log_file) << "{";
-			for (j = 0; j < (int)lj->size(); j++)
-				(*flags->log_file) << (*lj)[j] << " ";
-			(*flags->log_file) << "} ";
-		}
-		(*flags->log_file) << endl;
-	}
-
-	(*flags->log_file) << "Positive Conflicts: " << name << endl;
-	for (i = net.positive_conflicts.begin(); i != net.positive_conflicts.end(); i++)
-	{
-		(*flags->log_file) << i->first << ": ";
-		for (lj = i->second.begin(); lj != i->second.end(); lj++)
-		{
-			(*flags->log_file) << "{";
-			for (j = 0; j < (int)lj->size(); j++)
-				(*flags->log_file) << (*lj)[j] << " ";
-			(*flags->log_file) << "} ";
-		}
-		(*flags->log_file) << endl;
-	}
-
-	(*flags->log_file) << "Negative Conflicts: " << name << endl;
-	for (i = net.negative_conflicts.begin(); i != net.negative_conflicts.end(); i++)
-	{
-		(*flags->log_file) << i->first << ": ";
-		for (lj = i->second.begin(); lj != i->second.end(); lj++)
-		{
-			(*flags->log_file) << "{";
-			for (j = 0; j < (int)lj->size(); j++)
-				(*flags->log_file) << (*lj)[j] << " ";
-			(*flags->log_file) << "} ";
-		}
-		(*flags->log_file) << endl;
-	}
-
-	(*flags->log_file) << "Positive Indistinguishables: " << name << endl;
-	for (i = net.positive_indistinguishable.begin(); i != net.positive_indistinguishable.end(); i++)
-	{
-		(*flags->log_file) << i->first << ": ";
-		if ((int)i->second.size() > pos_ind_max)
-			pos_ind_max = (int)i->second.size();
-		for (lj = i->second.begin(); lj != i->second.end(); lj++)
-		{
-			(*flags->log_file) << "{";
-			for (j = 0; j < (int)lj->size(); j++)
-				(*flags->log_file) << (*lj)[j] << " ";
-			(*flags->log_file) << "} ";
-		}
-		(*flags->log_file) << endl;
-	}
-
-	(*flags->log_file) << "Negative Indistinguishables: " << name << endl;
-	for (i = net.negative_indistinguishable.begin(); i != net.negative_indistinguishable.end(); i++)
-	{
-		(*flags->log_file) << i->first << ": ";
-		if ((int)i->second.size() > neg_ind_max)
-			neg_ind_max = (int)i->second.size();
-		for (lj = i->second.begin(); lj != i->second.end(); lj++)
-		{
-			(*flags->log_file) << "{";
-			for (j = 0; j < (int)lj->size(); j++)
-				(*flags->log_file) << (*lj)[j] << " ";
-			(*flags->log_file) << "} ";
-		}
-		(*flags->log_file) << endl;
-	}
+	net.print_conflicts(*flags->log_file, name);
+	net.print_indistinguishables(*flags->log_file, name);
+	net.print_positive_conflicts(*flags->log_file, name);
+	net.print_positive_indistinguishables(*flags->log_file, name);
+	net.print_negative_conflicts(*flags->log_file, name);
+	net.print_negative_indistinguishables(*flags->log_file, name);
 
 	if (net.positive_conflicts.size() == 0 && net.negative_conflicts.size() == 0 && net.conflicts.size() == 0)
 		return false;
 
-	path_space up_paths(net.arcs.size()), up_temp(net.arcs.size()), up_inv(net.arcs.size()), down_paths(net.arcs.size()), down_temp(net.arcs.size()), down_inv(net.arcs.size());
-	path up_mask(net.arcs.size()), down_mask(net.arcs.size());
 	(*flags->log_file) << "PROCESS " << name << endl;
-
-	for (i = net.conflicts.begin(); i != net.conflicts.end(); i++)
+	for (smap<int, list<svector<int> > >::iterator i = net.conflicts.begin(); i != net.conflicts.end(); i++)
 	{
-		for (lj = i->second.begin(); lj != i->second.end(); lj++)
+		for (list<svector<int> >::iterator lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
-			down_paths.clear();
-			up_paths.clear();
-			istart = net.start_path(i->first, *lj);
-			jstart = net.start_path(*lj, svector<int>(1, i->first));
+			path_space up_paths(net.arcs.size()), down_paths(net.arcs.size());
+			pair<int, int> up_sense_count, down_sense_count;
+			svector<int> uptrans, downtrans;
 
-			//cout << "Up" << endl;
-			net.get_paths(istart, *lj, &up_paths);
-			//cout << "Down" << endl;
-			net.get_paths(jstart, svector<int>(1, i->first), &down_paths);
+			generate_paths(&up_sense_count, svector<int>(1, i->first), &up_paths, &down_sense_count, *lj, &down_paths);
+			remove_invalid_split_points(up_sense_count, svector<int>(1, i->first), &up_paths, down_sense_count, *lj, &down_paths);
 
-			up_inv = up_paths.inverse();
-			down_inv = down_paths.inverse();
+			up_paths.print_bounds(*flags->log_file, "Up");
+			uptrans = choose_split_points(&up_paths, false, false);
 
-			up_mask = up_inv.get_mask();
-			down_mask = down_inv.get_mask();
-
-			up_paths.apply_mask(down_mask);
-			down_paths.apply_mask(up_mask);
-
-			net.zero_outs(&up_paths, i->first);
-			net.zero_ins(&down_paths, i->first);
-			net.zero_ins(&up_paths, *lj);
-			net.zero_outs(&down_paths, *lj);
-
-			for (j = 0; j < (int)net.arcs.size(); j++)
-				if (net.is_place(net.arcs[j].first) && net.output_nodes(net.arcs[j].first).size() > 1)
-				{
-					up_paths.zero(j);
-					down_paths.zero(j);
-				}
-
-			/*(*flags->log_file) << "Up: {";
-			for (j = 0; j < (int)up_paths.total.from.size(); j++)
-			{
-				if (j != 0)
-					(*flags->log_file) << ", ";
-				(*flags->log_file) << up_paths.total.from[j];
-			}
-			(*flags->log_file) << "} -> {";
-			for (j = 0; j < (int)up_paths.total.to.size(); j++)
-			{
-				if (j != 0)
-					(*flags->log_file) << ", ";
-				(*flags->log_file) << up_paths.total.to[j];
-			}
-			(*flags->log_file) << "}" << endl;*/
-			uptrans.clear();
-			for (l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
-			{
-				for (j = 0; j < (int)net.arcs.size(); j++)
-					if (up_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
-						up_paths.total.nodes[j] += ind_max - (int)l->second.size();
-			}
-			//(*flags->log_file) << up_paths.total << endl;
-			while (up_paths.size() > 0 && (ium = net.closest_input(up_paths.total.maxes(), up_paths.total.to, path(net.arcs.size())).second) != -1)
-			{
-				uptrans.push_back(ium);
-				up_paths = up_paths.avoidance(ium);
-				for (l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
-				{
-					for (j = 0; j < (int)net.arcs.size(); j++)
-						if (up_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
-							up_paths.total.nodes[j] += ind_max - (int)l->second.size();
-				}
-				//(*flags->log_file) << up_paths.total << endl;
-			}
-
-			/*(*flags->log_file) << "Down: {";
-			for (j = 0; j < (int)down_paths.total.from.size(); j++)
-			{
-				if (j != 0)
-					(*flags->log_file) << ", ";
-				(*flags->log_file) << down_paths.total.from[j];
-			}
-			(*flags->log_file) << "} -> {";
-			for (j = 0; j < (int)down_paths.total.to.size(); j++)
-			{
-				if (j != 0)
-					(*flags->log_file) << ", ";
-				(*flags->log_file) << down_paths.total.to[j];
-			}
-			(*flags->log_file) << "}" << endl;*/
-			downtrans.clear();
-			for (l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
-			{
-				for (j = 0; j < (int)net.arcs.size(); j++)
-					if (down_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
-						down_paths.total.nodes[j] += ind_max - (int)l->second.size();
-
-			}
-			//(*flags->log_file) << down_paths.total << endl;
-			while (down_paths.size() > 0 && (idm = net.closest_input(down_paths.total.maxes(), down_paths.total.to, path(net.arcs.size())).second) != -1)
-			{
-				downtrans.push_back(idm);
-				down_paths = down_paths.avoidance(idm);
-				for (l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
-				{
-					for (j = 0; j < (int)net.arcs.size(); j++)
-						if (down_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
-							down_paths.total.nodes[j] += ind_max - (int)l->second.size();
-
-				}
-				//(*flags->log_file) << down_paths.total << endl;
-			}
-			//(*flags->log_file) << endl;
+			down_paths.print_bounds(*flags->log_file, "Down");
+			downtrans = choose_split_points(&down_paths, false, false);
 
 			vector_symmetric_compliment(&uptrans, &downtrans);
 
 			if (uptrans.size() == 0 || downtrans.size() == 0)
 			{
 				cerr << "Error: No solution for the conflict set: " << i->first << " -> {";
-				for (j = 0; j < (int)lj->size(); j++)
+				for (int j = 0; j < (int)lj->size(); j++)
 					cerr << (*lj)[j] << " ";
 				cerr << "}." << endl;
-				net.print_dot(&cout, name);
-			}
-			else if (downtrans < uptrans)
-				ip.push_back(pair<svector<int>, svector<int> >(downtrans, uptrans));
-			else
-				ip.push_back(pair<svector<int>, svector<int> >(uptrans, downtrans));
-		}
-	}
-
-	for (i = net.positive_conflicts.begin(); i != net.positive_conflicts.end(); i++)
-	{
-		for (lj = i->second.begin(); lj != i->second.end(); lj++)
-		{
-			down_paths.clear();
-			up_paths.clear();
-			jstart = net.start_path(*lj, svector<int>(1, i->first));
-			istart = svector<int>(1, i->first);//net.start_path(svector<int>(1, i->first), *lj);
-
-			net.get_paths(jstart, svector<int>(1, i->first), &down_paths);
-			net.get_paths(istart, *lj, &up_paths);
-
-			/*net.zero_ins(&down_paths, i->first);
-			net.zero_outs(&down_paths, *lj);
-
-			for (j = 0; j < (int)net.arcs.size(); j++)
-				if (net.is_place(net.arcs[j].first) && net.output_nodes(net.arcs[j].first).size() > 1)
-					down_paths.zero(j);*/
-
-			uptrans = up_paths.total.from;
-			downtrans = down_paths.total.from;
-
-			(*flags->log_file) << "Down: {";
-			for (j = 0; j < (int)down_paths.total.from.size(); j++)
-			{
-				if (j != 0)
-					(*flags->log_file) << ", ";
-				(*flags->log_file) << down_paths.total.from[j];
-			}
-
-			(*flags->log_file) << "} -> {";
-			for (j = 0; j < (int)down_paths.total.to.size(); j++)
-			{
-				if (j != 0)
-					(*flags->log_file) << ", ";
-				(*flags->log_file) << down_paths.total.to[j];
-			}
-			(*flags->log_file) << "}" << endl;
-
-			/*downtrans.clear();
-			for (l = net.negative_indistinguishable.begin(); l != net.negative_indistinguishable.end(); l++)
-			{
-				for (j = 0; j < (int)net.arcs.size(); j++)
-					if (down_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
-						down_paths.total.nodes[j] += neg_ind_max - (int)l->second.size();
-
-			}
-			(*flags->log_file) << down_paths.total << endl;
-			while (down_paths.size() > 0 && (idm = net.closest_input(down_paths.total.maxes(), down_paths.total.to, path(net.arcs.size())).second) != -1)
-			{
-				downtrans.push_back(idm);
-				down_paths = down_paths.avoidance(idm);
-				for (l = net.negative_indistinguishable.begin(); l != net.negative_indistinguishable.end(); l++)
-				{
-					for (j = 0; j < (int)net.arcs.size(); j++)
-						if (down_paths.total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
-							down_paths.total.nodes[j] += neg_ind_max - (int)l->second.size();
-
-				}
-				(*flags->log_file) << down_paths.total << endl;
-			}
-			(*flags->log_file) << endl;*/
-
-			vector_symmetric_compliment(&uptrans, &downtrans);
-			if (uptrans.size() == 0 || downtrans.size() == 0)
-			{
-				cerr << "Error: No solution for the conflict set: " << i->first << " -> {";
-				for (j = 0; j < (int)lj->size(); j++)
-					cerr << (*lj)[j] << " ";
-				cerr << "}." << endl;
-				cout << "Down Paths:" << endl;
-				cout << down_paths << endl;
 				net.print_dot(&cout, name);
 			}
 			else
@@ -754,47 +589,65 @@ bool process::insert_bubbleless_state_vars()
 		}
 	}
 
-	for (i = net.negative_conflicts.begin(); i != net.negative_conflicts.end(); i++)
+	cout << "Positive Conflicts" << endl;
+	for (smap<int, list<svector<int> > >::iterator i = net.positive_conflicts.begin(); i != net.positive_conflicts.end(); i++)
 	{
-		for (lj = i->second.begin(); lj != i->second.end(); lj++)
+		for (list<svector<int> >::iterator lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
-			down_paths.clear();
-			up_paths.clear();
-			jstart = net.start_path(*lj, svector<int>(1, i->first));
-			istart = svector<int>(1, i->first);//net.start_path(svector<int>(1, i->first), *lj);
+			path_space up_paths(net.arcs.size()), down_paths(net.arcs.size());
+			pair<int, int> up_sense_count, down_sense_count;
+			svector<int> uptrans, downtrans;
 
-			net.get_paths(jstart, svector<int>(1, i->first), &up_paths);
-			net.get_paths(istart, *lj, &down_paths);
+			generate_positive_paths(&up_sense_count, *lj, &up_paths, &down_sense_count, svector<int>(1, i->first), &down_paths);
+			remove_invalid_split_points(up_sense_count, *lj, &up_paths, down_sense_count, svector<int>(1, i->first), &down_paths);
 
-			uptrans = up_paths.total.from;
-			downtrans = down_paths.total.from;
+			up_paths.print_bounds(*flags->log_file, "Up");
+			uptrans = choose_split_points(&up_paths, true, false);
 
-			(*flags->log_file) << "Up: {";
-			for (j = 0; j < (int)up_paths.total.from.size(); j++)
-			{
-				if (j != 0)
-					(*flags->log_file) << ", ";
-				(*flags->log_file) << up_paths.total.from[j];
-			}
-			(*flags->log_file) << "} -> {";
-			for (j = 0; j < (int)up_paths.total.to.size(); j++)
-			{
-				if (j != 0)
-					(*flags->log_file) << ", ";
-				(*flags->log_file) << up_paths.total.to[j];
-			}
-			(*flags->log_file) << "}" << endl;
+			down_paths.print_bounds(*flags->log_file, "Down");
+			downtrans = choose_split_points(&down_paths, false, true);
 
 			vector_symmetric_compliment(&uptrans, &downtrans);
 
 			if (uptrans.size() == 0 || downtrans.size() == 0)
 			{
 				cerr << "Error: No solution for the conflict set: " << i->first << " -> {";
-				for (j = 0; j < (int)lj->size(); j++)
+				for (int j = 0; j < (int)lj->size(); j++)
 					cerr << (*lj)[j] << " ";
 				cerr << "}." << endl;
-				cout << "Up Paths:" << endl;
-				cout << up_paths << endl;
+				net.print_dot(&cout, name);
+			}
+			else
+				ip.push_back(pair<svector<int>, svector<int> >(uptrans, downtrans));
+		}
+	}
+
+	cout << "Negative Conflicts" << endl;
+	for (smap<int, list<svector<int> > >::iterator i = net.negative_conflicts.begin(); i != net.negative_conflicts.end(); i++)
+	{
+		for (list<svector<int> >::iterator lj = i->second.begin(); lj != i->second.end(); lj++)
+		{
+			path_space up_paths(net.arcs.size()), down_paths(net.arcs.size());
+			pair<int, int> up_sense_count, down_sense_count;
+			svector<int> uptrans, downtrans;
+
+			generate_negative_paths(&up_sense_count, svector<int>(1, i->first), &up_paths, &down_sense_count, *lj, &down_paths);
+			remove_invalid_split_points(up_sense_count, svector<int>(1, i->first), &up_paths, down_sense_count, *lj, &down_paths);
+
+			up_paths.print_bounds(*flags->log_file, "Up");
+			uptrans = choose_split_points(&up_paths, true, false);
+
+			down_paths.print_bounds(*flags->log_file, "Down");
+			downtrans = choose_split_points(&down_paths, false, true);
+
+			vector_symmetric_compliment(&uptrans, &downtrans);
+
+			if (uptrans.size() == 0 || downtrans.size() == 0)
+			{
+				cerr << "Error: No solution for the conflict set: " << i->first << " -> {";
+				for (int j = 0; j < (int)lj->size(); j++)
+					cerr << (*lj)[j] << " ";
+				cerr << "}." << endl;
 				net.print_dot(&cout, name);
 			}
 			else
@@ -803,25 +656,26 @@ bool process::insert_bubbleless_state_vars()
 	}
 
 	ip.unique();
-	logic um, dm;
-	for (j = 0; j < (int)ip.size(); j++)
+	for (int j = 0; j < (int)ip.size(); j++)
 	{
-		vname = vars.unique_name("_sv");
-		vid   = vars.insert(variable(vname, "node", 1, false, flags));
+		sstring vname = vars.unique_name("_sv");
+		int vid   = vars.insert(variable(vname, "node", 1, false, flags));
 		vars.find(vname)->driven = true;
 
-		um = logic(vid, 1);
-		dm = logic(vid, 0);
+		logic um = logic(vid, 1);
+		logic dm = logic(vid, 0);
 
-		for (k = 0; k < (int)ip[j].first.size(); k++)
+		for (int k = 0; k < (int)ip[j].first.size(); k++)
 			net.insert_sv_at(ip[j].first[k], um);
-		for (k = 0; k < (int)ip[j].second.size(); k++)
+		for (int k = 0; k < (int)ip[j].second.size(); k++)
 			net.insert_sv_at(ip[j].second[k], dm);
 	}
 
 	net.trim_branch_ids();
 	net.gen_mutables();
 	net.update();
+
+
 
 	return (ip.size() > 0);
 }
@@ -830,6 +684,7 @@ void process::generate_prs()
 {
 	cout << "Generating " << name << endl;
 	print_dot(&cout);
+	net.gen_tails();
 	prs.generate_minterms(&net, flags);
 
 	if (flags->log_base_prs() && kind() == "process")
@@ -842,6 +697,7 @@ void process::generate_prs()
 
 void process::generate_bubbleless_prs()
 {
+	net.gen_tails();
 	net.gen_senses();
 	for (smap<sstring, variable>::iterator vi = vars.global.begin(); vi != vars.global.end(); vi++)
 		if (vi->second.driven)
@@ -852,6 +708,135 @@ void process::generate_bubbleless_prs()
 		(*flags->log_file) << "Production Rules: " << name << endl;
 		print_prs(flags->log_file);
 	}
+}
+
+void process::bubble_reshuffle()
+{
+	//net.print_dot(flags->log_file, name);
+	net.gen_tails();
+
+	cout << "Production Rules: " << name << endl;
+	prs.print(&cout);
+
+	// Generate bubble reshuffle graph
+	smap<pair<int, int>, pair<bool, bool> > bubble_graph = prs.gen_bubble_reshuffle_graph();
+	svector<bool> inverted(vars.global.size(), false);
+	svector<pair<svector<int>, bool> > cycles;
+
+	// Execute bubble reshuffling algorithm
+	for (smap<pair<int, int>, pair<bool, bool> >::iterator i = bubble_graph.begin(); i != bubble_graph.end(); i++)
+		cycles.merge(reshuffle_algorithm(i, true, &bubble_graph, svector<int>(), &inverted));
+	cycles.unique();
+
+	for (int i = 1; i < cycles.size(); i++)
+		if (cycles[i].first == cycles[i-1].first)
+		{
+			cycles.erase(cycles.begin() + i);
+			cycles.erase(cycles.begin() + i-1);
+			i--;
+		}
+
+	for (int i = 0; i < cycles.size(); i++)
+		if (cycles[i].second)
+		{
+			cycles.erase(cycles.begin() + i);
+			i--;
+		}
+
+	// Remove Negative Cycles (currently negative cycles just throw an error message)
+	for (int i = 0; i < cycles.size(); i++)
+	{
+		cerr << "Error: Negative cycle found in process " << name << " ";
+		for (int j = 0; j < cycles[i].first.size(); j++)
+		{
+			if (j != 0)
+				cerr << ", ";
+			cerr << vars.get_name(cycles[i].first[j]);
+		}
+		cerr << endl;
+	}
+
+	// Apply global inversions to production rules
+	/*cout << "Inversions: " << name << endl;
+	for (int i = 0; i < vars.global.size(); i++)
+		cout << vars.get_name(i) << " " << inverted[i] << endl;*/
+
+	svector<variable> toadd;
+	logic temp;
+
+	int uid = 0;
+	for (smap<sstring, variable>::iterator i = vars.global.begin(); i != vars.global.end(); i++)
+		if (inverted[i->second.uid])
+		{
+			for (int j = 0; j < prs.rules.size(); j++)
+				for (int k = 0; k < 2; k++)
+					for (int l = 0; l < prs.rules[j].guards[k].terms.size(); l++)
+						prs.rules[j].guards[k].terms[l].sv_not(i->second.uid);
+
+			prs.rules[i->second.uid].invert();
+
+			toadd.push_back(i->second);
+			toadd.back().name = vars.invert_name(toadd.back().name);
+			i->second.uid = vars.global.size() + toadd.size() - 1;
+		}
+
+	for (int i = 0; i < toadd.size(); i++)
+	{
+		vars.global.insert(pair<sstring, variable>(toadd[i].name, toadd[i]));
+
+		if (toadd[i].driven)
+			prs.insert(rule("~" + toadd[i].name, toadd[i].name, vars.invert_name(toadd[i].name), &vars, &net, flags));
+		else
+			prs.insert(rule("~" + vars.invert_name(toadd[i].name), vars.invert_name(toadd[i].name), toadd[i].name, &vars, &net, flags));
+	}
+
+	// Apply local inversions to production rules
+	for (smap<pair<int, int>, pair<bool, bool> >::iterator i = bubble_graph.begin(); i != bubble_graph.end(); i++)
+	{
+		if (i->second.second)
+		{
+			smap<sstring, variable>::iterator vi;
+			for (vi = vars.global.begin(); vi != vars.global.end() && vi->second.uid != i->first.first; vi++);
+			smap<sstring, variable>::iterator vj = vars.global.find(vars.invert_name(vi->second.name));
+			if (vj == vars.global.end())
+			{
+				vi->second.name = vars.invert_name(vi->second.name);
+				vi->second.uid = vars.global.size();
+				uid = vars.global.size();
+				vars.global.insert(pair<sstring, variable>(vi->second.name, vi->second));
+				vi->second.name = vi->first;
+				vi->second.uid = i->first.first;
+				prs.insert(rule("~" + vi->first, vi->first, vars.invert_name(vi->first), &vars, &net, flags));
+			}
+			else
+				uid = vj->second.uid;
+
+			for (int j = 0; j < 2; j++)
+				for (int k = 0; k < prs.rules[i->first.second].guards[j].terms.size(); k++)
+				{
+					prs.rules[i->first.second].guards[j].terms[k].set(uid, prs.rules[i->first.second].guards[j].terms[k].get(i->first.first));
+					prs.rules[i->first.second].guards[j].terms[k].sv_not(uid);
+					prs.rules[i->first.second].guards[j].terms[k].set(i->first.first, vX);
+				}
+		}
+	}
+
+	cout << "digraph g1" << endl;
+	cout << "{" << endl;
+
+	for (smap<sstring, variable>::iterator i = vars.global.begin(); i != vars.global.end(); i++)
+		cout << "\tV" << i->second.uid << " [label=\"" << i->second.name << "\"];" << endl;
+
+	for (smap<pair<int, int>, pair<bool, bool> >::iterator i = bubble_graph.begin(); i != bubble_graph.end(); i++)
+		cout << "\tV" << i->first.first << " -> V" << i->first.second << (i->second.first ? " [style=dashed]" : "") << (i->second.second ? " [arrowhead=odotnormal]" : "") << endl;
+
+	cout << "}" << endl;
+
+	cout << endl;
+
+	prs.print(&cout);
+	cout << endl << endl;
+	//net.print_dot(&cout, name);
 }
 
 /* TODO: Factoring - production rules should be relatively short.
@@ -872,118 +857,209 @@ void process::factor_prs()
 		print_prs(flags->log_file);
 }
 
-void process::parse_prs(sstring raw)
+void process::generate_paths(pair<int, int> *up_sense_count, svector<int> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<int> down_start,  path_space *down_paths)
 {
-	int i, j, k;
-	sstring r, e, v;
-	smap<sstring, pair<sstring, sstring> > pairs;
-	smap<sstring, pair<sstring, sstring> >::iterator pi;
+	down_paths->clear();
+	up_paths->clear();
+	svector<int> iin;
+	for (int j = 0; j < up_start.size(); j++)
+		iin.merge(net.input_arcs(up_start[j]));
 
-	raw = remove_comments(raw);
+	svector<int> jin;
+	for (int j = 0; j < down_start.size(); j++)
+		jin.merge(net.input_arcs(down_start[j]));
 
-	for (i = raw.find_first_of("\n\r"), j = 0; i != (int)raw.npos; j = i+1, i = raw.find_first_of("\n\r", j))
+	svector<int> istart = net.start_path(iin, jin);
+	svector<int> jstart = net.start_path(jin, iin);
+	pair<int, int> swap_sense_count;
+	path_space swap_path_space(net.arcs.size());
+
+	*up_sense_count = net.get_input_sense_count(up_start);
+	*down_sense_count = net.get_input_sense_count(down_start);
+
+	if (up_sense_count->second > up_sense_count->first && down_sense_count->first > down_sense_count->second)
 	{
-		r = raw.substr(j, i-j);
-		k = r.find(" -> ");
-		if (k != (int)r.npos)
-		{
-			e = r.substr(0, k);
-			v = r.substr(k+4);
-
-			pi = pairs.find(v.substr(0, v.length()-1));
-			if (pi != pairs.end())
-			{
-				if (v[v.length()-1] == '+')
-					pi->second.first = e;
-				else
-					pi->second.second = e;
-			}
-			else
-			{
-				if (v[v.length()-1] == '+')
-					pairs.insert(pair<sstring, pair<sstring, sstring> >(v.substr(0, v.length()-1), pair<sstring, sstring>(e, "")));
-				else
-					pairs.insert(pair<sstring, pair<sstring, sstring> >(v.substr(0, v.length()-1), pair<sstring, sstring>("", e)));
-			}
-		}
+		net.get_paths(istart, jin, up_paths);
+		net.get_paths(jstart, iin, down_paths);
 	}
-
-	for (pi = pairs.begin(); pi != pairs.end(); pi++)
+	else if (up_sense_count->first > up_sense_count->second && down_sense_count->second > down_sense_count->first)
 	{
-		cout << pi->first << ",{" << pi->second.first << ", " << pi->second.second << "}" << endl;
-		prs.insert(rule(pi->second.first, pi->second.second, pi->first, &vars, &net, flags));
+		net.get_paths(istart, jin, down_paths);
+		net.get_paths(jstart, iin, up_paths);
+		swap_sense_count = *up_sense_count;
+		*up_sense_count = *down_sense_count;
+		*down_sense_count = swap_sense_count;
+	}
+	else
+	{
+		net.get_paths(istart, jin, up_paths);
+		net.get_paths(jstart, iin, down_paths);
+
+		if (up_sense_count->second > up_sense_count->first && down_sense_count->second > down_sense_count->first && up_paths->length() > down_paths->length())
+		{
+			swap_path_space = *up_paths;
+			*up_paths = *down_paths;
+			*down_paths = swap_path_space;
+			swap_sense_count = *up_sense_count;
+			*up_sense_count = *down_sense_count;
+			*down_sense_count = swap_sense_count;
+		}
+		else if (up_sense_count->first > up_sense_count->second && down_sense_count->first > down_sense_count->second && down_paths->length() > up_paths->length())
+		{
+			swap_path_space = *up_paths;
+			*up_paths = *down_paths;
+			*down_paths = swap_path_space;
+			swap_sense_count = *up_sense_count;
+			*up_sense_count = *down_sense_count;
+			*down_sense_count = swap_sense_count;
+		}
 	}
 }
 
-void process::elaborate_prs()
+void process::generate_positive_paths(pair<int, int> *up_sense_count, svector<int> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<int> down_start,  path_space *down_paths)
 {
-	int ufrom, dfrom;
-	int utrans, dtrans;
-	int uto, dto;
-	svector<int> ot, op;
-	svector<int> vl;
-	svector<smap<int, uint32_t> > sat;
-	svector<smap<int, uint32_t> >::iterator si;
-	int i, j;
+	down_paths->clear();
+	up_paths->clear();
+	svector<int> iin;
+	for (int j = 0; j < up_start.size(); j++)
+		iin.merge(net.input_arcs(up_start[j]));
 
-	for (i = 0; i < (int)prs.size(); i++)
-	{
-		sat = (prs[i].up() & logic(prs[i].uid, 0)).allsat();
-		//sat = net.values.allsat(prs[i].up);
-		for (si = sat.begin(); si != sat.end(); si++)
+	svector<int> jin;
+	for (int j = 0; j < down_start.size(); j++)
+		jin.merge(net.input_arcs(down_start[j]));
+
+	svector<int> istart = net.start_path(iin, jin);
+	svector<int> jstart = net.start_path(jin, iin);
+
+	*up_sense_count = net.get_input_sense_count(up_start);
+	*down_sense_count = net.get_input_sense_count(down_start);
+	down_sense_count->second = 0;
+
+	net.get_paths(istart, jin, up_paths);
+	net.get_paths(jstart, iin, down_paths);
+}
+
+void process::generate_negative_paths(pair<int, int> *up_sense_count, svector<int> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<int> down_start,  path_space *down_paths)
+{
+	down_paths->clear();
+	up_paths->clear();
+	svector<int> iin;
+	for (int j = 0; j < up_start.size(); j++)
+		iin.merge(net.input_arcs(up_start[j]));
+
+	svector<int> jin;
+	for (int j = 0; j < down_start.size(); j++)
+		jin.merge(net.input_arcs(down_start[j]));
+
+	svector<int> istart = net.start_path(iin, jin);
+	svector<int> jstart = net.start_path(jin, iin);
+	pair<int, int> swap_sense_count;
+	path_space swap_path_space(net.arcs.size());
+
+	*up_sense_count = net.get_input_sense_count(up_start);
+	up_sense_count->first = 0;
+	*down_sense_count = net.get_input_sense_count(down_start);
+
+	net.get_paths(istart, jin, up_paths);
+	net.get_paths(jstart, iin, down_paths);
+}
+
+void process::remove_invalid_split_points(pair<int, int> up_sense_count, svector<int> up_start, path_space *up_paths, pair<int, int> down_sense_count, svector<int> down_start, path_space *down_paths)
+{
+	path_space up_inv = up_paths->inverse();
+	path_space down_inv = down_paths->inverse();
+
+	path up_mask = up_inv.get_mask();
+	path down_mask = down_inv.get_mask();
+
+	up_paths->apply_mask(down_mask);
+	down_paths->apply_mask(up_mask);
+
+	if (up_sense_count.first != 0)
+		net.zero_paths(up_paths, up_start);
+
+	if (down_sense_count.second != 0)
+		net.zero_paths(down_paths, down_start);
+
+	for (int j = 0; j < up_paths->total.to.size(); j++)
+		if (net.is_place(net.arcs[up_paths->total.to[j]].second))
+			up_paths->zero(up_paths->total.to[j]);
+
+	for (int j = 0; j < down_paths->total.to.size(); j++)
+		if (net.is_place(net.arcs[down_paths->total.to[j]].second))
+			down_paths->zero(down_paths->total.to[j]);
+
+	for (int j = 0; j < (int)net.arcs.size(); j++)
+		if (net.is_place(net.arcs[j].first) && net.output_nodes(net.arcs[j].first).size() > 1)
 		{
-			ufrom  = net.new_place(logic(*si), smap<int, int>(), smap<int, int>(), NULL);
-			utrans = net.insert_transition(ufrom, logic(prs[i].uid, 1), smap<int, int>(), smap<int, int>(), NULL);
-			uto    = net.insert_place(utrans, smap<int, int>(), smap<int, int>(), NULL);
-			net.S[uto].index = net.S[ufrom].index >> net.T[utrans].index;
-			net.S[ufrom].active = true;
-			net.T[utrans].active = true;
+			up_paths->zero(j);
+			down_paths->zero(j);
 		}
+}
 
-		sat = (prs[i].down() & logic(prs[i].uid, 1)).allsat();
-		//sat = net.values.allsat(prs[i].down);
-		for (si = sat.begin(); si != sat.end(); si++)
+svector<int> process::choose_split_points(path_space *paths, bool up, bool down)
+{
+	svector<int> result;
+	int max;
+
+	for (smap<int, list<svector<int> > >::iterator l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
+	{
+		for (int j = 0; j < (int)net.arcs.size(); j++)
+			if (paths->total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
+				paths->total.nodes[j] += net.max_indistinguishables - (int)l->second.size();
+	}
+	if (up)
+	{
+		for (smap<int, list<svector<int> > >::iterator l = net.negative_indistinguishable.begin(); l != net.negative_indistinguishable.end(); l++)
 		{
-			dfrom  = net.new_place(logic(*si), smap<int, int>(), smap<int, int>(), NULL);
-			dtrans = net.insert_transition(dfrom, logic(prs[i].uid, 0), smap<int, int>(), smap<int, int>(), NULL);
-			dto    = net.insert_place(dtrans, smap<int, int>(), smap<int, int>(), NULL);
-			net.S[dto].index = net.S[dfrom].index >> net.T[dtrans].index;
-			net.S[dfrom].active = true;
-			net.T[dtrans].active = true;
+			for (int j = 0; j < (int)net.arcs.size(); j++)
+				if (paths->total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
+					paths->total.nodes[j] += net.max_negative_indistinguishables - (int)l->second.size();
 		}
 	}
-
-	net.merge_conflicts();
-
-	// Try to guess the environment's behavior
-	/*svector<int> inactive;
-	svector<int> active;
-	smap<sstring, variable>::iterator vi;
-	for (vi = vars.global.begin(); vi != vars.global.end(); vi++)
+	else if (down)
 	{
-		if (!vi->second.driven)
-			inactive.push_back(vi->second.uid);
-		else
-			active.push_back(vi->second.uid);
+		for (smap<int, list<svector<int> > >::iterator l = net.positive_indistinguishable.begin(); l != net.positive_indistinguishable.end(); l++)
+		{
+			for (int j = 0; j < (int)net.arcs.size(); j++)
+				if (paths->total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
+					paths->total.nodes[j] += net.max_positive_indistinguishables - (int)l->second.size();
+		}
 	}
+	(*flags->log_file) << paths->total << endl;
 
-	for (i = 0; i < (int)net.S.size(); i++)
-		for (j = 0; j < (int)net.S.size(); j++)
-			if (i != j && !net.connected(i, j) && net.values.apply_and(net.values.hide(net.S[i].index, inactive), net.S[j].index) > 1)
+	while (paths->size() > 0 && (max = net.closest_input(paths->total.maxes(), paths->total.to, path(net.arcs.size())).second) != -1)
+	{
+		result.push_back(max);
+		*paths = paths->avoidance(max);
+
+		for (smap<int, list<svector<int> > >::iterator l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
+		{
+			for (int j = 0; j < (int)net.arcs.size(); j++)
+				if (paths->total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
+					paths->total.nodes[j] += net.max_indistinguishables - (int)l->second.size();
+		}
+		if (up)
+		{
+			for (smap<int, list<svector<int> > >::iterator l = net.negative_indistinguishable.begin(); l != net.negative_indistinguishable.end(); l++)
 			{
-				ufrom = net.values.hide(net.S[j].index, active);
-				utrans = net.insert_transition(i, ufrom, smap<int, int>(), NULL);
-				net.connect(utrans, j);
-			}*/
-
-	//net.zip();
-
-	for (int i = 0; i < (int)net.S.size(); i++)
-		if (net.output_nodes(i).size() == 0)
-		{
-			net.remove_place(i);
-			i--;
+				for (int j = 0; j < (int)net.arcs.size(); j++)
+					if (paths->total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
+						paths->total.nodes[j] += net.max_negative_indistinguishables - (int)l->second.size();
+			}
 		}
+		else if (down)
+		{
+			for (smap<int, list<svector<int> > >::iterator l = net.positive_indistinguishable.begin(); l != net.positive_indistinguishable.end(); l++)
+			{
+				for (int j = 0; j < (int)net.arcs.size(); j++)
+					if (paths->total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
+						paths->total.nodes[j] += net.max_positive_indistinguishables - (int)l->second.size();
+			}
+		}
+		(*flags->log_file) << paths->total << endl;
+	}
+	return result;
 }
 
 void process::print_hse(ostream *fout)

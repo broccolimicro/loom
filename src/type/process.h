@@ -48,14 +48,23 @@ struct process : keyword
 	void reshuffle();
 
 	void generate_states();
+	void trim_states();
+	void direct_bubble_reshuffle();
+	svector<pair<svector<int>, bool> > reshuffle_algorithm(smap<pair<int, int>, pair<bool, bool> >::iterator idx, bool forward, smap<pair<int, int>, pair<bool, bool> > *net, svector<int> cycle, svector<bool> *inverted);
 	bool insert_state_vars();
 	bool insert_bubbleless_state_vars();
 	void generate_prs();
 	void generate_bubbleless_prs();
+	void bubble_reshuffle();
 	void factor_prs();
 
-	void parse_prs(sstring raw);
-	void elaborate_prs();
+
+
+	void generate_paths(pair<int, int> *up_sense_count, svector<int> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<int> down_start,  path_space *down_paths);
+	void generate_positive_paths(pair<int, int> *up_sense_count, svector<int> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<int> down_start,  path_space *down_paths);
+	void generate_negative_paths(pair<int, int> *up_sense_count, svector<int> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<int> down_start,  path_space *down_paths);
+	void remove_invalid_split_points(pair<int, int> up_sense_count, svector<int> up_start, path_space *up_paths, pair<int, int> down_sense_count, svector<int> down_start, path_space *down_paths);
+	svector<int> choose_split_points(path_space *paths, bool up, bool down);
 
 	void print_hse(ostream *fout = &cout);
 	void print_dot(ostream *fout = &cout);

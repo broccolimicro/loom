@@ -37,6 +37,7 @@ struct path_space
 
 	int coverage_count(int n);
 	int coverage_count(svector<int> n);
+	int length();
 	svector<int> coverage_maxes();
 	int coverage_max();
 	path get_mask();
@@ -46,6 +47,8 @@ struct path_space
 	path_space avoidance(int n);
 
 	path_space &operator=(path_space s);
+
+	void print_bounds(ostream &fout, string name);
 
 	int &operator[](int i);
 	path &operator()(int i);

@@ -31,6 +31,7 @@ struct operate : process
 	operate &operator=(operate p);
 
 	void parse(sstring raw);
+	void generate_states();
 
 	void print_prs(ostream *fout, sstring prefix, svector<sstring> driven);
 };

@@ -1,12 +1,8 @@
 Compiler TODO list
 
-Production rule generation:
-	Iterate through every variable and try to smooth it out of a 
-	given state. If this creates a conflict, don't do it. This is a 
-	difficult  problem since The order in which you process the states 
-	matters, and the order in which you smooth out the variables 
-	matters. This will shrink the production rules to their minimal 
-	size.
+Fix expression expansion
+	Expressions with constants currently don't work. It doesn't know how
+	to identify their type.
 
 Zip:
 	Find a condition in which it is legal to zip up two transitions of 
@@ -92,5 +88,21 @@ Expand Inconsistent Branches:
 Handshaking reshuffling
 Production Rule Reduction
 Bubble Reshuffling
+	Approach One: synthesize blindly and hope that bubble reshuffling will work. I can implement this
+	now, and it would allow me to concentrate on fixing up guard strengthening, but the probability
+	of this actually working for a particular circuit is very low. This means that I would have to
+	go back after a failed bubble reshuffle attempt and try to fix the state space to enable bubble
+	reshuffling. This would be very difficult and inefficient since you would have to go backward
+	in the synthesis and throw out a bunch of work.
+	
+	Approach Two: try to guarantee (somehow) that bubble reshuffling will work. Examine what negative
+	cycles in production rules look like in the state space. Maybe I can find these and eliminate them
+	with state variable insertions (or handshake reshufflings). Also look at the other two failure cases
+	{(a -> b+, a -> b-) and (a & G1 | ~a & G2 -> b+)}. 
+	
+	Approach Three: just synthesize production rules that don't need to be bubble reshuffled. Find all three
+	failure cases and fix them just like in approach two. But then also insert state variables that remove
+	bubbles. This is the most difficult approach.
+
 Performance analysis (Power, Timing, ect)
 Comment Code

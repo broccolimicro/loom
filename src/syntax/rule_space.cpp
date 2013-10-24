@@ -136,9 +136,9 @@ logic rule_space::apply(logic s, logic covered, sstring t)
 
 void rule_space::generate_minterms(petri *net, flag_space *flags)
 {
-	svector<int> vl, ia;
+	svector<int> vl, vl2, ia;
 	int i, j, k, tid;
-	logic t;
+	logic t, ti;
 	svector<bool> covered;
 	minterm reset;
 	smap<int, logic> mutables;
@@ -191,13 +191,17 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 					tid = rules[vi->second.uid].implicants[i][j];
 					vl = net->T[net->index(tid)].index.vars().unique();
 					ia = net->input_nodes(tid);
-					for (k = 0, t = 1; k < ia.size(); k++)
+					for (k = 0, t = 1, ti = 1; k < ia.size(); k++)
 					{
 						t &= net->S[ia[k]].index;
+						if (net->S[ia[k]].tail_index != 0)
+							ti &= net->S[ia[k]].tail_index;
 						mutables = (k == 0 ? net->S[ia[k]].mutables : mutables.set_intersection(net->S[ia[k]].mutables));
 					}
 					t = t.hide(vl);
 					rules[vi->second.uid].explicit_guards[i] |= t;
+
+					rules[vi->second.uid].guards[i] |= t;
 
 					covered.clear();
 					cout << "Start " << net->T[net->index(tid)].index.print(vars) <<  " ";
@@ -303,6 +307,132 @@ void rule_space::check(petri *net)
 
 	if (error)
 		print_enable_graph(&cout, net, "g");
+}
+
+smap<pair<int, int>, pair<bool, bool> > rule_space::gen_bubble_reshuffle_graph()
+{
+	svector<pair<int, int> > net;
+
+	svector<int> tvars, ivars;
+
+	for (int i = 0; i < rules.size(); i++)
+		if (rules[i].vars != NULL)
+			for (int j = 0; j < 2; j++)
+				for (int k = 0; k < rules[i].guards[j].terms.size(); k++)
+				{
+					ivars = rules[i].guards[j].terms[k].vars();
+					for (int l = 0; l < ivars.size(); l++)
+						net.push_back(pair<int, int>(ivars[l]*2 + rules[i].guards[j].terms[k].val(ivars[l]), rules[i].uid*2 + j));
+				}
+
+	net.unique();
+
+	sstring label;
+	/*cout << "digraph g0" << endl;
+	cout << "{" << endl;
+
+	for (smap<sstring, variable>::iterator i = vars->global.begin(); i != vars->global.end(); i++)
+	{
+		cout << "\tV" << i->second.uid*2 << " [label=\"" << i->second.name << "-\"];" << endl;
+		cout << "\tV" << i->second.uid*2+1 << " [label=\"" << i->second.name << "+\"];" << endl;
+	}
+
+	for (int i = 0; i < net.size(); i++)
+		cout << "\tV" << net[i].first << " -> V" << net[i].second << endl;
+
+	cout << "}" << endl;*/
+
+	svector<pair<int, int> >::iterator remarc;
+	for (smap<sstring, variable>::iterator i = vars->global.begin(); i != vars->global.end(); i++)
+		for (smap<sstring, variable>::iterator j = vars->global.begin(); j != vars->global.end(); j++)
+			if (i != j)
+			{
+				if ((remarc = net.find(pair<int, int>(i->second.uid*2, j->second.uid*2))) != net.end() && net.find(pair<int, int>(i->second.uid*2+1, j->second.uid*2)) != net.end())
+				{
+					cerr << "Error: Dividing signal found in production rules {" << i->second.name << " -> " << j->second.name << "-}" << endl;
+					for (int k = 0; k < rules[remarc->second/2].guards[remarc->second%2].terms.size(); k++)
+						rules[remarc->second/2].guards[remarc->second%2].terms[k].sv_union(remarc->first/2, remarc->first%2 == 0 ? v1 : v0);
+
+					for (int k = 0; k < rules[remarc->second/2].explicit_guards[remarc->second%2].terms.size(); k++)
+						rules[remarc->second/2].explicit_guards[remarc->second%2].terms[k].sv_union(remarc->first/2, remarc->first%2 == 0 ? v1 : v0);
+					net.erase(remarc);
+				}
+
+				if (net.find(pair<int, int>(i->second.uid*2, j->second.uid*2+1)) != net.end() && (remarc = net.find(pair<int, int>(i->second.uid*2+1, j->second.uid*2+1))) != net.end())
+				{
+					cerr << "Error: Dividing signal found in production rules {" << i->second.name << " -> " << j->second.name << "+}" << endl;
+					for (int k = 0; k < rules[remarc->second/2].guards[remarc->second%2].terms.size(); k++)
+						rules[remarc->second/2].guards[remarc->second%2].terms[k].sv_union(remarc->first/2, remarc->first%2 == 0 ? v1 : v0);
+
+					for (int k = 0; k < rules[remarc->second/2].explicit_guards[remarc->second%2].terms.size(); k++)
+						rules[remarc->second/2].explicit_guards[remarc->second%2].terms[k].sv_union(remarc->first/2, remarc->first%2 == 0 ? v1 : v0);
+					net.erase(remarc);
+				}
+
+				if ((remarc = net.find(pair<int, int>(i->second.uid*2, j->second.uid*2))) != net.end() && net.find(pair<int, int>(i->second.uid*2, j->second.uid*2+1)) != net.end())
+				{
+					cerr << "Error: Gating signal found in production rules {" << i->second.name << "- -> " << j->second.name << "}" << endl;
+					for (int k = 0; k < rules[remarc->second/2].guards[remarc->second%2].terms.size(); k++)
+						rules[remarc->second/2].guards[remarc->second%2].terms[k].sv_union(remarc->first/2, remarc->first%2 == 0 ? v1 : v0);
+
+					for (int k = 0; k < rules[remarc->second/2].explicit_guards[remarc->second%2].terms.size(); k++)
+						rules[remarc->second/2].explicit_guards[remarc->second%2].terms[k].sv_union(remarc->first/2, remarc->first%2 == 0 ? v1 : v0);
+					net.erase(remarc);
+				}
+
+				if (net.find(pair<int, int>(i->second.uid*2+1, j->second.uid*2)) != net.end() && (remarc = net.find(pair<int, int>(i->second.uid*2+1, j->second.uid*2+1))) != net.end())
+				{
+					cerr << "Error: Gating signal found in production rules {" << i->second.name << "+ -> " << j->second.name << "}" << endl;
+					for (int k = 0; k < rules[remarc->second/2].guards[remarc->second%2].terms.size(); k++)
+						rules[remarc->second/2].guards[remarc->second%2].terms[k].sv_union(remarc->first/2, remarc->first%2 == 0 ? v1 : v0);
+
+					for (int k = 0; k < rules[remarc->second/2].explicit_guards[remarc->second%2].terms.size(); k++)
+						rules[remarc->second/2].explicit_guards[remarc->second%2].terms[k].sv_union(remarc->first/2, remarc->first%2 == 0 ? v1 : v0);
+					net.erase(remarc);
+				}
+			}
+
+	/*cout << "digraph g1" << endl;
+	cout << "{" << endl;
+
+	for (smap<sstring, variable>::iterator i = vars->global.begin(); i != vars->global.end(); i++)
+	{
+		cout << "\tV" << i->second.uid*2 << " [label=\"" << i->second.name << "-\"];" << endl;
+		cout << "\tV" << i->second.uid*2+1 << " [label=\"" << i->second.name << "+\"];" << endl;
+	}
+
+	for (int i = 0; i < net.size(); i++)
+		cout << "\tV" << net[i].first << " -> V" << net[i].second << endl;
+
+	cout << "}" << endl;*/
+
+	smap<pair<int, int>, pair<bool, bool> > net2;
+	smap<pair<int, int>, pair<bool, bool> >::iterator net2iter;
+	for (int i = 0; i < net.size(); i++)
+	{
+		net2iter = net2.find(pair<int, int>(net[i].first/2, net[i].second/2));
+		if (net2iter == net2.end())
+			net2.insert(pair<pair<int, int>, pair<bool, bool> >(pair<int, int>(net[i].first/2, net[i].second/2), pair<bool, bool>(true, net[i].first%2 == net[i].second%2)));
+		else
+			net2iter->second.first = false;
+	}
+
+	cout << endl;
+
+	cout << "digraph g0" << endl;
+	cout << "{" << endl;
+
+	for (smap<sstring, variable>::iterator i = vars->global.begin(); i != vars->global.end(); i++)
+		cout << "\tV" << i->second.uid << " [label=\"" << i->second.name << "\"];" << endl;
+
+	for (net2iter = net2.begin(); net2iter != net2.end(); net2iter++)
+		cout << "\tV" << net2iter->first.first << " -> V" << net2iter->first.second << (net2iter->second.first ? " [style=dashed]" : "") << (net2iter->second.second ? " [arrowhead=odotnormal]" : "") << endl;
+
+	cout << "}" << endl;
+
+	cout << endl;
+
+	return net2;
 }
 
 void rule_space::print(ostream *fout)

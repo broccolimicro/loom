@@ -352,6 +352,16 @@ sstring variable_space::unique_name(sstring prefix)
 	return prefix + sstring(id);
 }
 
+sstring variable_space::invert_name(sstring name)
+{
+	int idx = name.find_last_of(".");
+
+	if (name[idx + 1] == '_')
+			return name.substr(0, idx+1) + name.substr(idx+2);
+	else
+		return name.substr(0, idx+1) + "_" + name.substr(idx+1);
+}
+
 bool variable_space::vdef(sstring s)
 {
 	type_space::iterator i;
@@ -544,15 +554,10 @@ variable_space &variable_space::operator=(variable_space s)
 
 void variable_space::print(sstring t, ostream *fout)
 {
-	int i;
-	variable *v;
-	for (i = 0; i < global.size(); i++)
-	{
-		v = find((int)i);
-		(*fout) << t << v->type << " " << v->name << " UID:" << v->uid << " Arg:" << v->arg << endl;
-	}
-
 	smap<sstring, variable>::iterator vi;
+	for (vi = global.begin(); vi != global.end(); vi++)
+		(*fout) << t << vi->second.type << " " << vi->second.name << " UID:" << vi->second.uid << " Arg:" << vi->second.arg << endl;
+
 	for (vi = label.begin(); vi != label.end(); vi++)
 		(*fout) << t << vi->second.type << " " << vi->first << endl;
 }

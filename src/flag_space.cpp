@@ -27,13 +27,14 @@ flag_space::~flag_space()
 	int i;
 	for (i = 0; i < (int)input_files.size(); i++)
 	{
-		if (input_files[i] != NULL)
+		if (input_files[i].second != NULL)
 		{
-			input_files[i]->close();
-			delete input_files[i];
+			input_files[i].second->close();
+			delete input_files[i].second;
 		}
-		input_files[i] = NULL;
+		input_files[i].second = NULL;
 	}
+	input_files.clear();
 
 	if (state_file != NULL)
 	{

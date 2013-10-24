@@ -50,6 +50,7 @@ struct variable_space
 	void x_channel(svector<int> av, smap<int, logic> *result);
 
 	sstring unique_name(sstring prefix);
+	sstring invert_name(sstring name);
 
 	bool vdef(sstring str);
 

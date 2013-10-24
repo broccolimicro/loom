@@ -241,3 +241,26 @@ uint32_t bitwise_not(uint32_t a)
 {
 	return !a;
 }
+
+svector<int> first_combination(int s)
+{
+	svector<int> result;
+	for (int i = 0; i < s; i++)
+		result.push_back(i);
+	return result;
+}
+
+bool next_combination(int S, svector<int> *iter)
+{
+	for (int i = 1; i <= iter->size(); i++)
+	{
+		if ((*iter)[iter->size()-i] < S-i)
+		{
+			(*iter)[iter->size()-i]++;
+			for (int j = iter->size()-i+1; j < iter->size(); j++)
+				(*iter)[j] = (*iter)[j-1]+1;
+			return true;
+		}
+	}
+	return false;
+}

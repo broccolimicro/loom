@@ -30,6 +30,7 @@ struct minterm
 	~minterm();
 
 	svector<uint32_t> values;
+	uint32_t default_value;
 	int size;
 
 
@@ -72,6 +73,7 @@ struct minterm
 	void vars(svector<int> *var_list);
 
 	minterm refactor(svector<int> ids);
+	minterm refactor(svector<pair<int, int> > ids);
 
 	minterm hide(int var);
 	minterm hide(svector<int> vars);

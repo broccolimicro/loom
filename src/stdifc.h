@@ -278,6 +278,8 @@ struct svector : vector<type>
 	svector() : vector<type>() {}
 	svector(int n) : vector<type>(n) {}
 	svector(int n, type v) : vector<type>(n, v) {}
+	template <class InputIterator>
+	svector(InputIterator first, InputIterator second) : vector<type>(first, second) {}
 	~svector() {}
 
 	int size() const
