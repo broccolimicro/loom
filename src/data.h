@@ -10,7 +10,6 @@
 
 #include "data/minterm.h"
 #include "data/canonical.h"
-#include "data/bdd.h"
 #include "data/petri.h"
 #include "data/variable.h"
 #include "data/variable_space.h"

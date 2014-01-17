@@ -121,7 +121,10 @@ void variable::parse(sstring chp)
 		}
 	}
 	else
+	{
 		name = chp.substr(name_start+1);
+		reset.push_back(0);
+	}
 
 	type = chp.substr(0, width_start);
 	if (chp.find_first_of("<>") != chp.npos)

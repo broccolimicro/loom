@@ -221,9 +221,9 @@ svector<int> loop::generate_states(petri *n, rule_space *p, svector<int> f, smap
 	sstring bvname;
 	svector<sstring> bvnames;
 	svector<int> bvuids;
-	int ncbranch_count;
-	int i, k;
-	bool first;
+	//int ncbranch_count;
+	int k;
+	//bool first;
 
 	flags->inc();
 	if (flags->log_base_state_space())
@@ -233,7 +233,7 @@ svector<int> loop::generate_states(petri *n, rule_space *p, svector<int> f, smap
 	prs = p;
 	from = f;
 
-	ncbranch_count = net->cbranch_count;
+	//ncbranch_count = net->cbranch_count;
 	net->cbranch_count++;
 	for (instr_iter = instrs.begin(), k = instrs.size()-1; instr_iter != instrs.end(); instr_iter++, k--)
 	{
@@ -258,13 +258,13 @@ svector<int> loop::generate_states(petri *n, rule_space *p, svector<int> f, smap
 	/*if (type == choice)
 	{
 		bvname = "";
-		for (i = 0; i < (int)bvnames.size(); i++)
+		for (int i = 0; i < (int)bvnames.size(); i++)
 		{
 			if (i != 0)
 				bvname += "|";
 
 			first = true;
-			for (k = 0; k < (int)bvnames.size(); k++)
+			for (int k = 0; k < (int)bvnames.size(); k++)
 			{
 				if (!first && i != k)
 					bvname += "&";
@@ -279,11 +279,11 @@ svector<int> loop::generate_states(petri *n, rule_space *p, svector<int> f, smap
 
 		vars->enforcements = vars->enforcements >> logic(bvname, vars);
 		prs->excl.push_back(pair<svector<int>, int>(bvuids, 1));
-		for (k = 0; k < (int)bvuids.size(); k++)
+		for (int k = 0; k < (int)bvuids.size(); k++)
 			prs->excl.push_back(pair<svector<int>, int>(svector<int>(1, bvuids[k]), 0));
 
 		antiguard = "(" + antiguard + ")";
-		for (i = 0; i < (int)bvnames.size(); i++)
+		for (int i = 0; i < (int)bvnames.size(); i++)
 			antiguard += "&~" + bvnames[i];
 	}*/
 

@@ -130,7 +130,7 @@ void program::parse(sstring chp)
 	// Define the basic types. In this case, 'wire'
 	types.clear();
 	types.insert(pair<sstring, keyword*>("node", new keyword("node")));
-	c = new channel("channel __sync{node<1>r;node<1>a;operator?(){[r];a+;[~r];a-}operator!(){r+;[a];r-;[~a]}operator#(){r}}", &types, &flags);
+	c = new channel("channel __sync{node<1>r:=0;node<1>a:=0;operator?(){[r];a+;[~r];a-}operator!(){r+;[a];r-;[~a]}operator#(){r}}", &types, &flags);
 	types.insert(pair<sstring, channel*>(c->name, c));
 	types.insert(pair<sstring, operate*>(c->name + "." + c->send->name, c->send));
 	types.insert(pair<sstring, operate*>(c->name + "." + c->recv->name, c->recv));
@@ -160,7 +160,7 @@ void program::parse(sstring chp)
 			depth[2]--;
 
 		// Are we at the end of a record or process definition?
-		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == '}')
+		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && *i == '}' && (i+1 == cleaned_chp.end() || *(i+1) != '{'))
 		{
 			// Make sure this isn't vacuous
 			if (i-j+1 > 0)
@@ -263,11 +263,17 @@ void program::trim_states()
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
 		if (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos)
+		{
+			cout << "Trimming: " << i->first << endl;
 			((operate*)i->second)->trim_states();
+		}
 
 	for (i = types.begin(); i != types.end(); i++)
 		if (i->second->kind() == "process")
+		{
+			cout << "Trimming: " << i->first << endl;
 			((process*)i->second)->trim_states();
+		}
 }
 
 void program::insert_state_vars()

@@ -138,7 +138,7 @@ void parallel::parse()
 		// We are in the current scope, and the current character
 		// is a semicolon or the end of the chp sstring. This is
 		// the end of a sequential.
-		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) == '|') || i == chp.end()))
+		if (depth[0] == 0 && depth[1] == 0 && depth[2] == 0 && ((*i == '|' && *(i+1) == '|') || *i == ',' || i == chp.end()))
 		{
 			// Get the sequential sstring.
 			raw_instr = chp.substr(j-chp.begin(), i-j);

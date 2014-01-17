@@ -15,6 +15,7 @@
 #include <iostream>
 #include <fstream>
 #include <streambuf>
+#include <iterator>
 
 using namespace std;
 
@@ -347,6 +348,11 @@ struct svector : vector<type>
 		for (int i = 0; i < v.size(); i++)
 			result.push_back(vector<type>::at(v[i]));
 		return result;
+	}
+
+	bool contains(type v)
+	{
+		return (std::find(vector<type>::begin(), vector<type>::end(), v) != vector<type>::end());
 	}
 };
 

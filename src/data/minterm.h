@@ -26,6 +26,7 @@ uint32_t vmsk(int v);
 struct minterm
 {
 	minterm();
+	minterm(const minterm &m);
 	minterm(sstring str);
 	~minterm();
 

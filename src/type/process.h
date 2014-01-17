@@ -30,13 +30,17 @@ struct process : keyword
 
 	sstring					chp;	// the raw process definition
 	parallel				def;	// the chp that defined this process
+	parallel				env_def;
 	rule_space				prs;
 	variable_space			vars;
+	variable_space			env_vars;
 	list<sstring>			args;
 	petri					net;
+	petri					env_net;
 	flag_space				*flags;
 
 	bool 					is_inline;
+	bool					has_environment;
 
 	process &operator=(process p);
 

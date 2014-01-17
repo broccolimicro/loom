@@ -155,6 +155,8 @@ void sequential::parse()
 			// This sub sequential is a condition. [g0->s0[]g1->s1[]...[]gn->sn] or [g0->s0|g1->s1|...|gn->sn]
 			else if (raw_instr[0] == '[' && raw_instr[raw_instr.length()-1] == ']' && raw_instr.length() > 0)
 				push(expand_condition(raw_instr));
+			else if (raw_instr.find_first_of(",") != raw_instr.npos)
+				push(new parallel(this, raw_instr, vars, flags));
 			else if (raw_instr.find_first_of("{}") != raw_instr.npos)
 				push(new debug(this, raw_instr, vars, flags));
 			// This sub sequential is a variable instantiation.
@@ -206,8 +208,8 @@ void sequential::rewrite()
 	i = instrs.begin();
 	j = instrs.begin();
 	condition *ic, *jc;
-	assignment *ia, *ja;
-	int conflict_count;
+	//assignment *ia, *ja;
+	//int conflict_count;
 
 	if ((*j)->kind() == "skip")
 	{

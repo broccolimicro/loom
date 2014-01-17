@@ -5,7 +5,9 @@ record dualrail
 	enforce{~t | ~f};
 }
 
-channel achan4p0b
+// [active vs passive][number of phases][ack vs enable][protocol]
+
+channel a4pa
 {
 	node<1> r := 0;
 	node<1> a := 0;
@@ -26,7 +28,7 @@ channel achan4p0b
 	}
 }
 
-channel pchan4p0b
+channel p4pa
 {
 	node<1> r := 0;
 	node<1> a := 0;
@@ -47,22 +49,22 @@ channel pchan4p0b
 	}
 }
 
-channel achan4p1b
+channel a4pa1of2
 {
 	dualrail r;
 	node<1> a := 0;
 	
-	operator!(node<1> i)
+	operator!(dualrail i)
 	{
-		[	i	-> r.t+; [a]; r.t-;
-		[]	~i	-> r.f+; [a]; r.f-;
-		]; [~a]
+		[	i.t	-> r.t+
+		[]	i.f	-> r.f+
+		]; [a]; (r.t-||r.f-); [~a]
 	}
 	
-	operator?(node<1> i)
+	operator?(dualrail i)
 	{
-		[ r.t -> i+
-		[]r.f -> i-
+		[ r.t -> i.t+
+		[]r.f -> i.f+
 		]; a+; [~r.t & ~r.f]; a-;
 	}
 	
@@ -72,29 +74,80 @@ channel achan4p1b
 	}
 }
 
-channel pchan4p1b
+channel p4pa1of2
 {
 	dualrail r;
 	node<1> a := 0;
 	
-	operator!(node<1> i)
+	operator!(dualrail i)
 	{
-		[	i	-> r.t+; [~a]; r.t-;
-		[]	~i	-> r.f+; [~a]; r.f-;
-		]; [a]
+		[	a & i.t	-> r.t+
+		[]	a & i.f	-> r.f+
+		]; [~a]; (r.t-||r.f-)
 	}
 	
-	operator?(node<1> i)
+	operator?(dualrail i)
 	{
 		a+;
-		[ r.t -> i+
-		[]r.f -> i-
+		[ r.t -> i.t+
+		[]r.f -> i.f+
 		]; a-; [~r.t & ~r.f]; 
 	}
 	
 	operator#()
 	{
 		a
+	}
+}
+
+channel a4pe1of2
+{
+	dualrail r;
+	node<1> e := 1;
+	
+	operator!(dualrail i)
+	{
+		[	i.t	-> r.t+
+		[]	i.f	-> r.f+
+		]; [~e]; (r.t-||r.f-); [e]
+	}
+	
+	operator?(dualrail i)
+	{
+		[ r.t -> i.t+
+		[]r.f -> i.f+
+		]; e-; [~r.t & ~r.f]; e+;
+	}
+	
+	operator#()
+	{
+		r.t|r.f
+	}
+}
+
+channel p4pe1of2
+{
+	dualrail r;
+	node<1> e := 1;
+	
+	operator!(dualrail i)
+	{
+		[	~e & i.t	-> r.t+
+		[]	~e & i.f	-> r.f+
+		]; [e]; (r.t-||r.f-)
+	}
+	
+	operator?(dualrail i)
+	{
+		e-;
+		[ r.t -> i.t+
+		[]r.f -> i.f+
+		]; e+; [~r.t & ~r.f]; 
+	}
+	
+	operator#()
+	{
+		e
 	}
 }
 

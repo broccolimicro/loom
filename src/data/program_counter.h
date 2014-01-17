@@ -12,51 +12,145 @@
 #include "canonical.h"
 
 struct petri;
+struct node;
+
+typedef pair<int, int> unode;
+typedef pair<unode, unode> uarc;
+
+struct umap
+{
+	umap();
+	umap(const umap &um);
+	~umap();
+
+	list<uarc> arcs;
+	list<unode> begin;
+	list<pair<unode, list<unode> > > end;
+	svector<int> sids;
+	svector<pair<int, int> > tids;
+	svector<int> iac;
+
+	list<uarc> input_arcs(unode n);
+	list<uarc> output_arcs(unode n);
+	list<unode> input_nodes(unode n);
+	list<unode> output_nodes(unode n);
+	bool path_contains(unode n);
+	int nid(int i);
+
+	umap &operator=(umap um);
+};
+
+struct remote_program_counter
+{
+	remote_program_counter();
+	remote_program_counter(const remote_program_counter &pc);
+	remote_program_counter(string name, petri *from, petri *to);
+	remote_program_counter(int index, petri *net);
+	~remote_program_counter();
+
+	string name;
+	petri* net;
+
+	svector<pair<int, int> > forward_factors;
+	svector<pair<int, int> > reverse_factors;
+	svector<int>			 hidden_factors;
+
+	umap index;
+
+	logic &net_index(int i);
+	bool is_place(int i);
+	bool is_trans(int i);
+	bool is_active(int i);
+	bool is_satisfied(int i, logic s);
+	bool is_vacuous(int i, logic s);
+	bool is_one(int i);
+
+	void roll_to(unode idx);
+
+	int count(unode n);
+
+	minterm firings();
+	logic waits(unode n);
+
+	remote_program_counter &operator=(remote_program_counter pc);
+};
+
+struct program_environment
+{
+	program_environment();
+	program_environment(const remote_program_counter &pc);
+	program_environment(const program_environment &env);
+	~program_environment();
+
+	list<remote_program_counter> pcs;
+
+	minterm firings();
+
+	program_environment &operator=(program_environment env);
+};
 
 struct program_counter
 {
 	program_counter();
-	program_counter(sstring name, petri *from, petri *to, int pc);
-	program_counter(program_counter l, int p);
+	program_counter(const program_counter &pc);
+	program_counter(int index, petri *net);
 	~program_counter();
 
-	sstring name;
+	int index;
 	petri *net;
+	bool waiting;
 
-	int pc;
-	svector<minterm>		 firings;
-	svector<int>			 indices;
-	svector<pair<int, int> > arcs;
-	svector<int>			 begin;
+	list<program_environment> envs;
+	list<pair<pair<string, petri*>, list<pair<list<program_environment>::iterator, unode> > > > splits;
 
-	svector<pair<int, int> > forward_factors;
-	svector<pair<int, int> > reverse_factors;
-	svector<int>			 hidden;
-
-	minterm mute();
-	logic translate(logic state);
-	void update(logic state);
-	void reset();
-
-	logic &index();
-	bool is_active();
-	bool is_place();
 	bool is_trans();
+	bool is_place();
+	bool is_active();
+	string node_name();
+
+	bool end_is_ready(logic s, list<program_environment>::iterator &env, list<remote_program_counter>::iterator &pc, list<pair<unode, list<unode> > >::iterator &idx, logic &state);
+	bool begin_is_ready(logic s, list<program_environment>::iterator &env, list<remote_program_counter>::iterator &pc, list<unode>::iterator &idx, list<pair<pair<string, petri*>, list<pair<list<program_environment>::iterator, unode> > > >::iterator &split, list<pair<list<program_environment>::iterator, unode> >::iterator &prgm, logic &state);
+
+	void simulate(logic s);
+	logic mute(logic s);
+
+	int count();
+	void merge();
+
+	program_counter &operator=(program_counter pc);
 };
 
-struct program_counter_space
+struct program_execution
 {
-	program_counter_space();
-	~program_counter_space();
+	program_execution();
+	program_execution(const program_execution &exe);
+	program_execution(petri *net);
+	~program_execution();
 
-	svector<program_counter> pcs;
+	petri *net;
+	svector<logic> states;
 
-	void simulate(petri *net, logic state, int i = 0);
-	logic mute(logic state);
-	void reset();
+	list<program_counter> pcs;
+	bool deadlock;
+	bool done;
 
-	void increment(int i);
-	int check_merges(int j);
+	int count(list<program_counter>::iterator i);
+	void merge(list<program_counter>::iterator i);
+
+	logic calculate_state(list<program_counter>::iterator i, svector<logic> *f);
+
+	program_execution &operator=(program_execution exe);
+};
+
+struct program_execution_space
+{
+	program_execution_space();
+	~program_execution_space();
+
+	svector<logic> final;
+	list<program_execution> execs;
+
+	void simulate();
 };
 
 #endif

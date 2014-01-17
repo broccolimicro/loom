@@ -394,8 +394,8 @@ svector<int> condition::generate_states(petri *n, rule_space *p, svector<int> f,
 	sstring bvname;
 	svector<sstring> bvnames;
 	svector<int> bvuids;
-	int i, k;
-	bool first;
+	int k;
+	//bool first;
 
 	if (flags->log_base_state_space())
 		(*flags->log_file) << flags->tab << "Conditional " << chp << endl;
@@ -432,13 +432,13 @@ svector<int> condition::generate_states(petri *n, rule_space *p, svector<int> f,
 	/*if (type == choice)
 	{
 		bvname = "";
-		for (i = 0; i < (int)bvnames.size(); i++)
+		for (int i = 0; i < (int)bvnames.size(); i++)
 		{
 			if (i != 0)
 				bvname += "|";
 
 			first = true;
-			for (k = 0; k < (int)bvnames.size(); k++)
+			for (int k = 0; k < (int)bvnames.size(); k++)
 			{
 				if (!first && i != k)
 					bvname += "&";
@@ -453,7 +453,7 @@ svector<int> condition::generate_states(petri *n, rule_space *p, svector<int> f,
 
 		vars->enforcements = vars->enforcements >> logic(bvname, vars);
 		prs->excl.push_back(pair<svector<int>, int>(bvuids, 1));
-		for (k = 0; k < (int)bvuids.size(); k++)
+		for (int k = 0; k < (int)bvuids.size(); k++)
 			prs->excl.push_back(pair<svector<int>, int>(svector<int>(1, bvuids[k]), 0));
 	}*/
 

@@ -89,7 +89,8 @@ instruction *expand_instantiation(instruction *parent, sstring chp, variable_spa
 						val += ",";
 					}
 
-					name += v.name + "[" + sstring(k) + "]";
+					if (reset.size() > 1)
+						name += v.name + "[" + sstring(k) + "]";
 					val += sstring(reset[k]);
 
 					first = false;

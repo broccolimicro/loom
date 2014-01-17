@@ -196,7 +196,6 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 						t &= net->S[ia[k]].index;
 						if (net->S[ia[k]].tail_index != 0)
 							ti &= net->S[ia[k]].tail_index;
-						mutables = (k == 0 ? net->S[ia[k]].mutables : mutables.set_intersection(net->S[ia[k]].mutables));
 					}
 					t = t.hide(vl);
 					rules[vi->second.uid].explicit_guards[i] |= t;
@@ -458,18 +457,17 @@ void rule_space::print(ostream *fout)
 
 void rule_space::print_enable_graph(ostream *fout, petri *net, sstring name)
 {
-	int i, j, k;
 	sstring label;
 	(*fout) << "digraph " << name << endl;
 	(*fout) << "{" << endl;
 
-	for (i = 0; i < (int)net->S.size(); i++)
+	for (int i = 0; i < (int)net->S.size(); i++)
 		if (!net->dead(i))
 		{
 			(*fout) << "\tS" << i << " [label=\"" << sstring(i) << " ";
 			/*label = net->S[i].index.print(vars);
 
-			for (j = 0, k = 0; j < (int)label.size(); j++)
+			for (int j = 0, k = 0; j < (int)label.size(); j++)
 				if (label[j] == '|')
 				{
 					(*fout) << label.substr(k, j+1 - k) << "\\n";
@@ -478,7 +476,7 @@ void rule_space::print_enable_graph(ostream *fout, petri *net, sstring name)
 
 			(*fout) << label.substr(k) << "\\n";*/
 
-			for (j = 0; j < (int)rules.size(); j++)
+			for (int j = 0; j < (int)rules.size(); j++)
 			{
 				if (rules[j].vars != NULL && !is_mutex(&rules[j].guards[0], &net->S[i].index))
 					cout << vars->get_name(rules[j].uid) << "-, ";
@@ -489,7 +487,7 @@ void rule_space::print_enable_graph(ostream *fout, petri *net, sstring name)
 			(*fout) << "\"];" << endl;
 		}
 
-	for (i = 0; i < (int)net->T.size(); i++)
+	for (int i = 0; i < (int)net->T.size(); i++)
 	{
 		label = net->T[i].index.print(vars);
 		label = sstring(i) + " " + label;
@@ -499,7 +497,7 @@ void rule_space::print_enable_graph(ostream *fout, petri *net, sstring name)
 			(*fout) << "\tT" << i << " [shape=box];" << endl;
 	}
 
-	for (i = 0; i < (int)net->arcs.size(); i++)
+	for (int i = 0; i < (int)net->arcs.size(); i++)
 		(*fout) << "\t" << (net->is_trans(net->arcs[i].first) ? "T" : "S") << net->index(net->arcs[i].first) << " -> " << (net->is_trans(net->arcs[i].second) ? "T" : "S") << net->index(net->arcs[i].second) << "[label=\" " << i << " \"];" <<  endl;
 
 	(*fout) << "}" << endl;

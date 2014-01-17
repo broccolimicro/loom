@@ -14,7 +14,6 @@
 #include "../type/keyword.h"
 #include "variable.h"
 #include "canonical.h"
-#include "bdd.h"
 
 struct variable_space
 {

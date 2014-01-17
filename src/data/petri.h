@@ -7,7 +7,6 @@
 
 #include "../common.h"
 #include "canonical.h"
-#include "bdd.h"
 #include "path_space.h"
 #include "../flag_space.h"
 #include "program_counter.h"
@@ -26,7 +25,6 @@ struct node
 	~node();
 
 	instruction *owner;
-	smap<int, logic> mutables;
 	svector<int> tail;		// The set of inactive states preceding an active state
 	smap<int, int> pbranch;
 	smap<int, int> cbranch;
@@ -49,8 +47,6 @@ struct node
 	void add_to_tail(int idx);
 	void add_to_tail(svector<int> idx);
 
-	void apply_mutables();
-
 	pair<int, int> sense_count();
 };
 
@@ -62,12 +58,10 @@ struct petri
 	variable_space *vars;
 	rule_space *prs;
 	flag_space *flags;
-	program_counter_space env;
+	program_execution_space env;
 	svector<node> S;
 	svector<node> T;
-	//matrix<int> Wp;		// <s, t> from t to s
-	//matrix<int> Wn;		// <s, t> from s to t
-	svector<int> M0;		// Wp - Wn
+	svector<int> M0;
 	int pbranch_count;
 	int cbranch_count;
 	svector<pair<int, int> > arcs;
@@ -113,8 +107,6 @@ struct petri
 	void remove_trans(int from);
 	void remove_trans(svector<int> from);
 
-	bool updateplace(int pc, int i = 0);
-	int update(int pc, svector<bool> *covered, int i = 0, bool immune = false);
 	void update();
 	void check_assertions();
 	void connect(svector<int> from, svector<int> to);
@@ -155,6 +147,7 @@ struct petri
 	void trim_branch_ids();
 	void gen_tails();
 	smap<pair<int, int>, pair<bool, bool> > gen_isochronics();
+	logic apply_debug(int pc);
 
 	logic get_effective_state_encoding(int place, int observer);
 

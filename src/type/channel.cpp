@@ -147,6 +147,10 @@ void channel::parse(sstring chp)
 	recv->parse(r);
 	probe->parse(p);
 
+	/*send->name = name + "." + send->name;
+	recv->name = name + "." + recv->name;
+	probe->name = name + "." + probe->name;*/
+
 	vars.types->insert(pair<sstring, operate*>(name + "." + send->name, send));
 	vars.types->insert(pair<sstring, operate*>(name + "." + recv->name, recv));
 	vars.types->insert(pair<sstring, operate*>(name + "." + probe->name, probe));

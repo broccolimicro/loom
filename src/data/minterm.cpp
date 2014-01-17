@@ -41,6 +41,13 @@ minterm::minterm()
 	size = 0;
 }
 
+minterm::minterm(const minterm &m)
+{
+	values = m.values;
+	default_value = m.default_value;
+	size = m.size;
+}
+
 minterm::minterm(sstring str)
 {
 	size = 0;

@@ -22,24 +22,34 @@ process::process()
 	_kind = "process";
 	chp = "";
 	is_inline = false;
+	has_environment = false;
 	def.parent = NULL;
 	flags = NULL;
 	net.vars = &vars;
 	net.prs = &prs;
 	prs.vars = &vars;
+	env_net.vars = &env_vars;
+	env_net.prs = &prs;
+	env_def.parent = NULL;
 }
 
 process::process(sstring raw, type_space *types, flag_space *flags)
 {
 	_kind = "process";
 	vars.types = types;
+	env_vars.types = types;
 	this->flags = flags;
 	is_inline = false;
+	has_environment = false;
 	def.parent = NULL;
+	env_def.parent = NULL;
 	net.vars = &vars;
+	env_net.vars = &env_vars;
 	net.prs = &prs;
+	env_net.prs = &prs;
 	prs.vars = &vars;
 	net.flags = flags;
+	env_net.flags = flags;
 
 	parse(raw);
 
@@ -52,15 +62,22 @@ process::~process()
 	_kind = "process";
 	chp = "";
 	def.parent = NULL;
+	env_def.parent = NULL;
 
 	vars.clear();
 }
 
 process &process::operator=(process p)
 {
+	is_inline = p.is_inline;
+	has_environment = p.has_environment;
+
 	def = p.def;
 	prs = p.prs;
 	vars = p.vars;
+	env_net = p.env_net;
+	env_def = p.env_def;
+	env_vars = p.env_vars;
 	flags = p.flags;
 	return *this;
 }
@@ -75,6 +92,8 @@ void process::parse(sstring raw)
 	else
 		is_inline = false;
 
+	has_environment = false;
+
 	chp = raw;
 
 	int name_start = chp.find_first_of(" ")+1;
@@ -82,7 +101,13 @@ void process::parse(sstring raw)
 	int input_start = chp.find_first_of("(")+1;
 	int input_end = chp.find_first_of(")");
 	int sequential_start = chp.find_first_of("{")+1;
-	int sequential_end = chp.length()-1;
+	int sequential_end = chp.find_first_of_l0("}", sequential_start-1);
+	int environment_start = chp.find_first_of("{", sequential_end);
+	if (environment_start != chp.npos)
+	{
+		has_environment = true;
+		environment_start++;
+	}
 	sstring io_sequential;
 	sstring::iterator i, j;
 
@@ -101,12 +126,19 @@ void process::parse(sstring raw)
 	}
 
 	vars.insert(variable("reset", "node", 1, true, flags));
+	if (has_environment)
+		env_vars.insert(variable("reset", "node", 1, true, flags));
 
 	for (i = io_sequential.begin(), j = io_sequential.begin(); i != io_sequential.end(); i++)
 	{
 		if (*(i+1) == ',' || i+1 == io_sequential.end())
 		{
 			expand_instantiation(NULL, io_sequential.substr(j-io_sequential.begin(), i+1 - j), &vars, &args, flags, false);
+			if (has_environment)
+			{
+				list<sstring> env_args;
+				expand_instantiation(NULL, io_sequential.substr(j-io_sequential.begin(), i+1 - j), &env_vars, &env_args, flags, false);
+			}
 			j = i+2;
 		}
 	}
@@ -121,9 +153,15 @@ void process::parse(sstring raw)
 
 	def.init(sequential, &vars, flags);
 
+	if (has_environment)
+	{
+		sstring environment = chp.substr(environment_start, chp.length()-1 - environment_start);
+		env_def.init(environment, &env_vars, flags);
+	}
+
 	if (flags->log_base_hse())
 	{
-		(*flags->log_file) << "\tVariables:" << endl;
+		(*flags->log_file) << "\tVariables: " << vars.reset.print(&vars) << endl;
 		vars.print("\t\t", flags->log_file);
 		(*flags->log_file) << "\tHSE:" << endl;
 		def.print_hse("\t\t", flags->log_file);
@@ -190,10 +228,9 @@ void process::generate_states()
 	prs.vars = &vars;
 	net.flags = flags;
 
-	svector<int> start, end;
-	start.push_back(net.insert_place(start, smap<int, int>(), smap<int, int>(), NULL));
-	net.M0.push_back(start[0]);
-	end = def.generate_states(&net, &prs, start,  smap<int, int>(), smap<int, int>());
+	svector<int> end;
+	net.M0.push_back(net.insert_place(svector<int>(), smap<int, int>(), smap<int, int>(), NULL));
+	end = def.generate_states(&net, &prs, net.M0,  smap<int, int>(), smap<int, int>());
 	if (is_inline)
 		net.connect(end, net.M0);
 
@@ -201,24 +238,20 @@ void process::generate_states()
 		if (!i->second.driven)
 			vars.reset = vars.reset.hide(i->second.uid);
 
-	for (smap<sstring, variable>::iterator i = vars.label.begin(); i != vars.label.end(); i++)
+	if (has_environment)
 	{
-		type_space::iterator j;
-		if (i->second.type.find("operator?") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
-		{
-			if (((channel*)j->second)->send->net.M0.size() > 0)
-				net.env.pcs.push_back(program_counter(i->second.name.substr(0, i->second.name.find_last_of(".")), &net, &((channel*)j->second)->send->net, ((channel*)j->second)->send->net.M0[0]));
-			else
-				cerr << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
-		}
+		env_net.vars = &env_vars;
+		env_net.prs = &prs;
+		env_net.flags = flags;
 
-		else if (i->second.type.find("operator!") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
-		{
-			if (((channel*)j->second)->recv->net.M0.size() > 0)
-				net.env.pcs.push_back(program_counter(i->second.name.substr(0, i->second.name.find_last_of(".")), &net, &((channel*)j->second)->recv->net, ((channel*)j->second)->recv->net.M0[0]));
-			else
-				cerr << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
-		}
+		end.clear();
+		env_net.M0.push_back(env_net.insert_place(svector<int>(), smap<int, int>(), smap<int, int>(), NULL));
+		end = env_def.generate_states(&env_net, &prs, env_net.M0,  smap<int, int>(), smap<int, int>());
+		env_net.connect(end, env_net.M0);
+
+		for (smap<sstring, variable>::iterator i = env_vars.global.begin(); i != env_vars.global.end(); i++)
+			if (!i->second.driven)
+				env_vars.reset = env_vars.reset.hide(i->second.uid);
 	}
 
 	/*cout << "EXCL" << endl;
@@ -235,8 +268,29 @@ void process::trim_states()
 	do
 	{
 		print_dot(flags->log_file);
-		net.gen_mutables();
-		net.print_mutables();
+		env_net.print_dot(flags->log_file, "environment");
+
+		net.env.execs.clear();
+		net.env.execs.push_back(program_execution(&net));
+		list<program_execution>::iterator exe = net.env.execs.begin();
+		for (int k = 0; k < net.M0.size(); k++)
+		{
+			exe->pcs.push_front(program_counter(net.M0[k], &net));
+			list<program_counter>::iterator pc = exe->pcs.begin();
+
+			if (has_environment)
+				pc->envs.push_back(program_environment(remote_program_counter("", &net, &env_net)));
+			else
+				for (smap<sstring, variable>::iterator i = vars.label.begin(); i != vars.label.end(); i++)
+				{
+					type_space::iterator j;
+					if (i->second.type.find("operator?") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
+						pc->envs.push_back(program_environment(remote_program_counter(i->second.name.substr(0, i->second.name.find_last_of(".")), &net, &((channel*)j->second)->send->net)));
+					else if (i->second.type.find("operator!") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
+						pc->envs.push_back(program_environment(remote_program_counter(i->second.name.substr(0, i->second.name.find_last_of(".")), &net, &((channel*)j->second)->recv->net)));
+				}
+		}
+
 		net.update();
 		print_dot(flags->log_file);
 	} while(net.trim());
@@ -468,9 +522,13 @@ bool process::insert_state_vars()
 	svector<pair<svector<int>, svector<int> > > ip;
 
 	net.print_dot(flags->log_file, name);
+	cout << "tails" << endl;
 	net.gen_tails();
+	cout << "conflicts" << endl;
 	net.gen_conflicts();
+	cout << "conditional places" << endl;
 	net.gen_conditional_places();
+	cout << "done" << endl;
 
 	net.print_conflicts(*flags->log_file, name);
 	net.print_indistinguishables(*flags->log_file, name);
@@ -530,7 +588,6 @@ bool process::insert_state_vars()
 	}
 
 	net.trim_branch_ids();
-	net.gen_mutables();
 	net.update();
 
 	return (ip.size() > 0);
@@ -672,10 +729,7 @@ bool process::insert_bubbleless_state_vars()
 	}
 
 	net.trim_branch_ids();
-	net.gen_mutables();
 	net.update();
-
-
 
 	return (ip.size() > 0);
 }

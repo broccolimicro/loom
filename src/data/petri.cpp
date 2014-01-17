@@ -54,14 +54,6 @@ void node::add_to_tail(svector<int> idx)
 	tail.unique();
 }
 
-void node::apply_mutables()
-{
-	smap<int, logic>::iterator ji;
-	for (ji = mutables.begin(); ji != mutables.end(); ji++)
-		if ((index & ji->second) != index)
-			index = index.hide(ji->first);
-}
-
 pair<int, int> node::sense_count()
 {
 	pair<int, int> result(0, 0);
@@ -410,239 +402,21 @@ void petri::remove_trans(svector<int> from)
 		remove_trans(from[i]);
 }
 
-bool petri::updateplace(int pc, int i)
-{
-	smap<int, logic>::iterator ji;
-	svector<int> ia = input_nodes(pc);
-	svector<int> oa = output_nodes(pc);
-	svector<int> ip;
-	svector<int> vl;
-	logic result;
-	int k, j;
-	logic t(0), ti;
-	logic o;
-	logic temp;
-
-	o = S[pc].index;
-	S[pc].index = 0;
-	S[pc].tail_index = 0;
-
-	(*flags->log_file) << sstring(i, '\t') << node_name(pc) << "\t";
-
-	for (k = 0; k < (int)ia.size(); k++)
-	{
-		//(*flags->log_file) << "{";
-		ip = input_nodes(ia[k]);
-
-		for (j = 0, t = 1, ti = 1; j < (int)ip.size(); j++)
-		{
-			t &= S[ip[j]].index;
-			if (!T[index(ia[k])].active || T[index(ia[k])].possibly_vacuous)
-				ti &= S[ip[j]].tail_index;
-
-			//(*flags->log_file) << S[ip[j]].index.print(vars) << " ";
-		}
-
-		//(*flags->log_file) << "}>>" << T[index(ia[k])].index.print(vars) << " = (" << (t >> T[index(ia[k])].index).print(vars) << ")\t";
-		if (T[index(ia[k])].active)
-			result = (t >> T[index(ia[k])].index);
-		else
-			result = (t & T[index(ia[k])].index);
-		S[pc].index |= result;
-		T[index(ia[k])].definitely_invacuous = is_mutex(&t, &result);
-		T[index(ia[k])].possibly_vacuous = !T[index(ia[k])].definitely_invacuous;
-		T[index(ia[k])].definitely_vacuous = (t == result);
-
-		if (!T[index(ia[k])].active || T[index(ia[k])].possibly_vacuous)
-			S[pc].tail_index |= (ti & T[index(ia[k])].index);
-	}
-
-	(*flags->log_file) << S[pc].index.print(vars) << " ";
-
-	//env.simulate(this, S[pc].index);
-	//(*flags->log_file) << env.mute(S[pc].index).print(vars) << " ";
-
-	S[pc].apply_mutables();
-
-	(*flags->log_file) << S[pc].index.print(vars);
-
-	cout << endl << endl;
-
-	//S[pc].index = prs->apply(S[pc].index);
-
-	//(*flags->log_file) << S[pc].index.print(vars) << " ";
-
-	if (S[pc].index != 0)
-	{
-		S[pc].index &= vars->enforcements;
-
-		if (S[pc].index == 0)
-			cerr << "Error: Enforcements conflict with known state state at state " << pc << "." << endl;
-		else
-		{
-			S[pc].index &= S[pc].assumptions;
-
-			if (S[pc].index == 0)
-				cerr << "Error: Assumption " << S[pc].assumptions.print(vars) << " conflict with known state state at state " << pc << "." << endl;
-		}
-	}
-
-	//(*flags->log_file) << S[pc].index.print(vars) << " ? " << o.print(vars) << endl;
-
-	return (S[pc].index != o);
-}
-
-int petri::update(int pc, svector<bool> *covered, int i, bool immune)
-{
-	(*flags->log_file) << sstring(i, '\t') << "Update ";
-	if (is_trans(pc))
-		(*flags->log_file) << "T";
-	else
-		(*flags->log_file) << "S";
-	(*flags->log_file) << index(pc) << endl;
-
-	svector<int> next;
-	svector<int> curr;
-	svector<int> it;
-	smap<int, pair<int, int> >::iterator cpi;
-	int j, k;
-	bool updated;
-
-	if (covered != NULL && covered->size() < S.size())
-		covered->resize(S.size(), false);
-
-	next.push_back(pc);
-
-	while (1)
-	{
-		if (!immune && i != 0 && (it = input_nodes(next[0])).size() > 1)
-		{
-			if (is_trans(next[0]))
-			{
-				(*flags->log_file) << sstring(i, '\t') << "pmerge" << endl;
-				return next[0];
-			}
-			else
-			{
-				for (j = 0; j < (int)it.size(); j++)
-					for (k = j+1; k < (int)it.size(); k++)
-						if (csiblings(it[j], it[k]) != -1)
-						{
-							(*flags->log_file) << sstring(i, '\t') << "cmerge" << endl;
-							return next[0];
-						}
-			}
-		}
-
-		if (is_place(next[0]))
-		{
-			updated = updateplace(next[0], i);
-
-			if (!updated && (*covered)[next[0]])
-			{
-				(*flags->log_file) << sstring(i, '\t') << "end" << endl;
-				return (int)S.size();
-			}
-
-			(*covered)[next[0]] = true;
-		}
-
-		(*flags->log_file) << sstring(i, '\t') << "{";
-		for (j = 0; j < (int)next.size(); j++)
-			(*flags->log_file) << node_name(next[j]) << " ";
-		(*flags->log_file) << "} -> ";
-		curr = next;
-		next.clear();
-		for (j = 0; j < (int)arcs.size(); j++)
-			for (k = 0; k < (int)curr.size(); k++)
-				if (curr[k] == arcs[j].first)
-					next.push_back(arcs[j].second);
-		next.unique();
-		(*flags->log_file) << "{";
-		for (j = 0; j < (int)next.size(); j++)
-			(*flags->log_file) << node_name(next[j]) << " ";
-		(*flags->log_file) << "}" << endl;
-
-		immune = false;
-		if (next.size() > 1)
-		{
-			curr = next;
-			next.clear();
-			for (j = 0; j < (int)curr.size(); j++)
-			{
-				next.push_back(update(curr[j], covered, i+1));
-				if (next.back() == (int)S.size())
-					next.pop_back();
-				else
-					immune = true;
-			}
-
-			next.unique();
-		}
-
-		if (next.size() < 1)
-			return (int)S.size();
-	}
-}
-
 void petri::update()
 {
-	int i, j, k;
 	svector<bool> covered;
 	svector<int> r1, r2;
 	svector<int> ia;
 
-	env.reset();
-
-	/*(*flags->log_file) << "Reset: {";
-	for (i = 0; i < (int)M0.size(); i++)
+	(*flags->log_file) << "Reset: {";
+	for (int i = 0; i < (int)M0.size(); i++)
 		cout << M0[i] << " ";
-	cout << "} " << vars->reset.print(vars) << endl;*/
-	for (i = 0; i < (int)S.size(); i++)
-	{
-		if (M0.find(i) != M0.end())
-			S[i].index = vars->reset & vars->enforcements;
-		else
-			S[i].index = 0;
-	}
+	cout << "} " << vars->reset.print(vars) << endl;
 
-	covered.clear();
-	covered.resize(S.size(), false);
+	env.simulate();
 
-	k = 0;
-	if (M0.size() > 1)
-		k++;
-	for (i = 0; i < (int)M0.size(); i++)
-	{
-		ia = output_nodes(M0[i]);
-		if (ia.size() > 1)
-			k++;
-		r1.clear();
-		for (j = 0; j < (int)ia.size(); j++)
-		{
-			r1.push_back(update(ia[j], &covered, k));
-			if (r1.back() == (int)S.size())
-				r1.pop_back();
-		}
-		if (ia.size() > 1)
-			k--;
-
-		r1.unique();
-
-		for (j = 0; j < (int)r1.size(); j++)
-		{
-			r2.push_back(update(r1[j], &covered, k, true));
-			if (r2.back() == (int)S.size())
-				r2.pop_back();
-		}
-	}
-
-	if (M0.size() > 1)
-		k--;
-
-	r2.unique();
-	for (j = 0; j < (int)r2.size(); j++)
-		update(r2[j], &covered, k, true);
+	for (int i = 0; i < env.final.size(); i++)
+		S[i].index = env.final[i];
 }
 
 void petri::check_assertions()
@@ -1267,37 +1041,6 @@ void petri::add_conflict_pair(smap<int, list<svector<int> > > *c, int i, int j)
 		c->insert(pair<int, list<svector<int> > >(i, list<svector<int> >(1, svector<int>(1, j))));
 }
 
-void petri::gen_mutables()
-{
-	int i, j;
-	svector<int> ia;
-
-	smap<int, int>::iterator bi, bj;
-	smap<sstring, variable>::iterator vi;
-
-	for (i = 0; i < (int)S.size(); i++)
-	{
-		S[i].mutables.clear();
-
-		for (j = 0; j < (int)T.size(); j++)
-			if (T[j].active && psiblings(i, trans_id(j)) >= 0)
-			{
-				T[j].index.extract(&S[i].mutables);
-				vars->x_channel(T[j].index.vars(), &S[i].mutables);
-			}
-
-		ia = input_nodes(i);
-		for (j = 0; j < (int)ia.size(); j++)
-			if (T[index(ia[j])].active)
-				vars->x_channel(T[index(ia[j])].index.vars(), &S[i].mutables);
-	}
-
-	/*for (vi = vars->global.begin(); vi != vars->global.end(); vi++)
-		if (vi->first != "reset" && vi->second.arg && !vars->part_of_channel(vi->second.uid))
-			for (i = 0; i < (int)M0.size(); i++)
-				S[M0[i]].mutables.insert(pair<int, logic>(vi->second.uid, logic(0)));*/
-}
-
 void petri::gen_conditional_places()
 {
 	smap<int, pair<int, int> >::iterator ci;
@@ -1354,7 +1097,7 @@ void petri::gen_conflicts()
 	svector<int> oa;
 	svector<int> vl;
 	svector<int> temp;
-	int i, j, k;
+	int i, j;
 	logic t(0);
 	logic nt(0);
 
@@ -1365,6 +1108,7 @@ void petri::gen_conflicts()
 
 	for (i = 0; i < (int)S.size(); i++)
 	{
+		cout << i << "/" << S.size() << endl;
 		oa = output_nodes(i);
 
 		// INDEX
@@ -1422,7 +1166,7 @@ void petri::gen_bubbleless_conflicts()
 	svector<int> oa;
 	svector<int> vl;
 	svector<int> temp;
-	int i, j, k;
+	int i, j;
 	logic tp(0), ntp(0), sp1(0);
 	logic tn(0), ntn(0), sn1(0);
 	logic s2;
@@ -1542,6 +1286,11 @@ void petri::gen_senses()
 		T[i].positive = T[i].index.pabs();
 		T[i].negative = T[i].index.nabs();
 	}
+}
+
+logic petri::apply_debug(int pc)
+{
+	return (vars->enforcements & S[pc].assumptions);
 }
 
 void petri::trim_branch_ids()
@@ -1813,12 +1562,17 @@ logic petri::get_effective_state_encoding(int place, int observer)
 	idx = output_nodes(place);
 	if ((*this)[observer].is_in_tail(place) && observer != place && idx.find(observer) == idx.end())
 	{
+		cout << node_name(observer) << " " << node_name(place) << endl;
 		idx = output_arcs(place);
 		while (idx.size() != 0)
 		{
+			cout << "stuck here ";
 			for (int k = 0; k < idx.size();)
 			{
-				if (is_place(arcs[idx[k]].second) && (*this)[observer].is_in_tail(arcs[idx[k]].second))
+				cout << node_name(arcs[idx[k]].first) << "->" << node_name(arcs[idx[k]].second) << " ";
+				if (arcs[idx[k]].second == observer)
+					idx.erase(idx.begin() + k);
+				else if (is_place(arcs[idx[k]].second) && (*this)[observer].is_in_tail(arcs[idx[k]].second))
 				{
 					encoding |= ~T[index(arcs[idx[k]].first)].index;
 					k++;
@@ -1835,6 +1589,7 @@ logic petri::get_effective_state_encoding(int place, int observer)
 				else
 					k++;
 			}
+			cout << endl;
 			idx = increment_arcs(idx);
 		}
 		return encoding & S[place].index;
@@ -2814,17 +2569,6 @@ void petri::print_dot(ostream *fout, sstring name)
 		(*fout) << "\t" << node_name(arcs[i].first) << " -> " << node_name(arcs[i].second) << "[label=\" " << i << " \"];" <<  endl;
 
 	(*fout) << "}" << endl;
-}
-
-void petri::print_mutables()
-{
-	for (int i = 0; i < (int)S.size(); i++)
-	{
-		(*flags->log_file) << "S" << i << ": ";
-		for (smap<int, logic>::iterator j = S[i].mutables.begin(); j != S[i].mutables.end(); j++)
-			(*flags->log_file) << "{" << vars->get_name(j->first) << " " << j->second.print(vars) << "} ";
-		(*flags->log_file) << endl;
-	}
 }
 
 void petri::print_branch_ids(ostream *fout)

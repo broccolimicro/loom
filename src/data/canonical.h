@@ -17,6 +17,7 @@
 struct canonical
 {
 	canonical();
+	canonical(const canonical &c);
 	canonical(int s);
 	canonical(minterm m);
 	canonical(svector<minterm> m);
@@ -106,6 +107,9 @@ struct canonical
 };
 
 bool is_mutex(canonical *c0, canonical *c1);
+bool is_mutex(canonical c0, canonical c1);
+bool is_mutex(minterm *m0, canonical *c1);
+bool is_mutex(canonical *c0, minterm *m1);
 bool is_mutex(canonical *c0, canonical *c1, canonical *c2);
 bool mergible(canonical *c0, canonical *c1);
 

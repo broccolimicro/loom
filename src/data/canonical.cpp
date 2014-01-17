@@ -14,6 +14,11 @@ canonical::canonical()
 	terms = svector<minterm>();
 }
 
+canonical::canonical(const canonical &c)
+{
+	terms = c.terms;
+}
+
 canonical::canonical(int s)
 {
 	terms.resize(s);
@@ -759,6 +764,38 @@ bool is_mutex(canonical *c0, canonical *c1)
 
 	return true;
 }
+
+bool is_mutex(canonical c0, canonical c1)
+{
+	int i, j;
+	for (i = 0; i < (int)c0.terms.size(); i++)
+		for (j = 0; j < (int)c1.terms.size(); j++)
+			if ((c0.terms[i] & c1.terms[j]) != 0)
+				return false;
+
+	return true;
+}
+
+bool is_mutex(minterm *m0, canonical *c1)
+{
+	int j;
+		for (j = 0; j < (int)c1->terms.size(); j++)
+			if ((*m0 & c1->terms[j]) != 0)
+				return false;
+
+	return true;
+}
+
+bool is_mutex(canonical *c0, minterm *m1)
+{
+	int i;
+	for (i = 0; i < (int)c0->terms.size(); i++)
+		if ((c0->terms[i] & *m1) != 0)
+			return false;
+
+	return true;
+}
+
 
 bool is_mutex(canonical *c0, canonical *c1, canonical *c2)
 {
