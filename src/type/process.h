@@ -52,6 +52,7 @@ struct process : keyword
 	void reshuffle();
 
 	void generate_states();
+	void update();
 	void trim_states();
 	void direct_bubble_reshuffle();
 	svector<pair<svector<int>, bool> > reshuffle_algorithm(smap<pair<int, int>, pair<bool, bool> >::iterator idx, bool forward, smap<pair<int, int>, pair<bool, bool> > *net, svector<int> cycle, svector<bool> *inverted);

@@ -16,7 +16,7 @@ inline process wchb(a4pe1of2 R, a4pe1of2 L)
 	 ]
 }
 
-inline process pchb(a4pe1of2 R, a4pe1of2 L)
+/*inline process pchb(a4pe1of2 R, a4pe1of2 L)
 {
 	*[
 		[	R.e & L.r.t -> R.r.t+ 
@@ -51,7 +51,7 @@ inline process pcfb(a4pe1of2 R, a4pe1of2 L)
 	  []1 -> L.r.f+
 	  ]; [~L.e]; (L.r.t-||L.r.f-); [L.e]
 	 ]
-}
+}*/
 
 /*inline process cmerge1b2(a4pa1of2 A, a4pa1of2 B, a4pa1of2 S, a4pa1of2 O)
 {

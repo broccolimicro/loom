@@ -25,7 +25,7 @@ struct umap
 
 	list<uarc> arcs;
 	list<unode> begin;
-	list<pair<unode, list<unode> > > end;
+	list<pair<unode, minterm> > end;
 	svector<int> sids;
 	svector<pair<int, int> > tids;
 	svector<int> iac;
@@ -75,6 +75,8 @@ struct remote_program_counter
 	remote_program_counter &operator=(remote_program_counter pc);
 };
 
+bool operator==(remote_program_counter pc1, remote_program_counter pc2);
+
 struct program_environment
 {
 	program_environment();
@@ -88,6 +90,8 @@ struct program_environment
 
 	program_environment &operator=(program_environment env);
 };
+
+bool operator==(program_environment env1, program_environment env2);
 
 struct program_counter
 {
@@ -108,7 +112,7 @@ struct program_counter
 	bool is_active();
 	string node_name();
 
-	bool end_is_ready(logic s, list<program_environment>::iterator &env, list<remote_program_counter>::iterator &pc, list<pair<unode, list<unode> > >::iterator &idx, logic &state);
+	bool end_is_ready(logic s, list<program_environment>::iterator &env, list<remote_program_counter>::iterator &pc, list<pair<unode, minterm> >::iterator &idx, logic &state);
 	bool begin_is_ready(logic s, list<program_environment>::iterator &env, list<remote_program_counter>::iterator &pc, list<unode>::iterator &idx, list<pair<pair<string, petri*>, list<pair<list<program_environment>::iterator, unode> > > >::iterator &split, list<pair<list<program_environment>::iterator, unode> >::iterator &prgm, logic &state);
 
 	void simulate(logic s);
@@ -129,6 +133,7 @@ struct program_execution
 
 	petri *net;
 	svector<logic> states;
+	svector<logic> final;
 
 	list<program_counter> pcs;
 	bool deadlock;
@@ -137,7 +142,7 @@ struct program_execution
 	int count(list<program_counter>::iterator i);
 	void merge(list<program_counter>::iterator i);
 
-	logic calculate_state(list<program_counter>::iterator i, svector<logic> *f);
+	logic calculate_state(list<program_counter>::iterator i);
 
 	program_execution &operator=(program_execution exe);
 };

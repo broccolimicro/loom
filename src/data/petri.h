@@ -141,6 +141,7 @@ struct petri
 
 	void gen_mutables();
 	void gen_conditional_places();
+	bool are_sibling_guards(int i, int j);
 	void gen_conflicts();
 	void gen_bubbleless_conflicts();
 	void gen_senses();

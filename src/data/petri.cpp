@@ -417,6 +417,25 @@ void petri::update()
 
 	for (int i = 0; i < env.final.size(); i++)
 		S[i].index = env.final[i];
+
+	for (int i = 0; i < T.size(); i++)
+	{
+		ia = input_nodes(trans_id(i));
+
+		logic t = 1;
+		for (int l = 0; l < ia.size(); l++)
+			t &= S[ia[l]].index;
+
+		logic r;
+		if (T[i].active)
+			r = (t >> T[i].index);
+		else
+			r = (t & T[i].index);
+
+		T[i].definitely_invacuous = is_mutex(&t, &r);
+		T[i].possibly_vacuous = !T[i].definitely_invacuous;
+		T[i].definitely_vacuous = (t == r);
+	}
 }
 
 void petri::check_assertions()
@@ -1087,6 +1106,17 @@ void petri::gen_conditional_places()
 	}
 }
 
+bool petri::are_sibling_guards(int i, int j)
+{
+	svector<int> i_in = input_nodes(input_nodes(i));
+	svector<int> j_in = input_nodes(input_nodes(j));
+	for (int k = 0; k < i_in.size(); k++)
+		for (int l = 0; l < j_in.size(); l++)
+			if (i_in[k] == j_in[l])
+				return true;
+	return false;
+}
+
 void petri::gen_conflicts()
 {
 	smap<int, list<svector<int> > >::iterator ri;
@@ -1120,6 +1150,7 @@ void petri::gen_conflicts()
 				T[index(oa[j])].index.vars(&vl);
 				t = t & T[index(oa[j])].index;
 			}
+
 		vl.unique();
 		s1 = S[i].index.hide(vl);
 
@@ -1138,11 +1169,18 @@ void petri::gen_conflicts()
 			// INDEX
 			if (i != j && psiblings(i, j) < 0 && !is_mutex(&s1, &s2))
 			{
+				cout << "CONFLICT " << node_name(i) << "=" << s1.print(vars) << " " << node_name(j) << "=" << s2.print(vars) << endl;
+
 				oa = output_nodes(j);
 				nt = ~t;
 				// is it a conflicting state? (e.g. not vacuous)
 				if (S[i].active && (!is_mutex(&nt, &S[i].index, &S[j].index) || (oa.size() > 0 && T[index(oa[0])].active && is_mutex(&t, &T[index(oa[0])].index))))
-					add_conflict_pair(&conflicts, i, j);
+				{
+					if (!are_sibling_guards(i, j))
+						add_conflict_pair(&conflicts, i, j);
+					else
+						cerr << "Warning: Conditional near S" << i << " and S" << j << " has non mutually exclusive guards." << endl;
+				}
 
 				// it is at least an indistinguishable state at this point
 				add_conflict_pair(&indistinguishable, i, j);
@@ -1240,7 +1278,12 @@ void petri::gen_bubbleless_conflicts()
 					// is it a conflicting state? (e.g. not vacuous)
 					ntp = ~tp;
 					if (S[i].active && (!is_mutex(&ntp, &sp1, &S[j].index) || (oa.size() > 0 && T[index(oa[0])].active && is_mutex(&tp, &T[index(oa[0])].index))))
-						add_conflict_pair(&positive_conflicts, i, j);
+					{
+						if (!are_sibling_guards(i, j))
+							add_conflict_pair(&positive_conflicts, i, j);
+						else
+							cerr << "Warning: Conditional near S" << i << " and S" << j << " has non mutually exclusive guards." << endl;
+					}
 
 					// it is at least an indistinguishable state at this point
 					add_conflict_pair(&positive_indistinguishable, i, j);
@@ -1252,8 +1295,12 @@ void petri::gen_bubbleless_conflicts()
 					// is it a conflicting state? (e.g. not vacuous)
 					ntn = ~tn;
 					if (S[i].active && (!is_mutex(&ntn, &sn1, &S[j].index) || (oa.size() > 0 && T[index(oa[0])].active && is_mutex(&tn, &T[index(oa[0])].index))))
-						add_conflict_pair(&negative_conflicts, i, j);
-
+					{
+						if (!are_sibling_guards(i, j))
+							add_conflict_pair(&negative_conflicts, i, j);
+						else
+							cerr << "Warning: Conditional near S" << i << " and S" << j << " has non mutually exclusive guards." << endl;
+					}
 					// it is at least an indistinguishable state at this point
 					add_conflict_pair(&negative_indistinguishable, i, j);
 				}
@@ -1392,6 +1439,23 @@ void petri::gen_tails()
 				done = done && (old == T[index(arcs[i].second)].tail);
 			}
 		}
+	}
+
+	cout << "TAILS" << endl;
+	for (int i = 0; i < S.size(); i++)
+	{
+		cout << "S" << i << ": ";
+		for (int j = 0; j < S[i].tail.size(); j++)
+			cout << node_name(S[i].tail[j]);
+		cout << endl;
+	}
+
+	for (int i = 0; i < T.size(); i++)
+	{
+		cout << "T" << i << ": ";
+		for (int j = 0; j < T[i].tail.size(); j++)
+			cout << node_name(T[i].tail[j]);
+		cout << endl;
 	}
 }
 
@@ -1558,21 +1622,14 @@ logic petri::get_effective_state_encoding(int place, int observer)
 	}
 
 	logic encoding = 0;
-	svector<int> idx;
-	idx = output_nodes(place);
-	if ((*this)[observer].is_in_tail(place) && observer != place && idx.find(observer) == idx.end())
+	if ((*this)[observer].is_in_tail(place) && observer != place)
 	{
-		cout << node_name(observer) << " " << node_name(place) << endl;
-		idx = output_arcs(place);
+		svector<int> idx = output_arcs(place);
 		while (idx.size() != 0)
 		{
-			cout << "stuck here ";
 			for (int k = 0; k < idx.size();)
 			{
-				cout << node_name(arcs[idx[k]].first) << "->" << node_name(arcs[idx[k]].second) << " ";
-				if (arcs[idx[k]].second == observer)
-					idx.erase(idx.begin() + k);
-				else if (is_place(arcs[idx[k]].second) && (*this)[observer].is_in_tail(arcs[idx[k]].second))
+				if (is_place(arcs[idx[k]].second) && (*this)[observer].is_in_tail(arcs[idx[k]].second))
 				{
 					encoding |= ~T[index(arcs[idx[k]].first)].index;
 					k++;
@@ -1589,7 +1646,6 @@ logic petri::get_effective_state_encoding(int place, int observer)
 				else
 					k++;
 			}
-			cout << endl;
 			idx = increment_arcs(idx);
 		}
 		return encoding & S[place].index;
@@ -2558,6 +2614,8 @@ void petri::print_dot(ostream *fout, sstring name)
 	for (i = 0; i < (int)T.size(); i++)
 	{
 		label = T[i].index.print(vars);
+		if (!T[i].active)
+			label = "[" + label + "]";
 		label = sstring(i) + " " + label;
 		if (label != "")
 			(*fout) << "\tT" << i << " [shape=box] [label=\"" << label << "\"];" << endl;

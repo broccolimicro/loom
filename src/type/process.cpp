@@ -263,6 +263,32 @@ void process::generate_states()
 	}*/
 }
 
+void process::update()
+{
+	net.env.execs.clear();
+	net.env.execs.push_back(program_execution(&net));
+	list<program_execution>::iterator exe = net.env.execs.begin();
+	for (int k = 0; k < net.M0.size(); k++)
+	{
+		exe->pcs.push_front(program_counter(net.M0[k], &net));
+		list<program_counter>::iterator pc = exe->pcs.begin();
+
+		if (has_environment)
+			pc->envs.push_back(program_environment(remote_program_counter("", &net, &env_net)));
+		else
+			for (smap<sstring, variable>::iterator i = vars.label.begin(); i != vars.label.end(); i++)
+			{
+				type_space::iterator j;
+				if (i->second.type.find("operator?") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
+					pc->envs.push_back(program_environment(remote_program_counter(i->second.name.substr(0, i->second.name.find_last_of(".")), &net, &((channel*)j->second)->send->net)));
+				else if (i->second.type.find("operator!") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
+					pc->envs.push_back(program_environment(remote_program_counter(i->second.name.substr(0, i->second.name.find_last_of(".")), &net, &((channel*)j->second)->recv->net)));
+			}
+	}
+
+	net.update();
+}
+
 void process::trim_states()
 {
 	do
@@ -270,28 +296,7 @@ void process::trim_states()
 		print_dot(flags->log_file);
 		env_net.print_dot(flags->log_file, "environment");
 
-		net.env.execs.clear();
-		net.env.execs.push_back(program_execution(&net));
-		list<program_execution>::iterator exe = net.env.execs.begin();
-		for (int k = 0; k < net.M0.size(); k++)
-		{
-			exe->pcs.push_front(program_counter(net.M0[k], &net));
-			list<program_counter>::iterator pc = exe->pcs.begin();
-
-			if (has_environment)
-				pc->envs.push_back(program_environment(remote_program_counter("", &net, &env_net)));
-			else
-				for (smap<sstring, variable>::iterator i = vars.label.begin(); i != vars.label.end(); i++)
-				{
-					type_space::iterator j;
-					if (i->second.type.find("operator?") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
-						pc->envs.push_back(program_environment(remote_program_counter(i->second.name.substr(0, i->second.name.find_last_of(".")), &net, &((channel*)j->second)->send->net)));
-					else if (i->second.type.find("operator!") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
-						pc->envs.push_back(program_environment(remote_program_counter(i->second.name.substr(0, i->second.name.find_last_of(".")), &net, &((channel*)j->second)->recv->net)));
-				}
-		}
-
-		net.update();
+		update();
 		print_dot(flags->log_file);
 	} while(net.trim());
 
@@ -459,7 +464,7 @@ void process::direct_bubble_reshuffle()
 
 	cout << "}" << endl;
 
-	net.update();
+	update();
 
 	prs.print(&cout);
 	net.print_dot(&cout, name);
@@ -588,7 +593,7 @@ bool process::insert_state_vars()
 	}
 
 	net.trim_branch_ids();
-	net.update();
+	update();
 
 	return (ip.size() > 0);
 }
@@ -729,7 +734,7 @@ bool process::insert_bubbleless_state_vars()
 	}
 
 	net.trim_branch_ids();
-	net.update();
+	update();
 
 	return (ip.size() > 0);
 }

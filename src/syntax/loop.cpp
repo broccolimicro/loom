@@ -287,7 +287,10 @@ svector<int> loop::generate_states(petri *n, rule_space *p, svector<int> f, smap
 			antiguard += "&~" + bvnames[i];
 	}*/
 
-	uid.push_back(net->insert_transition(f, logic(antiguard, vars), pbranch, cbranch, this));
+	logic ag = logic(antiguard, vars);
+
+	if (ag != 0)
+		uid.push_back(net->insert_transition(f, ag, pbranch, cbranch, this));
 
 	flags->dec();
 
