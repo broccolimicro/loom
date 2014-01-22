@@ -469,11 +469,13 @@ program_counter::program_counter()
 {
 	net = NULL;
 	index = 0;
+	last = 0;
 	waiting = false;
 }
 
 program_counter::program_counter(const program_counter &pc)
 {
+	last = pc.last;
 	index = pc.index;
 	net = pc.net;
 	waiting = pc.waiting;
@@ -496,6 +498,7 @@ program_counter::program_counter(const program_counter &pc)
 
 program_counter::program_counter(int index, petri *net)
 {
+	this->last = index;
 	this->index = index;
 	this->net = net;
 	this->waiting = false;
@@ -957,6 +960,7 @@ void program_counter::merge()
 
 program_counter &program_counter::operator=(program_counter pc)
 {
+	last = pc.last;
 	index = pc.index;
 	net = pc.net;
 	waiting = pc.waiting;
@@ -1043,21 +1047,23 @@ logic program_execution::calculate_state(list<program_counter>::iterator pc)
 {
 	if (net->is_place(pc->index))
 	{
-		svector<int> it = pc->net->input_nodes(pc->index);
-		logic r = 0;
-		for (int k = 0; k < it.size(); k++)
+
+		svector<int> ip = pc->net->input_nodes(pc->last);
+
+		logic t;
+		for (int l = 0; l < ip.size(); l++)
 		{
-			svector<int> ip = pc->net->input_nodes(it[k]);
-
-			logic t = 1;
-			for (int l = 0; l < ip.size(); l++)
-				t &= states[ip[l]];
-
-			if (pc->net->T[pc->net->index(it[k])].active)
-				r |= (t >> pc->net->T[pc->net->index(it[k])].index);
+			if (l == 0)
+				t = states[ip[l]];
 			else
-				r |= (t & pc->net->T[pc->net->index(it[k])].index);
+				t &= states[ip[l]];
 		}
+
+		logic r;
+		if (pc->net->T[pc->net->index(pc->last)].active)
+			r = (t >> pc->net->T[pc->net->index(pc->last)].index);
+		else
+			r = (t & pc->net->T[pc->net->index(pc->last)].index);
 
 		pc->simulate(r);
 		r = pc->mute(r);
@@ -1069,12 +1075,9 @@ logic program_execution::calculate_state(list<program_counter>::iterator pc)
 		if ((r & final[pc->index]) == r)
 			done = true;
 		else
-		{
-			states[pc->index] = r;
 			final[pc->index] |= r;
-		}
 
-		return states[pc->index];
+		return r;
 	}
 	else
 	{
@@ -1221,13 +1224,14 @@ void program_execution_space::simulate()
 										update_env->pcs.push_back(remote_program_counter(oa[k], pc->net));
 						}
 
+						update_pc->last = update_pc->index;
 						update_pc->index = oa[j];
 						cout << update_pc->node_name();
 						fflush(stdout);
 
 						// Check to see if we need to update the state encoding for this program execution
 						if (update_pc->is_place())
-							update_exec->states[update_pc->index] |= update_exec->calculate_state(update_pc);
+							update_exec->states[update_pc->index] = update_exec->calculate_state(update_pc);
 
 						if (update_pc->is_place())
 							cout << "{" << update_exec->states[update_pc->index].print(update_pc->net->vars) << "}";

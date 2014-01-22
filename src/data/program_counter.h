@@ -100,6 +100,7 @@ struct program_counter
 	program_counter(int index, petri *net);
 	~program_counter();
 
+	int last;
 	int index;
 	petri *net;
 	bool waiting;
