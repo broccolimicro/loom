@@ -281,7 +281,13 @@ void program::insert_state_vars()
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
 		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos))
-			for (int j = 0; j < 100 && ((process*)i->second)->insert_state_vars(); j++);
+			for (int j = 0; j < 100 && ((process*)i->second)->insert_state_vars(); j++)
+			{
+				if (i->second->kind() == "process")
+					((process*)i->second)->update();
+				else if (i->second->kind() == "operate")
+					((operate*)i->second)->update();
+			}
 }
 
 void program::insert_bubbleless_state_vars()
@@ -289,7 +295,13 @@ void program::insert_bubbleless_state_vars()
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
 		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos))
-			for (int j = 0; j < 100 && ((process*)i->second)->insert_bubbleless_state_vars(); j++);
+			for (int j = 0; j < 100 && ((process*)i->second)->insert_bubbleless_state_vars(); j++)
+			{
+				if (i->second->kind() == "process")
+					((process*)i->second)->update();
+				else if (i->second->kind() == "operate")
+					((operate*)i->second)->update();
+			}
 }
 
 void program::generate_prs()

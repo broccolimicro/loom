@@ -145,16 +145,26 @@ remote_program_counter::remote_program_counter(string name, petri *from, petri *
 			if (!vi->second.driven)
 				hidden_factors.push_back(vi->second.uid);
 
-			forward_factors.push_back(pair<int, int>(vi->second.uid, net->vars->get_uid(vi->second.name)));
-			reverse_factors.push_back(pair<int, int>(forward_factors.back().second, forward_factors.back().first));
+			int uid = net->vars->get_uid(vi->second.name);
+
+			if (uid != -1)
+			{
+				forward_factors.push_back(pair<int, int>(vi->second.uid, uid));
+				reverse_factors.push_back(pair<int, int>(forward_factors.back().second, forward_factors.back().first));
+			}
 		}
 		else if (vi->second.name.find(name) != vi->second.name.npos)
 		{
 			if (!vi->second.driven)
 				hidden_factors.push_back(vi->second.uid);
 
-			forward_factors.push_back(pair<int, int>(vi->second.uid, net->vars->get_uid(vi->second.name.substr(name.length()+1))));
-			reverse_factors.push_back(pair<int, int>(forward_factors.back().second, forward_factors.back().first));
+			int uid = net->vars->get_uid(vi->second.name.substr(name.length()+1));
+
+			if (uid != -1)
+			{
+				forward_factors.push_back(pair<int, int>(vi->second.uid, uid));
+				reverse_factors.push_back(pair<int, int>(forward_factors.back().second, forward_factors.back().first));
+			}
 		}
 		else
 			hidden_factors.push_back(vi->second.uid);
@@ -932,8 +942,12 @@ int program_counter::count()
 	{
 		int num_ready = 0;
 		for (list<remote_program_counter>::iterator pc = env->pcs.begin(); pc != env->pcs.end(); pc++)
+		{
+			if (pc->net == net && pc->name == "this")
+				cout << pc->index.end.size() << " " << pc->count(unode(index, 0)) << endl;
 			if (pc->net == net && pc->name == "this" && pc->index.end.size() == 1 && pc->count(unode(index, 0)) == 1)
 				num_ready++;
+		}
 		if (total > num_ready)
 			total = num_ready;
 	}
@@ -1018,8 +1032,11 @@ int program_execution::count(list<program_counter>::iterator i)
 	int total = 0;
 	int check = i->net->input_arcs(i->index).size();
 	for (list<program_counter>::iterator j = pcs.begin(); j != pcs.end(); j++)
+	{
+
 		if (j->index == i->index && j->count()+1 == check)
 			total++;
+	}
 
 	cout << "LOOK AGAIN " << total << "/" << check << endl;
 
@@ -1118,6 +1135,7 @@ program_execution_space::~program_execution_space()
 
 void program_execution_space::simulate()
 {
+	cout << endl;
 	final.clear();
 	for (list<program_execution>::iterator exec = execs.begin(); exec != execs.end(); exec++)
 	{
@@ -1125,7 +1143,10 @@ void program_execution_space::simulate()
 			exec->states[i] = logic();
 
 		for (int i = 0; i < exec->net->M0.size(); i++)
+		{
 			exec->states[exec->net->M0[i]] = exec->net->vars->reset;
+			cout << exec->states[exec->net->M0[i]].print(exec->net->vars) << endl;
+		}
 
 		if (final.size() < exec->states.size())
 			final.resize(exec->states.size(), logic());
@@ -1135,8 +1156,13 @@ void program_execution_space::simulate()
 				for (list<remote_program_counter>::iterator rpc = env->pcs.begin(); rpc != env->pcs.end(); rpc++)
 					if (rpc->net != exec->net)
 						for (int i = 0; i < exec->net->M0.size(); i++)
-
+						{
 							exec->states[exec->net->M0[i]] &= rpc->net->vars->reset.refactor(rpc->reverse_factors);
+							cout << rpc->net->vars->reset.print(rpc->net->vars) << " " << rpc->net->vars->reset.refactor(rpc->reverse_factors).print(exec->net->vars) << " ";
+							for (svector<pair<int, int> >::iterator j = rpc->reverse_factors.begin(); j != rpc->reverse_factors.end(); j++)
+								cout << j->first << "->" << j->second << endl;
+							cout << exec->states[exec->net->M0[i]].print(exec->net->vars) << endl;
+						}
 
 		for (list<program_counter>::iterator pc = exec->pcs.begin(); pc != exec->pcs.end(); pc++)
 			pc->simulate(exec->states[pc->index]);

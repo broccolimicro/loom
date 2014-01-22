@@ -367,7 +367,7 @@ void gen_variables(sstring exp, variable_space *vars, flag_space *flags)
 		{
 			id = vars->get_uid(name);
 			if (id < 0 && name.substr(0, 2) != "0x" && name.substr(0, 2) != "0b" && name.find_first_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_") != name.npos)
-				vars->insert(variable(name, "node", 1, false, flags));
+				vars->insert(variable(name, "node", 1, 0, false, flags));
 		}
 	}
 
@@ -376,7 +376,7 @@ void gen_variables(sstring exp, variable_space *vars, flag_space *flags)
 	{
 		id = vars->get_uid(name);
 		if (id < 0 && name.substr(0, 2) != "0x" && name.substr(0, 2) != "0b" && name.find_first_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_") != name.npos)
-			vars->insert(variable(name, "node", 1, false, flags));
+			vars->insert(variable(name, "node", 1, 0, false, flags));
 	}
 }
 

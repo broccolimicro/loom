@@ -23,7 +23,7 @@ variable::variable()
 	pc = svector<int>(1, 0);
 }
 
-variable::variable(sstring name, sstring type, uint16_t width, bool arg, flag_space *flags)
+variable::variable(sstring name, sstring type, uint16_t width, int reset, bool arg, flag_space *flags)
 {
 	this->chp = type + "<" + sstring(width) + ">" + name;
 	this->name = name;
@@ -35,6 +35,11 @@ variable::variable(sstring name, sstring type, uint16_t width, bool arg, flag_sp
 	this->arg = arg;
 	this->flags = flags;
 	pc = svector<int>(1, 0);
+	for (uint16_t i = 0; i < width; i++)
+	{
+		this->reset.push_back(reset&0x01);
+		reset >>= 1;
+	}
 }
 
 variable::variable(sstring chp, bool arg, flag_space *flags)

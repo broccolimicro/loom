@@ -17,7 +17,7 @@
 struct variable
 {
 	variable();
-	variable(sstring name, sstring type, uint16_t width, bool arg, flag_space *flags);
+	variable(sstring name, sstring type, uint16_t width, int reset, bool arg, flag_space *flags);
 	variable(sstring chp, bool arg, flag_space *flags);
 	~variable();
 

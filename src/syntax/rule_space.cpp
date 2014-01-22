@@ -141,7 +141,6 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 	logic t, ti;
 	svector<bool> covered;
 	minterm reset;
-	smap<int, logic> mutables;
 
 	rules.resize(vars->global.size());
 	for (i = 0; i < net->T.size(); i++)
@@ -209,7 +208,7 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 					cout << endl;
 					for (k = 0; k < net->arcs.size(); k++)
 						if (net->arcs[k].second == tid)
-							rules[vi->second.uid].guards[i] |= rules[vi->second.uid].strengthen(k, tid, &covered, logic(1), t, i, net->T[net->index(tid)].tail, mutables).second;
+							rules[vi->second.uid].guards[i] |= rules[vi->second.uid].strengthen(k, tid, &covered, logic(1), t, i, net->T[net->index(tid)].tail).second;
 					cout << endl;
 				}
 			}

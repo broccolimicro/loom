@@ -1125,13 +1125,12 @@ void petri::gen_conflicts()
 	smap<int, int>::iterator bi, bj;
 	svector<int> group;
 	svector<int> oa;
-	svector<int> vl;
 	svector<int> temp;
 	int i, j;
 	logic t(0);
 	logic nt(0);
 
-	logic s1(0), s2(0);
+	logic s1(0), s2(0), st;
 
 	conflicts.clear();
 	indistinguishable.clear();
@@ -1142,17 +1141,33 @@ void petri::gen_conflicts()
 		oa = output_nodes(i);
 
 		// INDEX
-		vl.clear();
+		s1 = S[i].index;
+		st = S[i].index;
 		t = 1;
 		for (j = 0; j < (int)oa.size(); j++)
 			if (T[index(oa[j])].active)
 			{
-				T[index(oa[j])].index.vars(&vl);
+				for (int k = 0; k < s1.terms.size(); k++)
+					for (int l = 0; l < T[index(oa[j])].index.terms.size(); l++)
+					{
+						s1.terms[k] &= T[index(oa[j])].index.terms[l];
+						st.terms[k] &= T[index(oa[j])].index.terms[l].inverse();
+					}
+
 				t = t & T[index(oa[j])].index;
 			}
 
-		vl.unique();
-		s1 = S[i].index.hide(vl);
+		for (int k = 0, l = 0; k < s1.terms.size() && l < S[i].index.terms.size(); l++)
+		{
+			if (s1.terms[k] != 0 && st.terms[l] == 0)
+				s1.terms.erase(s1.terms.begin() + k);
+			else
+			{
+				s1.terms[k] = s1.terms[k].xoutnulls() | S[i].index.terms[l];
+				k++;
+			}
+		}
+
 
 		for (j = 0; j < (int)S.size(); j++)
 		{
@@ -1428,6 +1443,7 @@ void petri::gen_tails()
 			if (is_trans(arcs[i].first) && (!T[index(arcs[i].first)].active || T[index(arcs[i].first)].possibly_vacuous))
 			{
 				old = S[arcs[i].second].tail;
+				T[index(arcs[i].second)].add_to_tail(arcs[i].first);
 				S[arcs[i].second].add_to_tail(T[index(arcs[i].first)].tail);
 				done = done && (old == S[arcs[i].second].tail);
 			}
@@ -1624,11 +1640,13 @@ logic petri::get_effective_state_encoding(int place, int observer)
 	logic encoding = 0;
 	if ((*this)[observer].is_in_tail(place) && observer != place)
 	{
+		cout << node_name(place) << " ==> " << node_name(observer) << endl;
 		svector<int> idx = output_arcs(place);
 		while (idx.size() != 0)
 		{
 			for (int k = 0; k < idx.size();)
 			{
+				cout << node_name(arcs[idx[k]].first) << "->" << node_name(arcs[idx[k]].second) << " ";
 				if (is_place(arcs[idx[k]].second) && (*this)[observer].is_in_tail(arcs[idx[k]].second))
 				{
 					encoding |= ~T[index(arcs[idx[k]].first)].index;
@@ -1639,13 +1657,14 @@ logic petri::get_effective_state_encoding(int place, int observer)
 					encoding |= ~T[index(arcs[idx[k]].first)].index;
 					idx.erase(idx.begin() + k);
 				}
-				else if (is_trans(arcs[idx[k]].second) && observer == arcs[idx[k]].second)
+				else if (is_trans(arcs[idx[k]].second) && (observer == arcs[idx[k]].second || !(*this)[observer].is_in_tail(arcs[idx[k]].second)))
 					idx.erase(idx.begin() + k);
 				else if (is_place(arcs[idx[k]].second))
 					idx.erase(idx.begin() + k);
 				else
 					k++;
 			}
+			cout << endl;
 			idx = increment_arcs(idx);
 		}
 		return encoding & S[place].index;

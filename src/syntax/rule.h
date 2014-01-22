@@ -35,8 +35,8 @@ struct rule
 	logic &up();
 	logic &down();
 
-	pair<svector<int>, logic> closest_transition(int curr_place, int transition, int conflicting_state, logic rule_guard, logic implicant_state, smap<int, logic> mutables, svector<int> tail, int i = 0);
-	pair<svector<int>, logic> strengthen(int p, int tid, svector<bool> *covered, logic rule_guard, logic implicant_state, int t, svector<int> tail, smap<int, logic> mutables, int i = 0);
+	pair<svector<int>, logic> closest_transition(int curr_place, int transition, int conflicting_state, logic rule_guard, logic implicant_state, svector<int> tail, svector<bool> *covered, int i = 0);
+	pair<svector<int>, logic> strengthen(int p, int tid, svector<bool> *covered, logic rule_guard, logic implicant_state, int t, svector<int> tail, int i = 0);
 	void gen_minterms();
 	void gen_bubbleless_minterms();
 

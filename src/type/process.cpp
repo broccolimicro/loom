@@ -125,9 +125,9 @@ void process::parse(sstring raw)
 		(*flags->log_file) << "\tArgs:\t" << io_sequential << endl;
 	}
 
-	vars.insert(variable("reset", "node", 1, true, flags));
+	vars.insert(variable("reset", "node", 1, 0, true, flags));
 	if (has_environment)
-		env_vars.insert(variable("reset", "node", 1, true, flags));
+		env_vars.insert(variable("reset", "node", 1, 0, true, flags));
 
 	for (i = io_sequential.begin(), j = io_sequential.begin(); i != io_sequential.end(); i++)
 	{
@@ -580,7 +580,7 @@ bool process::insert_state_vars()
 	for (int j = 0; j < (int)ip.size(); j++)
 	{
 		sstring vname = vars.unique_name("_sv");
-		int vid   = vars.insert(variable(vname, "node", 1, false, flags));
+		int vid   = vars.insert(variable(vname, "node", 1, 0, false, flags));
 		vars.find(vname)->driven = true;
 
 		logic um = logic(vid, 1);
@@ -593,7 +593,6 @@ bool process::insert_state_vars()
 	}
 
 	net.trim_branch_ids();
-	update();
 
 	return (ip.size() > 0);
 }
@@ -721,7 +720,7 @@ bool process::insert_bubbleless_state_vars()
 	for (int j = 0; j < (int)ip.size(); j++)
 	{
 		sstring vname = vars.unique_name("_sv");
-		int vid   = vars.insert(variable(vname, "node", 1, false, flags));
+		int vid   = vars.insert(variable(vname, "node", 1, 0, false, flags));
 		vars.find(vname)->driven = true;
 
 		logic um = logic(vid, 1);
@@ -734,7 +733,6 @@ bool process::insert_bubbleless_state_vars()
 	}
 
 	net.trim_branch_ids();
-	update();
 
 	return (ip.size() > 0);
 }

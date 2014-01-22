@@ -65,7 +65,7 @@ rule::rule(sstring u, sstring d, sstring v, variable_space *vars, petri *net, fl
 	gen_variables(d, vars, flags);
 
 	if ((uid = vars->get_uid(v)) < 0)
-		uid = vars->insert(variable(v, "node", 1, false, flags));
+		uid = vars->insert(variable(v, "node", 1, 0, false, flags));
 
 	this->guards[1] = logic(u, vars);
 	this->guards[0] = logic(d, vars);
@@ -102,7 +102,7 @@ rule &rule::operator=(rule r)
 	return *this;
 }
 
-pair<svector<int>, logic> rule::closest_transition(int curr_place, int transition, int conflicting_state, logic rule_guard, logic implicant_state, smap<int, logic> mutables, svector<int> tail, int i)
+pair<svector<int>, logic> rule::closest_transition(int curr_place, int transition, int conflicting_state, logic rule_guard, logic implicant_state, svector<int> tail, svector<bool> *covered, int i)
 {
 	svector<int> next;
 	svector<int> curr;
@@ -125,25 +125,17 @@ pair<svector<int>, logic> rule::closest_transition(int curr_place, int transitio
 	{
 		cout << sstring(i, '\t') << next[0] << " ";
 
+		if (!(*covered)[i])
+			(*covered)[i] = true;
+		else
+		{
+			cout << "kill" << endl;
+			return pair<svector<int>, logic>(svector<int>(), rule_guard);
+		}
+
 		if (net->is_trans(net->arcs[next[0]].second))
 		{
 			t = net->T[net->index(net->arcs[next[0]].second)].index.hide(uid);
-			/* There is a problem here with regard to channel variables.
-			 *
-			 * Example:
-			 *
-			 * [R.a]; R.r1.t-; R.r1.f-; R.r2.t-; R.r2.f-; [~R.a]
-			 *               ^        ^        ^        ^
-			 * R.a is a mutable for the the marked states, this means that
-			 * we incorrectly lose information about R.a. The logic goes as follows:
-			 * If R.r1.t- actually allowed R.a to change it's value, that means that
-			 * the following three assignments were vacuous. If R.r1.f- actually allowed
-			 * R.a to change it's value, then the following two assignments were vacuous.
-			 * And so on...
-			 */
-			for (ji = mutables.begin(); ji != mutables.end(); ji++)
-				if ((t & ji->second) != t)
-					t = t.hide(ji->first);
 
 			effective_conflict = net->get_effective_state_encoding(conflicting_state, transition) & canonical(uid, 1-net->T[net->index(transition)].index.terms[0].val(uid));
 			cout << effective_conflict.print(vars) << " ";
@@ -227,7 +219,7 @@ pair<svector<int>, logic> rule::closest_transition(int curr_place, int transitio
 				{
 					if (net->psiblings(net->arcs[curr[j]].second, transition) == -1 && net->csiblings(net->arcs[curr[j]].second, transition) == -1)
 					{
-						ret = closest_transition(curr[j], transition, conflicting_state, temp, implicant_state, mutables, tail, i+1);
+						ret = closest_transition(curr[j], transition, conflicting_state, temp, implicant_state, tail, covered, i+1);
 						next.merge(ret.first);
 						rule_guard |= ret.second;
 						conflict_check.push_back(ret.second);
@@ -257,7 +249,7 @@ pair<svector<int>, logic> rule::closest_transition(int curr_place, int transitio
 				next.clear();
 				for (j = 0; j < curr.size(); j++)
 				{
-					ret = closest_transition(curr[j], transition, conflicting_state, rule_guard, implicant_state, mutables, tail, i+1);
+					ret = closest_transition(curr[j], transition, conflicting_state, rule_guard, implicant_state, tail, covered, i+1);
 					next.merge(ret.first);
 					if (ret.first.size() == 0)
 						return ret;
@@ -278,7 +270,7 @@ pair<svector<int>, logic> rule::closest_transition(int curr_place, int transitio
 }
 
 
-pair<svector<int>, logic> rule::strengthen(int p, int tid, svector<bool> *covered, logic rule_guard, logic implicant_state, int t, svector<int> tail, smap<int, logic> mutables, int i)
+pair<svector<int>, logic> rule::strengthen(int p, int tid, svector<bool> *covered, logic rule_guard, logic implicant_state, int t, svector<int> tail, int i)
 {
 	svector<int> next;
 	svector<int> curr;
@@ -304,6 +296,7 @@ pair<svector<int>, logic> rule::strengthen(int p, int tid, svector<bool> *covere
 	while (1)
 	{
 		cout << sstring(i, '\t') << next[0] << " " << rule_guard.print(vars) << " " << implicant_state.print(vars) << " ";
+		fflush(stdout);
 
 		if (!immune && net->is_place(net->arcs[next[0]].first))
 		{
@@ -320,8 +313,9 @@ pair<svector<int>, logic> rule::strengthen(int p, int tid, svector<bool> *covere
 			effective_conflict = net->get_effective_state_encoding(net->arcs[next[0]].first, tid);
 
 			covered2.clear();
+			covered2.resize(net->arcs.size(), false);
 			if (needed && (net->T[net->index(net->arcs[next[0]].second)].index & logic(uid, 1-t)) != 0 && (logic(uid, 1-t) & rule_guard & effective_conflict) != 0)
-				rule_guard = closest_transition(next[0], tid, net->arcs[next[0]].first, rule_guard, implicant_state, mutables, tail).second;
+				rule_guard = closest_transition(next[0], tid, net->arcs[next[0]].first, rule_guard, implicant_state, tail, &covered2).second;
 		}
 
 		(*covered)[next[0]] = true;
@@ -364,7 +358,7 @@ pair<svector<int>, logic> rule::strengthen(int p, int tid, svector<bool> *covere
 				conflict_check.clear();
 				for (j = 0; j < curr.size(); j++)
 				{
-					ret = strengthen(curr[j], tid, covered, temp, implicant_state, t, tail, mutables, i+1);
+					ret = strengthen(curr[j], tid, covered, temp, implicant_state, t, tail, i+1);
 					next.merge(ret.first);
 					conflict_check.push_back(ret.second);
 					if (ret.first.size() != 0)
@@ -543,7 +537,7 @@ pair<svector<int>, logic> rule::strengthen(int p, int tid, svector<bool> *covere
 				next.clear();
 				for (j = 0; j < curr.size(); j++)
 				{
-					ret = strengthen(curr[j], tid, covered, temp, implicant_state, t, tail, mutables, i+1);
+					ret = strengthen(curr[j], tid, covered, temp, implicant_state, t, tail, i+1);
 					next.merge(ret.first);
 					rule_guard &= ret.second;
 					if (ret.first.size() != 0)
