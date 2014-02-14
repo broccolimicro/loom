@@ -123,7 +123,7 @@ remote_program_counter::remote_program_counter(const remote_program_counter &pc)
 remote_program_counter::remote_program_counter(string name, petri *from, petri *to)
 {
 	this->name = name;
-	net = to;
+	this->net = to;
 
 	index.sids.resize(net->S.size(), 0);
 	index.tids.resize(net->T.size(), pair<int, int>(0, 0));
@@ -135,7 +135,7 @@ remote_program_counter::remote_program_counter(string name, petri *from, petri *
 	{
 		int id = index.nid(*i);
 		index.begin.push_back(unode(*i, id));
-		index.end.push_back(pair<unode, minterm>(unode(*i, id), minterm()));
+		index.end.push_back(unode(*i, id));
 	}
 	// translation
 	for (smap<sstring, variable>::iterator vi = from->vars->global.begin(); vi != from->vars->global.end(); vi++)
@@ -183,7 +183,7 @@ remote_program_counter::remote_program_counter(int index, petri *net)
 
 	int id = this->index.nid(index);
 	this->index.begin.push_back(unode(index, id));
-	this->index.end.push_back(pair<unode, minterm>(unode(index, id), minterm()));
+	this->index.end.push_back(unode(index, id));
 
 	for (smap<sstring, variable>::iterator vi = net->vars->global.begin(); vi != net->vars->global.end(); vi++)
 	{
@@ -244,13 +244,19 @@ void remote_program_counter::roll_to(unode idx)
 	for (list<uarc>::iterator arc = index.arcs.begin(); arc != index.arcs.end(); arc++)
 		cout << net->node_name(arc->first.first) << "." << arc->first.second << "->" << net->node_name(arc->second.first) << "." << arc->second.second << " ";
 	cout << ")<";
-	for (list<pair<unode, minterm> >::iterator n = index.end.begin(); n != index.end.end(); n++)
-		cout << net->node_name(n->first.first) << "." << n->first.second << " ";
+	for (list<unode>::iterator n = index.end.begin(); n != index.end.end(); n++)
+		cout << net->node_name(n->first) << "." << n->second << " ";
 	cout << ">" << endl;
 
 	for (list<unode>::iterator n = iter.begin(); n != iter.end(); n = iter.erase(n))
 	{
-		index.begin.remove(*n);
+		for (list<unode>::iterator i = index.begin.begin(); i != index.begin.end();)
+		{
+			if (*i == *n)
+				i = index.begin.erase(i);
+			else
+				i++;
+		}
 
 		for (list<uarc>::iterator a = index.arcs.begin(); a != index.arcs.end();)
 		{
@@ -273,17 +279,20 @@ void remote_program_counter::roll_to(unode idx)
 	for (list<uarc>::iterator arc = index.arcs.begin(); arc != index.arcs.end(); arc++)
 		cout << net->node_name(arc->first.first) << "." << arc->first.second << "->" << net->node_name(arc->second.first) << "." << arc->second.second << " ";
 	cout << ")<";
-	for (list<pair<unode, minterm> >::iterator n = index.end.begin(); n != index.end.end(); n++)
-		cout << net->node_name(n->first.first) << "." << n->first.second << " ";
+	for (list<unode>::iterator n = index.end.begin(); n != index.end.end(); n++)
+		cout << net->node_name(n->first) << "." << n->second << " ";
 	cout << ">" << endl;
 }
 
 int remote_program_counter::count(unode n)
 {
 	int total = 0;
-	for (list<pair<unode, minterm> >::iterator j = index.end.begin(); j != index.end.end(); j++)
-		if (j->first == n)
+	for (list<unode>::iterator j = index.end.begin(); j != index.end.end(); j++)
+	{
+		cout << "\t" << net->node_name(j->first) << "." << j->second << " / " << net->node_name(n.first) << "." << n.second << endl;
+		if (*j == n)
 			total++;
+	}
 	return total;
 }
 
@@ -382,10 +391,10 @@ bool operator==(remote_program_counter pc1, remote_program_counter pc2)
 	pc1.index.end.sort();
 	pc2.index.end.sort();
 
-	list<pair<unode, minterm> >::iterator e1, e2;
+	list<unode>::iterator e1, e2;
 
 	for (e1 = pc1.index.end.begin(), e2 = pc2.index.end.begin(); e1 != pc1.index.end.end() && e2 != pc2.index.end.end(); e1++, e2++)
-		if (e1->first.first != e2->first.first || e1->second != e2->second)
+		if (e1->first != e2->first)
 			return false;
 
 	if (e1 != pc1.index.end.end() || e2 != pc2.index.end.end())
@@ -432,9 +441,6 @@ minterm program_environment::firings()
 		for (list<int>::iterator i = firing_nodes.begin(); i != firing_nodes.end(); i++)
 			for (svector<minterm>::iterator j = pc->net_index(*i).terms.begin(); j != pc->net_index(*i).terms.end(); j++)
 				result &= j->refactor(pc->reverse_factors);
-
-		for (list<pair<unode, minterm> >::iterator end = pc->index.end.begin(); end != pc->index.end.end(); end++)
-			result &= end->second.refactor(pc->reverse_factors);
 
 		firing_nodes.clear();
 	}
@@ -539,7 +545,7 @@ string program_counter::node_name()
 	return net->node_name(index);
 }
 
-bool program_counter::end_is_ready(logic s, list<program_environment>::iterator &env, list<remote_program_counter>::iterator &pc, list<pair<unode, minterm> >::iterator &idx, logic &state)
+bool program_counter::end_is_ready(logic s, list<program_environment>::iterator &env, list<remote_program_counter>::iterator &pc, list<unode>::iterator &idx, logic &state)
 {
 	while (env != envs.end() && env->pcs.empty())
 		env = envs.erase(env);
@@ -555,16 +561,16 @@ bool program_counter::end_is_ready(logic s, list<program_environment>::iterator 
 
 			while (idx != pc->index.end.end())
 			{
-				if (pc->is_place(idx->first.first))
+				if (pc->is_place(idx->first))
 					return true;
-				else if ((pc->is_trans(idx->first.first) && pc->is_active(idx->first.first)) || (pc->is_satisfied(idx->first.first, state) && pc->waits(idx->first) != 0))
+				else if ((pc->is_trans(idx->first) && pc->is_active(idx->first)) || (pc->is_satisfied(idx->first, state) && pc->waits(*idx) != 0))
 				{
 					// handle parallel merge
-					svector<int> ia = pc->net->input_nodes(idx->first.first);
+					svector<int> ia = pc->net->input_nodes(idx->first);
 
-					if (pc->count(idx->first) == ia.size())
+					if (pc->count(*idx) == ia.size())
 					{
-						for (list<pair<unode, minterm> >::iterator j = pc->index.end.begin(); j != pc->index.end.end();)
+						for (list<unode>::iterator j = pc->index.end.begin(); j != pc->index.end.end();)
 						{
 							if (j != idx && j->first == idx->first)
 							{
@@ -574,15 +580,6 @@ bool program_counter::end_is_ready(logic s, list<program_environment>::iterator 
 							else
 								j++;
 						}
-
-						if (!pc->is_active(idx->first.first) && !pc->is_one(idx->first.first))
-						{
-							cout << "<!>, ";
-							idx->second = minterm();
-						}
-						else if (pc->is_active(idx->first.first))
-							for (int i = 0; i < pc->net_index(idx->first.first).terms.size(); i++)
-								idx->second &= pc->net_index(idx->first.first).terms[i];
 
 						return true;
 					}
@@ -629,15 +626,15 @@ bool program_counter::begin_is_ready(logic s, list<program_environment>::iterato
 
 		while (pc != env->pcs.end())
 		{
-			state = mute(s).hide(pc->hidden_factors).refactor(pc->forward_factors);
+			state = mute(s).refactor(pc->forward_factors);
 
 			while (idx != pc->index.begin.end())
 			{
-				if (pc->is_place(idx->first) || pc->is_active(idx->first) || pc->is_vacuous(idx->first, state))
+				if (pc->is_place(idx->first) || (!pc->is_active(idx->first) && pc->is_vacuous(idx->first, state)))
 				{
 					bool wall = false;
-					for (list<pair<unode, minterm> >::iterator j = pc->index.end.begin(); j != pc->index.end.end() && !wall; j++)
-						if (*idx == j->first)
+					for (list<unode>::iterator j = pc->index.end.begin(); j != pc->index.end.end() && !wall; j++)
+						if (*idx == *j)
 							wall = true;
 
 					if (!wall)
@@ -648,6 +645,33 @@ bool program_counter::begin_is_ready(logic s, list<program_environment>::iterato
 
 						return true;
 					}
+				}
+
+				list<unode> iter(1, *idx);
+
+				for (list<unode>::iterator n = iter.begin(); n != iter.end(); n = iter.erase(n))
+				{
+					if (pc->is_trans(n->first) && pc->is_active(n->first) && !pc->is_one(n->first) && pc->is_vacuous(n->first, state))
+					{
+						bool wall = false;
+						for (list<unode>::iterator j = pc->index.end.begin(); j != pc->index.end.end() && !wall; j++)
+							if (*n == *j)
+								wall = true;
+
+						if (!wall)
+						{
+							for (split = splits.begin(); split != splits.end(); split++)
+								if (split->first.first == pc->name && split->first.second == pc->net && (prgm = find(split->second.begin(), split->second.end(), pair<list<program_environment>::iterator, unode>(env, *idx))) != split->second.end())
+									return true;
+
+							return true;
+						}
+					}
+
+					if (pc->is_place(n->first) || pc->is_active(n->first) || pc->is_vacuous(n->first, state))
+						for (list<uarc>::iterator a = pc->index.arcs.begin(); a != pc->index.arcs.end(); a++)
+							if (a->first == *n)
+								iter.push_back(a->second);
 				}
 
 				idx++;
@@ -682,7 +706,7 @@ void program_counter::simulate(logic s)
 	list<program_environment>::iterator env;
 	list<remote_program_counter>::iterator pc;
 	list<unode>::iterator begin_idx;
-	list<pair<unode, minterm> >::iterator end_idx;
+	list<unode>::iterator end_idx;
 	list<pair<pair<string, petri*>, list<pair<list<program_environment>::iterator, unode> > > >::iterator split;
 	list<pair<list<program_environment>::iterator, unode> >::iterator this_prgm;
 
@@ -726,15 +750,15 @@ void program_counter::simulate(logic s)
 				changes = true;
 				done = false;
 
-				svector<int> oa = pc->net->output_nodes(end_idx->first.first);
+				svector<int> oa = pc->net->output_nodes(end_idx->first);
 				if (oa.size() == 0)
 				{
-					cerr << "Error: Remote net has an acyclic component at " << pc->net->node_name(end_idx->first.first) << "." << endl;
+					cerr << "Error: Remote net has an acyclic component at " << pc->net->node_name(end_idx->first) << "." << endl;
 					end_idx = pc->index.end.erase(end_idx);
 				}
 				else
 				{
-					unode split_location = end_idx->first;
+					unode split_location = *end_idx;
 					list<pair<list<program_environment>::iterator, unode> > split_environments;
 					for (int i = oa.size()-1; i >= 0; i--)
 					{
@@ -743,11 +767,11 @@ void program_counter::simulate(logic s)
 
 						list<program_environment>::iterator update_env;
 						list<remote_program_counter>::iterator update_pc, temp_pc;
-						list<pair<unode, minterm> >::iterator update_idx, temp_idx;
+						list<unode>::iterator update_idx, temp_idx;
 
 						if (i != 0)
 						{
-							if (pc->is_place(end_idx->first.first))
+							if (pc->is_place(end_idx->first))
 							{
 								envs.push_back(*env);
 								update_env = prev(envs.end());
@@ -774,8 +798,8 @@ void program_counter::simulate(logic s)
 						unode new_node(oa[i], update_pc->index.nid(oa[i]));
 						split_environments.push_back(pair<list<program_environment>::iterator, unode>(update_env, new_node));
 
-						update_pc->index.arcs.push_back(uarc(update_idx->first, new_node));
-						update_idx->first = new_node;
+						update_pc->index.arcs.push_back(uarc(*update_idx, new_node));
+						*update_idx = new_node;
 					}
 
 					if (pc->is_place(split_location.first) && split_environments.size() > 1)
@@ -813,8 +837,8 @@ void program_counter::simulate(logic s)
 						{
 							if (prgm_pc->name == split->first.first && prgm_pc->net == split->first.second)
 							{
-								for (list<pair<unode, minterm> >::iterator prgm_idx = prgm_pc->index.end.begin(); !delete_prgm && prgm_idx != prgm_pc->index.end.end(); prgm_idx++)
-									if (prgm_idx->first == prgm->second && !prgm_pc->is_satisfied(prgm->second.first, state))
+								for (list<unode>::iterator prgm_idx = prgm_pc->index.end.begin(); !delete_prgm && prgm_idx != prgm_pc->index.end.end(); prgm_idx++)
+									if (*prgm_idx == prgm->second && !prgm_pc->is_satisfied(prgm->second.first, state))
 										delete_prgm = true;
 
 								if (!delete_prgm && prgm_pc->index.path_contains(prgm->second))
@@ -883,7 +907,7 @@ void program_counter::simulate(logic s)
 					}
 					else
 					{
-						cerr << "Error! " << pc->index.end.size() << " " << pc->net->node_name(pc->index.end.begin()->first.first) << endl;
+						cerr << "Error! " << pc->index.end.size() << " " << pc->net->node_name(pc->index.end.begin()->first) << endl;
 						for (list<uarc>::iterator arc = pc->index.arcs.begin(); arc != pc->index.arcs.end(); arc++)
 							cout << "(" << pc->net->node_name(arc->first.first) << "." << arc->first.second << "->" << pc->net->node_name(arc->second.first) << "." << arc->second.second << ") ";
 						cout << endl;
@@ -906,8 +930,8 @@ void program_counter::simulate(logic s)
 			for (list<uarc>::iterator arc = rpc->index.arcs.begin(); arc != rpc->index.arcs.end(); arc++)
 				cout << rpc->net->node_name(arc->first.first) << "." << arc->first.second << "->" << rpc->net->node_name(arc->second.first) << "." << arc->second.second << " ";
 			cout << ")<";
-			for (list<pair<unode, minterm> >::iterator n = rpc->index.end.begin(); n != rpc->index.end.end(); n++)
-				cout << rpc->net->node_name(n->first.first) << "." << n->first.second << " ";
+			for (list<unode>::iterator n = rpc->index.end.begin(); n != rpc->index.end.end(); n++)
+				cout << rpc->net->node_name(n->first) << "." << n->second << " ";
 			cout << ">";
 		}
 		cout << "]";
@@ -937,9 +961,11 @@ logic program_counter::mute(logic s)
 
 int program_counter::count()
 {
+	cout << endl;
 	int total = 0x7FFFFFFF;
 	for (list<program_environment>::iterator env = envs.begin(); env != envs.end(); env++)
 	{
+		cout << "Env" << endl;
 		int num_ready = 0;
 		for (list<remote_program_counter>::iterator pc = env->pcs.begin(); pc != env->pcs.end(); pc++)
 		{
@@ -963,9 +989,9 @@ void program_counter::merge()
 	for (list<program_environment>::iterator env = envs.begin(); env != envs.end(); env++)
 		for (list<remote_program_counter>::iterator pc = env->pcs.begin(); pc != env->pcs.end(); pc++)
 			if (pc->net == net && pc->name == "this")
-				for (list<pair<unode, minterm> >::iterator idx = pc->index.end.begin(); idx != pc->index.end.end();)
+				for (list<unode>::iterator idx = pc->index.end.begin(); idx != pc->index.end.end();)
 				{
-					if (idx->first.first == index)
+					if (idx->first == index)
 						idx = pc->index.end.erase(idx);
 					else
 						idx++;
@@ -1033,7 +1059,7 @@ int program_execution::count(list<program_counter>::iterator i)
 	int check = i->net->input_arcs(i->index).size();
 	for (list<program_counter>::iterator j = pcs.begin(); j != pcs.end(); j++)
 	{
-
+		cout << "LOOK " << j->count()+1 << "/" << check << endl;
 		if (j->index == i->index && j->count()+1 == check)
 			total++;
 	}
@@ -1089,7 +1115,7 @@ logic program_execution::calculate_state(list<program_counter>::iterator pc)
 
 		logic test = r & final[pc->index];
 
-		if ((r & final[pc->index]) == r)
+		if (pcs.size() == 1 && (r & final[pc->index]) == r)
 			done = true;
 		else
 			final[pc->index] |= r;

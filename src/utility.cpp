@@ -89,14 +89,16 @@ instruction *expand_instantiation(instruction *parent, sstring chp, variable_spa
 						val += ",";
 					}
 
+					name += v.name;
 					if (reset.size() > 1)
-						name += v.name + "[" + sstring(k) + "]";
+						name += "[" + sstring(k) + "]";
 					val += sstring(reset[k]);
 
 					first = false;
 				}
 			}
 
+			cout << "LOOK HERE " << name << ":=" << val << endl;
 			if (name != "" && val != "")
 				return new assignment(parent, name + ":=" + val, vars, flags);
 		}

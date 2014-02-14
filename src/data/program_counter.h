@@ -25,7 +25,7 @@ struct umap
 
 	list<uarc> arcs;
 	list<unode> begin;
-	list<pair<unode, minterm> > end;
+	list<unode> end;
 	svector<int> sids;
 	svector<pair<int, int> > tids;
 	svector<int> iac;
@@ -113,7 +113,7 @@ struct program_counter
 	bool is_active();
 	string node_name();
 
-	bool end_is_ready(logic s, list<program_environment>::iterator &env, list<remote_program_counter>::iterator &pc, list<pair<unode, minterm> >::iterator &idx, logic &state);
+	bool end_is_ready(logic s, list<program_environment>::iterator &env, list<remote_program_counter>::iterator &pc, list<unode>::iterator &idx, logic &state);
 	bool begin_is_ready(logic s, list<program_environment>::iterator &env, list<remote_program_counter>::iterator &pc, list<unode>::iterator &idx, list<pair<pair<string, petri*>, list<pair<list<program_environment>::iterator, unode> > > >::iterator &split, list<pair<list<program_environment>::iterator, unode> >::iterator &prgm, logic &state);
 
 	void simulate(logic s);

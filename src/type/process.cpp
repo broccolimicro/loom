@@ -286,6 +286,9 @@ void process::update()
 			}
 	}
 
+	for (list<program_environment>::iterator i = net.env.execs.front().pcs.front().envs.begin(); i != net.env.execs.front().pcs.front().envs.end(); i++)
+		i->pcs.front().net->print_dot(flags->log_file, "environment");
+
 	net.update();
 }
 
@@ -294,7 +297,6 @@ void process::trim_states()
 	do
 	{
 		print_dot(flags->log_file);
-		env_net.print_dot(flags->log_file, "environment");
 
 		update();
 		print_dot(flags->log_file);

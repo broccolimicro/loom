@@ -1443,7 +1443,7 @@ void petri::gen_tails()
 			if (is_trans(arcs[i].first) && (!T[index(arcs[i].first)].active || T[index(arcs[i].first)].possibly_vacuous))
 			{
 				old = S[arcs[i].second].tail;
-				T[index(arcs[i].second)].add_to_tail(arcs[i].first);
+				S[arcs[i].second].add_to_tail(arcs[i].first);
 				S[arcs[i].second].add_to_tail(T[index(arcs[i].first)].tail);
 				done = done && (old == S[arcs[i].second].tail);
 			}
@@ -1640,13 +1640,12 @@ logic petri::get_effective_state_encoding(int place, int observer)
 	logic encoding = 0;
 	if ((*this)[observer].is_in_tail(place) && observer != place)
 	{
-		cout << node_name(place) << " ==> " << node_name(observer) << endl;
 		svector<int> idx = output_arcs(place);
 		while (idx.size() != 0)
 		{
 			for (int k = 0; k < idx.size();)
 			{
-				cout << node_name(arcs[idx[k]].first) << "->" << node_name(arcs[idx[k]].second) << " ";
+				cout << node_name(arcs[idx[k]].first) << "=>" << node_name(arcs[idx[k]].second) << "{";
 				if (is_place(arcs[idx[k]].second) && (*this)[observer].is_in_tail(arcs[idx[k]].second))
 				{
 					encoding |= ~T[index(arcs[idx[k]].first)].index;
@@ -1663,8 +1662,8 @@ logic petri::get_effective_state_encoding(int place, int observer)
 					idx.erase(idx.begin() + k);
 				else
 					k++;
+				cout << encoding.print(vars) << "} ";
 			}
-			cout << endl;
 			idx = increment_arcs(idx);
 		}
 		return encoding & S[place].index;
@@ -1829,6 +1828,7 @@ bool petri::trim()
 			i++;
 	}
 
+	// Merge Or
 	for (i = 0; i < T.size(); i++)
 		for (j = i+1; j < T.size(); )
 		{
@@ -1841,6 +1841,32 @@ bool petri::trim()
 				j++;
 		}
 
+	// Check for nodes with no input arcs
+	for (i = 0; i < M0.size(); i++)
+	{
+		ia = input_arcs(M0[i]);
+
+		if (ia.size() == 0)
+		{
+			oa = output_nodes(M0[i]);
+
+			bool all_active = true;
+			for (j = 0; all_active && j < oa.size(); j++)
+				if (!T[index(oa[j])].active || is_mutex(vars->reset, ~T[index(oa[j])].index))
+					all_active = false;
+
+
+			if (all_active)
+			{
+				remove_place(M0[i]);
+				for (j = 0; j < oa.size(); j++)
+				{
+					vars->reset = vars->reset >> T[index(oa[j])].index;
+					remove_trans(oa[j]);
+				}
+			}
+		}
+	}
 
 	/* Despite our best efforts to fix up the pbranch id's on the fly, we still
 	 * need to clean up.

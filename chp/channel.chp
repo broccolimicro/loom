@@ -63,8 +63,8 @@ channel a4pa1of2
 	
 	operator?(dualrail i)
 	{
-		[ r.t -> i.t+
-		[]r.f -> i.f+
+		[ r.t -> i.f-; i.t+
+		[]r.f -> i.t-; i.f+
 		]; a+; [~r.t & ~r.f]; a-;
 	}
 	
@@ -89,8 +89,8 @@ channel p4pa1of2
 	operator?(dualrail i)
 	{
 		a+;
-		[ r.t -> i.t+
-		[]r.f -> i.f+
+		[ r.t -> i.f-; i.t+
+		[]r.f -> i.t-; i.f+
 		]; a-; [~r.t & ~r.f]; 
 	}
 	
@@ -114,8 +114,8 @@ channel a4pe1of2
 	
 	operator?(dualrail i)
 	{
-		[ r.t -> i.t+
-		[]r.f -> i.f+
+		[ r.t -> i.f-; i.t+
+		[]r.f -> i.t-; i.f+
 		]; e-; [~r.t & ~r.f]; e+;
 	}
 	
@@ -140,8 +140,8 @@ channel p4pe1of2
 	operator?(dualrail i)
 	{
 		e-;
-		[ r.t -> i.t+
-		[]r.f -> i.f+
+		[ r.t -> i.f-; i.t+
+		[]r.f -> i.t-; i.f+
 		]; e+; [~r.t & ~r.f]; 
 	}
 	

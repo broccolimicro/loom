@@ -125,11 +125,11 @@ pair<svector<int>, logic> rule::closest_transition(int curr_place, int transitio
 	{
 		cout << sstring(i, '\t') << next[0] << " ";
 
-		if (!(*covered)[i])
-			(*covered)[i] = true;
+		if (!(*covered)[next[0]])
+			(*covered)[next[0]] = true;
 		else
 		{
-			cout << "kill" << endl;
+			cout << "covered" << endl;
 			return pair<svector<int>, logic>(svector<int>(), rule_guard);
 		}
 
@@ -311,9 +311,9 @@ pair<svector<int>, logic> rule::strengthen(int p, int tid, svector<bool> *covere
 					needed = false;
 
 			effective_conflict = net->get_effective_state_encoding(net->arcs[next[0]].first, tid);
+			cout << effective_conflict.print(net->vars) << " " << net->node_name(tid) << "->" << net->node_name(net->arcs[next[0]].first) << " ";
 
-			covered2.clear();
-			covered2.resize(net->arcs.size(), false);
+			covered2.assign(net->arcs.size(), false);
 			if (needed && (net->T[net->index(net->arcs[next[0]].second)].index & logic(uid, 1-t)) != 0 && (logic(uid, 1-t) & rule_guard & effective_conflict) != 0)
 				rule_guard = closest_transition(next[0], tid, net->arcs[next[0]].first, rule_guard, implicant_state, tail, &covered2).second;
 		}

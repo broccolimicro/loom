@@ -196,10 +196,19 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 						if (net->S[ia[k]].tail_index != 0)
 							ti &= net->S[ia[k]].tail_index;
 					}
+
+					for (k = 0; k < t.terms.size();)
+					{
+						if (t.terms[k].val(vi->second.uid) == (uint32_t)i)
+							t.terms.erase(t.terms.begin() + k);
+						else
+							k++;
+					}
+
 					t = t.hide(vl);
 					rules[vi->second.uid].explicit_guards[i] |= t;
 
-					rules[vi->second.uid].guards[i] |= t;
+					//rules[vi->second.uid].guards[i] |= t;
 
 					covered.clear();
 					cout << "Start " << net->T[net->index(tid)].index.print(vars) <<  " ";
@@ -213,7 +222,7 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 				}
 			}
 
-			if (reset.val(vi->second.uid) == 1)
+			/*if (reset.val(vi->second.uid) == 1)
 			{
 				rules[vi->second.uid].guards[1] |= logic(r, 1);
 				rules[vi->second.uid].guards[0] &= logic(r, 0);
@@ -222,7 +231,7 @@ void rule_space::generate_minterms(petri *net, flag_space *flags)
 			{
 				rules[vi->second.uid].guards[0] |= logic(r, 1);
 				rules[vi->second.uid].guards[1] &= logic(r, 0);
-			}
+			}*/
 		}
 
 	cout << "Done" << endl;
@@ -272,10 +281,13 @@ void rule_space::check(petri *net)
 					for (l = 0; l < rules[j].implicants[k].size() && !ok; l++)
 						if (net->T[net->index(rules[j].implicants[k][l])].is_in_tail(i))
 						{
-							oguard = 0;
-							for (m = 0; m < oa.size(); m++)
+							//oguard = 0;
+							oguard = net->get_effective_state_encoding(i, rules[j].implicants[k][l]);
+							oguard &= ~net->T[net->index(rules[j].implicants[k][l])].index;
+							/*for (m = 0; m < oa.size(); m++)
 								oguard |= net->T[net->index(oa[m])].index;
-							oguard = ~oguard;
+							oguard = ~oguard;*/
+							cout << "LOOK " << oguard.print(net->vars) << "\n" << applied_guard.print(net->vars) << "\n" << (oguard & applied_guard).print(net->vars) << endl;
 
 							ok = (ok || is_mutex(&applied_guard, &oguard));
 						}
