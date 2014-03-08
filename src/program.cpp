@@ -91,7 +91,7 @@ void program::compile()
 		if (flags.prsb())
 		{
 			generate_prs();
-			//bubble_reshuffle();
+			bubble_reshuffle();
 			//factor_prs();
 
 			print_hse();
@@ -100,7 +100,8 @@ void program::compile()
 		}
 		else if (flags.prs())
 		{
-			generate_bubbleless_prs();
+			generate_prs();
+			bubble_reshuffle();
 
 			print_hse();
 			print_dot();

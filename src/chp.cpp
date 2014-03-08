@@ -183,24 +183,5 @@ int main(int argc, char **argv)
 				cerr << "Error: File not found " << argv[i] << endl;
 		}
 	}
-	//FILE *log = fopen("log.txt", "w");
-	//*stdout = *log;
-
 	prgm.compile();
-
-	//fclose(log);
-
-	/*ifstream t("fifo1b.prs");
-	sstring prgm((istreambuf_iterator<char>(t)),
-				 istreambuf_iterator<char>());
-
-	process p;
-
-	p.parse_prs(prgm);
-	p.elaborate_prs();
-
-	ofstream f("verify_fifo1b.dot");
-	p.net.print_dot(&f, "verify_fifo1b");
-	f.close();*/
-
 }

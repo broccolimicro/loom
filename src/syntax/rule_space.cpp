@@ -233,36 +233,40 @@ void rule_space::generate_minterms(flag_space *flags)
 
 void rule_space::check()
 {
-	int i, j, k, l, m;
-	svector<int> ia;
 	bool ok;
-	bool error;
 	canonical applied_guard;
 	canonical oguard;
 	canonical temp;
-	bool para;
-	bool imp;
 
-	error = false;
-	for (i = 0; i < net->S.size(); i++)
+	bool error = false;
+	for (int i = 0; i < net->S.size(); i++)
 	{
 		svector<petri_index> oa = net->next(petri_index(i, true));
-		for (j = 0; j < rules.size(); j++)
-			for (k = 0; k < 2 && rules[j].net != NULL && net->vars->find(rules[j].uid)->driven; k++)
+		for (int j = 0; j < rules.size(); j++)
+			for (int k = 0; k < 2 && rules[j].net != NULL && net->vars->find(rules[j].uid)->driven; k++)
 			{
-				para = false;
-				for (l = 0; l < rules[j].implicants[k].size() && !para; l++)
+				bool para = false;
+				for (int l = 0; l < rules[j].implicants[k].size() && !para; l++)
 					if (net->are_parallel_siblings(petri_index(i, true), rules[j].implicants[k][l]) != -1)
 						para = true;
 
-				imp = false;
-				for (l = 0; l < oa.size() && !imp; l++)
+				bool imp = false;
+				for (int l = 0; l < oa.size() && !imp; l++)
 					if (find(rules[j].implicants[k].begin(), rules[j].implicants[k].end(), oa[l]) != rules[j].implicants[k].end())
 						imp = true;
 
+				bool sib_guards = false;
+				for (int l = 0; !sib_guards && l < rules[j].implicants[k].size(); l++)
+				{
+					svector<petri_index> ia = net->prev(rules[j].implicants[k][l]);
+					for (int m = 0; !sib_guards && m < ia.size(); m++)
+						if (net->are_sibling_guards(ia[m], petri_index(i, true)))
+							sib_guards = true;
+				}
+
 				applied_guard = rules[j].guards[k] & net->S[i].index & canonical(net->vars->get_uid("reset"), 0);
 				// Does it fire when it shouldn't?
-				if (!imp && !para && applied_guard != 0)
+				if (!sib_guards && !imp && !para && applied_guard != 0)
 				{
 					ok = false;
 					// check if firing is vacuous
@@ -272,13 +276,13 @@ void rule_space::check()
 
 					// check if firing is inside the tail and check to make sure that if it is in the tail,
 					// it is correctly separated by the guards
-					for (l = 0; l < rules[j].implicants[k].size() && !ok; l++)
+					for (int l = 0; l < rules[j].implicants[k].size() && !ok; l++)
 						if (net->at(rules[j].implicants[k][l]).is_in_tail(petri_index(i, true)))
 						{
 							//oguard = 0;
 							oguard = net->get_effective_place_encoding(petri_index(i, true), rules[j].implicants[k][l]);
 							oguard &= ~net->at(rules[j].implicants[k][l]).index;
-							/*for (m = 0; m < oa.size(); m++)
+							/*for (int m = 0; m < oa.size(); m++)
 								oguard |= net->T[net->index(oa[m])].index;
 							oguard = ~oguard;*/
 							cout << "LOOK " << oguard.print(net->vars) << "\n" << applied_guard.print(net->vars) << "\n" << (oguard & applied_guard).print(net->vars) << endl;
@@ -296,8 +300,8 @@ void rule_space::check()
 				else if ((imp || para) && applied_guard == 0 && !is_mutex(&rules[j].explicit_guards[k], &net->S[i].index))
 				{
 					cerr << "Error: " << net->vars->get_name(rules[j].uid) << (k == 0 ? "-" : "+") << "\tdoesn't fire when it should in " << (para ? "parallel " : "") << (imp ? "implicant " : "") << "state " << i << "\t";
-					for (l = 0; l < rules[j].guards[k].terms.size(); l++)
-						for (m = 0; m < net->S[i].index.terms.size(); m++)
+					for (int l = 0; l < rules[j].guards[k].terms.size(); l++)
+						for (int m = 0; m < net->S[i].index.terms.size(); m++)
 						{
 							if (l != 0 || m != 0)
 								cout << " | ";
