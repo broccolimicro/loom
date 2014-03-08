@@ -328,16 +328,16 @@ svector<int> variable_space::x_channel(svector<int> av)
 	return result.unique();
 }
 
-void variable_space::x_channel(svector<int> av, smap<int, logic> *result)
+void variable_space::x_channel(svector<int> av, smap<int, canonical> *result)
 {
 	svector<int> temp = x_channel(av);
-	smap<int, logic>::iterator ri;
+	smap<int, canonical>::iterator ri;
 	int i;
 	for (i = 0; i < (int)temp.size(); i++)
 	{
 		ri = result->find(temp[i]);
 		if (ri == result->end())
-			result->insert(pair<int, logic>(temp[i], logic(0)));
+			result->insert(pair<int, canonical>(temp[i], canonical(0)));
 		else
 			ri->second = 0;
 	}
@@ -398,7 +398,7 @@ smap<sstring, sstring> variable_space::instantiate(sstring parent, bool parent_a
 			global.insert(pair<sstring, variable>(v.name, v));
 			id_change[i->second.uid] = get_uid(v.name);
 			if (v.reset.size() > 0)
-				reset &= logic(id_change[i->second.uid], v.reset[0]);
+				reset &= canonical(id_change[i->second.uid], v.reset[0]);
 		}
 	}
 
@@ -452,7 +452,7 @@ smap<sstring, sstring> variable_space::call(sstring parent, bool parent_arg, var
 			global.insert(pair<sstring, variable>(v.name, v));
 			id_change[i->second.uid] = get_uid(v.name);
 			if (v.reset.size() > 0)
-				reset &= logic(id_change[i->second.uid], v.reset[0]);
+				reset &= canonical(id_change[i->second.uid], v.reset[0]);
 		}
 	}
 
@@ -502,7 +502,7 @@ int variable_space::insert(variable v)
 			v.width = 1;
 			v.uid = global.size();
 			if (i < (int)v.reset.size())
-				reset &= logic(v.uid, v.reset[i]);
+				reset &= canonical(v.uid, v.reset[i]);
 			global.insert(pair<sstring, variable>(v.name, v));
 		}
 	}
@@ -510,7 +510,7 @@ int variable_space::insert(variable v)
 	{
 		v.uid = global.size();
 		if (v.reset.size() > 0)
-		reset &= logic(v.uid, v.reset[0]);
+		reset &= canonical(v.uid, v.reset[0]);
 		global.insert(pair<sstring, variable>(v.name, v));
 	}
 	else
@@ -531,14 +531,14 @@ void variable_space::clear()
 	reset = 1;
 }
 
-logic variable_space::increment_pcs(logic t, bool active)
+canonical variable_space::increment_pcs(canonical t, bool active)
 {
 	smap<sstring, variable>::iterator i;
 	for (i = label.begin(); i != label.end(); i++)
 		if (i->second.type.find_first_of("?!") != i->second.type.npos)
 			cout << "LOOK " << i->second.type << " " << i->second.name << endl;
 
-	return logic();
+	return canonical();
 }
 
 variable_space &variable_space::operator=(variable_space s)

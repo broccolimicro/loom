@@ -13,5 +13,8 @@
 #include "data/petri.h"
 #include "data/variable.h"
 #include "data/variable_space.h"
+#include "data/program_counter.h"
+#include "data/path.h"
+#include "data/path_space.h"
 
 #endif

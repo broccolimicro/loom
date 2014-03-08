@@ -9,7 +9,6 @@
 #include "canonical.h"
 #include "path_space.h"
 #include "../flag_space.h"
-#include "program_counter.h"
 
 #ifndef petri_h
 #define petri_h
@@ -17,15 +16,79 @@
 struct instruction;
 struct variable_space;
 struct rule_space;
+struct petri_net;
 
-struct node
+struct petri_index
 {
-	node();
-	node(logic index, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
-	~node();
+	petri_index();
+	petri_index(int idx, bool place);
+	~petri_index();
+
+	int data;
+
+	bool is_place() const;
+	bool is_trans() const;
+	sstring name() const;
+	int idx() const;
+
+	//operator int() const;
+
+	petri_index &operator=(petri_index i);
+	petri_index &operator--();
+	petri_index &operator++();
+	petri_index &operator--(int);
+	petri_index &operator++(int);
+};
+
+bool operator==(petri_index i, petri_index j);
+bool operator!=(petri_index i, petri_index j);
+bool operator<(petri_index i, int j);
+ostream &operator<<(ostream &os, petri_index i);
+bool operator>(petri_index i, petri_index j);
+bool operator<(petri_index i, petri_index j);
+bool operator>=(petri_index i, petri_index j);
+bool operator<=(petri_index i, petri_index j);
+petri_index operator+(petri_index i, int j);
+petri_index operator-(petri_index i, int j);
+
+typedef pair<petri_index, petri_index> petri_arc;
+
+/**
+ * A state is a collection of concurrent places that form
+ * a complete graph cut.
+ */
+struct petri_state
+{
+	petri_state();
+	petri_state(petri_net *net, svector<petri_index> init, bool backward = false);
+	~petri_state();
+
+	svector<petri_index> state;
+
+	int count(int j);
+	void merge(int j);
+
+	bool is_state();
+
+	petri_state &operator=(petri_state s);
+};
+
+ostream &operator<<(ostream &os, petri_state s);
+bool operator==(petri_state s1, petri_state s2);
+bool operator!=(petri_state s1, petri_state s2);
+bool operator<(petri_state s1, petri_state s2);
+bool operator>(petri_state s1, petri_state s2);
+bool operator<=(petri_state s1, petri_state s2);
+bool operator>=(petri_state s1, petri_state s2);
+
+struct petri_node
+{
+	petri_node();
+	petri_node(canonical index, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	~petri_node();
 
 	instruction *owner;
-	svector<int> tail;		// The set of inactive states preceding an active state
+	svector<petri_index> tail;		// The set of inactive states preceding an active state
 	smap<int, int> pbranch;
 	smap<int, int> cbranch;
 	bool active;
@@ -34,128 +97,158 @@ struct node
 	bool possibly_vacuous;
 	bool definitely_invacuous;
 
-	logic index;
-	logic positive;	// Negative sense variables are hideed out
-	logic negative;	// Positive sense variables are hideed out
+	canonical index;
+	canonical positive;	// Negative sense variables are hideed out
+	canonical negative;	// Positive sense variables are hideed out
 
-	logic tail_index;
+	canonical tail_index;
 
-	logic assumptions;
-	svector<logic> assertions;
+	canonical assumptions;
+	svector<canonical> assertions;
 
-	bool is_in_tail(int idx);
-	void add_to_tail(int idx);
-	void add_to_tail(svector<int> idx);
+	bool is_in_tail(petri_index idx);
+	void add_to_tail(petri_index idx);
+	void add_to_tail(svector<petri_index> idx);
 
 	pair<int, int> sense_count();
 };
 
-struct petri
+struct petri_net
 {
-	petri();
-	~petri();
+	petri_net();
+	~petri_net();
+
+	svector<petri_node> S;
+	svector<petri_node> T;
+	svector<petri_index> M0;
+	svector<petri_arc> arcs;
 
 	variable_space *vars;
 	rule_space *prs;
 	flag_space *flags;
-	program_execution_space env;
-	svector<node> S;
-	svector<node> T;
-	svector<int> M0;
 	int pbranch_count;
 	int cbranch_count;
-	svector<pair<int, int> > arcs;
 
-	smap<int, list<svector<int> > > conflicts;
-	smap<int, list<svector<int> > > indistinguishable;
-	smap<int, list<svector<int> > > positive_conflicts;
-	smap<int, list<svector<int> > > positive_indistinguishable;
-	smap<int, list<svector<int> > > negative_conflicts;
-	smap<int, list<svector<int> > > negative_indistinguishable;
+	smap<petri_index, list<svector<petri_index> > > conflicts;
+	smap<petri_index, list<svector<petri_index> > > indistinguishable;
+	smap<petri_index, list<svector<petri_index> > > positive_conflicts;
+	smap<petri_index, list<svector<petri_index> > > positive_indistinguishable;
+	smap<petri_index, list<svector<petri_index> > > negative_conflicts;
+	smap<petri_index, list<svector<petri_index> > > negative_indistinguishable;
 	int max_indistinguishables;
 	int max_positive_indistinguishables;
 	int max_negative_indistinguishables;
 
 	smap<int, svector<int> > isochronics;
 
-	smap<int, pair<int, int> > conditional_places;
+	smap<int, pair<petri_index, petri_index> > conditional_places;
 	svector<int> variable_usage;
 
-	int new_transition(logic root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
-	svector<int> new_transitions(svector<logic> root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
-	int new_place(logic root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	// Functions for adding, removing, and connecting nodes
+	petri_index put_place(canonical root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	petri_index put_transition(canonical root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	svector<petri_index> put_places(svector<canonical> root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	svector<petri_index> put_transitions(svector<canonical> root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	void cut(petri_index node);
+	void cut(svector<petri_index> nodes);
+	svector<petri_index> connect(svector<petri_index> from, svector<petri_index> to);
+	petri_index connect(svector<petri_index> from, petri_index to);
+	svector<petri_index> connect(petri_index from, svector<petri_index> to);
+	petri_index connect(petri_index from, petri_index to);
+	petri_index push_transition(petri_index from, canonical root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	petri_index push_transition(svector<petri_index> from, canonical root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	petri_index push_transition(petri_index from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	petri_index push_transition(svector<petri_index> from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	svector<petri_index> push_transitions(petri_index from, svector<canonical> root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	svector<petri_index> push_transitions(svector<petri_index> from, svector<canonical> root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	petri_index push_place(petri_index from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	petri_index push_place(svector<petri_index> from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	svector<petri_index> push_places(svector<petri_index> from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	void pinch_forward(petri_index n);
+	void pinch_backward(petri_index n);
+	void insert(int a, canonical root, bool active);
+	void insert_alongside(petri_index from, petri_index to, canonical root, bool active, instruction *owner);
+	petri_index duplicate(petri_index n);
+	svector<petri_index> duplicate(svector<petri_index> n);
+	petri_index merge(petri_index n0, petri_index n1);
+	petri_index merge(svector<petri_index> n);
 
-	int insert_transition(int from, logic root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
-	int insert_transition(svector<int> from, logic root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	// Functions for traversing the network
+	svector<petri_index> next(petri_index n);
+	svector<petri_index> next(svector<petri_index> n);
+	svector<petri_index> prev(petri_index n);
+	svector<petri_index> prev(svector<petri_index> n);
+	svector<int> outgoing(petri_index n);
+	svector<int> outgoing(svector<petri_index> n);
+	svector<int> incoming(petri_index n);
+	svector<int> incoming(svector<petri_index> n);
+	svector<int> next_arc(int n);
+	svector<int> next_arc(svector<int> n);
+	svector<int> prev_arc(int n);
+	svector<int> prev_arc(svector<int> n);
 
-	void insert_sv_at(int a, logic root);
-	void insert_sv_parallel(int from, logic root);
+	// Connectivity and sibling checks
+	bool is_floating(petri_index n);
+	bool are_connected(petri_index n0, petri_index n1);
+	bool have_same_source(petri_index n0, petri_index n1);
+	bool have_same_dest(petri_index n0, petri_index n1);
+	int are_parallel_siblings(petri_index p0, petri_index p1);
+	int are_conditional_siblings(petri_index p0, petri_index p1);
+	bool is_in_tail(petri_state s, svector<petri_index> i);
+	bool is_in_tail(petri_state s, petri_index i);
 
-	svector<int> insert_transitions(int from, svector<logic> root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
-	svector<int> insert_transitions(svector<int> from, svector<logic> root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	// Accessor functions
+	petri_node &operator[](petri_index i);
+	petri_node &at(petri_index i);
 
-	int insert_dummy(int from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
-	int insert_dummy(svector<int> from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
+	// Functions for handling paths
+	pair<int, int> closest_input(svector<int> from, svector<int> to);
+	pair<int, int> closest_output(svector<int> from, svector<int> to);
+	void get_paths(svector<int> from, svector<int> to, path_space *result);
+	void zero_paths(path_space *paths, petri_index from);
+	void zero_paths(path_space *paths, svector<petri_index> from);
+	void zero_ins(path_space *paths, petri_index from);
+	void zero_ins(path_space *paths, svector<petri_index> from);
+	void zero_outs(path_space *paths, petri_index from);
+	void zero_outs(path_space *paths, svector<petri_index> from);
+	svector<int> start_path(int from, svector<int> ex);
+	svector<int> start_path(svector<int> from, svector<int> ex);
+	svector<petri_index> end_path(petri_index to, svector<petri_index> ex);
+	svector<petri_index> end_path(svector<petri_index> to, svector<petri_index> ex);
 
-	int insert_place(int from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
-	int insert_place(svector<int> from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
 
-	svector<int> insert_places(svector<int> from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner);
-
-	void remove_place(int from);
-	void remove_place(svector<int> from);
-	void remove_trans(int from);
-	void remove_trans(svector<int> from);
-
-	void update();
+	void expand();
+	void generate_tails();
 	void check_assertions();
-	void connect(svector<int> from, svector<int> to);
-	void connect(svector<int> from, int to);
-	void connect(int from, svector<int> to);
-	void connect(int from, int to);
-	pair<int, int> closest_input(svector<int> from, svector<int> to, path p, int i = 0);
-	pair<int, int> closest_output(svector<int> from, svector<int> to, path p, int i = 0);
 
-	bool dead(int from);
-	bool is_place(int from);
-	bool is_trans(int from);
-	int  index(int from);
-	int  place_id(int idx);
-	int  trans_id(int idx);
-	sstring node_name(int idx);
-	logic base(svector<int> idx);
-	bool connected(int from, int to);
-	int psiblings(int p0, int p1);
-	int csiblings(int p0, int p1);
-	bool same_inputs(int p0, int p1);
-	bool same_outputs(int p0, int p1);
 
-	svector<int> duplicate_nodes(svector<int> from);
-	int duplicate_node(int from);
-	int merge_places(svector<int> from);
-	int merge_places(int a, int b);
 
-	int get_split_place(int merge_place, svector<bool> *covered);
+	canonical base(svector<int> idx);
 
-	void add_conflict_pair(smap<int, list<svector<int> > > *c, int i, int j);
 
-	void gen_mutables();
+
+	petri_index get_split_place(petri_index merge_place, svector<bool> *covered);
+
+	void add_conflict_pair(smap<petri_index, list<svector<petri_index> > > *c, petri_index i, petri_index j);
+
 	void gen_conditional_places();
-	bool are_sibling_guards(int i, int j);
+	bool are_sibling_guards(petri_index i, petri_index j);
 	void gen_conflicts();
 	void gen_bubbleless_conflicts();
 	void gen_senses();
 	void trim_branch_ids();
-	void gen_tails();
-	smap<pair<int, int>, pair<bool, bool> > gen_isochronics();
-	logic apply_debug(int pc);
 
-	logic get_effective_state_encoding(int place, int observer);
+	smap<pair<int, int>, pair<bool, bool> > gen_isochronics();
+	canonical apply_debug(int pc);
+
+	canonical get_effective_place_encoding(petri_index place, petri_index observer);
+	canonical get_effective_state_encoding(petri_state state, petri_state observer);
 
 	/**
 	 * \brief	Removes vacuous pbranches, unreachable places, and dangling, vacuous, and impossible transitions.
 	 * \sa		merge_conflicts() and zip()
 	 */
+	void compact();
 	bool trim();
 
 	/**
@@ -173,54 +266,13 @@ struct petri
 	 */
 	void zip();
 
-	/**
-	 * \brief	If "from" is a transition this returns it's input places, and if "from" is a place this returns it's input transitions.
-	 * \sa		output_nodes()
-	 */
-	svector<int> input_nodes(int from);
-	svector<int> input_nodes(svector<int> from);
+	pair<int, int> get_input_sense_count(petri_index idx);
+	pair<int, int> get_input_sense_count(svector<petri_index> idx);
 
-	/**
-	 * \brief	If "from" is a transition this returns it's output places, and if "from" is a place this returns it's output transitions.
-	 * \sa		input_nodes()
-	 */
-	svector<int> output_nodes(int from);
-	svector<int> output_nodes(svector<int> from);
 
-	svector<int> input_arcs(int from);
-	svector<int> input_arcs(svector<int> from);
-	svector<int> output_arcs(int from);
-	svector<int> output_arcs(svector<int> from);
-
-	svector<int> increment_arcs(svector<int> a);
-	svector<int> decrement_arcs(svector<int> a);
-
-	pair<int, int> get_input_sense_count(int idx);
-	pair<int, int> get_input_sense_count(svector<int> idx);
-
-	void get_paths(svector<int> from, svector<int> to, path_space *p);
-
-	svector<int> arc_paths(int from, svector<int> to, svector<int> ex, path_space *t, path_space *p, int i = 0);
-	void filter_path_space(path_space *p);
-	void filter_path(int from, int to, path *p);
-	void zero_paths(path_space *paths, int from);
-	void zero_paths(path_space *paths, svector<int> from);
-	void zero_ins(path_space *paths, int from);
-	void zero_ins(path_space *paths, svector<int> from);
-	void zero_outs(path_space *paths, int from);
-	void zero_outs(path_space *paths, svector<int> from);
-	svector<int> start_path(int from, svector<int> ex);
-	svector<int> start_path(svector<int> from, svector<int> ex);
-	svector<int> end_path(int to, svector<int> ex);
-	svector<int> end_path(svector<int> to, svector<int> ex);
-
-	node &operator[](int i);
 
 	void print_dot(ostream *fout, sstring name);
-
-	void print_mutables();
 	void print_branch_ids(ostream *fout);
-
 	void print_conflicts(ostream &fout, string name);
 	void print_indistinguishables(ostream &fout, string name);
 	void print_positive_conflicts(ostream &fout, string name);

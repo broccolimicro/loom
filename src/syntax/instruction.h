@@ -28,14 +28,14 @@ public:
 
 	// The raw CHP of this instruction.
 	instruction *parent;
-	svector<int> from;
-	svector<int> uid;
+	svector<petri_index> from;
+	svector<petri_index> uid;
 	sstring chp;
 
 	// Some pointers for good use
 	variable_space *vars;
 	rule_space *prs;
-	petri  *net;
+	petri_net  *net;
 
 	// For outputting debugging messages
 	flag_space *flags;
@@ -49,7 +49,7 @@ public:
 	virtual void simulate() = 0;
 	virtual void rewrite() = 0;
 	virtual void reorder() = 0;
-	virtual svector<int> generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch) = 0;
+	virtual svector<petri_index> generate_states(petri_net *n, rule_space *p, svector<petri_index> f, smap<int, int> pbranch, smap<int, int> cbranch) = 0;
 
 	virtual void print_hse(sstring t, ostream *fout = &cout) = 0;
 

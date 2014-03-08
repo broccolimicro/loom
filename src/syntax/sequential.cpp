@@ -272,11 +272,11 @@ void sequential::reorder()
 
 }
 
-svector<int> sequential::generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch)
+svector<petri_index> sequential::generate_states(petri_net *n, rule_space *p, svector<petri_index> f, smap<int, int> pbranch, smap<int, int> cbranch)
 {
 	list<instruction*>::iterator instr_iter;
 	instruction *instr;
-	svector<int> next;
+	svector<petri_index> next;
 	smap<smap<int, int>, svector<int> > groups;
 	smap<smap<int, int>, svector<int> >::iterator gi;
 	smap<int, int>::iterator mi, mj;
@@ -290,7 +290,7 @@ svector<int> sequential::generate_states(petri *n, rule_space *p, svector<int> f
 	prs = p;
 	from = f;
 	if (instrs.size() == 0)
-		uid.push_back(net->insert_dummy(from, pbranch, cbranch, this));
+		uid.push_back(net->push_transition(from, pbranch, cbranch, this));
 	else
 	{
 		uid  = f;
@@ -300,7 +300,7 @@ svector<int> sequential::generate_states(petri *n, rule_space *p, svector<int> f
 			instr = *instr_iter;
 
 			if (instr_iter != instrs.begin() && trans)
-				next.push_back(net->insert_place(uid, pbranch, cbranch, this));
+				next.push_back(net->push_place(uid, pbranch, cbranch, this));
 			else
 				next = uid;
 

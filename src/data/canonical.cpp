@@ -809,6 +809,19 @@ bool is_mutex(canonical *c0, canonical *c1, canonical *c2)
 	return true;
 }
 
+bool is_mutex(canonical *c0, canonical *c1, canonical *c2, canonical *c3)
+{
+	int i, j, k, l;
+	for (i = 0; i < (int)c0->terms.size(); i++)
+		for (j = 0; j < (int)c1->terms.size(); j++)
+			for (k = 0; k < (int)c2->terms.size(); k++)
+				for (l = 0; l < (int)c3->terms.size(); l++)
+					if ((c0->terms[i] & c1->terms[j] & c2->terms[k] & c3->terms[l]) != 0)
+						return false;
+
+	return true;
+}
+
 bool mergible(canonical *c0, canonical *c1)
 {
 	for (int i = 0; i < c0->terms.size(); i++)
@@ -824,4 +837,13 @@ bool mergible(canonical *c0, canonical *c1)
 		}
 	}
 	return false;
+}
+
+bool mergible(minterm c0, minterm c1)
+{
+	pair<int, int> xdiff = c0.xdiff_count(c1);
+	int diff = c0.diff_count(c1);
+	return ((diff <= 1 && xdiff.first + xdiff.second <= 1) ||
+		(xdiff.first == 0 && diff - xdiff.second <= 1) ||
+		(xdiff.second == 0 && diff - xdiff.first <= 1));
 }

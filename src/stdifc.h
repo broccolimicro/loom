@@ -295,6 +295,13 @@ struct svector : vector<type>
 		return *this;
 	}
 
+	svector<type> &runique()
+	{
+		std::sort(vector<type>::rbegin(), vector<type>::rend());
+		vector<type>::resize(std::unique(vector<type>::begin(), vector<type>::end()) - vector<type>::begin());
+		return *this;
+	}
+
 	svector<type> &sort()
 	{
 		std::sort(vector<type>::begin(), vector<type>::end());

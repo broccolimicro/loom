@@ -77,7 +77,7 @@ void program::compile()
 		if (flags.sse())
 		{
 			generate_states();
-			trim_states();
+			elaborate_states();
 		}
 		else if (flags.hse())
 			print_hse();
@@ -258,21 +258,21 @@ void program::generate_states()
 			((process*)i->second)->generate_states();
 }
 
-void program::trim_states()
+void program::elaborate_states()
 {
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
 		if (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos)
 		{
 			cout << "Trimming: " << i->first << endl;
-			((operate*)i->second)->trim_states();
+			((operate*)i->second)->elaborate_states();
 		}
 
 	for (i = types.begin(); i != types.end(); i++)
 		if (i->second->kind() == "process")
 		{
 			cout << "Trimming: " << i->first << endl;
-			((process*)i->second)->trim_states();
+			((process*)i->second)->elaborate_states();
 		}
 }
 
@@ -284,9 +284,9 @@ void program::insert_state_vars()
 			for (int j = 0; j < 100 && ((process*)i->second)->insert_state_vars(); j++)
 			{
 				if (i->second->kind() == "process")
-					((process*)i->second)->update();
+					((process*)i->second)->elaborate_states();
 				else if (i->second->kind() == "operate")
-					((operate*)i->second)->update();
+					((operate*)i->second)->elaborate_states();
 			}
 }
 
@@ -298,9 +298,9 @@ void program::insert_bubbleless_state_vars()
 			for (int j = 0; j < 100 && ((process*)i->second)->insert_bubbleless_state_vars(); j++)
 			{
 				if (i->second->kind() == "process")
-					((process*)i->second)->update();
+					((process*)i->second)->elaborate_states();
 				else if (i->second->kind() == "operate")
-					((operate*)i->second)->update();
+					((operate*)i->second)->elaborate_states();
 			}
 }
 
@@ -308,7 +308,11 @@ void program::generate_prs()
 {
 	type_space::iterator i;
 	for (i = types.begin(); i != types.end(); i++)
-		if (i->second->kind() == "process" || (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos))
+		if (i->second->kind() == "operate" && i->first.find_first_of("!?") != sstring::npos)
+			((operate*)i->second)->generate_prs();
+
+	for (i = types.begin(); i != types.end(); i++)
+		if (i->second->kind() == "process")
 			((process*)i->second)->generate_prs();
 }
 

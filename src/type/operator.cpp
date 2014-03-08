@@ -162,62 +162,42 @@ void operate::generate_states()
 	vars.reset = vars.reset.hide(to_hide);
 	vars.enforcements = vars.enforcements.hide(to_hide);
 
-	for (int i = 0; i < net.S.size(); i++)
-		if ((to_hide = net.output_nodes(i)).size() > 1)
-			for (int j = 0; j < to_hide.size(); j++)
-				for (int k = j+1; k < to_hide.size(); k++)
-					if (!is_mutex(&net.T[net.index(to_hide[j])].index, &net.T[net.index(to_hide[k])].index, &vars.enforcements))
-					{
-						cerr << "Warning: We are going to need a mk_exclhi command to separate " << net.node_name(net.trans_id(i)) << " and " << net.node_name(net.trans_id(j)) << " in process " << name << "." << endl;
-					}
+	svector<petri_index> outputs;
+	for (petri_index i(0, true); i < net.S.size(); i++)
+		if ((outputs = net.next(i)).size() > 1)
+			for (int j = 0; j < outputs.size(); j++)
+				for (int k = j+1; k < outputs.size(); k++)
+					if (!is_mutex(&net[outputs[j]].index, &net[outputs[k]].index, &vars.enforcements))
+						cerr << "Warning: We are going to need a mk_exclhi command to separate " << outputs[j] << " and " << outputs[k] << " in process " << name << "." << endl;
 }
 
-void operate::update()
+void operate::elaborate_states()
 {
-	net.env.execs.clear();
-	net.env.execs.push_back(program_execution(&net));
+	program_execution_space execution;
+	execution.execs.push_back(program_execution());
+	svector<program_execution>::iterator exec = execution.execs.begin();
+	exec->init_pcs("", &net, true);
+
 	type_space::iterator j;
-	list<program_execution>::iterator exe = net.env.execs.begin();
-	for (int k = 0; k < net.M0.size(); k++)
+	for (smap<sstring, variable>::iterator i = vars.label.begin(); i != vars.label.end(); i++)
 	{
-		exe->pcs.push_front(program_counter(net.M0[k], &net));
-		list<program_counter>::iterator pc = exe->pcs.begin();
-		for (smap<sstring, variable>::iterator i = vars.label.begin(); i != vars.label.end(); i++)
-		{
-			if (i->second.type.find("operator?") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
-				pc->envs.push_back(program_environment(remote_program_counter(i->second.name.substr(0, i->second.name.find_last_of(".")), &net, &((channel*)j->second)->send->net)));
-			else if (i->second.type.find("operator!") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
-				pc->envs.push_back(program_environment(remote_program_counter(i->second.name.substr(0, i->second.name.find_last_of(".")), &net, &((channel*)j->second)->recv->net)));
-		}
+		if (i->second.type.find("operator?") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
+			exec->init_pcs(i->second.name.substr(0, i->second.name.find_last_of(".")), &((channel*)j->second)->send->net, false);
+		else if (i->second.type.find("operator!") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
+			exec->init_pcs(i->second.name.substr(0, i->second.name.find_last_of(".")), &((channel*)j->second)->recv->net, false);
 	}
 
 	type_space::iterator my_iter;
 	for (my_iter = vars.types->begin(); my_iter != vars.types->end() && my_iter->second != this; my_iter++);
-	cout << "LOOK " << name << " " << my_iter->first << endl;
 	j = vars.types->find(my_iter->first.substr(0, my_iter->first.find_last_of(".")));
 
-	for (list<program_execution>::iterator exe = net.env.execs.begin(); exe != net.env.execs.end(); exe++)
-		for (list<program_counter>::iterator pc = exe->pcs.begin(); pc != exe->pcs.end(); pc++)
-		{
-			if (name.find("operator?") != name.npos && j != vars.types->end() && j->second->kind() == "channel")
-				pc->envs.push_back(program_environment(remote_program_counter("this", &net, &((channel*)j->second)->send->net)));
-			else if (name.find("operator!") != name.npos && j != vars.types->end() && j->second->kind() == "channel")
-				pc->envs.push_back(program_environment(remote_program_counter("this", &net, &((channel*)j->second)->recv->net)));
-		}
+	if (name.find("operator?") != name.npos && j != vars.types->end() && j->second->kind() == "channel")
+		exec->init_pcs("", &((channel*)j->second)->send->net, false);
+	else if (name.find("operator!") != name.npos && j != vars.types->end() && j->second->kind() == "channel")
+		exec->init_pcs("", &((channel*)j->second)->recv->net, false);
 
-	net.update();
-}
-
-void operate::trim_states()
-{
-	do
-	{
-		print_dot(flags->log_file);
-
-		update();
-		print_dot(flags->log_file);
-	} while(net.trim());
-
+	execution.full_elaborate();
+	net.print_dot(&cout, name);
 	net.check_assertions();
 }
 
@@ -226,7 +206,7 @@ void operate::print_prs(ostream *fout, sstring prefix, svector<sstring> driven)
 	smap<sstring, variable>::iterator vi;
 	type_space::iterator ki;
 	for (int i = 0; i < prs.rules.size(); i++)
-		if (find(driven.begin(), driven.end(), prefix + vars.get_name(i)) == driven.end() && prs[i].vars != NULL)
+		if (find(driven.begin(), driven.end(), prefix + vars.get_name(i)) == driven.end() && prs[i].net != NULL)
 			prs[i].print(*fout, prefix);
 }
 

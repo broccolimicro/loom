@@ -23,9 +23,9 @@ struct variable_space
 	type_space *types;
 	smap<sstring, variable> global;
 	smap<sstring, variable> label;
-	svector<logic> requirements;
-	logic enforcements;
-	logic reset;
+	svector<canonical> requirements;
+	canonical enforcements;
+	canonical reset;
 
 	int size();
 
@@ -46,7 +46,7 @@ struct variable_space
 	svector<sstring> get_names();
 	bool part_of_channel(int uid);
 	svector<int> x_channel(svector<int> av);
-	void x_channel(svector<int> av, smap<int, logic> *result);
+	void x_channel(svector<int> av, smap<int, canonical> *result);
 
 	sstring unique_name(sstring prefix);
 	sstring invert_name(sstring name);
@@ -59,7 +59,7 @@ struct variable_space
 	int insert(variable v);
 	void clear();
 
-	logic increment_pcs(logic t, bool active);
+	canonical increment_pcs(canonical t, bool active);
 
 	variable_space &operator=(variable_space s);
 

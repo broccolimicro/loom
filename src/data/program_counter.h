@@ -10,153 +10,138 @@
 
 #include "../common.h"
 #include "canonical.h"
+#include "petri.h"
 
-struct petri;
-struct node;
+struct remote_program_counter;
 
-typedef pair<int, int> unode;
-typedef pair<unode, unode> uarc;
-
-struct umap
+/**
+ * This elaborator assumes nothing. It clears all of the previously known
+ * state encodings before starting and then systematically explores the
+ * entire state space in order to elaborate it and suffers horribly
+ * from state space explosion. Some actions have been taken to try
+ * and account for this. For example, the algorithm does a depth first
+ * search keeping the total storage needed to a minimum. It does a form
+ * of dynamic programing, ignoring cases that it has seen before. It
+ * schedules case in which the environment can move to be considered first
+ * because cases where the main program moves first generally
+ * only produce a strict subset of the state encodings produced by the cases
+ * where the environment moves first.
+ */
+struct program_counter
 {
-	umap();
-	umap(const umap &um);
-	~umap();
+	program_counter();
+	program_counter(string name, bool elaborate, petri_index index, petri_net *net);
+	~program_counter();
 
-	list<uarc> arcs;
-	list<unode> begin;
-	list<unode> end;
-	svector<int> sids;
-	svector<pair<int, int> > tids;
-	svector<int> iac;
+	string name;
+	petri_net *net;
+	petri_index index;
+	minterm state;
+	bool done;
+	bool elaborate;
 
-	list<uarc> input_arcs(unode n);
-	list<uarc> output_arcs(unode n);
-	list<unode> input_nodes(unode n);
-	list<unode> output_nodes(unode n);
-	bool path_contains(unode n);
-	int nid(int i);
+	bool is_active();
+	bool is_active(petri_index i);
+	bool is_satisfied();
+	bool is_satisfied(petri_index i);
+	bool next_has_active_or_satisfied();
+	svector<petri_index> output_nodes();
+	svector<petri_index> input_nodes();
+	canonical &predicate();
 
-	umap &operator=(umap um);
+	void apply(minterm term);
+	void set(minterm term);
 };
+
+bool operator==(program_counter p1, program_counter p2);
+
+struct remote_petri_index : petri_index
+{
+	remote_petri_index();
+	remote_petri_index(int idx, int iter, bool place);
+	remote_petri_index(petri_index i, int iter);
+	~remote_petri_index();
+
+	int iteration;
+};
+
+bool operator==(remote_petri_index i1, remote_petri_index i2);
+
+typedef pair<remote_petri_index, remote_petri_index> remote_petri_arc;
 
 struct remote_program_counter
 {
 	remote_program_counter();
-	remote_program_counter(const remote_program_counter &pc);
-	remote_program_counter(string name, petri *from, petri *to);
-	remote_program_counter(int index, petri *net);
+	remote_program_counter(string name, petri_net *net);
 	~remote_program_counter();
 
 	string name;
-	petri* net;
+	petri_net* net;
+	svector<remote_petri_index> begin;
+	svector<remote_petri_index> end;
+	svector<remote_petri_arc> arcs;
+	svector<int> place_iteration;
+	svector<pair<int, int> > trans_iteration;
+	svector<int> input_size;
 
-	svector<pair<int, int> > forward_factors;
-	svector<pair<int, int> > reverse_factors;
-	svector<int>			 hidden_factors;
+	svector<remote_petri_arc> input_arcs(remote_petri_index n);
+	svector<remote_petri_arc> output_arcs(remote_petri_index n);
+	svector<remote_petri_index> input_nodes(remote_petri_index n);
+	svector<remote_petri_index> output_nodes(remote_petri_index n);
 
-	umap index;
+	bool is_active(petri_index i);
+	bool is_satisfied(petri_index i, minterm state);
+	bool is_vacuous(petri_index i, minterm state);
+	bool next_has_active_or_satisfied(remote_petri_index i, minterm state, svector<petri_index> &outgoing);
+	bool is_one(petri_index i);
 
-	logic &net_index(int i);
-	bool is_place(int i);
-	bool is_trans(int i);
-	bool is_active(int i);
-	bool is_satisfied(int i, logic s);
-	bool is_vacuous(int i, logic s);
-	bool is_one(int i);
+	int nid(petri_index idx);
 
-	void roll_to(unode idx);
+	void roll_to(remote_petri_index idx);
 
-	int count(unode n);
+	int count(int n);
+	void merge(int n);
 
 	minterm firings();
-	logic waits(unode n);
+	canonical waits(remote_petri_index n);
 
 	remote_program_counter &operator=(remote_program_counter pc);
 };
 
-bool operator==(remote_program_counter pc1, remote_program_counter pc2);
-
-struct program_environment
-{
-	program_environment();
-	program_environment(const remote_program_counter &pc);
-	program_environment(const program_environment &env);
-	~program_environment();
-
-	list<remote_program_counter> pcs;
-
-	minterm firings();
-
-	program_environment &operator=(program_environment env);
-};
-
-bool operator==(program_environment env1, program_environment env2);
-
-struct program_counter
-{
-	program_counter();
-	program_counter(const program_counter &pc);
-	program_counter(int index, petri *net);
-	~program_counter();
-
-	int last;
-	int index;
-	petri *net;
-	bool waiting;
-
-	list<program_environment> envs;
-	list<pair<pair<string, petri*>, list<pair<list<program_environment>::iterator, unode> > > > splits;
-
-	bool is_trans();
-	bool is_place();
-	bool is_active();
-	string node_name();
-
-	bool end_is_ready(logic s, list<program_environment>::iterator &env, list<remote_program_counter>::iterator &pc, list<unode>::iterator &idx, logic &state);
-	bool begin_is_ready(logic s, list<program_environment>::iterator &env, list<remote_program_counter>::iterator &pc, list<unode>::iterator &idx, list<pair<pair<string, petri*>, list<pair<list<program_environment>::iterator, unode> > > >::iterator &split, list<pair<list<program_environment>::iterator, unode> >::iterator &prgm, logic &state);
-
-	void simulate(logic s);
-	logic mute(logic s);
-
-	int count();
-	void merge();
-
-	program_counter &operator=(program_counter pc);
-};
+ostream &operator<<(ostream &os, remote_petri_index i);
 
 struct program_execution
 {
 	program_execution();
-	program_execution(const program_execution &exe);
-	program_execution(petri *net);
+	program_execution(const program_execution &exec);
 	~program_execution();
 
-	petri *net;
-	svector<logic> states;
-	svector<logic> final;
-
-	list<program_counter> pcs;
+	svector<program_counter> pcs;
+	svector<remote_program_counter> rpcs;
 	bool deadlock;
-	bool done;
 
-	int count(list<program_counter>::iterator i);
-	void merge(list<program_counter>::iterator i);
+	int count(int pci);
+	int merge(int pci);
+	bool done();
 
-	logic calculate_state(list<program_counter>::iterator i);
-
-	program_execution &operator=(program_execution exe);
+	void init_pcs(string name, petri_net *net, bool elaborate);
+	void init_rpcs(string name, petri_net *net);
 };
 
 struct program_execution_space
 {
-	program_execution_space();
-	~program_execution_space();
+	svector<program_execution> execs;
+	svector<petri_net*> nets;
+	map<pair<pair<string, petri_net*>, pair<string, petri_net*> >, svector<pair<int, int> > > translations;
 
-	svector<logic> final;
-	list<program_execution> execs;
-
-	void simulate();
+	void duplicate_execution(program_execution *exec_in, program_execution **exec_out);
+	void duplicate_counter(program_execution *exec_in, int pc_in, int &pc_out);
+	bool remote_end_ready(program_execution *exec, int &rpc, int &idx, svector<petri_index> &outgoing);
+	bool remote_begin_ready(program_execution *exec, int &rpc, int &idx);
+	void full_elaborate();
+	void reset();
+	void gen_translation(string name0, petri_net *net0, string name1, petri_net *net1);
+	minterm translate(string name0, petri_net *net0, minterm t, string name1, petri_net *net1);
 };
 
 #endif

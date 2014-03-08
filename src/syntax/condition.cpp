@@ -360,7 +360,7 @@ void condition::rewrite()
 		{
 			j = i;
 			for (j++; j != instrs.end(); j++)
-				if ((logic(i->second->chp, vars) & logic(j->second->chp, vars)) != 0)
+				if ((canonical(i->second->chp, vars) & canonical(j->second->chp, vars)) != 0)
 					cerr << "Error: Conflicting guards in a thin bar conditional {" << i->second->chp << ", " << j->second->chp << "}." << endl;
 		}
 	}
@@ -369,7 +369,7 @@ void condition::rewrite()
 		{
 			j = i;
 			for (j++; j != instrs.end(); j++)
-				if ((logic(i->second->chp, vars) & logic(j->second->chp, vars)) != 0)
+				if ((canonical(i->second->chp, vars) & canonical(j->second->chp, vars)) != 0)
 					cerr << "Error: Conflicting guards in a thick bar conditional {" << i->second->chp << ", " << j->second->chp << "}." << endl;
 		}*/
 
@@ -385,10 +385,10 @@ void condition::reorder()
 
 }
 
-svector<int> condition::generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch)
+svector<petri_index> condition::generate_states(petri_net *n, rule_space *p, svector<petri_index> f, smap<int, int> pbranch, smap<int, int> cbranch)
 {
 	list<pair<sequential*, guard*> >::iterator instr_iter, instr_iter2;
-	svector<int> start, end;
+	svector<petri_index> start, end;
 	smap<int, int> ncbranch;
 	int ncbranch_count;
 	sstring bvname;
@@ -424,7 +424,7 @@ svector<int> condition::generate_states(petri *n, rule_space *p, svector<int> f,
 		end.clear();
 		start.clear();
 		start = instr_iter->second->generate_states(net, prs, from, pbranch, ncbranch);
-		end.push_back(net->insert_place(start, pbranch, ncbranch, this));
+		end.push_back(net->push_place(start, pbranch, ncbranch, this));
 		start = instr_iter->first->generate_states(net, prs, end, pbranch, ncbranch);
 		uid.insert(uid.end(), start.begin(), start.end());
 	}
@@ -451,7 +451,7 @@ svector<int> condition::generate_states(petri *n, rule_space *p, svector<int> f,
 			}
 		}
 
-		vars->enforcements = vars->enforcements >> logic(bvname, vars);
+		vars->enforcements = vars->enforcements >> canonical(bvname, vars);
 		prs->excl.push_back(pair<svector<int>, int>(bvuids, 1));
 		for (int k = 0; k < (int)bvuids.size(); k++)
 			prs->excl.push_back(pair<svector<int>, int>(svector<int>(1, bvuids[k]), 0));

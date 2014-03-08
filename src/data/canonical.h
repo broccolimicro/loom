@@ -111,6 +111,8 @@ bool is_mutex(canonical c0, canonical c1);
 bool is_mutex(minterm *m0, canonical *c1);
 bool is_mutex(canonical *c0, minterm *m1);
 bool is_mutex(canonical *c0, canonical *c1, canonical *c2);
+bool is_mutex(canonical *c0, canonical *c1, canonical *c2, canonical *c3);
 bool mergible(canonical *c0, canonical *c1);
+bool mergible(minterm c0, minterm c1);
 
 #endif

@@ -17,9 +17,8 @@ rule::rule()
 	guards[1] = 0;
 	explicit_guards[0] = 0;
 	explicit_guards[1] = 0;
-	implicants[0] = svector<int>();
-	implicants[1] = svector<int>();
-	vars = NULL;
+	implicants[0] = svector<petri_index>();
+	implicants[1] = svector<petri_index>();
 	net = NULL;
 	flags = NULL;
 }
@@ -31,21 +30,19 @@ rule::rule(int uid)
 	guards[1] = 0;
 	explicit_guards[0] = 0;
 	explicit_guards[1] = 0;
-	implicants[0] = svector<int>();
-    implicants[1] = svector<int>();
-	vars = NULL;
+	implicants[0] = svector<petri_index>();
+    implicants[1] = svector<petri_index>();
 	net = NULL;
 	flags = NULL;
 }
 
-rule::rule(int uid, petri *g, variable_space *v, flag_space *flags, bool bubble)
+rule::rule(int uid, petri_net *g, flag_space *flags, bool bubble)
 {
 	this->uid = uid;
-	this->vars = v;
 	this->net = g;
 	this->flags = flags;
-	implicants[0] = svector<int>();
-    implicants[1] = svector<int>();
+	implicants[0] = svector<petri_index>();
+    implicants[1] = svector<petri_index>();
 
 	if (bubble)
 		gen_minterms();
@@ -53,22 +50,21 @@ rule::rule(int uid, petri *g, variable_space *v, flag_space *flags, bool bubble)
 		gen_bubbleless_minterms();
 }
 
-rule::rule(sstring u, sstring d, sstring v, variable_space *vars, petri *net, flag_space *flags)
+rule::rule(sstring u, sstring d, sstring v, petri_net *net, flag_space *flags)
 {
 	this->net = net;
-	this->vars = vars;
 	this->flags = flags;
-	implicants[0] = svector<int>();
-    implicants[1] = svector<int>();
+	implicants[0] = svector<petri_index>();
+    implicants[1] = svector<petri_index>();
 
-	gen_variables(u, vars, flags);
-	gen_variables(d, vars, flags);
+	gen_variables(u, net->vars, flags);
+	gen_variables(d, net->vars, flags);
 
-	if ((uid = vars->get_uid(v)) < 0)
-		uid = vars->insert(variable(v, "node", 1, 0, false, flags));
+	if ((uid = net->vars->get_uid(v)) < 0)
+		uid = net->vars->insert(variable(v, "node", 1, 0, false, flags));
 
-	this->guards[1] = logic(u, vars);
-	this->guards[0] = logic(d, vars);
+	this->guards[1] = canonical(u, net->vars);
+	this->guards[0] = canonical(d, net->vars);
 	//cout << u << endl << this->guards[1].print(vars) << endl << endl;
 	//cout << d << endl << this->guards[0].print(vars) << endl << endl << endl;
 }
@@ -80,9 +76,8 @@ rule::~rule()
 	guards[1] = 0;
 	explicit_guards[0] = 0;
 	explicit_guards[1] = 0;
-	implicants[0] = svector<int>();
-    implicants[1] = svector<int>();
-	vars = NULL;
+	implicants[0] = svector<petri_index>();
+    implicants[1] = svector<petri_index>();
 	net = NULL;
 	flags = NULL;
 }
@@ -96,464 +91,527 @@ rule &rule::operator=(rule r)
 	explicit_guards[1] = r.explicit_guards[1];
 	implicants[0] = r.implicants[0];
     implicants[1] = r.implicants[1];
-	vars = r.vars;
 	net = r.net;
 	flags = r.flags;
 	return *this;
 }
 
-pair<svector<int>, logic> rule::closest_transition(int curr_place, int transition, int conflicting_state, logic rule_guard, logic implicant_state, svector<int> tail, svector<bool> *covered, int i)
+struct reductionhdl
 {
-	svector<int> next;
-	svector<int> curr;
-	svector<int> vlist;
-	svector<int> comb;
-	smap<int, pair<int, int> >::iterator cpi;
-	pair<svector<int>, logic> ret;
-	int j, k, l;
-	bool immune = false;
-	bool found;
-	logic temp, temp2, t, effective_conflict;
-	smap<int, logic>::iterator ji;
-	svector<logic> conflict_check;
-
-	cout << "\n" << sstring(i, '\t') << "Closest Transition " << curr_place << endl;
-
-	next.push_back(curr_place);
-
-	while (1)
+	reductionhdl()
 	{
-		cout << sstring(i, '\t') << next[0] << " ";
 
-		if (!(*covered)[next[0]])
-			(*covered)[next[0]] = true;
+	}
+
+	reductionhdl(const reductionhdl &r)
+	{
+		implicant = r.implicant;
+		path = r.path;
+		covered = r.covered;
+		guard = r.guard;
+	}
+
+	reductionhdl(petri_net *net, petri_index start)
+	{
+		if (start.is_trans())
+		{
+			svector<petri_index> i = net->prev(start);
+			this->implicant = 1;
+			for (int j = 0; j < i.size(); j++)
+				this->implicant &= net->at(i[j]).index;
+
+			cout << "Generating Initial State" << endl;
+			this->path.push_back(petri_state(net, i, true));
+			cout << "Done" << endl;
+		}
 		else
 		{
-			cout << "covered" << endl;
-			return pair<svector<int>, logic>(svector<int>(), rule_guard);
+			this->implicant = net->at(start).index;
+			this->path.push_back(petri_state(net, svector<petri_index>(1, start), true));
 		}
 
-		if (net->is_trans(net->arcs[next[0]].second))
+		cout << "LOOK " << this->path.back() << endl;
+		this->guard = canonical(1);
+		this->covered.resize(net->S.size(), false);
+	}
+
+	~reductionhdl()
+	{
+
+	}
+
+	canonical implicant;
+	svector<petri_state> path;
+	svector<bool> covered;
+	canonical guard;
+
+	petri_index &at(int i)
+	{
+		return path.back().state[i];
+	}
+
+	void increment()
+	{
+		path.push_back(path.back());
+		path[path.size()-2].state.sort();
+	}
+
+	void split(int i, petri_index n)
+	{
+		path.back().state.push_back(path.back().state[i]);
+		path.back().state.back() = n;
+	}
+
+	reductionhdl &operator=(reductionhdl r)
+	{
+		implicant = r.implicant;
+		path = r.path;
+		covered = r.covered;
+		guard = r.guard;
+		return *this;
+	}
+};
+
+void rule::strengthen(int t)
+{
+	list<reductionhdl> reductions;
+	for (int i = 0; i < implicants[t].size(); i++)
+		reductions.push_back(reductionhdl(net, implicants[t][i]));
+
+	for (list<reductionhdl>::iterator reduction = reductions.begin(); reduction != reductions.end(); reduction++)
+	{
+		cout << "Begin Execution" << endl;
+		/**
+		 * Work backwards from an implicant until we hit a state
+		 * in which our production rule should not fire, but does
+		 * given the current guard expression. From there we work
+		 * forward until we find a transition that separates the
+		 * conflicting state from the implicant state. We then use
+		 * the greedy algorithm to pick the smallest combination of
+		 * values from that transition that will separate the two.
+		 *
+		 * The use of greedy is only needed when we need to use a
+		 * passive transition to separate the two because passive
+		 * transitions can be a complex expression and not just one
+		 * variable and one value.
+		 */
+		bool done = false;
+		while (!done)
 		{
-			t = net->T[net->index(net->arcs[next[0]].second)].index.hide(uid);
-
-			effective_conflict = net->get_effective_state_encoding(conflicting_state, transition) & canonical(uid, 1-net->T[net->index(transition)].index.terms[0].val(uid));
-			cout << effective_conflict.print(vars) << " ";
-
-			/*temp = rule_guard & t;
-			if ((temp & implicant_state) != 0 && (temp & effective_conflict) == 0)
+			svector<int> ready_transitions;
+			svector<int> ready_places;
+			/* Figure out which indices are ready to be moved
+			 * and separate them out into places and transitions.
+			 */
+			for (int i = 0; i < reduction->path.back().state.size(); i++)
 			{
-				cout << "end" << endl;
-				return pair<svector<int>, logic>(svector<int>(), temp);
-			}*/
-
-			temp2 = 0;
-			found = true;
-			for (l = 0; l < t.terms.size() && found; l++)
-			{
-				vlist = t.terms[l].vars();
-				found = false;
-				for (j = 1; j <= vlist.size() && !found; j++)
+				if (reduction->at(i).is_place())
 				{
-					comb = first_combination(j);
-					do
-					{
-						temp = rule_guard;
-						for (k = 0; k < comb.size(); k++)
-							temp &= canonical(vlist[comb[k]], t.terms[l].val(vlist[comb[k]]));
+					int total = 0;
+					for (int k = i; k < reduction->path.back().state.size(); k++)
+						if (net->prev(reduction->path.back().state[k])[0] == net->prev(reduction->path.back().state[i])[0])
+							total++;
 
-						if ((temp & implicant_state) != 0 && (temp & effective_conflict) == 0)
-						{
-							temp2 |= temp;
-							found = true;
-						}
-					} while (next_combination(vlist.size(), &comb) && !found);
-					comb.clear();
+					if (total == net->next(net->prev(reduction->at(i))).unique().size())
+						ready_places.push_back(i);
 				}
-				vlist.clear();
-			}
-			if (found)
-			{
-				cout << "end" << endl;
-				return pair<svector<int>, logic>(svector<int>(), temp2);
-			}
-		}
-
-		curr = next;
-		next.clear();
-		for (j = 0; j < net->arcs.size(); j++)
-			for (k = 0; k < curr.size(); k++)
-				if (net->arcs[curr[k]].second == net->arcs[j].first)
-					next.push_back(j);
-		next.unique();
-
-
-		if (!immune && i != 0 && net->is_trans(net->arcs[next[0]].first) && net->input_arcs(net->arcs[next[0]].first).size() > 1)
-		{
-			cout << "pmerge" << endl;
-			return pair<svector<int>, logic>(next, logic());
-		}
-
-		for (cpi = net->conditional_places.begin(); !immune && i != 0 && cpi != net->conditional_places.end(); cpi++)
-			if (net->arcs[next[0]].first == cpi->second.first)
-			{
-				cout << "cmerge" << endl;
-				return pair<svector<int>, logic>(next, logic());
+				else
+					ready_transitions.push_back(i);
 			}
 
-		cout << endl;
+			cout << reduction->path.back() << " " << reduction->guard.print(net->vars) << endl;
 
-		immune = false;
-		while (next.size() > 1)
-		{
-			immune = false;
-			if (net->is_place(net->arcs[curr[0]].second))
+			reduction->increment();
+
+			/*
+			 * This is the meat of the whole function. At this point,
+			 * we have reached a new state (where all indices are at
+			 * a place) and we need to determine whether or not we
+			 * need to add a transition to separate this place from
+			 * our initial implicant.
+			 */
+			if (reduction->path.back().is_state())
 			{
-				curr = next;
-				temp = rule_guard;
-				rule_guard = 0;
+				/* Check to see if we are done (we have already seen all
+				 * of these indices before) and then mark all indices as
+				 * seen.
+				 */
+				done = true;
+				for (int i = 0; i < reduction->path.back().state.size(); i++)
+					if (!reduction->covered[reduction->at(i).idx()])
+						done = false;
 
-				next.clear();
-				conflict_check.clear();
-				for (j = 0; j < curr.size(); j++)
+				for (int i = 0; i < reduction->path.back().state.size(); i++)
+					reduction->covered[reduction->at(i).idx()] = true;
+
+				/* Check to see if we need to separate this state from the
+				 * implicant by looking for a transition to add in.
+				 */
+				svector<petri_index> o = net->next(reduction->path.back().state).unique();
+				bool is_implicant = false;
+				for (int i = 0; i < implicants[t].size(); i++)
+					for (int j = 0; j < o.size(); j++)
+						if (o[j] == implicants[t][i])
+							is_implicant = true;
+
+				canonical encoding = net->get_effective_state_encoding(reduction->path.back(), reduction->path.front());
+
+				/* If this state needs to be separated from the implicant state,
+				 * work backwards in the path until we find the closest set of
+				 * transitions that separate them. Then, use greedy to get the
+				 * least number of values needed to separate them.
+				 */
+				if (!is_implicant && (canonical(uid, 1-t) & reduction->guard & encoding) != 0)
 				{
-					if (net->psiblings(net->arcs[curr[j]].second, transition) == -1 && net->csiblings(net->arcs[curr[j]].second, transition) == -1)
+					cout << "Conflict " << encoding.print(net->vars) << endl;
+					bool found = false;
+					for (int i = reduction->path.size()-2; !found && i > 0; i--)
 					{
-						ret = closest_transition(curr[j], transition, conflicting_state, temp, implicant_state, tail, covered, i+1);
-						next.merge(ret.first);
-						rule_guard |= ret.second;
-						conflict_check.push_back(ret.second);
-						if (ret.first.size() != 0)
-							immune = true;
+						cout << "\t" << reduction->path[i] << endl;
+
+						if (reduction->path[i].is_state())
+						{
+							canonical transitions = 1;
+							for (int j = 0; j < reduction->path[i].state.size(); j++)
+							{
+								o = net->next(reduction->path[i].state[j]);
+								svector<petri_index> valid_o;
+								for (int k = i-1; k > 0; k--)
+									for (int l = 0; l < o.size(); l++)
+										if (reduction->path[k].state.find(o[l]) != reduction->path[k].state.end())
+											valid_o.push_back(o[l]);
+								valid_o.unique();
+
+								if (valid_o.size() > 0)
+								{
+									canonical transition_term;
+									for (int k = 0; k < valid_o.size(); k++)
+										transition_term |= net->at(valid_o[k]).index;
+									transitions &= transition_term;
+								}
+							}
+							transitions = transitions.hide(uid);
+
+							canonical temp2 = 0;
+							found = true;
+							for (int l = 0; l < transitions.terms.size() && found; l++)
+							{
+								svector<int> vlist = transitions.terms[l].vars();
+								found = false;
+								for (int j = 1; j <= vlist.size() && !found; j++)
+								{
+									svector<int> comb = first_combination(j);
+									do
+									{
+										canonical temp = reduction->guard;
+										canonical legal_check = 0;
+										for (int k = 0; k < comb.size(); k++)
+										{
+											temp &= canonical(vlist[comb[k]], transitions.terms[l].val(vlist[comb[k]]));
+											legal_check |= canonical(vlist[comb[k]], 1-transitions.terms[l].val(vlist[comb[k]]));
+										}
+
+										bool legal = false;
+										for (int k = 0; !legal && k < reduction->implicant.terms.size(); k++)
+											if ((legal_check & reduction->guard & reduction->implicant.terms[k]) == 0)
+												legal = true;
+
+										if (legal && temp != 0 && (temp & encoding) == 0)
+										{
+											temp2 |= temp;
+											found = true;
+										}
+									} while (next_combination(vlist.size(), &comb) && !found);
+									comb.clear();
+								}
+								vlist.clear();
+							}
+							if (found && transitions != 0)
+							{
+								cout << "\tFound " << temp2.print(net->vars) << endl;
+								reduction->guard = temp2;
+							}
+						}
 					}
 				}
-				if (next.size() != 0)
-					rule_guard = temp;
-				else
-					for (k = 0; k < conflict_check.size(); k++)
-						for (j = k+1; j < conflict_check.size(); j++)
-							if (conflict_check[k] != conflict_check[j])
-							{
-								if ((conflict_check[k] | conflict_check[j]) == conflict_check[k])
-									cerr << "Warning: Conflict may have been created somewhere down arc " << curr[j] << " during guard strengthening for " << vars->get_name(uid) << (t == 0 ? "-" : "+") << " from state " << net->arcs[net->index(next[0])].second << "." << endl;
-								else if ((conflict_check[k] | conflict_check[j]) == conflict_check[j])
-									cerr << "Warning: Conflict may have been created somewhere down arc " << curr[k] << " during guard strengthening for " << vars->get_name(uid) << (t == 0 ? "-" : "+") << " from state " << net->arcs[net->index(next[0])].second << "." << endl;
-							}
-
-				next.unique();
 			}
-			else if (net->is_trans(net->arcs[curr[0]].second))
-			{
-				curr = next;
 
-				next.clear();
-				for (j = 0; j < curr.size(); j++)
+			/* Transitions are always handled first to ensure that
+			 * we will reach a valid state.
+			 */
+			if (!done && ready_transitions.size() > 0)
+			{
+				for (int i = 0; i < ready_transitions.size(); i++)
 				{
-					ret = closest_transition(curr[j], transition, conflicting_state, rule_guard, implicant_state, tail, covered, i+1);
-					next.merge(ret.first);
-					if (ret.first.size() == 0)
-						return ret;
-					else
-						immune = true;
+					svector<petri_index> p = net->prev(reduction->at(ready_transitions[i]));
+					for (int j = p.size()-1; j >= 0; j--)
+					{
+						if (j > 0)
+							reduction->split(ready_transitions[i], p[j]);
+						else
+							reduction->at(ready_transitions[i]) = p[j];
+					}
 				}
-
-				next.unique();
 			}
-		}
-
-		if (next.size() < 1)
-		{
-			cout << "kill" << endl;
-			return pair<svector<int>, logic>(svector<int>(), rule_guard);
-		}
-	}
-}
-
-
-pair<svector<int>, logic> rule::strengthen(int p, int tid, svector<bool> *covered, logic rule_guard, logic implicant_state, int t, svector<int> tail, int i)
-{
-	svector<int> next;
-	svector<int> curr;
-	svector<logic> conflict_check;
-	smap<int, pair<int, int> >::iterator cpi;
-	pair<svector<int>, logic> ret;
-	int j, k;
-	bool immune = false;
-	bool needed, found;
-	logic temp, temp2, temp3, temp4;
-	svector<int> ia;
-	svector<int> comb, vlist;
-	svector<bool> covered2;
-	logic effective_conflict;
-
-	if (covered->size() < net->arcs.size())
-		covered->resize(net->arcs.size(), false);
-
-	cout << sstring(i, '\t') << "Strengthen " << p << endl;
-
-	next.push_back(p);
-
-	while (1)
-	{
-		cout << sstring(i, '\t') << next[0] << " " << rule_guard.print(vars) << " " << implicant_state.print(vars) << " ";
-		fflush(stdout);
-
-		if (!immune && net->is_place(net->arcs[next[0]].first))
-		{
-			needed = false;
-			ia = net->input_arcs(net->arcs[next[0]].first);
-			for (j = 0; j < ia.size() && !needed; j++)
-				if (!(*covered)[ia[j]])
-					needed = true;
-
-			for (j = 0; j < implicants[t].size() && needed; j++)
-				if (net->psiblings(net->arcs[next[0]].first, implicants[t][j]) != -1)
-					needed = false;
-
-			effective_conflict = net->get_effective_state_encoding(net->arcs[next[0]].first, tid);
-			cout << effective_conflict.print(net->vars) << " " << net->node_name(tid) << "->" << net->node_name(net->arcs[next[0]].first) << " ";
-
-			covered2.assign(net->arcs.size(), false);
-			if (needed && (net->T[net->index(net->arcs[next[0]].second)].index & logic(uid, 1-t)) != 0 && (logic(uid, 1-t) & rule_guard & effective_conflict) != 0)
-				rule_guard = closest_transition(next[0], tid, net->arcs[next[0]].first, rule_guard, implicant_state, tail, &covered2).second;
-		}
-
-		(*covered)[next[0]] = true;
-
-		curr = next;
-		next.clear();
-		for (j = 0; j < net->arcs.size(); j++)
-			for (k = 0; k < curr.size(); k++)
-				if (net->arcs[curr[k]].first == net->arcs[j].second)
-					if (!(*covered)[j] && (net->is_place(net->arcs[j].first) || (net->T[net->index(net->arcs[j].first)].index & logic(uid, 1-t)) != 0))
-						next.push_back(j);
-		next.unique();
-
-		if (!immune && i != 0 && net->is_trans(net->arcs[next[0]].second) && net->output_arcs(net->arcs[next[0]].second).size() > 1)
-		{
-			cout << "pmerge" << endl;
-			return pair<svector<int>, logic>(next, rule_guard);
-		}
-
-		for (cpi = net->conditional_places.begin(); !immune && i != 0 && cpi != net->conditional_places.end(); cpi++)
-			if (net->arcs[next[0]].second == cpi->second.second)
+			/* Then places are handled. Every ordering of moving
+			 * from a place to a transition creates a new possible
+			 * execution.
+			 */
+			else if (!done && ready_places.size() > 0)
 			{
-				cout << "cmerge" << endl;
-				return pair<svector<int>, logic>(next, rule_guard);
-			}
-
-		cout << endl;
-
-		immune = false;
-		temp = rule_guard;
-		while (next.size() > 1)
-		{
-			immune = false;
-			if (net->is_place(net->arcs[curr[0]].first))
-			{
-				curr = next;
-				rule_guard = 0;
-
-				next.clear();
-				conflict_check.clear();
-				for (j = 0; j < curr.size(); j++)
+				for (int i = ready_places.size()-1; i >= 0; i--)
 				{
-					ret = strengthen(curr[j], tid, covered, temp, implicant_state, t, tail, i+1);
-					next.merge(ret.first);
-					conflict_check.push_back(ret.second);
-					if (ret.first.size() != 0)
-						immune = true;
-				}
-
-				next.unique();
-
-				/*
-				 * If you have a conditional merge
-				 *        A -> T4- -> B -> T1+ ->   -> [~T4] -> G
-				 * T4+ -> D -> T1+ -> E -> T3+ -> C -> [ T4] -> F -> T
-				 * and you want to strengthen the guard for T which is currently T4 -> T,
-				 * B is NOT in conflict with F, but A is, so when you run closest_transition
-				 * it returns T1&T4 -> T. When you run closest_transition on the other branch,
-				 * you get T1&T3&T4 -> T. Then you get here and you OR everything together.
-				 * This gives you T1&T4, leaving a conflicting state in the second branch.
-				 * If you were to XOR everything together, you would get T1&T4&~T3. Now T
-				 * won't fire after going through the second branch. ANDing them together
-				 * gets you what you want here, but what happens if you have
-				 * A ->  T1 ->
-				 * B -> ~T1 -> C -> T2 -> D -> T
-				 * If you and them together here, your guard would end up being 0.
-				 * If I do some kind of merge step where I delete minterms that aren't strengthened
-				 * enough, then this breaks.
-				 * A    ->     T1     ->
-				 * B -> T1 -> C -> T2 -> D -> T3 -> E -> T
-				 */
-				for (j = 0; j < conflict_check.size(); j++)
-					for (k = j+1; k < conflict_check.size(); k++)
-						if (conflict_check[j] != conflict_check[k] && mergible(&conflict_check[j], &conflict_check[k]))
+					for (int k = ready_places[i]+1; k < reduction->path.back().state.size(); )
+					{
+						if (net->prev(reduction->path.back().state[k])[0] == net->prev(reduction->path.back().state[ready_places[i]])[0])
 						{
-							temp = (conflict_check[j] & net->S[net->arcs[curr[0]].second].index).hide(conflict_check[j].vars());
-							temp2 = (conflict_check[k] & net->S[net->arcs[curr[0]].second].index).hide(conflict_check[k].vars());
+							for (int j = i+1; j < ready_places.size(); j++)
+								if (ready_places[j] > k)
+									ready_places[j]--;
 
-							if ((conflict_check[j] | conflict_check[k]) == conflict_check[j])
-							{
-								temp3 = 0;
-								found = true;
-								for (int l = 0; l < temp.terms.size() && found; l++)
-								{
-									vlist = temp.terms[l].vars();
-									found = false;
-									for (int m = 1; m <= vlist.size() && !found; m++)
-									{
-										comb = first_combination(m);
-										do
-										{
-											for (int n = 0; n < comb.size(); n++)
-												temp4 = (n == 0 ? canonical(vlist[comb[n]], temp.terms[l].val(vlist[comb[n]]))  :
-														  temp4 & canonical(vlist[comb[n]], temp.terms[l].val(vlist[comb[n]])) );
-
-											if (!is_mutex(&temp4, &conflict_check[j], &implicant_state) && is_mutex(&temp4, &temp2, &vars->enforcements))
-											{
-												temp3 |= temp4;
-												found = true;
-											}
-										} while (next_combination(vlist.size(), &comb) && !found);
-										comb.clear();
-									}
-									vlist.clear();
-								}
-
-								if (!found)
-									cerr << "Error: Conflict created during guard strengthening for " << vars->get_name(uid) << (t == 0 ? "-" : "+") << " from state " << net->arcs[net->index(next[0])].second << "." << endl;
-								else
-									conflict_check[j] &= temp3;
-							}
-							else if ((conflict_check[j] | conflict_check[k]) == conflict_check[k])
-							{
-								temp3 = 0;
-								found = true;
-								for (int l = 0; l < temp2.terms.size() && found; l++)
-								{
-									vlist = temp2.terms[l].vars();
-									found = false;
-									for (int m = 1; m <= vlist.size() && !found; m++)
-									{
-										comb = first_combination(m);
-										do
-										{
-											for (int n = 0; n < comb.size(); n++)
-												temp4 = (n == 0 ? canonical(vlist[comb[n]], temp2.terms[l].val(vlist[comb[n]]))  :
-														  temp4 & canonical(vlist[comb[n]], temp2.terms[l].val(vlist[comb[n]])) );
-
-											if (!is_mutex(&temp4, &conflict_check[k], &implicant_state) && is_mutex(&temp4, &temp, &vars->enforcements))
-											{
-												temp3 |= temp4;
-												found = true;
-											}
-										} while (next_combination(vlist.size(), &comb) && !found);
-										comb.clear();
-									}
-									vlist.clear();
-								}
-
-								if (!found)
-									cerr << "Error: Conflict created during guard strengthening for " << vars->get_name(uid) << (t == 0 ? "-" : "+") << " from state " << net->arcs[net->index(next[0])].second << "." << endl;
-								else
-									conflict_check[k] &= temp3;
-							}
-							else
-							{
-								temp3 = 0;
-								found = true;
-								for (int l = 0; l < temp.terms.size() && found; l++)
-								{
-									vlist = temp.terms[l].vars();
-									found = false;
-									for (int m = 1; m <= vlist.size() && !found; m++)
-									{
-										comb = first_combination(m);
-										do
-										{
-											for (int n = 0; n < comb.size(); n++)
-												temp4 = (n == 0 ? canonical(vlist[comb[n]], temp.terms[l].val(vlist[comb[n]]))  :
-														  temp4 & canonical(vlist[comb[n]], temp.terms[l].val(vlist[comb[n]])) );
-
-											if (!is_mutex(&temp4, &conflict_check[j], &implicant_state) && is_mutex(&temp4, &temp2, &vars->enforcements))
-											{
-												temp3 |= temp4;
-												found = true;
-											}
-										} while (next_combination(vlist.size(), &comb) && !found);
-										comb.clear();
-									}
-									vlist.clear();
-								}
-
-								if (!found)
-									cerr << "Error: Conflict created during guard strengthening for " << vars->get_name(uid) << (t == 0 ? "-" : "+") << " from state " << net->arcs[net->index(next[0])].second << "." << endl;
-								else
-									conflict_check[j] &= temp3;
-
-								temp3 = 0;
-								found = true;
-								for (int l = 0; l < temp2.terms.size() && found; l++)
-								{
-									vlist = temp2.terms[l].vars();
-									found = false;
-									for (int m = 1; m <= vlist.size() && !found; m++)
-									{
-										comb = first_combination(m);
-										do
-										{
-											for (int n = 0; n < comb.size(); n++)
-												temp4 = (n == 0 ? canonical(vlist[comb[n]], temp2.terms[l].val(vlist[comb[n]]))  :
-														  temp4 & canonical(vlist[comb[n]], temp2.terms[l].val(vlist[comb[n]])) );
-
-											if (!is_mutex(&temp4, &conflict_check[k], &implicant_state) && is_mutex(&temp4, &temp, &vars->enforcements))
-											{
-												temp3 |= temp4;
-												found = true;
-											}
-										} while (next_combination(vlist.size(), &comb) && !found);
-										comb.clear();
-									}
-									vlist.clear();
-								}
-
-								if (!found)
-									cerr << "Error: Conflict created during guard strengthening for " << vars->get_name(uid) << (t == 0 ? "-" : "+") << " from state " << net->arcs[net->index(next[0])].second << "." << endl;
-								else
-									conflict_check[k] &= temp3;
-							}
+							reduction->path.back().state.erase(reduction->path.back().state.begin() + k);
 						}
+						else
+							k++;
+					}
 
-				for (j = 0; j < conflict_check.size(); j++)
-					rule_guard |= conflict_check[j];
-			}
-			else if (net->is_trans(net->arcs[curr[0]].first))
-			{
-				curr = next;
-				rule_guard = 1;
+					list<reductionhdl>::iterator curr = reduction;
+					if (i > 0)
+					{
+						reductions.push_back(*reduction);
+						curr = prev(reductions.end());
+					}
 
-				next.clear();
-				for (j = 0; j < curr.size(); j++)
-				{
-					ret = strengthen(curr[j], tid, covered, temp, implicant_state, t, tail, i+1);
-					next.merge(ret.first);
-					rule_guard &= ret.second;
-					if (ret.first.size() != 0)
-						immune = true;
+					svector<petri_index> p = net->prev(curr->at(ready_places[i]));
+					for (int j = p.size()-1; j >= 0; j--)
+					{
+						if (j > 0)
+						{
+							reductions.push_back(*curr);
+							reductions.back().at(ready_places[i]) = p[j];
+						}
+						else
+							curr->at(ready_places[i]) = p[j];
+					}
 				}
-
-				next.unique();
 			}
-		}
-
-		if (next.size() < 1)
-		{
-			cout << "kill" << endl;
-			return pair<svector<int>, logic>(svector<int>(), rule_guard);
 		}
 	}
+
+	/* Once we are done with the above, there is still one more step.
+	 * If you have two rules {x->z-, x&y->z-} and you OR them together,
+	 * then you would end up with {x->z-}. This would create a conflict,
+	 * causing the {x&y->z-} rule to fire where it shouldn't. If we AND
+	 * them together, we would get {x&y->z-}. This would prevent the
+	 * {x->z-} rule from firing when it needs to.
+	 *
+	 * So instead of doing either of these operations, we need to pick
+	 * some values that we can AND into each or either rule to separate
+	 * them. For example {x->z-, x&y->z-} would turn into {x&w->z-, x&y->z-}
+	 * making them now safe to OR, resulting in the rule {x&w|x&y->z-}.
+	 *
+	 * This does not need to be done if the two rules are exactly equal,
+	 * only if information is lost by ORing the two together. To check this,
+	 * you need to go back to The Quine McCluskey algorithm to see when it
+	 * decides to merge minterms.
+	 *
+	 * Picking the right information is just a matter of the greedy algorithm.
+	 * Look for the smallest combination of values that separates the two
+	 * minterms and use that.
+	 */
+	svector<pair<canonical, canonical> > temp_guards;
+	cout << "Result" << endl;
+	for (list<reductionhdl>::iterator reduction = reductions.begin(); reduction != reductions.end(); reduction++)
+	{
+		if (reduction->guard != 1)
+		{
+			bool found = false;
+			for (int i = 0; !found && i < temp_guards.size(); i++)
+				if (temp_guards[i].first == reduction->guard)
+				{
+					temp_guards[i].second &= reduction->implicant;
+					found = true;
+				}
+
+			if (!found)
+			{
+				temp_guards.push_back(pair<canonical, canonical>(reduction->guard, reduction->implicant));
+				cout << reduction->guard.print(net->vars) << " -> " << net->vars->get_name(uid) << (t == 1 ? "+" : "-") << endl;
+			}
+		}
+	}
+	reductions.clear();
+	cout << endl;
+
+	for (int j = 0; j < temp_guards.size(); j++)
+		for (int k = j+1; k < temp_guards.size(); k++)
+		{
+			// If the two guards are derived from the same minterm then ORing them together will create a conflict
+			// so we need to merge them.
+			if ((temp_guards[j].first & temp_guards[j].second) == (temp_guards[k].first & temp_guards[k].second))
+			{
+				temp_guards[j].first &= temp_guards[k].first;
+				temp_guards[k].first = temp_guards[j].first;
+			}
+		}
+
+	for (int j = 0; j < temp_guards.size(); j++)
+		for (int k = j+1; k < temp_guards.size(); k++)
+			if (temp_guards[j].first != temp_guards[k].first && mergible(&temp_guards[j].first, &temp_guards[k].first))
+			{
+				canonical temp = temp_guards[j].first;
+				canonical temp2 = temp_guards[k].first;
+
+				if ((temp_guards[j].first | temp_guards[k].first) == temp_guards[j].first)
+				{
+					canonical temp3 = 0;
+					bool found = true;
+					for (int l = 0; l < temp.terms.size() && found; l++)
+					{
+						svector<int> vlist = temp.terms[l].vars();
+						found = false;
+						for (int m = 1; m <= vlist.size() && !found; m++)
+						{
+							svector<int> comb = first_combination(m);
+							do
+							{
+								canonical temp4;
+								for (int n = 0; n < comb.size(); n++)
+									temp4 = (n == 0 ? canonical(vlist[comb[n]], temp.terms[l].val(vlist[comb[n]]))  :
+											  temp4 & canonical(vlist[comb[n]], temp.terms[l].val(vlist[comb[n]])) );
+
+								if (!is_mutex(&temp4, &temp_guards[j].first, &temp_guards[j].second) && is_mutex(&temp4, &temp2, &net->vars->enforcements))
+								{
+									temp3 |= temp4;
+									found = true;
+								}
+							} while (next_combination(vlist.size(), &comb) && !found);
+							comb.clear();
+						}
+						vlist.clear();
+					}
+
+					if (!found)
+					{
+						cerr << "Error: Conflict created during guard strengthening for " << net->vars->get_name(uid) << (t == 0 ? "-" : "+") << "." << endl;
+						temp_guards[j].first &= temp_guards[k].first;
+					}
+					else
+						temp_guards[j].first &= temp3;
+				}
+				else if ((temp_guards[j].first | temp_guards[k].first) == temp_guards[k].first)
+				{
+					canonical temp3 = 0;
+					bool found = true;
+					for (int l = 0; l < temp2.terms.size() && found; l++)
+					{
+						svector<int> vlist = temp2.terms[l].vars();
+						found = false;
+						for (int m = 1; m <= vlist.size() && !found; m++)
+						{
+							svector<int> comb = first_combination(m);
+							do
+							{
+								canonical temp4;
+								for (int n = 0; n < comb.size(); n++)
+									temp4 = (n == 0 ? canonical(vlist[comb[n]], temp2.terms[l].val(vlist[comb[n]]))  :
+											  temp4 & canonical(vlist[comb[n]], temp2.terms[l].val(vlist[comb[n]])) );
+
+								if (!is_mutex(&temp4, &temp_guards[k].first, &temp_guards[k].second) && is_mutex(&temp4, &temp, &net->vars->enforcements))
+								{
+									temp3 |= temp4;
+									found = true;
+								}
+							} while (next_combination(vlist.size(), &comb) && !found);
+							comb.clear();
+						}
+						vlist.clear();
+					}
+
+					if (!found)
+					{
+						cerr << "Error: Conflict created during guard strengthening for " << net->vars->get_name(uid) << (t == 0 ? "-" : "+") << "." << endl;
+						temp_guards[k].first &= temp_guards[j].first;
+					}
+					else
+						temp_guards[k].first &= temp3;
+				}
+				else
+				{
+					canonical temp3 = 0;
+					bool found = true;
+					for (int l = 0; l < temp.terms.size() && found; l++)
+					{
+						svector<int> vlist = temp.terms[l].vars();
+						found = false;
+						for (int m = 1; m <= vlist.size() && !found; m++)
+						{
+							svector<int> comb = first_combination(m);
+							do
+							{
+								canonical temp4;
+								for (int n = 0; n < comb.size(); n++)
+									temp4 = (n == 0 ? canonical(vlist[comb[n]], temp.terms[l].val(vlist[comb[n]]))  :
+											  temp4 & canonical(vlist[comb[n]], temp.terms[l].val(vlist[comb[n]])) );
+
+								if (!is_mutex(&temp4, &temp_guards[j].first, &temp_guards[j].second) && is_mutex(&temp4, &temp2, &net->vars->enforcements))
+								{
+									temp3 |= temp4;
+									found = true;
+								}
+							} while (next_combination(vlist.size(), &comb) && !found);
+							comb.clear();
+						}
+						vlist.clear();
+					}
+
+					if (!found)
+					{
+						cerr << "Error: Conflict created during guard strengthening for " << net->vars->get_name(uid) << (t == 0 ? "-" : "+") <<  "." << endl;
+						temp_guards[j].first &= temp_guards[k].first;
+					}
+					else
+						temp_guards[j].first &= temp3;
+
+					temp3 = 0;
+					found = true;
+					for (int l = 0; l < temp2.terms.size() && found; l++)
+					{
+						svector<int> vlist = temp2.terms[l].vars();
+						found = false;
+						for (int m = 1; m <= vlist.size() && !found; m++)
+						{
+							svector<int> comb = first_combination(m);
+							do
+							{
+								canonical temp4;
+								for (int n = 0; n < comb.size(); n++)
+									temp4 = (n == 0 ? canonical(vlist[comb[n]], temp2.terms[l].val(vlist[comb[n]]))  :
+											  temp4 & canonical(vlist[comb[n]], temp2.terms[l].val(vlist[comb[n]])) );
+
+								if (!is_mutex(&temp4, &temp_guards[k].first, &temp_guards[k].second) && is_mutex(&temp4, &temp, &net->vars->enforcements))
+								{
+									temp3 |= temp4;
+									found = true;
+								}
+							} while (next_combination(vlist.size(), &comb) && !found);
+							comb.clear();
+						}
+						vlist.clear();
+					}
+
+					if (!found)
+					{
+						cerr << "Error: Conflict created during guard strengthening for " << net->vars->get_name(uid) << (t == 0 ? "-" : "+") << "." <<  endl;
+						temp_guards[k].first &= temp_guards[j].first;
+					}
+					else
+						temp_guards[k].first &= temp3;
+				}
+			}
+
+	for (int j = 0; j < temp_guards.size(); j++)
+		guards[t] |= temp_guards[j].first;
 }
 
 /* gen_minterms produces the weakest set of implicants that cannot reduce
@@ -567,12 +625,12 @@ void rule::gen_minterms()
 {
 	guards[1] = 0;
 	guards[0] = 0;
-	svector<int> ia;
+	svector<petri_index> ia;
 	svector<int> vl;
 	int i, j;
-	logic t;
+	canonical t;
 	svector<bool> covered;
-	logic outside = 0;
+	canonical outside = 0;
 	for (i = 0; i < net->S.size(); i++)
 		outside |= net->S[i].index;
 
@@ -588,11 +646,11 @@ void rule::gen_minterms()
 		{
 			if (net->T[i].index(uid, 1) != 0)
 			{
-				ia = net->input_nodes(net->trans_id(i));
+				ia = net->prev(petri_index(i, false));
 				for (j = 0, t = 1; j < ia.size(); j++)
 				{
 					implicants[1].push_back(ia[j]);
-					t &= net->S[ia[j]].index;
+					t &= net->at(ia[j]).index;
 				}
 
 				t = t.hide(vl);
@@ -605,17 +663,17 @@ void rule::gen_minterms()
 				cout << endl;
 				for (j = 0; j < (int)net->arcs.size(); j++)
 					if (net->arcs[j].second == net->trans_id(i))
-						guards[1] |= strengthen(j, &covered, logic(1), t, 1, net->T[i].tail).second;
+						guards[1] |= strengthen(j, &covered, canonical(1), t, 1, net->T[i].tail).second;
 				cout << endl;*/
 			}
 
 			if (net->T[i].index(uid, 0) != 0)
 			{
-				ia = net->input_nodes(net->trans_id(i));
+				ia = net->prev(petri_index(i, false));
 				for (j = 0, t = 1; j < ia.size(); j++)
 				{
 					implicants[0].push_back(ia[j]);
-					t &= net->S[ia[j]].index;
+					t &= net->at(ia[j]).index;
 				}
 				t = t.hide(vl);
 				guards[0] |= t;
@@ -627,7 +685,7 @@ void rule::gen_minterms()
 				cout << endl;
 				for (j = 0; j < (int)net->arcs.size(); j++)
 					if (net->arcs[j].second == net->trans_id(i))
-						guards[0] |= strengthen(j, &covered, logic(1), t, 0, net->T[i].tail).second;
+						guards[0] |= strengthen(j, &covered, canonical(1), t, 0, net->T[i].tail).second;
 				cout << endl;*/
 			}
 		}
@@ -636,12 +694,12 @@ void rule::gen_minterms()
 
 void rule::gen_bubbleless_minterms()
 {
-	guards[1] = logic(0);
-	guards[0] = logic(0);
-	svector<int> ia;
+	guards[1] = canonical(0);
+	guards[0] = canonical(0);
+	svector<petri_index> ia;
 	svector<int> vl;
 	int i, j;
-	logic t;
+	canonical t;
 	for (i = 0; i < (int)net->T.size(); i++)
 	{
 		vl.clear();
@@ -650,9 +708,9 @@ void rule::gen_bubbleless_minterms()
 		{
 			if (net->T[i].index(uid, 1) != 0)
 			{
-				ia = net->input_nodes(net->trans_id(i));
+				ia = net->prev(petri_index(i, false));
 				for (j = 0, t = 1; j < (int)ia.size(); j++)
-					t = t & net->S[ia[j]].negative;
+					t = t & net->at(ia[j]).negative;
 
 				t = t.hide(vl);
 				guards[1] = guards[1] | t;
@@ -660,9 +718,9 @@ void rule::gen_bubbleless_minterms()
 
 			if (net->T[i].index(uid, 0) != 0)
 			{
-				ia = net->input_nodes(net->trans_id(i));
+				ia = net->prev(petri_index(i, false));
 				for (j = 0, t = 1; j < (int)ia.size(); j++)
-					t = t & net->S[ia[j]].positive;
+					t = t & net->at(ia[j]).positive;
 
 				t = t.hide(vl);
 				guards[0] = guards[0] | t;
@@ -671,12 +729,12 @@ void rule::gen_bubbleless_minterms()
 	}
 }
 
-logic &rule::up()
+canonical &rule::up()
 {
 	return guards[1];
 }
 
-logic &rule::down()
+canonical &rule::down()
 {
 	return guards[0];
 }
@@ -689,13 +747,13 @@ bool rule::is_combinational()
 
 void rule::invert()
 {
-	logic temp = guards[0];
+	canonical temp = guards[0];
 	guards[0] = guards[1];
 	guards[1] = temp;
 	temp = explicit_guards[0];
 	explicit_guards[0] = explicit_guards[1];
 	explicit_guards[1] = temp;
-	svector<int> tempimp = implicants[0];
+	svector<petri_index> tempimp = implicants[0];
 	implicants[0] = implicants[1];
 	implicants[1] = tempimp;
 }
@@ -705,14 +763,14 @@ void rule::invert()
 //guards[0] left -> guards[0] right-
 void rule::print(ostream &os, sstring prefix)
 {
-	svector<sstring> names = vars->get_names();
+	svector<sstring> names = net->vars->get_names();
 	for (int i = 0; i < (int)names.size(); i++)
 		names[i] = prefix + names[i];
 
 	if (guards[1] != -1)
-		os << guards[1].print_with_quotes(vars, prefix) << " -> \"" << names[uid] << "\"+" << endl;
+		os << guards[1].print_with_quotes(net->vars, prefix) << " -> \"" << names[uid] << "\"+" << endl;
 	if (guards[0] != -1)
-		os << guards[0].print_with_quotes(vars, prefix) << " -> \"" << names[uid] << "\"-" << endl;
+		os << guards[0].print_with_quotes(net->vars, prefix) << " -> \"" << names[uid] << "\"-" << endl;
 }
 
 //Print the rule in the following format:
@@ -720,11 +778,11 @@ void rule::print(ostream &os, sstring prefix)
 //guards[0] left -> guards[0] right-
 ostream &operator<<(ostream &os, rule r)
 {
-	svector<sstring> names = r.vars->get_names();
+	svector<sstring> names = r.net->vars->get_names();
 	if (r.guards[1] != -1)
-		os << r.guards[1].print_with_quotes(r.vars) << " -> \"" << names[r.uid] << "\"+" << endl;
+		os << r.guards[1].print_with_quotes(r.net->vars) << " -> \"" << names[r.uid] << "\"+" << endl;
 	if (r.guards[0] != -1)
-		os << r.guards[0].print_with_quotes(r.vars) << " -> \"" << names[r.uid] << "\"-" << endl;
+		os << r.guards[0].print_with_quotes(r.net->vars) << " -> \"" << names[r.uid] << "\"-" << endl;
 
     return os;
 }

@@ -8,187 +8,143 @@
 #include "program_counter.h"
 #include "petri.h"
 #include "variable_space.h"
+#include <random>
 
-umap::umap()
+program_counter::program_counter()
+{
+	net = NULL;
+	done = false;
+	elaborate = false;
+}
+
+program_counter::program_counter(string name, bool elaborate, petri_index index, petri_net *net)
+{
+	this->name = name;
+	this->net = net;
+	this->index = index;
+	if (net->vars->reset.terms.size() > 0)
+		this->state = net->vars->reset.terms.front();
+	this->done = false;
+	this->elaborate = elaborate;
+}
+
+program_counter::~program_counter()
 {
 
 }
 
-umap::umap(const umap &um)
+bool program_counter::is_active()
 {
-	arcs = um.arcs;
-	begin = um.begin;
-	end = um.end;
-	tids = um.tids;
-	sids = um.sids;
-	iac = um.iac;
+	return net->at(index).active;
 }
 
-umap::~umap()
+bool program_counter::is_active(petri_index i)
 {
-
+	return net->at(i).active;
 }
 
-list<uarc> umap::input_arcs(unode n)
+bool program_counter::is_satisfied()
 {
-	list<uarc> result;
-	for (list<uarc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
-		if (arc->second == n)
-			result.push_back(*arc);
-	return result;
-}
-
-list<uarc> umap::output_arcs(unode n)
-{
-	list<uarc> result;
-	for (list<uarc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
-		if (arc->first == n)
-			result.push_back(*arc);
-	return result;
-}
-
-list<unode> umap::input_nodes(unode n)
-{
-	list<unode> result;
-	for (list<uarc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
-		if (arc->second == n)
-			result.push_back(arc->first);
-	return result;
-}
-
-list<unode> umap::output_nodes(unode n)
-{
-	list<unode> result;
-	for (list<uarc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
-		if (arc->first == n)
-			result.push_back(arc->second);
-	return result;
-}
-
-bool umap::path_contains(unode n)
-{
-	for (list<uarc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
-		if (arc->first == n || arc->second == n)
+	for (svector<minterm>::iterator term = net->at(index).index.terms.begin(); term != net->at(index).index.terms.end(); term++)
+		if ((*term & state) != 0)
 			return true;
+
 	return false;
 }
 
-int umap::nid(int i)
+bool program_counter::is_satisfied(petri_index i)
 {
-	if (i > 0)
-		return sids[i]++;
-	else
-	{
-		i &= 0x7FFFFFFF;
-		if (tids[i].second < iac[i])
-		{
-			tids[i].second++;
-			return tids[i].first;
-		}
-		else
-		{
-			tids[i].second = 0;
-			return tids[i].first++;
-		}
-	}
+	for (svector<minterm>::iterator term = net->at(i).index.terms.begin(); term != net->at(i).index.terms.end(); term++)
+		if ((*term & state) != 0)
+			return true;
+
+	return false;
 }
 
-umap &umap::operator=(umap um)
+bool program_counter::next_has_active_or_satisfied()
 {
-	arcs = um.arcs;
-	begin = um.begin;
-	end = um.end;
-	tids = um.tids;
-	sids = um.sids;
-	iac = um.iac;
-	return *this;
+	for (int i = 0; i < net->arcs.size(); i++)
+		if (net->arcs[i].first == index && (net->at(net->arcs[i].second).active || is_satisfied(net->arcs[i].second)))
+			return true;
+
+	return false;
+}
+
+svector<petri_index> program_counter::output_nodes()
+{
+	return net->next(index);
+}
+
+svector<petri_index> program_counter::input_nodes()
+{
+	return net->prev(index);
+}
+
+canonical &program_counter::predicate()
+{
+	return net->at(index).index;
+}
+
+void program_counter::apply(minterm term)
+{
+	state |= (state & term).xoutnulls();
+}
+
+void program_counter::set(minterm term)
+{
+	state = (state & term).xoutnulls();
+}
+
+bool operator==(program_counter p1, program_counter p2)
+{
+	return p1.name == p2.name && p1.net == p2.net && p1.index == p2.index;
+}
+
+remote_petri_index::remote_petri_index()
+{
+
+}
+
+remote_petri_index::remote_petri_index(int idx, int iter, bool place) : petri_index(idx, place)
+{
+	iteration = iter;
+}
+
+remote_petri_index::remote_petri_index(petri_index i, int iter) : petri_index(i)
+{
+	iteration = iter;
+}
+
+remote_petri_index::~remote_petri_index()
+{
+
+}
+
+bool operator==(remote_petri_index i1, remote_petri_index i2)
+{
+	return (i1.data == i2.data && i1.iteration == i2.iteration);
 }
 
 remote_program_counter::remote_program_counter()
 {
-	this->name = "";
-	this->net = NULL;
+	net = NULL;
 }
 
-remote_program_counter::remote_program_counter(const remote_program_counter &pc)
+remote_program_counter::remote_program_counter(string name, petri_net *net)
 {
-	name = pc.name;
-	net = pc.net;
-	forward_factors = pc.forward_factors;
-	reverse_factors = pc.reverse_factors;
-	hidden_factors = pc.hidden_factors;
-	index = pc.index;
-}
+	this->place_iteration.resize(net->S.size(), 0);
+	this->trans_iteration.resize(net->T.size(), pair<int, int>(0, 0));
+	this->input_size.resize(net->T.size(), 0);
+	for (petri_index i(0, false); i < net->T.size(); i++)
+		this->input_size[i.idx()] = net->incoming(i).size();
 
-remote_program_counter::remote_program_counter(string name, petri *from, petri *to)
-{
 	this->name = name;
-	this->net = to;
-
-	index.sids.resize(net->S.size(), 0);
-	index.tids.resize(net->T.size(), pair<int, int>(0, 0));
-	index.iac.resize(net->T.size(), 0);
-	for (int i = 0; i < net->T.size(); i++)
-		index.iac[i] = net->input_arcs(net->trans_id(i)).size();
-
-	for (svector<int>::iterator i = net->M0.begin(); i != net->M0.end(); i++)
-	{
-		int id = index.nid(*i);
-		index.begin.push_back(unode(*i, id));
-		index.end.push_back(unode(*i, id));
-	}
-	// translation
-	for (smap<sstring, variable>::iterator vi = from->vars->global.begin(); vi != from->vars->global.end(); vi++)
-	{
-		if (name.length() == 0)
-		{
-			if (!vi->second.driven)
-				hidden_factors.push_back(vi->second.uid);
-
-			int uid = net->vars->get_uid(vi->second.name);
-
-			if (uid != -1)
-			{
-				forward_factors.push_back(pair<int, int>(vi->second.uid, uid));
-				reverse_factors.push_back(pair<int, int>(forward_factors.back().second, forward_factors.back().first));
-			}
-		}
-		else if (vi->second.name.find(name) != vi->second.name.npos)
-		{
-			if (!vi->second.driven)
-				hidden_factors.push_back(vi->second.uid);
-
-			int uid = net->vars->get_uid(vi->second.name.substr(name.length()+1));
-
-			if (uid != -1)
-			{
-				forward_factors.push_back(pair<int, int>(vi->second.uid, uid));
-				reverse_factors.push_back(pair<int, int>(forward_factors.back().second, forward_factors.back().first));
-			}
-		}
-		else
-			hidden_factors.push_back(vi->second.uid);
-	}
-}
-
-remote_program_counter::remote_program_counter(int index, petri *net)
-{
-	this->name = "this";
 	this->net = net;
-	this->index.sids.resize(net->S.size(), 0);
-	this->index.tids.resize(net->T.size(), pair<int, int>(0, 0));
-	this->index.iac.resize(net->T.size(), 0);
-	for (int i = 0; i < net->T.size(); i++)
-		this->index.iac[i] = net->input_arcs(net->trans_id(i)).size();
-
-	int id = this->index.nid(index);
-	this->index.begin.push_back(unode(index, id));
-	this->index.end.push_back(unode(index, id));
-
-	for (smap<sstring, variable>::iterator vi = net->vars->global.begin(); vi != net->vars->global.end(); vi++)
+	for (int i = 0; i < net->M0.size(); i++)
 	{
-		forward_factors.push_back(pair<int, int>(vi->second.uid, vi->second.uid));
-		reverse_factors.push_back(pair<int, int>(vi->second.uid, vi->second.uid));
+		int iteration = nid(net->M0[i]);
+		this->begin.push_back(remote_petri_index(net->M0[i], iteration));
+		this->end.push_back(remote_petri_index(net->M0[i], iteration));
 	}
 }
 
@@ -197,155 +153,157 @@ remote_program_counter::~remote_program_counter()
 
 }
 
-logic &remote_program_counter::net_index(int i)
+svector<remote_petri_arc> remote_program_counter::input_arcs(remote_petri_index n)
 {
-	return (*net)[i].index;
+	svector<remote_petri_arc> result;
+	for (svector<remote_petri_arc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
+		if (arc->second == n)
+			result.push_back(*arc);
+	return result;
 }
 
-bool remote_program_counter::is_place(int i)
+svector<remote_petri_arc> remote_program_counter::output_arcs(remote_petri_index n)
 {
-	return net->is_place(i);
+	svector<remote_petri_arc> result;
+	for (svector<remote_petri_arc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
+		if (arc->first == n)
+			result.push_back(*arc);
+	return result;
 }
 
-bool remote_program_counter::is_trans(int i)
+svector<remote_petri_index> remote_program_counter::input_nodes(remote_petri_index n)
 {
-	return net->is_trans(i);
+	svector<remote_petri_index> result;
+	for (svector<remote_petri_arc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
+		if (arc->second == n)
+			result.push_back(arc->first);
+	return result;
 }
 
-bool remote_program_counter::is_active(int i)
+svector<remote_petri_index> remote_program_counter::output_nodes(remote_petri_index n)
 {
-	return (*net)[i].active;
+	svector<remote_petri_index> result;
+	for (svector<remote_petri_arc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
+		if (arc->first == n)
+			result.push_back(arc->second);
+	return result;
 }
 
-bool remote_program_counter::is_satisfied(int i, logic s)
+bool remote_program_counter::is_active(petri_index i)
 {
-	return !is_mutex(&(*net)[i].index, &s);
+	return net->at(i).active;
 }
 
-bool remote_program_counter::is_vacuous(int i, logic s)
+bool remote_program_counter::is_satisfied(petri_index i, minterm state)
 {
-	logic temp = ~(*net)[i].index;
-	return is_mutex(&temp, &s);
+	for (svector<minterm>::iterator term = net->at(i).index.terms.begin(); term != net->at(i).index.terms.end(); term++)
+		if ((*term & state) != 0)
+			return true;
+
+	return false;
 }
 
-bool remote_program_counter::is_one(int i)
+bool remote_program_counter::is_vacuous(petri_index i, minterm state)
 {
-	return ((*net)[i].index == 1);
+	canonical temp = ~net->at(i).index;
+	return is_mutex(&temp, &state);
 }
 
-void remote_program_counter::roll_to(unode idx)
+bool remote_program_counter::next_has_active_or_satisfied(remote_petri_index i, minterm state, svector<petri_index> &outgoing)
 {
-	list<unode> iter(1, idx);
+	canonical wait = waits(i);
+	for (int j = 0; j < net->arcs.size(); j++)
+		if (net->arcs[j].first == i && (net->at(net->arcs[j].second).active || (is_satisfied(net->arcs[j].second, state) && wait != 0)))
+			outgoing.push_back(net->arcs[j].second);
+	return outgoing.size() > 0;
+}
 
-	cout << "<";
-	for (list<unode>::iterator n = index.begin.begin(); n != index.begin.end(); n++)
-		cout << net->node_name(n->first) << "." << n->second << " ";
-	cout << ">(";
-	for (list<uarc>::iterator arc = index.arcs.begin(); arc != index.arcs.end(); arc++)
-		cout << net->node_name(arc->first.first) << "." << arc->first.second << "->" << net->node_name(arc->second.first) << "." << arc->second.second << " ";
-	cout << ")<";
-	for (list<unode>::iterator n = index.end.begin(); n != index.end.end(); n++)
-		cout << net->node_name(n->first) << "." << n->second << " ";
-	cout << ">" << endl;
+bool remote_program_counter::is_one(petri_index i)
+{
+	return (net->at(i).index == 1);
+}
 
-	for (list<unode>::iterator n = iter.begin(); n != iter.end(); n = iter.erase(n))
+int remote_program_counter::nid(petri_index idx)
+{
+	if (idx.is_place())
+		return place_iteration[idx.idx()]++;
+	else
 	{
-		for (list<unode>::iterator i = index.begin.begin(); i != index.begin.end();)
+		int i = idx.idx();
+		if (trans_iteration[i].second >= input_size[i])
 		{
-			if (*i == *n)
-				i = index.begin.erase(i);
-			else
-				i++;
+			trans_iteration[i].second = 0;
+			trans_iteration[i].first++;
 		}
 
-		for (list<uarc>::iterator a = index.arcs.begin(); a != index.arcs.end();)
-		{
-			if (a->first == *n)
-				index.begin.push_back(a->first);
-			if (a->second == *n)
-			{
-				iter.push_back(a->first);
-				a = index.arcs.erase(a);
-			}
-			else
-				a++;
-		}
+		trans_iteration[i].second++;
+		return trans_iteration[i].first;
 	}
-
-	cout << "<";
-	for (list<unode>::iterator n = index.begin.begin(); n != index.begin.end(); n++)
-		cout << net->node_name(n->first) << "." << n->second << " ";
-	cout << ">(";
-	for (list<uarc>::iterator arc = index.arcs.begin(); arc != index.arcs.end(); arc++)
-		cout << net->node_name(arc->first.first) << "." << arc->first.second << "->" << net->node_name(arc->second.first) << "." << arc->second.second << " ";
-	cout << ")<";
-	for (list<unode>::iterator n = index.end.begin(); n != index.end.end(); n++)
-		cout << net->node_name(n->first) << "." << n->second << " ";
-	cout << ">" << endl;
 }
 
-int remote_program_counter::count(unode n)
+int remote_program_counter::count(int n)
 {
-	int total = 0;
-	for (list<unode>::iterator j = index.end.begin(); j != index.end.end(); j++)
+	int total = 1;
+	for (int j = n+1; j < end.size(); j++)
 	{
-		cout << "\t" << net->node_name(j->first) << "." << j->second << " / " << net->node_name(n.first) << "." << n.second << endl;
-		if (*j == n)
+		if (end[j] == end[n])
 			total++;
 	}
 	return total;
 }
 
+void remote_program_counter::merge(int n)
+{
+	for (int j = n+1; j < end.size();)
+	{
+		if (end[j] == end[n])
+			end.erase(end.begin() + j);
+		else
+			j++;
+	}
+}
+
 minterm remote_program_counter::firings()
 {
 	minterm result;
-	list<int> firing_nodes;
-	for (list<uarc>::iterator i = index.arcs.begin(); i != index.arcs.end(); i++)
+	list<petri_index> firing_nodes;
+	for (svector<remote_petri_arc>::iterator i = arcs.begin(); i != arcs.end(); i++)
 	{
-		if (is_trans(i->second.first) && is_active(i->second.first))
-			firing_nodes.push_back(i->second.first);
-		else if (is_trans(i->first.first) && is_active(i->first.first))
-			firing_nodes.push_back(i->first.first);
+		if (i->second.is_trans() && net->at(i->second).active)
+			firing_nodes.push_back(i->second);
+		else if (i->first.is_trans() && net->at(i->first).active)
+			firing_nodes.push_back(i->first);
 	}
 
 	firing_nodes.sort();
 	firing_nodes.unique();
 
-	for (list<int>::iterator i = firing_nodes.begin(); i != firing_nodes.end(); i++)
-		for (svector<minterm>::iterator j = net_index(*i).terms.begin(); j != net_index(*i).terms.end(); j++)
+	for (list<petri_index>::iterator i = firing_nodes.begin(); i != firing_nodes.end(); i++)
+		for (svector<minterm>::iterator j = net->at(*i).index.terms.begin(); j != net->at(*i).index.terms.end(); j++)
 			result &= *j;
 
 	return result;
 }
 
-logic remote_program_counter::waits(unode n)
+canonical remote_program_counter::waits(remote_petri_index n)
 {
-	list<unode> iter(1, n);
-	list<int> waiting_nodes;
-	for (list<unode>::iterator end = iter.begin(); end != iter.end(); end = iter.erase(end))
+	list<remote_petri_index> iter(1, n);
+	list<petri_index> waiting_nodes;
+	for (list<remote_petri_index>::iterator end = iter.begin(); end != iter.end(); end = iter.erase(end))
 	{
-		if (is_trans(end->first) && !is_active(end->first))
-			waiting_nodes.push_back(end->first);
+		if (end->is_trans() && !net->at(*end).active)
+			waiting_nodes.push_back(*end);
 
-		list<unode> inputs = index.input_nodes(*end);
+		svector<remote_petri_index> inputs = input_nodes(*end);
 		iter.insert(iter.end(), inputs.begin(), inputs.end());
 	}
 
 	waiting_nodes.sort();
 	waiting_nodes.unique();
 
-	logic result;
-	bool set = false;
-	for (list<int>::iterator i = waiting_nodes.begin(); i != waiting_nodes.end(); i++)
-	{
-		if (!set)
-		{
-			result = net_index(*i);
-			set = true;
-		}
-		else
-			result &= net_index(*i);
-	}
+	canonical result(1);
+	for (list<petri_index>::iterator i = waiting_nodes.begin(); i != waiting_nodes.end(); i++)
+		result &= net->at(*i).index;
 
 	return result;
 }
@@ -354,698 +312,35 @@ remote_program_counter &remote_program_counter::operator=(remote_program_counter
 {
 	name = pc.name;
 	net = pc.net;
-	forward_factors = pc.forward_factors;
-	reverse_factors = pc.reverse_factors;
-	hidden_factors = pc.hidden_factors;
-	index = pc.index;
+	begin = pc.begin;
+	end = pc.end;
+	arcs = pc.arcs;
+	place_iteration = pc.place_iteration;
+	trans_iteration = pc.trans_iteration;
+	input_size = pc.input_size;
 	return *this;
 }
 
-bool operator==(remote_program_counter pc1, remote_program_counter pc2)
+ostream &operator<<(ostream &os, remote_petri_index i)
 {
-	if (pc1.name != pc2.name || pc1.net != pc2.net)
-		return false;
-
-	pc1.index.arcs.sort();
-	pc2.index.arcs.sort();
-
-	list<uarc>::iterator a1, a2;
-	for (a1 = pc1.index.arcs.begin(), a2 = pc2.index.arcs.begin(); a1 != pc1.index.arcs.end() && a2 != pc2.index.arcs.end(); a1++, a2++)
-		if (a1->first.first != a2->first.first || a1->second.first != a2->second.first)
-			return false;
-
-	if (a1 != pc1.index.arcs.end() || a2 != pc2.index.arcs.end())
-		return false;
-
-	pc1.index.begin.sort();
-	pc2.index.begin.sort();
-
-	list<unode>::iterator b1, b2;
-	for (b1 = pc1.index.begin.begin(), b2 = pc2.index.begin.begin(); b1 != pc1.index.begin.end() && b2 != pc2.index.begin.end(); b1++, b2++)
-		if (b1->first != b2->first)
-			return false;
-
-	if (b1 != pc1.index.begin.end() || b2 != pc2.index.begin.end())
-		return false;
-
-	pc1.index.end.sort();
-	pc2.index.end.sort();
-
-	list<unode>::iterator e1, e2;
-
-	for (e1 = pc1.index.end.begin(), e2 = pc2.index.end.begin(); e1 != pc1.index.end.end() && e2 != pc2.index.end.end(); e1++, e2++)
-		if (e1->first != e2->first)
-			return false;
-
-	if (e1 != pc1.index.end.end() || e2 != pc2.index.end.end())
-		return false;
-
-	return true;
-}
-
-program_environment::program_environment()
-{
-}
-
-program_environment::program_environment(const remote_program_counter &pc)
-{
-	pcs.push_back(pc);
-}
-
-program_environment::program_environment(const program_environment &env)
-{
-	pcs.insert(pcs.end(), env.pcs.begin(), env.pcs.end());
-}
-
-program_environment::~program_environment()
-{
-}
-
-minterm program_environment::firings()
-{
-	minterm result;
-	for (list<remote_program_counter>::iterator pc = pcs.begin(); pc != pcs.end(); pc++)
-	{
-		list<int> firing_nodes;
-		for (list<uarc>::iterator i = pc->index.arcs.begin(); i != pc->index.arcs.end(); i++)
-		{
-			if (pc->is_trans(i->second.first) && pc->is_active(i->second.first))
-				firing_nodes.push_back(i->second.first);
-			else if (pc->is_trans(i->first.first) && pc->is_active(i->first.first))
-				firing_nodes.push_back(i->first.first);
-		}
-
-		firing_nodes.sort();
-		firing_nodes.unique();
-
-		for (list<int>::iterator i = firing_nodes.begin(); i != firing_nodes.end(); i++)
-			for (svector<minterm>::iterator j = pc->net_index(*i).terms.begin(); j != pc->net_index(*i).terms.end(); j++)
-				result &= j->refactor(pc->reverse_factors);
-
-		firing_nodes.clear();
-	}
-	return result;
-}
-
-program_environment &program_environment::operator=(program_environment env)
-{
-	pcs = env.pcs;
-	return *this;
-}
-
-bool operator==(program_environment env1, program_environment env2)
-{
-	if (env1.pcs.size() != env2.pcs.size())
-		return false;
-
-	svector<int> mapping(env1.pcs.size(), -1);
-
-	int i = 0;
-	for (list<remote_program_counter>::iterator pc1 = env1.pcs.begin(); pc1 != env1.pcs.end(); pc1++)
-	{
-		int j = 0;
-		for (list<remote_program_counter>::iterator pc2 = env2.pcs.begin(); pc2 != env2.pcs.end(); pc2++)
-		{
-			if (mapping.find(j) == mapping.end() && *pc1 == *pc2)
-				mapping[i] = j;
-
-			j++;
-		}
-
-		i++;
-	}
-
-	if (mapping.find(-1) != mapping.end())
-		return false;
-
-	return true;
-}
-
-program_counter::program_counter()
-{
-	net = NULL;
-	index = 0;
-	last = 0;
-	waiting = false;
-}
-
-program_counter::program_counter(const program_counter &pc)
-{
-	last = pc.last;
-	index = pc.index;
-	net = pc.net;
-	waiting = pc.waiting;
-	envs = pc.envs;
-	splits.clear();
-	for (list<pair<pair<string, petri*>, list<pair<list<program_environment>::iterator, unode> > > >::const_iterator pc_split = pc.splits.begin(); pc_split != pc.splits.end(); pc_split++)
-	{
-		list<pair<list<program_environment>::iterator, unode> > split_environments;
-		for (list<pair<list<program_environment>::iterator, unode> >::const_iterator pc_prgm = pc_split->second.begin(); pc_prgm != pc_split->second.end(); pc_prgm++)
-		{
-			list<program_environment>::iterator env;
-			list<program_environment>::const_iterator pc_env;
-			for (env = envs.begin(), pc_env = pc.envs.begin(); pc_env != pc.envs.end() && pc_env != pc_prgm->first; pc_env++, env++);
-			split_environments.push_back(pair<list<program_environment>::iterator, unode>(env, pc_prgm->second));
-		}
-
-		splits.push_back(pair<pair<string, petri*>, list<pair<list<program_environment>::iterator, unode> > >(pc_split->first, split_environments));
-	}
-}
-
-program_counter::program_counter(int index, petri *net)
-{
-	this->last = index;
-	this->index = index;
-	this->net = net;
-	this->waiting = false;
-}
-
-program_counter::~program_counter()
-{
-
-}
-
-bool program_counter::is_trans()
-{
-	return net->is_trans(index);
-}
-
-bool program_counter::is_place()
-{
-	return net->is_place(index);
-}
-
-bool program_counter::is_active()
-{
-	return (*net)[index].active;
-}
-
-string program_counter::node_name()
-{
-	return net->node_name(index);
-}
-
-bool program_counter::end_is_ready(logic s, list<program_environment>::iterator &env, list<remote_program_counter>::iterator &pc, list<unode>::iterator &idx, logic &state)
-{
-	while (env != envs.end() && env->pcs.empty())
-		env = envs.erase(env);
-
-	while (env != envs.end())
-	{
-		while (pc != env->pcs.end() && pc->index.end.empty())
-			pc = env->pcs.erase(pc);
-
-		while (pc != env->pcs.end())
-		{
-			state = mute(s).hide(pc->hidden_factors).refactor(pc->forward_factors);
-
-			while (idx != pc->index.end.end())
-			{
-				if (pc->is_place(idx->first))
-					return true;
-				else if ((pc->is_trans(idx->first) && pc->is_active(idx->first)) || (pc->is_satisfied(idx->first, state) && pc->waits(*idx) != 0))
-				{
-					// handle parallel merge
-					svector<int> ia = pc->net->input_nodes(idx->first);
-
-					if (pc->count(*idx) == ia.size())
-					{
-						for (list<unode>::iterator j = pc->index.end.begin(); j != pc->index.end.end();)
-						{
-							if (j != idx && j->first == idx->first)
-							{
-								idx->second &= j->second;
-								j = pc->index.end.erase(j);
-							}
-							else
-								j++;
-						}
-
-						return true;
-					}
-				}
-
-				idx++;
-			}
-
-			pc++;
-
-			while (pc != env->pcs.end() && pc->index.end.empty())
-				pc = env->pcs.erase(pc);
-
-			if (pc != env->pcs.end())
-				idx = pc->index.end.begin();
-		}
-
-		env++;
-
-		while (env != envs.end() && env->pcs.empty())
-			env = envs.erase(env);
-
-		if (env != envs.end())
-		{
-			pc = env->pcs.begin();
-			idx = pc->index.end.begin();
-		}
-	}
-
-	return false;
-}
-
-bool program_counter::begin_is_ready(logic s, list<program_environment>::iterator &env, list<remote_program_counter>::iterator &pc, list<unode>::iterator &idx, list<pair<pair<string, petri*>, list<pair<list<program_environment>::iterator, unode> > > >::iterator &split, list<pair<list<program_environment>::iterator, unode> >::iterator &prgm, logic &state)
-{
-	split = splits.end();
-
-	while (env != envs.end() && env->pcs.empty())
-		env = envs.erase(env);
-
-	while (env != envs.end())
-	{
-		while (pc != env->pcs.end() && pc->index.begin.empty())
-			pc = env->pcs.erase(pc);
-
-		while (pc != env->pcs.end())
-		{
-			state = mute(s).refactor(pc->forward_factors);
-
-			while (idx != pc->index.begin.end())
-			{
-				if (pc->is_place(idx->first) || (!pc->is_active(idx->first) && pc->is_vacuous(idx->first, state)))
-				{
-					bool wall = false;
-					for (list<unode>::iterator j = pc->index.end.begin(); j != pc->index.end.end() && !wall; j++)
-						if (*idx == *j)
-							wall = true;
-
-					if (!wall)
-					{
-						for (split = splits.begin(); split != splits.end(); split++)
-							if (split->first.first == pc->name && split->first.second == pc->net && (prgm = find(split->second.begin(), split->second.end(), pair<list<program_environment>::iterator, unode>(env, *idx))) != split->second.end())
-								return true;
-
-						return true;
-					}
-				}
-
-				list<unode> iter(1, *idx);
-
-				for (list<unode>::iterator n = iter.begin(); n != iter.end(); n = iter.erase(n))
-				{
-					if (pc->is_trans(n->first) && pc->is_active(n->first) && !pc->is_one(n->first) && pc->is_vacuous(n->first, state))
-					{
-						bool wall = false;
-						for (list<unode>::iterator j = pc->index.end.begin(); j != pc->index.end.end() && !wall; j++)
-							if (*n == *j)
-								wall = true;
-
-						if (!wall)
-						{
-							for (split = splits.begin(); split != splits.end(); split++)
-								if (split->first.first == pc->name && split->first.second == pc->net && (prgm = find(split->second.begin(), split->second.end(), pair<list<program_environment>::iterator, unode>(env, *idx))) != split->second.end())
-									return true;
-
-							return true;
-						}
-					}
-
-					if (pc->is_place(n->first) || pc->is_active(n->first) || pc->is_vacuous(n->first, state))
-						for (list<uarc>::iterator a = pc->index.arcs.begin(); a != pc->index.arcs.end(); a++)
-							if (a->first == *n)
-								iter.push_back(a->second);
-				}
-
-				idx++;
-			}
-
-			pc++;
-
-			while (pc != env->pcs.end() && pc->index.begin.empty())
-				pc = env->pcs.erase(pc);
-
-			if (pc != env->pcs.end())
-				idx = pc->index.begin.begin();
-		}
-
-		env++;
-
-		while (env != envs.end() && env->pcs.empty())
-			env = envs.erase(env);
-
-		if (env != envs.end())
-		{
-			pc = env->pcs.begin();
-			idx = pc->index.begin.begin();
-		}
-	}
-
-	return false;
-}
-
-void program_counter::simulate(logic s)
-{
-	list<program_environment>::iterator env;
-	list<remote_program_counter>::iterator pc;
-	list<unode>::iterator begin_idx;
-	list<unode>::iterator end_idx;
-	list<pair<pair<string, petri*>, list<pair<list<program_environment>::iterator, unode> > > >::iterator split;
-	list<pair<list<program_environment>::iterator, unode> >::iterator this_prgm;
-
-	// Remove any Duplicate environments and program counters because they will behave the same
-	for (list<program_environment>::iterator e1 = envs.begin(); e1 != envs.end(); e1++)
-	{
-		for (list<program_environment>::iterator e2 = e1; e2 != envs.end();)
-		{
-			if (e1 != e2 && *e1 == *e2)
-				e2 = envs.erase(e2);
-			else
-				e2++;
-		}
-
-		for (list<remote_program_counter>::iterator pc1 = e1->pcs.begin(); pc1 != e1->pcs.end(); pc1++)
-		{
-			for (list<remote_program_counter>::iterator pc2 = pc1; pc2 != e1->pcs.end();)
-			{
-				if (pc1 != pc2 && *pc1 == *pc2)
-					pc2 = e1->pcs.erase(pc2);
-				else
-					pc2++;
-			}
-		}
-	}
-
-	bool done = false;
-	while (!done)
-	{
-		done = true;
-		bool changes = true;
-		env = envs.begin();
-		pc = env->pcs.begin();
-		end_idx = pc->index.end.begin();
-		while (changes)
-		{
-			changes = false;
-			logic state;
-			if (end_is_ready(s, env, pc, end_idx, state))
-			{
-				changes = true;
-				done = false;
-
-				svector<int> oa = pc->net->output_nodes(end_idx->first);
-				if (oa.size() == 0)
-				{
-					cerr << "Error: Remote net has an acyclic component at " << pc->net->node_name(end_idx->first) << "." << endl;
-					end_idx = pc->index.end.erase(end_idx);
-				}
-				else
-				{
-					unode split_location = *end_idx;
-					list<pair<list<program_environment>::iterator, unode> > split_environments;
-					for (int i = oa.size()-1; i >= 0; i--)
-					{
-						cout << "+" << pc->name << "." << pc->net->node_name(oa[i]) << "{" << pc->net_index(oa[i]).print(pc->net->vars) << "} ";
-						fflush(stdout);
-
-						list<program_environment>::iterator update_env;
-						list<remote_program_counter>::iterator update_pc, temp_pc;
-						list<unode>::iterator update_idx, temp_idx;
-
-						if (i != 0)
-						{
-							if (pc->is_place(end_idx->first))
-							{
-								envs.push_back(*env);
-								update_env = prev(envs.end());
-								for (update_pc = update_env->pcs.begin(), temp_pc = env->pcs.begin();
-									 temp_pc != pc; update_pc++, temp_pc++);
-								for (update_idx = update_pc->index.end.begin(), temp_idx = pc->index.end.begin();
-									 temp_idx != end_idx; update_idx++, temp_idx++);
-							}
-							else
-							{
-								update_env = env;
-								update_pc = pc;
-								update_pc->index.end.push_front(*end_idx);
-								update_idx = update_pc->index.end.begin();
-							}
-						}
-						else
-						{
-							update_env = env;
-							update_pc = pc;
-							update_idx = end_idx;
-						}
-
-						unode new_node(oa[i], update_pc->index.nid(oa[i]));
-						split_environments.push_back(pair<list<program_environment>::iterator, unode>(update_env, new_node));
-
-						update_pc->index.arcs.push_back(uarc(*update_idx, new_node));
-						*update_idx = new_node;
-					}
-
-					if (pc->is_place(split_location.first) && split_environments.size() > 1)
-						splits.push_back(pair<pair<string, petri*>, list<pair<list<program_environment>::iterator, unode> > >(pair<string, petri*>(pc->name, pc->net), split_environments));
-				}
-			}
-		}
-
-		changes = true;
-		env = envs.begin();
-		pc = env->pcs.begin();
-		begin_idx = pc->index.begin.begin();
-		while (changes)
-		{
-			changes = false;
-			logic state;
-			if (begin_is_ready(s, env, pc, begin_idx, split, this_prgm, state))
-			{
-				changes = true;
-				done = false;
-
-				list<unode> ia = pc->index.input_nodes(*begin_idx);
-				list<unode> oa = pc->index.output_nodes(*begin_idx);
-
-				if (oa.size() == 0)
-					begin_idx = pc->index.begin.erase(begin_idx);
-				else if (pc->is_trans(begin_idx->first) && !pc->is_active(begin_idx->first) && split != splits.end())
-				{
-					cout << endl << "LOOK " << split->second.size() << "{";
-					fflush(stdout);
-					for (list<pair<list<program_environment>::iterator, unode> >::iterator prgm = split->second.begin(); prgm != split->second.end(); )
-					{
-						bool delete_prgm = false;
-						for (list<remote_program_counter>::iterator prgm_pc = prgm->first->pcs.begin(); !delete_prgm && prgm_pc != prgm->first->pcs.end(); prgm_pc++)
-						{
-							if (prgm_pc->name == split->first.first && prgm_pc->net == split->first.second)
-							{
-								for (list<unode>::iterator prgm_idx = prgm_pc->index.end.begin(); !delete_prgm && prgm_idx != prgm_pc->index.end.end(); prgm_idx++)
-									if (*prgm_idx == prgm->second && !prgm_pc->is_satisfied(prgm->second.first, state))
-										delete_prgm = true;
-
-								if (!delete_prgm && prgm_pc->index.path_contains(prgm->second))
-								{
-									cout << "rolling " << prgm_pc->net->node_name(prgm->second.first) << endl;
-									// Roll the beginning forward until the conditional
-									prgm_pc->roll_to(prgm->second);
-									begin_idx = pc->index.begin.begin();
-								}
-							}
-						}
-
-						if (delete_prgm)
-						{
-							list<program_environment>::iterator delete_env = prgm->first;
-
-							// Loop through all splits and remove any reference to this environment
-							for (list<pair<pair<string, petri*>, list<pair<list<program_environment>::iterator, unode> > > >::iterator temp_split = splits.begin(); temp_split != splits.end(); temp_split++)
-							{
-								for (list<pair<list<program_environment>::iterator, unode> >::iterator temp_prgm = temp_split->second.begin(); temp_prgm != temp_split->second.end(); )
-								{
-									if (temp_prgm->first == prgm->first)
-									{
-										if (temp_split == split && temp_prgm == prgm)
-											prgm++;
-
-										temp_prgm = temp_split->second.erase(temp_prgm);
-									}
-									else
-										temp_prgm++;
-								}
-							}
-
-							envs.erase(delete_env);
-							env = envs.begin();
-							pc = env->pcs.begin();
-							begin_idx = pc->index.begin.begin();
-						}
-						else
-							prgm++;
-					}
-					cout << "}" << endl;
-
-					split = splits.erase(split);
-				}
-				else
-				{
-					for (list<unode>::iterator i = oa.begin(); i != oa.end(); i++)
-					{
-						cout << "-" << pc->name << "." << net->node_name(i->first) << " ";
-						fflush(stdout);
-						pc->index.begin.push_back(*i);
-					}
-
-					if (oa.size() > 0 || pc->index.end.size() == 0)
-					{
-						for (list<uarc>::iterator arc = pc->index.arcs.begin(); ia.size() == 0 && arc != pc->index.arcs.end(); )
-						{
-							if (arc->first == *begin_idx)
-								arc = pc->index.arcs.erase(arc);
-							else
-								arc++;
-						}
-
-						begin_idx = pc->index.begin.erase(begin_idx);
-					}
-					else
-					{
-						cerr << "Error! " << pc->index.end.size() << " " << pc->net->node_name(pc->index.end.begin()->first) << endl;
-						for (list<uarc>::iterator arc = pc->index.arcs.begin(); arc != pc->index.arcs.end(); arc++)
-							cout << "(" << pc->net->node_name(arc->first.first) << "." << arc->first.second << "->" << pc->net->node_name(arc->second.first) << "." << arc->second.second << ") ";
-						cout << endl;
-					}
-				}
-			}
-		}
-	}
-
-	cout << " {";
-	for (list<program_environment>::iterator env = envs.begin(); env != envs.end(); env++)
-	{
-		cout << "[";
-		for (list<remote_program_counter>::iterator rpc = env->pcs.begin(); rpc != env->pcs.end(); rpc++)
-		{
-			cout << "<";
-			for (list<unode>::iterator n = rpc->index.begin.begin(); n != rpc->index.begin.end(); n++)
-				cout << rpc->net->node_name(n->first) << "." << n->second << " ";
-			cout << ">(";
-			for (list<uarc>::iterator arc = rpc->index.arcs.begin(); arc != rpc->index.arcs.end(); arc++)
-				cout << rpc->net->node_name(arc->first.first) << "." << arc->first.second << "->" << rpc->net->node_name(arc->second.first) << "." << arc->second.second << " ";
-			cout << ")<";
-			for (list<unode>::iterator n = rpc->index.end.begin(); n != rpc->index.end.end(); n++)
-				cout << rpc->net->node_name(n->first) << "." << n->second << " ";
-			cout << ">";
-		}
-		cout << "]";
-	}
-	cout << "}";
-}
-
-logic program_counter::mute(logic s)
-{
-	logic firings;
-	// Since Binary AND is commutative, we don't need to traverse the graph.
-	for (list<program_environment>::iterator i = envs.begin(); i != envs.end(); i++)
-		firings.terms.push_back(i->firings());
-
-	if (firings.terms.size() == 0)
-		firings.terms.push_back(minterm());
-
-	logic result;
-	for (int i = 0; i < s.terms.size(); i++)
-		for (int j = 0; j < firings.terms.size(); j++)
-			result.terms.push_back((s.terms[i] & firings.terms[j]).xoutnulls() | s.terms[i]);
-
-	result.mccluskey();
-
-	return result;
-}
-
-int program_counter::count()
-{
-	cout << endl;
-	int total = 0x7FFFFFFF;
-	for (list<program_environment>::iterator env = envs.begin(); env != envs.end(); env++)
-	{
-		cout << "Env" << endl;
-		int num_ready = 0;
-		for (list<remote_program_counter>::iterator pc = env->pcs.begin(); pc != env->pcs.end(); pc++)
-		{
-			if (pc->net == net && pc->name == "this")
-				cout << pc->index.end.size() << " " << pc->count(unode(index, 0)) << endl;
-			if (pc->net == net && pc->name == "this" && pc->index.end.size() == 1 && pc->count(unode(index, 0)) == 1)
-				num_ready++;
-		}
-		if (total > num_ready)
-			total = num_ready;
-	}
-
-	if (total == 0x7FFFFFFF)
-		total = 0;
-
-	return  total;
-}
-
-void program_counter::merge()
-{
-	for (list<program_environment>::iterator env = envs.begin(); env != envs.end(); env++)
-		for (list<remote_program_counter>::iterator pc = env->pcs.begin(); pc != env->pcs.end(); pc++)
-			if (pc->net == net && pc->name == "this")
-				for (list<unode>::iterator idx = pc->index.end.begin(); idx != pc->index.end.end();)
-				{
-					if (idx->first == index)
-						idx = pc->index.end.erase(idx);
-					else
-						idx++;
-				}
-}
-
-program_counter &program_counter::operator=(program_counter pc)
-{
-	last = pc.last;
-	index = pc.index;
-	net = pc.net;
-	waiting = pc.waiting;
-	envs = pc.envs;
-	splits.clear();
-	for (list<pair<pair<string, petri*>, list<pair<list<program_environment>::iterator, unode> > > >::const_iterator pc_split = pc.splits.begin(); pc_split != pc.splits.end(); pc_split++)
-	{
-		list<pair<list<program_environment>::iterator, unode> > split_environments;
-		for (list<pair<list<program_environment>::iterator, unode> >::const_iterator pc_prgm = pc_split->second.begin(); pc_prgm != pc_split->second.end(); pc_prgm++)
-		{
-			list<program_environment>::iterator env;
-			list<program_environment>::const_iterator pc_env;
-			for (env = envs.begin(), pc_env = pc.envs.begin(); pc_env != pc.envs.end() && pc_env != pc_prgm->first; pc_env++, env++);
-			split_environments.push_back(pair<list<program_environment>::iterator, unode>(env, pc_prgm->second));
-		}
-
-		splits.push_back(pair<pair<string, petri*>, list<pair<list<program_environment>::iterator, unode> > >(pc_split->first, split_environments));
-	}
-	return *this;
+	os << i.name() << "." << i.iteration;
+	return os;
 }
 
 program_execution::program_execution()
 {
-	net = NULL;
-	done = false;
 	deadlock = false;
 }
 
-program_execution::program_execution(const program_execution &exe)
+program_execution::program_execution(const program_execution &exec)
 {
-	net = exe.net;
-	states = exe.states;
-	final = exe.final;
-	pcs = exe.pcs;
-	deadlock = exe.deadlock;
-	done = exe.done;
-}
-
-program_execution::program_execution(petri *net)
-{
-	this->net = net;
-	this->done = false;
-	this->deadlock = false;
-	this->states.resize(net->S.size(), logic());
-	this->final.resize(net->S.size(), logic());
+	deadlock = exec.deadlock;
+	pcs.reserve(exec.pcs.size());
+	rpcs.reserve(exec.rpcs.size());
+	for (int i = 0; i < exec.pcs.size(); i++)
+		pcs.push_back(exec.pcs[i]);
+	for (int i = 0; i < exec.rpcs.size(); i++)
+		rpcs.push_back(exec.rpcs[i]);
 }
 
 program_execution::~program_execution()
@@ -1053,269 +348,582 @@ program_execution::~program_execution()
 
 }
 
-int program_execution::count(list<program_counter>::iterator i)
+int program_execution::count(int pci)
 {
 	int total = 0;
-	int check = i->net->input_arcs(i->index).size();
-	for (list<program_counter>::iterator j = pcs.begin(); j != pcs.end(); j++)
-	{
-		cout << "LOOK " << j->count()+1 << "/" << check << endl;
-		if (j->index == i->index && j->count()+1 == check)
+	for (int pcj = 0; pcj < pcs.size(); pcj++)
+		if (pcs[pci] == pcs[pcj])
 			total++;
-	}
-
-	cout << "LOOK AGAIN " << total << "/" << check << endl;
 
 	return total;
 }
 
-void program_execution::merge(list<program_counter>::iterator i)
+int program_execution::merge(int pci)
 {
-	i->merge();
-
-	for (list<program_counter>::iterator pc = pcs.begin(); pc != pcs.end();)
+	for (int pcj = 0; pcj < pcs.size(); )
 	{
-		if (pc != i && pc->index == i->index)
+		if (pci != pcj && pcs[pci] == pcs[pcj])
 		{
-			pc->merge();
-			i->envs.insert(i->envs.end(), pc->envs.begin(), pc->envs.end());
-			pc = pcs.erase(pc);
+			pcs[pci].state &= pcs[pcj].state;
+			pcs.erase(pcs.begin() + pcj);
+			if (pcj < pci)
+				pci--;
 		}
 		else
-			pc++;
-	}
-}
-
-logic program_execution::calculate_state(list<program_counter>::iterator pc)
-{
-	if (net->is_place(pc->index))
-	{
-
-		svector<int> ip = pc->net->input_nodes(pc->last);
-
-		logic t;
-		for (int l = 0; l < ip.size(); l++)
-		{
-			if (l == 0)
-				t = states[ip[l]];
-			else
-				t &= states[ip[l]];
-		}
-
-		logic r;
-		if (pc->net->T[pc->net->index(pc->last)].active)
-			r = (t >> pc->net->T[pc->net->index(pc->last)].index);
-		else
-			r = (t & pc->net->T[pc->net->index(pc->last)].index);
-
-		pc->simulate(r);
-		r = pc->mute(r);
-
-		r &= pc->net->apply_debug(pc->index);
-
-		logic test = r & final[pc->index];
-
-		if (pcs.size() == 1 && (r & final[pc->index]) == r)
-			done = true;
-		else
-			final[pc->index] |= r;
-
-		return r;
-	}
-	else
-	{
-		svector<int> ip = pc->net->input_nodes(pc->index);
-
-		logic t;
-		for (int l = 0; l < ip.size(); l++)
-		{
-			if (l == 0)
-				t = states[ip[l]];
-			else
-				t &= states[ip[l]];
-		}
-
-		return t;
-	}
-}
-
-program_execution &program_execution::operator=(program_execution exe)
-{
-	net = exe.net;
-	states = exe.states;
-	final = exe.final;
-	pcs = exe.pcs;
-	deadlock = exe.deadlock;
-	done = exe.done;
-	return *this;
-}
-
-program_execution_space::program_execution_space()
-{
-}
-
-program_execution_space::~program_execution_space()
-{
-	execs.clear();
-}
-
-void program_execution_space::simulate()
-{
-	cout << endl;
-	final.clear();
-	for (list<program_execution>::iterator exec = execs.begin(); exec != execs.end(); exec++)
-	{
-		for (int i = 0; i < exec->states.size(); i++)
-			exec->states[i] = logic();
-
-		for (int i = 0; i < exec->net->M0.size(); i++)
-		{
-			exec->states[exec->net->M0[i]] = exec->net->vars->reset;
-			cout << exec->states[exec->net->M0[i]].print(exec->net->vars) << endl;
-		}
-
-		if (final.size() < exec->states.size())
-			final.resize(exec->states.size(), logic());
-
-		for (list<program_counter>::iterator pc = exec->pcs.begin(); pc != exec->pcs.end(); pc++)
-			for (list<program_environment>::iterator env = pc->envs.begin(); env != pc->envs.end(); env++)
-				for (list<remote_program_counter>::iterator rpc = env->pcs.begin(); rpc != env->pcs.end(); rpc++)
-					if (rpc->net != exec->net)
-						for (int i = 0; i < exec->net->M0.size(); i++)
-						{
-							exec->states[exec->net->M0[i]] &= rpc->net->vars->reset.refactor(rpc->reverse_factors);
-							cout << rpc->net->vars->reset.print(rpc->net->vars) << " " << rpc->net->vars->reset.refactor(rpc->reverse_factors).print(exec->net->vars) << " ";
-							for (svector<pair<int, int> >::iterator j = rpc->reverse_factors.begin(); j != rpc->reverse_factors.end(); j++)
-								cout << j->first << "->" << j->second << endl;
-							cout << exec->states[exec->net->M0[i]].print(exec->net->vars) << endl;
-						}
-
-		for (list<program_counter>::iterator pc = exec->pcs.begin(); pc != exec->pcs.end(); pc++)
-			pc->simulate(exec->states[pc->index]);
-
-		for (int i = 0; i < exec->net->M0.size(); i++)
-			for (list<program_counter>::iterator pc = exec->pcs.begin(); pc != exec->pcs.end(); pc++)
-				exec->states[exec->net->M0[i]] = pc->mute(exec->states[exec->net->M0[i]]);
-
-		for (int i = 0; i < exec->states.size(); i++)
-			exec->final[i] = exec->states[i];
+			pcj++;
 	}
 
-	for (list<program_execution>::iterator exec = execs.begin(); exec != execs.end();)
+	return pci;
+}
+
+bool program_execution::done()
+{
+	for (svector<program_counter>::iterator pci = pcs.begin(); pci != pcs.end(); pci++)
+		if (!pci->done && pci->elaborate)
+			return false;
+
+	return true;
+}
+
+void program_execution::init_pcs(string name, petri_net *net, bool elaborate)
+{
+	cout << "Initializing pc " << name << endl;
+	for (int k = 0; k < net->M0.size(); k++)
+		pcs.push_back(program_counter(name, elaborate, net->M0[k], net));
+}
+
+void program_execution::init_rpcs(string name, petri_net *net)
+{
+	cout << "Initializing rpc " << name << " ";
+	rpcs.push_back(remote_program_counter(name, net));
+	cout << rpcs.size() << endl;
+}
+
+void program_execution_space::duplicate_execution(program_execution *exec_in, program_execution **exec_out)
+{
+	execs.push_back(*exec_in);
+	*exec_out = &(*prev(execs.end()));
+}
+
+void program_execution_space::duplicate_counter(program_execution *exec_in, int pc_in, int &pc_out)
+{
+	exec_in->pcs.push_back(exec_in->pcs[pc_in]);
+	pc_out = exec_in->pcs.size()-1;
+}
+
+bool program_execution_space::remote_end_ready(program_execution *exec, int &rpc, int &idx, svector<petri_index> &outgoing)
+{
+	outgoing.clear();
+	while (rpc < exec->rpcs.size())
 	{
-		cout << "Start Execution" << endl;
-		while (!exec->done && !exec->deadlock)
+		minterm state;
+		for (int i = 0; i < exec->pcs.size(); i++)
+			state &= translate(exec->pcs[i].name, exec->pcs[i].net, exec->pcs[i].state, exec->rpcs[rpc].name, exec->rpcs[rpc].net);
+
+		while (idx < exec->rpcs[rpc].end.size())
 		{
-			cout << "{" << endl;
-			exec->deadlock = true;
-			for (list<program_counter>::iterator pc = exec->pcs.begin(); pc != exec->pcs.end();)
+			if (exec->rpcs[rpc].end[idx].is_trans() && exec->rpcs[rpc].input_size[exec->rpcs[rpc].end[idx].idx()] == 1)
 			{
-				cout << "\t[";
-				svector<int> ia = pc->net->input_nodes(pc->index);
-				svector<int> oa = pc->net->output_nodes(pc->index);
+				outgoing.merge(exec->rpcs[rpc].net->next(exec->rpcs[rpc].end[idx]));
+				return true;
+			}
+			else if (exec->rpcs[rpc].end[idx].is_trans() && exec->rpcs[rpc].count(idx) == exec->rpcs[rpc].input_size[exec->rpcs[rpc].end[idx].idx()])
+			{
+				exec->rpcs[rpc].merge(idx);
+				outgoing.merge(exec->rpcs[rpc].net->next(exec->rpcs[rpc].end[idx]));
+				return true;
+			}
+			else if (exec->rpcs[rpc].end[idx].is_place() && exec->rpcs[rpc].next_has_active_or_satisfied(exec->rpcs[rpc].end[idx], state, outgoing))
+				return true;
 
-				bool parallel_split = (oa.size() > 1 && pc->is_trans());
-				bool parallel_merge = (ia.size() > 1 && pc->is_trans());
-				bool conditional_split = (oa.size() > 1 && pc->is_place());
-				bool remove = false;
+			idx++;
+		}
 
-				pc->waiting = false;
-				if (parallel_merge)
+		rpc++;
+
+		while (rpc < exec->rpcs.size() && exec->rpcs[rpc].end.empty())
+			exec->rpcs.erase(exec->rpcs.begin() + rpc);
+
+		if (rpc < exec->rpcs.size())
+			idx = 0;
+	}
+
+	return false;
+}
+
+bool program_execution_space::remote_begin_ready(program_execution *exec, int &rpc, int &idx)
+{
+	while (rpc < exec->rpcs.size())
+	{
+		minterm state;
+		for (int i = 0; i < exec->pcs.size(); i++)
+			state &= translate(exec->pcs[i].name, exec->pcs[i].net, exec->pcs[i].state, exec->rpcs[rpc].name, exec->rpcs[rpc].net);
+
+		while (idx < exec->rpcs[rpc].begin.size())
+		{
+			if (exec->rpcs[rpc].begin[idx].is_place() || (!exec->rpcs[rpc].net->at(exec->rpcs[rpc].begin[idx]).active && exec->rpcs[rpc].is_vacuous(exec->rpcs[rpc].begin[idx], state)))
+			{
+				bool wall = false;
+				for (int j = 0; j != exec->rpcs[rpc].end.size() && !wall; j++)
+					if (exec->rpcs[rpc].begin[idx] == exec->rpcs[rpc].end[j])
+						wall = true;
+
+				if (!wall)
+					return true;
+			}
+
+			list<remote_petri_index> iter(1, exec->rpcs[rpc].begin[idx]);
+
+			for (list<remote_petri_index>::iterator n = iter.begin(); n != iter.end(); n = iter.erase(n))
+			{
+				if (n->is_trans() && exec->rpcs[rpc].net->at(*n).active && !exec->rpcs[rpc].is_one(*n) && exec->rpcs[rpc].is_vacuous(*n, state))
 				{
-					cout << "Parallel Merge ";
-					if (exec->count(pc) == ia.size())
-						exec->merge(pc);
-					else
-						pc->waiting = true;
+					bool wall = false;
+					for (int j = 0; j != exec->rpcs[rpc].end.size() && !wall; j++)
+						if (*n == exec->rpcs[rpc].end[j])
+							wall = true;
+
+					if (!wall)
+						return true;
 				}
 
-				/* Check to see if we an continue down this path yet. Yes if:
-				 * 	- This is a place
-				 * 	- This is an active transition
-				 * 	- This is a satisfied passive transition
-				 */
-				if (!pc->waiting && (pc->is_place() || pc->is_active() || !is_mutex(exec->calculate_state(pc), exec->net->T[exec->net->index(pc->index)].index)))
+				if (n->is_place() || exec->rpcs[rpc].net->at(*n).active || exec->rpcs[rpc].is_vacuous(*n, state))
+					for (svector<remote_petri_arc>::iterator a = exec->rpcs[rpc].arcs.begin(); a != exec->rpcs[rpc].arcs.end(); a++)
+						if (a->first == *n)
+							iter.push_back(a->second);
+			}
+
+			idx++;
+		}
+
+		rpc++;
+
+		while (rpc < exec->rpcs.size() && exec->rpcs[rpc].begin.empty())
+			exec->rpcs.erase(exec->rpcs.begin() + rpc);
+
+		if (rpc < exec->rpcs.size())
+			idx = 0;
+	}
+
+	return false;
+}
+
+void program_execution_space::full_elaborate()
+{
+	cout << "Elaborating" << endl;
+	execs.reserve(100);
+	translations.clear();
+
+	for (svector<program_execution>::iterator exec = execs.begin(); exec != execs.end(); exec++)
+	{
+		for (svector<program_counter>::iterator pc = exec->pcs.begin(); pc != exec->pcs.end(); pc++)
+		{
+			cout << "Reset ";
+			for (int i = 0; i < pc->net->M0.size(); i++)
+				cout << pc->net->M0[i] << " ";
+			cout << endl;
+			pc->net->print_dot(&cout, pc->name);
+			if (pc->elaborate && nets.find(pc->net) == nets.end())
+				nets.push_back(pc->net);
+			for (svector<program_counter>::iterator pcj = exec->pcs.begin(); pcj != exec->pcs.end(); pcj++)
+				if (pcj != pc && (pcj->net != pc->net || pcj->name != pc->name))
 				{
-					cout << pc->node_name();
-					if (pc->is_place())
-						cout << "{" << exec->states[pc->index].print(pc->net->vars) << "}";
+					gen_translation(pcj->name, pcj->net, pc->name, pc->net);
+					pc->set(translate(pcj->name, pcj->net, pcj->state, pc->name, pc->net));
+				}
+
+			for (svector<remote_program_counter>::iterator pcj = exec->rpcs.begin(); pcj != exec->rpcs.end(); pcj++)
+			{
+				gen_translation(pcj->name, pcj->net, pc->name, pc->net);
+				gen_translation(pc->name, pc->net, pcj->name, pcj->net);
+				pc->set(translate(pcj->name, pcj->net, pcj->net->vars->reset.terms.front(), pc->name, pc->net));
+			}
+		}
+
+		for (svector<remote_program_counter>::iterator pc = exec->rpcs.begin(); pc != exec->rpcs.end(); pc++)
+		{
+			cout << "Reset ";
+			for (int i = 0; i < pc->net->M0.size(); i++)
+				cout << pc->net->M0[i] << " ";
+			cout << endl;
+			pc->net->print_dot(&cout, pc->name);
+		}
+	}
+
+	for (svector<petri_net*>::iterator net = nets.begin(); net != nets.end(); net++)
+		for (int i = 0; i < (*net)->S.size(); i++)
+			(*net)->S[i].index = canonical(0);
+
+	int number_processed = 0;
+	int max_width = 0;
+	while (execs.size() > 0)
+	{
+		if (execs.size() > max_width)
+			max_width = execs.size();
+
+		program_execution current_execution = execs.back();
+		program_execution *exec = &current_execution;
+		execs.pop_back();
+
+		if ((number_processed/1000) != ((number_processed-1)/1000))
+			cout << "Execution " << number_processed << " " << execs.size() << endl;
+
+		while (!exec->done() && !exec->deadlock)
+		{
+			/**********************************
+			 * Handle remote program counters *
+			 **********************************/
+			bool level1 = true;
+			int rpc = 0;
+			int idx = 0;
+			while (exec->rpcs.size() > 0 && level1)
+			{
+				level1 = false;
+
+				if (remote_begin_ready(exec, rpc, idx))
+				{
+					level1 = true;
+
+					svector<remote_petri_index> ia = exec->rpcs[rpc].input_nodes(exec->rpcs[rpc].begin[idx]);
+					svector<remote_petri_index> oa = exec->rpcs[rpc].output_nodes(exec->rpcs[rpc].begin[idx]);
+
+					if (oa.size() == 0)
+						exec->rpcs[rpc].begin.erase(exec->rpcs[rpc].begin.begin() + idx);
 					else
-						cout << "{" << exec->net->T[exec->net->index(pc->index)].index.print(pc->net->vars) << "}";
-					cout << " => ";
-					fflush(stdout);
-					exec->deadlock = false;
-					for (int j = oa.size()-1; j >= 0; j--)
 					{
-						fflush(stdout);
-						list<program_execution>::iterator update_exec = exec;
-						list<program_counter>::iterator update_pc = pc, temp_pc;
-						if (j != 0 && conditional_split)
+						for (svector<remote_petri_index>::iterator i = oa.begin(); i != oa.end(); i++)
 						{
-							// Duplicate the program_execution
-							execs.push_back(*exec);
-							update_exec = prev(execs.end());
-							for (temp_pc = exec->pcs.begin(), update_pc = update_exec->pcs.begin(); temp_pc != pc && temp_pc != exec->pcs.end() && update_pc != update_exec->pcs.end(); temp_pc++, update_pc++);
-							if (temp_pc == exec->pcs.end())
+							/*cout << "-" << exec->rpcs[rpc].name << "." << *i << " [" << exec->rpcs[rpc].firings().print(exec->rpcs[rpc].net->vars) << "] (";
+							for (int i = 0; i < exec->rpcs[rpc].arcs.size(); i++)
+								cout << exec->rpcs[rpc].arcs[i].first << "->" << exec->rpcs[rpc].arcs[i].second << " ";
+							cout << ")" << endl;*/
+							exec->rpcs[rpc].begin.push_back(*i);
+						}
+
+						if (oa.size() > 0 || exec->rpcs[rpc].end.size() == 0)
+						{
+							for (svector<remote_petri_arc>::iterator arc = exec->rpcs[rpc].arcs.begin(); ia.size() == 0 && arc != exec->rpcs[rpc].arcs.end(); )
 							{
-								cout << "ERROR!" << endl;
-								exit(0);
+								if (arc->first == exec->rpcs[rpc].begin[idx])
+									arc = exec->rpcs[rpc].arcs.erase(arc);
+								else
+									arc++;
 							}
+
+							exec->rpcs[rpc].begin.erase(exec->rpcs[rpc].begin.begin() + idx);
 						}
-						else if (j != 0 && parallel_split)
-						{
-							// Duplicate the program_counter
-							update_exec->pcs.push_front(*pc);
-							update_pc = update_exec->pcs.begin();
-						}
-
-						if (parallel_split)
-						{
-							for (list<program_environment>::iterator update_env = update_pc->envs.begin(); update_env != update_pc->envs.end(); update_env++)
-								for (int k = 0; k < oa.size(); k++)
-									if (k != j)
-										update_env->pcs.push_back(remote_program_counter(oa[k], pc->net));
-						}
-
-						update_pc->last = update_pc->index;
-						update_pc->index = oa[j];
-						cout << update_pc->node_name();
-						fflush(stdout);
-
-						// Check to see if we need to update the state encoding for this program execution
-						if (update_pc->is_place())
-							update_exec->states[update_pc->index] = update_exec->calculate_state(update_pc);
-
-						if (update_pc->is_place())
-							cout << "{" << update_exec->states[update_pc->index].print(update_pc->net->vars) << "}";
 						else
-							cout << "{" << update_exec->net->T[update_exec->net->index(update_pc->index)].index.print(update_pc->net->vars) << "}";
-
-						cout << ", ";
+						{
+							cerr << "Error! " << exec->rpcs[rpc].end.size() << " " << exec->rpcs[rpc].end.front() << endl;
+							for (svector<remote_petri_arc>::iterator arc = exec->rpcs[rpc].arcs.begin(); arc != exec->rpcs[rpc].arcs.end(); arc++)
+								cout << "(" << arc->first << "->" << arc->second << ") ";
+							cout << endl;
+						}
 					}
+				}
+			}
+
+			level1 = true;
+			rpc = 0;
+			idx = 0;
+			while (exec->rpcs.size() > 0 && level1)
+			{
+				level1 = false;
+
+				svector<petri_index> oa;
+				if (remote_end_ready(exec, rpc, idx, oa))
+				{
+					level1 = true;
 
 					if (oa.size() == 0)
 					{
-						cout << "Error: Net has acyclic component at " << pc->net->node_name(pc->index) << "." << endl;
-						remove = true;
+						cerr << "Error: Remote net has an acyclic component at " << exec->rpcs[rpc].end[idx] << "." << endl;
+						exec->rpcs[rpc].end.erase(exec->rpcs[rpc].end.begin() + idx);
+					}
+					else
+					{
+						for (int i = oa.size()-1; i >= 0; i--)
+						{
+							/*cout << "+" << exec->rpcs[rpc].name << "." << oa[i] << " {" << exec->rpcs[rpc].net->at(oa[i]).index.print(exec->rpcs[rpc].net->vars) << "} [" << exec->rpcs[rpc].firings().print(exec->rpcs[rpc].net->vars) << "] (";
+							for (int i = 0; i < exec->rpcs[rpc].arcs.size(); i++)
+								cout << exec->rpcs[rpc].arcs[i].first << "->" << exec->rpcs[rpc].arcs[i].second << " ";
+							cout << ")" << endl;*/
+
+							program_execution *cexec = exec;
+							int cidx = idx;
+
+							if (i != 0)
+							{
+								if (cexec->rpcs[rpc].end[cidx].is_place())
+									duplicate_execution(cexec, &cexec);
+								else
+								{
+									cexec->rpcs[rpc].end.push_back(cexec->rpcs[rpc].end[cidx]);
+									cidx = cexec->rpcs[rpc].end.size()-1;
+								}
+							}
+
+							remote_petri_index new_node(oa[i], cexec->rpcs[rpc].nid(oa[i]));
+							cexec->rpcs[rpc].arcs.push_back(remote_petri_arc(cexec->rpcs[rpc].end[cidx], new_node));
+							cexec->rpcs[rpc].end[cidx] = new_node;
+						}
 					}
 				}
-				cout << "]" << endl;
-
-				if (remove)
-					pc = exec->pcs.erase(pc);
-				else
-					pc++;
 			}
-			if (exec->deadlock)
-				cerr << "Error: Deadlock detected: All program counters are waiting." << endl;
-			cout << "}" << endl;
+
+			/*cout << "State:" << endl;
+			for (int j = 0; j < exec->rpcs.size(); j++)
+			{
+				cout << exec->rpcs[j].name << "{";
+				for (int k = 0; k < exec->rpcs[j].arcs.size(); k++)
+					cout << exec->rpcs[j].arcs[k].first << "->" << exec->rpcs[j].arcs[k].second << " ";
+				cout << "} " << exec->rpcs[j].firings().print(exec->rpcs[j].net->vars) << endl;
+			}*/
+			for (int j = 0; j < exec->rpcs.size(); j++)
+				for (int i = 0; i < exec->pcs.size(); i++)
+					exec->pcs[i].apply(translate(exec->rpcs[j].name, exec->rpcs[j].net, exec->rpcs[j].firings(), exec->pcs[i].name, exec->pcs[i].net));
+
+			/*********************************
+			 * Handle local program counters *
+			 *********************************/
+			svector<int> transitions_ready;
+			svector<int> places_ready;
+
+			for (int pc = 0; pc < exec->pcs.size(); pc++)
+			{
+				if (transitions_ready.size() == 0 && exec->pcs[pc].index.is_place() && exec->pcs[pc].next_has_active_or_satisfied())
+					places_ready.push_back(pc);
+				else if (exec->pcs[pc].index.is_trans())
+				{
+					int incoming_size = exec->pcs[pc].input_nodes().size();
+					if (incoming_size == 1)
+						transitions_ready.push_back(pc);
+					else if (exec->count(pc) == incoming_size)	// Parallel Merge
+						transitions_ready.push_back(exec->merge(pc));
+				}
+			}
+
+			/*for (int i = 0; i < transitions_ready.size(); i++)
+				cout << exec->pcs[transitions_ready[i]].name << ":" << exec->pcs[transitions_ready[i]].index << "{" << exec->pcs[transitions_ready[i]].state.print(exec->pcs[transitions_ready[i]].net->vars) << "} ";
+			for (int i = 0; i < places_ready.size(); i++)
+				cout << exec->pcs[places_ready[i]].name << ":" << exec->pcs[places_ready[i]].index << "{" << exec->pcs[places_ready[i]].state.print(exec->pcs[places_ready[i]].net->vars) << "} ";
+			cout << endl;*/
+
+			if (transitions_ready.size() > 0)
+			{
+				for (int i = transitions_ready.size()-1; i >= 0; i--)
+				{
+					int pc = transitions_ready[i];
+
+					svector<petri_index> outgoing = exec->pcs[pc].output_nodes();
+					for (int j = outgoing.size()-1; j >= 0; j--)
+					{
+						int cpc = pc;
+						// Create a new program counter for parallel splits
+						if (j > 0)
+							duplicate_counter(exec, cpc, cpc);
+
+						//cout << ">" << exec->pcs[cpc].name << "." << outgoing[j] << " {" << exec->pcs[cpc].predicate().print(exec->pcs[cpc].net->vars) << "} [" << exec->pcs[cpc].state.print(exec->pcs[cpc].net->vars) << "]" << endl;
+
+						if (exec->pcs[cpc].is_active())
+						{
+							svector<minterm> passing = exec->pcs[cpc].predicate().terms;
+							for (int t = passing.size()-1; t >= 0; t--)
+							{
+								program_execution *texec = exec;
+								if (t > 0)
+									duplicate_execution(texec, &texec);
+
+								texec->pcs[cpc].state = texec->pcs[cpc].state >> passing[t];
+								for (int apc = 0; apc < texec->pcs.size(); apc++)
+									if (apc != cpc)
+										texec->pcs[apc].apply(translate(texec->pcs[cpc].name, texec->pcs[cpc].net, passing[t], texec->pcs[apc].name, texec->pcs[apc].net));
+
+								texec->pcs[cpc].index = outgoing[j];
+							}
+						}
+						else
+						{
+							svector<minterm> passing;
+							for (int t = 0; t < exec->pcs[cpc].predicate().terms.size(); t++)
+								if ((exec->pcs[cpc].predicate().terms[t] & exec->pcs[cpc].state) != 0)
+									passing.push_back(exec->pcs[cpc].predicate().terms[t]);
+
+							for (int t = passing.size()-1; t >= 0 ; t--)
+							{
+								program_execution *texec = exec;
+								if (t > 0)
+									duplicate_execution(texec, &texec);
+
+								texec->pcs[cpc].state &= passing[t];
+								texec->pcs[cpc].index = outgoing[j];
+							}
+						}
+					}
+				}
+			}
+			else if (places_ready.size() > 0)
+			{
+				// We want to create a new program execution for every possible ordering of events.
+				//if (places_ready.size() > 1)
+				//	cout << "Order split " << places_ready.size() << endl;
+				for (int i = places_ready.size()-1; i >= 0; i--)
+					for (int j = i-1; exec->pcs[places_ready[i]].elaborate && j >= 0; j--)
+						if (!exec->pcs[places_ready[j]].elaborate)
+						{
+							int temp = places_ready[i];
+							places_ready[i] = places_ready[j];
+							places_ready[j] = temp;
+						}
+
+				for (int i = 0; i < places_ready.size(); i++)
+				{
+					program_execution *oexec = exec;
+					int pc = places_ready[i];
+
+					if (i < places_ready.size()-1)
+						duplicate_execution(oexec, &oexec);
+
+					if (oexec->pcs[pc].elaborate)
+					{
+						canonical old = oexec->pcs[pc].net->at(oexec->pcs[pc].index).index;
+						oexec->pcs[pc].net->at(oexec->pcs[pc].index).index.push_back(oexec->pcs[pc].state);
+						oexec->pcs[pc].net->at(oexec->pcs[pc].index).index.mccluskey();
+
+						oexec->pcs[pc].done = false;
+						if (oexec->pcs[pc].net->at(oexec->pcs[pc].index).index == old)
+							oexec->pcs[pc].done = true;
+					}
+
+					if (!oexec->done())
+					{
+						svector<petri_index> outgoing = oexec->pcs[pc].output_nodes();
+						for (int j = 0; j < outgoing.size(); )
+						{
+							if (!oexec->pcs[pc].is_active(outgoing[j]) && !oexec->pcs[pc].is_satisfied(outgoing[j]))
+								outgoing.erase(outgoing.begin() + j);
+							else
+								j++;
+						}
+
+						//if (outgoing.size() > 1)
+						//	cout << "Conditional split at " << oexec->pcs[pc].name << ":" << oexec->pcs[pc].net->node_name(oexec->pcs[pc].index) << " " << outgoing.size() << endl;
+
+						for (int j = outgoing.size()-1; j >= 0; j--)
+						{
+							//cout << ">" << oexec->pcs[pc].name << "." << outgoing[j] << " [" << oexec->pcs[pc].state.print(oexec->pcs[pc].net->vars) << "]" << endl;
+							program_execution *cexec = oexec;
+							if (j > 0)
+								duplicate_execution(cexec, &cexec);
+
+							cexec->pcs[pc].index = outgoing[j];
+						}
+					}
+				}
+			}
+			else
+			{
+				cerr << "Error: Deadlock detected ";
+				for (svector<program_counter>::iterator pc = exec->pcs.begin(); pc != exec->pcs.end(); pc++)
+					cerr << pc->name << ":" << pc->index.name() << "{" << pc->state.print(pc->net->vars) << "}" << endl;
+				for (svector<remote_program_counter>::iterator pc = exec->rpcs.begin(); pc != exec->rpcs.end(); pc++)
+				{
+					cerr << pc->name << ":{";
+					for (int i = 0; i < pc->begin.size(); i++)
+						cerr << pc->begin[i] << " ";
+					cerr << "}=>{";
+					for (int i = 0; i < pc->end.size(); i++)
+						cerr << pc->end[i] << " ";
+					cerr << "} " << pc->firings().print(pc->net->vars) << " ";
+				}
+				cerr << endl;
+				exec->deadlock = true;
+			}
 		}
 
-		for (int i = 0; i < exec->states.size(); i++)
-			final[i] |= exec->states[i];
-
-		exec = execs.erase(exec);
-
-		cout << "End Execution" << endl;
+		number_processed++;
 	}
+
+	for (svector<petri_net*>::iterator net = nets.begin(); net != nets.end(); net++)
+	{
+		for (int i = 0; i < (*net)->T.size(); i++)
+		{
+			svector<petri_index> ia = (*net)->prev(petri_index(i, false));
+
+			canonical t = 1;
+			for (int l = 0; l < ia.size(); l++)
+				t &= (*net)->at(ia[l]).index;
+
+			canonical r;
+			if ((*net)->T[i].active)
+				r = (t >> (*net)->T[i].index);
+			else
+				r = (t & (*net)->T[i].index);
+
+			(*net)->T[i].definitely_invacuous = is_mutex(&t, &r);
+			(*net)->T[i].possibly_vacuous = !(*net)->T[i].definitely_invacuous;
+			(*net)->T[i].definitely_vacuous = (t == r);
+		}
+	}
+
+	cout << "Executions: " << number_processed << " " << max_width << endl;
+}
+
+void program_execution_space::reset()
+{
+	execs.clear();
+	nets.clear();
+}
+
+void program_execution_space::gen_translation(string name0, petri_net *net0, string name1, petri_net *net1)
+{
+	cout << "Translation from " << name0 << " to " << name1 << endl;
+	svector<pair<int, int> > factors;
+	for (smap<sstring, variable>::iterator vi = net0->vars->global.begin(); vi != net0->vars->global.end(); vi++)
+	{
+		string test = vi->second.name;
+		if (test.substr(0, 5) == "this.")
+			test = test.substr(5);
+
+		if (name0 != "")
+			test = name0 + "." + test;
+
+		int uid = -1;
+		if (name1.length() == 0)
+			uid = net1->vars->get_uid(test);
+		else if (test.substr(0, name1.length()) == name1)
+			uid = net1->vars->get_uid(test.substr(name1.length()+1));
+
+		cout << "Looking for " << test << "{" << vi->second.uid << "} and found " << net1->vars->get_name(uid) << "{" << uid << "}" << endl;
+
+		if (uid != -1)
+			factors.push_back(pair<int, int>(vi->second.uid, uid));
+	}
+
+	translations.insert(
+		pair<pair<pair<string, petri_net*>, pair<string, petri_net*> >, svector<pair<int, int> > >(
+			pair<pair<string, petri_net*>, pair<string, petri_net*> >(
+				pair<string, petri_net*>(name0, net0),
+				pair<string, petri_net*>(name1, net1)
+			),
+			factors
+		)
+	);
+}
+
+minterm program_execution_space::translate(string name0, petri_net *net0, minterm t, string name1, petri_net *net1)
+{
+	if (name0 != name1 || net0 != net1)
+	{
+		return t.refactor(
+			translations[
+				pair<pair<string, petri_net*>, pair<string, petri_net*> >(
+					pair<string, petri_net*>(name0, net0),
+					pair<string, petri_net*>(name1, net1)
+				)
+			]
+		);
+	}
+	else
+		return t;
 }

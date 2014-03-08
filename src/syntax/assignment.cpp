@@ -234,7 +234,7 @@ void assignment::parse()
 
 void assignment::simulate()
 {
-	vars->increment_pcs(logic(), true);
+	vars->increment_pcs(canonical(), true);
 }
 
 void assignment::rewrite()
@@ -247,11 +247,11 @@ void assignment::reorder()
 
 }
 
-svector<int> assignment::generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch)
+svector<petri_index> assignment::generate_states(petri_net *n, rule_space *p, svector<petri_index> f, smap<int, int> pbranch, smap<int, int> cbranch)
 {
 	list<pair<sstring, sstring> >::iterator ei, ej;
-	svector<int> next, end;
-	svector<int> allends;
+	svector<petri_index> next, end;
+	svector<petri_index> allends;
 	int pbranch_id;
 	smap<int, int> npbranch;
 	variable *v;
@@ -279,18 +279,18 @@ svector<int> assignment::generate_states(petri *n, rule_space *p, svector<int> f
 				npbranch.insert(pair<int, int>(pbranch_id, (int)k));
 
 			next.clear();
-			next = (k == 0 ? from : net->duplicate_nodes(from));
+			next = (k == 0 ? from : net->duplicate(from));
 			for (l = 0; l < (int)next.size(); l++)
-				net->S[next[l]].pbranch = npbranch;
+				net->at(next[l]).pbranch = npbranch;
 
 			end.clear();
-			end.push_back(net->insert_transition(next, logic(v->uid, (uint32_t)(ei->second == "1")), npbranch, cbranch, this));
-			allends.push_back(net->insert_place(end, npbranch, cbranch, this));
+			end.push_back(net->push_transition(next, canonical(v->uid, (uint32_t)(ei->second == "1")), true, npbranch, cbranch, this));
+			allends.push_back(net->push_place(end, npbranch, cbranch, this));
 		}
 		else
 			cerr << "Error: Undefined variable " << ei->first << "." << endl;
 	}
-	uid.push_back(net->insert_dummy(allends, pbranch, cbranch, this));
+	uid.push_back(net->push_transition(allends, pbranch, cbranch, this));
 
 	return uid;
 }

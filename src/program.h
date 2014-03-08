@@ -41,7 +41,7 @@ struct program
 	void reshuffle();
 
 	void generate_states();
-	void trim_states();
+	void elaborate_states();
 	void insert_state_vars();
 	void insert_bubbleless_state_vars();
 	void generate_prs();

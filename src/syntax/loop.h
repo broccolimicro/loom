@@ -27,7 +27,7 @@ struct loop : control
 	void simulate();
 	void rewrite();
 	void reorder();
-	svector<int> generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch);
+	svector<petri_index> generate_states(petri_net *n, rule_space *p, svector<petri_index> f, smap<int, int> pbranch, smap<int, int> cbranch);
 
 	void print_hse(sstring t = "", ostream *fout = &cout);
 };

@@ -121,7 +121,7 @@ void debug::reorder()
 
 }
 
-svector<int> debug::generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch)
+svector<petri_index> debug::generate_states(petri_net *n, rule_space *p, svector<petri_index> f, smap<int, int> pbranch, smap<int, int> cbranch)
 {
 	net = n;
 	prs = p;
@@ -129,14 +129,14 @@ svector<int> debug::generate_states(petri *n, rule_space *p, svector<int> f, sma
 
 	if (type == "assert")
 		for (int i = 0; i < (int)f.size(); i++)
-			(*n)[f[i]].assertions.push_back(logic("~(" + chp + ")", vars));
+			(*n)[f[i]].assertions.push_back(canonical("~(" + chp + ")", vars));
 	else if (type == "require")
-		vars->requirements.push_back(logic("~(" + chp + ")", vars));
+		vars->requirements.push_back(canonical("~(" + chp + ")", vars));
 	else if (type == "assume")
 		for (int i = 0; i < (int)f.size(); i++)
-			(*n)[f[i]].assumptions = (*n)[f[i]].assumptions >> logic(chp, vars);
+			(*n)[f[i]].assumptions = (*n)[f[i]].assumptions >> canonical(chp, vars);
 	else if (type == "enforce")
-		vars->enforcements = vars->enforcements >> logic(chp, vars);
+		vars->enforcements = vars->enforcements >> canonical(chp, vars);
 
 	return f;
 }
@@ -144,9 +144,9 @@ svector<int> debug::generate_states(petri *n, rule_space *p, svector<int> f, sma
 void debug::generate_class_requirements()
 {
 	if (type == "require")
-		vars->requirements.push_back(logic("~(" + chp + ")", vars));
+		vars->requirements.push_back(canonical("~(" + chp + ")", vars));
 	else if (type == "enforce")
-		vars->enforcements = vars->enforcements >> logic(chp, vars);
+		vars->enforcements = vars->enforcements >> canonical(chp, vars);
 	else
 		cerr << "Error: Illegal debug function type " << type << "." << endl;
 }

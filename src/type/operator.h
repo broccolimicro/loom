@@ -32,8 +32,7 @@ struct operate : process
 
 	void parse(sstring raw);
 	void generate_states();
-	void update();
-	void trim_states();
+	void elaborate_states();
 
 	void print_prs(ostream *fout, sstring prefix, svector<sstring> driven);
 };

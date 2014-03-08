@@ -27,7 +27,7 @@ process::process()
 	flags = NULL;
 	net.vars = &vars;
 	net.prs = &prs;
-	prs.vars = &vars;
+	prs.net = &net;
 	env_net.vars = &env_vars;
 	env_net.prs = &prs;
 	env_def.parent = NULL;
@@ -47,7 +47,7 @@ process::process(sstring raw, type_space *types, flag_space *flags)
 	env_net.vars = &env_vars;
 	net.prs = &prs;
 	env_net.prs = &prs;
-	prs.vars = &vars;
+	prs.net = &net;
 	net.flags = flags;
 	env_net.flags = flags;
 
@@ -225,11 +225,11 @@ void process::generate_states()
 
 	net.vars = &vars;
 	net.prs = &prs;
-	prs.vars = &vars;
+	prs.net = &net;
 	net.flags = flags;
 
-	svector<int> end;
-	net.M0.push_back(net.insert_place(svector<int>(), smap<int, int>(), smap<int, int>(), NULL));
+	svector<petri_index> end;
+	net.M0.push_back(net.put_place(canonical(0), smap<int, int>(), smap<int, int>(), NULL));
 	end = def.generate_states(&net, &prs, net.M0,  smap<int, int>(), smap<int, int>());
 	if (is_inline)
 		net.connect(end, net.M0);
@@ -238,6 +238,8 @@ void process::generate_states()
 		if (!i->second.driven)
 			vars.reset = vars.reset.hide(i->second.uid);
 
+	net.compact();
+
 	if (has_environment)
 	{
 		env_net.vars = &env_vars;
@@ -245,13 +247,15 @@ void process::generate_states()
 		env_net.flags = flags;
 
 		end.clear();
-		env_net.M0.push_back(env_net.insert_place(svector<int>(), smap<int, int>(), smap<int, int>(), NULL));
+		env_net.M0.push_back(env_net.put_place(canonical(0), smap<int, int>(), smap<int, int>(), NULL));
 		end = env_def.generate_states(&env_net, &prs, env_net.M0,  smap<int, int>(), smap<int, int>());
 		env_net.connect(end, env_net.M0);
 
 		for (smap<sstring, variable>::iterator i = env_vars.global.begin(); i != env_vars.global.end(); i++)
 			if (!i->second.driven)
 				env_vars.reset = env_vars.reset.hide(i->second.uid);
+
+		env_net.compact();
 	}
 
 	/*cout << "EXCL" << endl;
@@ -263,52 +267,44 @@ void process::generate_states()
 	}*/
 }
 
-void process::update()
+void process::elaborate_states()
 {
-	net.env.execs.clear();
-	net.env.execs.push_back(program_execution(&net));
-	list<program_execution>::iterator exe = net.env.execs.begin();
-	for (int k = 0; k < net.M0.size(); k++)
-	{
-		exe->pcs.push_front(program_counter(net.M0[k], &net));
-		list<program_counter>::iterator pc = exe->pcs.begin();
+	program_execution_space execution;
+	execution.execs.push_back(program_execution());
+	svector<program_execution>::iterator exec = execution.execs.begin();
+	exec->init_pcs("", &net, true);
 
-		if (has_environment)
-			pc->envs.push_back(program_environment(remote_program_counter("", &net, &env_net)));
-		else
-			for (smap<sstring, variable>::iterator i = vars.label.begin(); i != vars.label.end(); i++)
-			{
-				type_space::iterator j;
-				if (i->second.type.find("operator?") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
-					pc->envs.push_back(program_environment(remote_program_counter(i->second.name.substr(0, i->second.name.find_last_of(".")), &net, &((channel*)j->second)->send->net)));
-				else if (i->second.type.find("operator!") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
-					pc->envs.push_back(program_environment(remote_program_counter(i->second.name.substr(0, i->second.name.find_last_of(".")), &net, &((channel*)j->second)->recv->net)));
-			}
-	}
+	if (has_environment)
+		exec->init_rpcs("", &env_net);
+	else
+		for (smap<sstring, variable>::iterator i = vars.label.begin(); i != vars.label.end(); i++)
+		{
+			type_space::iterator j;
+			if (i->second.type.find("operator?") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
+				exec->init_rpcs(i->second.name.substr(0, i->second.name.find_last_of(".")), &((channel*)j->second)->send->net);
+			else if (i->second.type.find("operator!") != i->second.type.npos && (j = vars.types->find(i->second.type.substr(0, i->second.type.find_last_of(".")))) != vars.types->end() && j->second->kind() == "channel")
+				exec->init_rpcs(i->second.name.substr(0, i->second.name.find_last_of(".")), &((channel*)j->second)->recv->net);
+		}
 
-	for (list<program_environment>::iterator i = net.env.execs.front().pcs.front().envs.begin(); i != net.env.execs.front().pcs.front().envs.end(); i++)
-		i->pcs.front().net->print_dot(flags->log_file, "environment");
-
-	net.update();
+	execution.full_elaborate();
+	net.print_dot(&cout, name);
+	net.check_assertions();
 }
 
-void process::trim_states()
+void process::update_states()
 {
-	do
+	svector<petri_index> pc = net.M0;
+
+	for (int i = 0; i < pc.size(); i++)
 	{
-		print_dot(flags->log_file);
 
-		update();
-		print_dot(flags->log_file);
-	} while(net.trim());
-
-	net.check_assertions();
+	}
 }
 
 void process::direct_bubble_reshuffle()
 {
 	net.print_dot(flags->log_file, name);
-	net.gen_tails();
+	net.generate_tails();
 
 	// Generate bubble reshuffle graph
 	smap<pair<int, int>, pair<bool, bool> > bubble_graph = net.gen_isochronics();
@@ -395,8 +391,9 @@ void process::direct_bubble_reshuffle()
 
 	// At this point we assume that there are no negative cycles
 	// Apply local inversions to state space
-	svector<int> inputs, inputs2;
-	int idx, uid;
+	svector<petri_index> inputs, inputs2;
+	int uid;
+	petri_index idx;
 	for (smap<pair<int, int>, pair<bool, bool> >::iterator i = bubble_graph.begin(); i != bubble_graph.end(); i++)
 	{
 		if (i->second.second)
@@ -417,34 +414,34 @@ void process::direct_bubble_reshuffle()
 			else
 				uid = vj->second.uid;
 
-			for (int j = 0; j < net.T.size(); j++)
+			for (petri_index j(0, false); j < net.T.size(); j++)
 			{
-				for (int k = 0; k < net.T[j].index.terms.size() && net.T[j].active; k++)
+				for (int k = 0; k < net[j].index.terms.size() && net[j].active; k++)
 				{
-					if (net.T[j].index.terms[k].val(i->first.second) != 2)
+					if (net[j].index.terms[k].val(i->first.second) != 2)
 					{
-						inputs = net.input_nodes(net.trans_id(j));
+						inputs = net.prev(j);
 
 						for (int l = 0; l < inputs.size(); l++)
 						{
-							inputs2 = net.input_nodes(inputs[l]);
+							inputs2 = net.prev(inputs[l]);
 							for (int m = 0; m < inputs2.size(); m++)
-								if (net.T[net.index(inputs2[m])].index == 1)
+								if (net[inputs2[m]].index == 1)
 								{
 									idx = inputs2[m];
 									inputs2.erase(inputs2.begin() + m);
 									m = 0;
-									inputs2.merge(net.input_nodes(net.input_nodes(idx)));
+									inputs2.merge(net.prev(net.prev(idx)));
 									inputs2.unique();
 								}
 
 							for (int m = 0; m < inputs2.size(); m++)
-								if (!net.T[net.index(inputs2[m])].active)
+								if (!net[inputs2[m]].active)
 								{
-									for (int n = 0; n < net.T[net.index(inputs2[m])].index.terms.size(); n++)
+									for (int n = 0; n < net[inputs2[m]].index.terms.size(); n++)
 									{
-										net.T[net.index(inputs2[m])].index.terms[n].set(uid, net.T[net.index(inputs2[m])].index.terms[n].get(i->first.first));
-										net.T[net.index(inputs2[m])].index.terms[n].sv_not(uid);
+										net[inputs2[m]].index.terms[n].set(uid, net[inputs2[m]].index.terms[n].get(i->first.first));
+										net[inputs2[m]].index.terms[n].sv_not(uid);
 										//net.T[net.index(inputs2[m])].index.terms[n].set(i->first.first, vX);
 									}
 								}
@@ -466,7 +463,7 @@ void process::direct_bubble_reshuffle()
 
 	cout << "}" << endl;
 
-	update();
+	elaborate_states();
 
 	prs.print(&cout);
 	net.print_dot(&cout, name);
@@ -530,7 +527,7 @@ bool process::insert_state_vars()
 
 	net.print_dot(flags->log_file, name);
 	cout << "tails" << endl;
-	net.gen_tails();
+	net.generate_tails();
 	cout << "conflicts" << endl;
 	net.gen_conflicts();
 	cout << "conditional places" << endl;
@@ -544,16 +541,16 @@ bool process::insert_state_vars()
 		return false;
 
 	(*flags->log_file) << "PROCESS " << name << endl;
-	for (smap<int, list<svector<int> > >::iterator i = net.conflicts.begin(); i != net.conflicts.end(); i++)
+	for (smap<petri_index, list<svector<petri_index> > >::iterator i = net.conflicts.begin(); i != net.conflicts.end(); i++)
 	{
-		for (list<svector<int> >::iterator lj = i->second.begin(); lj != i->second.end(); lj++)
+		for (list<svector<petri_index> >::iterator lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
 			path_space up_paths(net.arcs.size()), down_paths(net.arcs.size());
 			pair<int, int> up_sense_count, down_sense_count;
 			svector<int> uptrans, downtrans;
 
-			generate_paths(&up_sense_count, svector<int>(1, i->first), &up_paths, &down_sense_count, *lj, &down_paths);
-			remove_invalid_split_points(up_sense_count, svector<int>(1, i->first), &up_paths, down_sense_count, *lj, &down_paths);
+			generate_paths(&up_sense_count, svector<petri_index>(1, i->first), &up_paths, &down_sense_count, *lj, &down_paths);
+			remove_invalid_split_points(up_sense_count, svector<petri_index>(1, i->first), &up_paths, down_sense_count, *lj, &down_paths);
 
 			up_paths.print_bounds(*flags->log_file, "Up");
 			uptrans = choose_split_points(&up_paths, false, false);
@@ -585,13 +582,13 @@ bool process::insert_state_vars()
 		int vid   = vars.insert(variable(vname, "node", 1, 0, false, flags));
 		vars.find(vname)->driven = true;
 
-		logic um = logic(vid, 1);
-		logic dm = logic(vid, 0);
+		canonical um = canonical(vid, 1);
+		canonical dm = canonical(vid, 0);
 
 		for (int k = 0; k < (int)ip[j].first.size(); k++)
-			net.insert_sv_at(ip[j].first[k], um);
+			net.insert(ip[j].first[k], um, true);
 		for (int k = 0; k < (int)ip[j].second.size(); k++)
-			net.insert_sv_at(ip[j].second[k], dm);
+			net.insert(ip[j].second[k], dm, true);
 	}
 
 	net.trim_branch_ids();
@@ -604,7 +601,7 @@ bool process::insert_bubbleless_state_vars()
 	svector<pair<svector<int>, svector<int> > > ip;
 
 	net.print_dot(flags->log_file, name);
-	net.gen_tails();
+	net.generate_tails();
 	net.gen_senses();
 	net.gen_bubbleless_conflicts();
 	net.gen_conditional_places();
@@ -620,16 +617,16 @@ bool process::insert_bubbleless_state_vars()
 		return false;
 
 	(*flags->log_file) << "PROCESS " << name << endl;
-	for (smap<int, list<svector<int> > >::iterator i = net.conflicts.begin(); i != net.conflicts.end(); i++)
+	for (smap<petri_index, list<svector<petri_index> > >::iterator i = net.conflicts.begin(); i != net.conflicts.end(); i++)
 	{
-		for (list<svector<int> >::iterator lj = i->second.begin(); lj != i->second.end(); lj++)
+		for (list<svector<petri_index> >::iterator lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
 			path_space up_paths(net.arcs.size()), down_paths(net.arcs.size());
 			pair<int, int> up_sense_count, down_sense_count;
 			svector<int> uptrans, downtrans;
 
-			generate_paths(&up_sense_count, svector<int>(1, i->first), &up_paths, &down_sense_count, *lj, &down_paths);
-			remove_invalid_split_points(up_sense_count, svector<int>(1, i->first), &up_paths, down_sense_count, *lj, &down_paths);
+			generate_paths(&up_sense_count, svector<petri_index>(1, i->first), &up_paths, &down_sense_count, *lj, &down_paths);
+			remove_invalid_split_points(up_sense_count, svector<petri_index>(1, i->first), &up_paths, down_sense_count, *lj, &down_paths);
 
 			up_paths.print_bounds(*flags->log_file, "Up");
 			uptrans = choose_split_points(&up_paths, false, false);
@@ -653,16 +650,16 @@ bool process::insert_bubbleless_state_vars()
 	}
 
 	cout << "Positive Conflicts" << endl;
-	for (smap<int, list<svector<int> > >::iterator i = net.positive_conflicts.begin(); i != net.positive_conflicts.end(); i++)
+	for (smap<petri_index, list<svector<petri_index> > >::iterator i = net.positive_conflicts.begin(); i != net.positive_conflicts.end(); i++)
 	{
-		for (list<svector<int> >::iterator lj = i->second.begin(); lj != i->second.end(); lj++)
+		for (list<svector<petri_index> >::iterator lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
 			path_space up_paths(net.arcs.size()), down_paths(net.arcs.size());
 			pair<int, int> up_sense_count, down_sense_count;
 			svector<int> uptrans, downtrans;
 
-			generate_positive_paths(&up_sense_count, *lj, &up_paths, &down_sense_count, svector<int>(1, i->first), &down_paths);
-			remove_invalid_split_points(up_sense_count, *lj, &up_paths, down_sense_count, svector<int>(1, i->first), &down_paths);
+			generate_positive_paths(&up_sense_count, *lj, &up_paths, &down_sense_count, svector<petri_index>(1, i->first), &down_paths);
+			remove_invalid_split_points(up_sense_count, *lj, &up_paths, down_sense_count, svector<petri_index>(1, i->first), &down_paths);
 
 			up_paths.print_bounds(*flags->log_file, "Up");
 			uptrans = choose_split_points(&up_paths, true, false);
@@ -686,16 +683,16 @@ bool process::insert_bubbleless_state_vars()
 	}
 
 	cout << "Negative Conflicts" << endl;
-	for (smap<int, list<svector<int> > >::iterator i = net.negative_conflicts.begin(); i != net.negative_conflicts.end(); i++)
+	for (smap<petri_index, list<svector<petri_index> > >::iterator i = net.negative_conflicts.begin(); i != net.negative_conflicts.end(); i++)
 	{
-		for (list<svector<int> >::iterator lj = i->second.begin(); lj != i->second.end(); lj++)
+		for (list<svector<petri_index> >::iterator lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
 			path_space up_paths(net.arcs.size()), down_paths(net.arcs.size());
 			pair<int, int> up_sense_count, down_sense_count;
 			svector<int> uptrans, downtrans;
 
-			generate_negative_paths(&up_sense_count, svector<int>(1, i->first), &up_paths, &down_sense_count, *lj, &down_paths);
-			remove_invalid_split_points(up_sense_count, svector<int>(1, i->first), &up_paths, down_sense_count, *lj, &down_paths);
+			generate_negative_paths(&up_sense_count, svector<petri_index>(1, i->first), &up_paths, &down_sense_count, *lj, &down_paths);
+			remove_invalid_split_points(up_sense_count, svector<petri_index>(1, i->first), &up_paths, down_sense_count, *lj, &down_paths);
 
 			up_paths.print_bounds(*flags->log_file, "Up");
 			uptrans = choose_split_points(&up_paths, true, false);
@@ -725,13 +722,13 @@ bool process::insert_bubbleless_state_vars()
 		int vid   = vars.insert(variable(vname, "node", 1, 0, false, flags));
 		vars.find(vname)->driven = true;
 
-		logic um = logic(vid, 1);
-		logic dm = logic(vid, 0);
+		canonical um = canonical(vid, 1);
+		canonical dm = canonical(vid, 0);
 
 		for (int k = 0; k < (int)ip[j].first.size(); k++)
-			net.insert_sv_at(ip[j].first[k], um);
+			net.insert(ip[j].first[k], um, true);
 		for (int k = 0; k < (int)ip[j].second.size(); k++)
-			net.insert_sv_at(ip[j].second[k], dm);
+			net.insert(ip[j].second[k], dm, true);
 	}
 
 	net.trim_branch_ids();
@@ -743,36 +740,33 @@ void process::generate_prs()
 {
 	cout << "Generating " << name << endl;
 	print_dot(&cout);
-	net.gen_tails();
-	prs.generate_minterms(&net, flags);
+	net.generate_tails();
+	prs.generate_minterms(flags);
 
-	if (flags->log_base_prs() && kind() == "process")
-	{
-		(*flags->log_file) << "Production Rules: " << name << endl;
-		print_prs(flags->log_file);
-		prs.check(&net);
-	}
+	(*flags->log_file) << "Production Rules: " << name << endl;
+	print_prs(flags->log_file);
+	prs.check();
 }
 
 void process::generate_bubbleless_prs()
 {
-	net.gen_tails();
+	/*net.generate_tails();
 	net.gen_senses();
 	for (smap<sstring, variable>::iterator vi = vars.global.begin(); vi != vars.global.end(); vi++)
 		if (vi->second.driven)
-			prs.insert(rule(vi->second.uid, &net, &vars, flags, false));
+			prs.insert(rule(vi->second.uid, &net, flags, false, "greedy"));
 
 	if (flags->log_base_prs() && kind() == "process")
 	{
 		(*flags->log_file) << "Production Rules: " << name << endl;
 		print_prs(flags->log_file);
-	}
+	}*/
 }
 
 void process::bubble_reshuffle()
 {
 	//net.print_dot(flags->log_file, name);
-	net.gen_tails();
+	net.generate_tails();
 
 	cout << "Production Rules: " << name << endl;
 	prs.print(&cout);
@@ -821,7 +815,7 @@ void process::bubble_reshuffle()
 		cout << vars.get_name(i) << " " << inverted[i] << endl;*/
 
 	svector<variable> toadd;
-	logic temp;
+	canonical temp;
 
 	int uid = 0;
 	for (smap<sstring, variable>::iterator i = vars.global.begin(); i != vars.global.end(); i++)
@@ -844,9 +838,9 @@ void process::bubble_reshuffle()
 		vars.global.insert(pair<sstring, variable>(toadd[i].name, toadd[i]));
 
 		if (toadd[i].driven)
-			prs.insert(rule("~" + toadd[i].name, toadd[i].name, vars.invert_name(toadd[i].name), &vars, &net, flags));
+			prs.insert(rule("~" + toadd[i].name, toadd[i].name, vars.invert_name(toadd[i].name), &net, flags));
 		else
-			prs.insert(rule("~" + vars.invert_name(toadd[i].name), vars.invert_name(toadd[i].name), toadd[i].name, &vars, &net, flags));
+			prs.insert(rule("~" + vars.invert_name(toadd[i].name), vars.invert_name(toadd[i].name), toadd[i].name, &net, flags));
 	}
 
 	// Apply local inversions to production rules
@@ -865,7 +859,7 @@ void process::bubble_reshuffle()
 				vars.global.insert(pair<sstring, variable>(vi->second.name, vi->second));
 				vi->second.name = vi->first;
 				vi->second.uid = i->first.first;
-				prs.insert(rule("~" + vi->first, vi->first, vars.invert_name(vi->first), &vars, &net, flags));
+				prs.insert(rule("~" + vi->first, vi->first, vars.invert_name(vi->first), &net, flags));
 			}
 			else
 				uid = vj->second.uid;
@@ -916,17 +910,17 @@ void process::factor_prs()
 		print_prs(flags->log_file);
 }
 
-void process::generate_paths(pair<int, int> *up_sense_count, svector<int> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<int> down_start,  path_space *down_paths)
+void process::generate_paths(pair<int, int> *up_sense_count, svector<petri_index> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<petri_index> down_start,  path_space *down_paths)
 {
 	down_paths->clear();
 	up_paths->clear();
 	svector<int> iin;
 	for (int j = 0; j < up_start.size(); j++)
-		iin.merge(net.input_arcs(up_start[j]));
+		iin.merge(net.incoming(up_start[j]));
 
 	svector<int> jin;
 	for (int j = 0; j < down_start.size(); j++)
-		jin.merge(net.input_arcs(down_start[j]));
+		jin.merge(net.incoming(down_start[j]));
 
 	svector<int> istart = net.start_path(iin, jin);
 	svector<int> jstart = net.start_path(jin, iin);
@@ -975,17 +969,17 @@ void process::generate_paths(pair<int, int> *up_sense_count, svector<int> up_sta
 	}
 }
 
-void process::generate_positive_paths(pair<int, int> *up_sense_count, svector<int> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<int> down_start,  path_space *down_paths)
+void process::generate_positive_paths(pair<int, int> *up_sense_count, svector<petri_index> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<petri_index> down_start,  path_space *down_paths)
 {
 	down_paths->clear();
 	up_paths->clear();
 	svector<int> iin;
 	for (int j = 0; j < up_start.size(); j++)
-		iin.merge(net.input_arcs(up_start[j]));
+		iin.merge(net.incoming(up_start[j]));
 
 	svector<int> jin;
 	for (int j = 0; j < down_start.size(); j++)
-		jin.merge(net.input_arcs(down_start[j]));
+		jin.merge(net.incoming(down_start[j]));
 
 	svector<int> istart = net.start_path(iin, jin);
 	svector<int> jstart = net.start_path(jin, iin);
@@ -998,17 +992,17 @@ void process::generate_positive_paths(pair<int, int> *up_sense_count, svector<in
 	net.get_paths(jstart, iin, down_paths);
 }
 
-void process::generate_negative_paths(pair<int, int> *up_sense_count, svector<int> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<int> down_start,  path_space *down_paths)
+void process::generate_negative_paths(pair<int, int> *up_sense_count, svector<petri_index> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<petri_index> down_start,  path_space *down_paths)
 {
 	down_paths->clear();
 	up_paths->clear();
 	svector<int> iin;
 	for (int j = 0; j < up_start.size(); j++)
-		iin.merge(net.input_arcs(up_start[j]));
+		iin.merge(net.incoming(up_start[j]));
 
 	svector<int> jin;
 	for (int j = 0; j < down_start.size(); j++)
-		jin.merge(net.input_arcs(down_start[j]));
+		jin.merge(net.incoming(down_start[j]));
 
 	svector<int> istart = net.start_path(iin, jin);
 	svector<int> jstart = net.start_path(jin, iin);
@@ -1023,7 +1017,7 @@ void process::generate_negative_paths(pair<int, int> *up_sense_count, svector<in
 	net.get_paths(jstart, iin, down_paths);
 }
 
-void process::remove_invalid_split_points(pair<int, int> up_sense_count, svector<int> up_start, path_space *up_paths, pair<int, int> down_sense_count, svector<int> down_start, path_space *down_paths)
+void process::remove_invalid_split_points(pair<int, int> up_sense_count, svector<petri_index> up_start, path_space *up_paths, pair<int, int> down_sense_count, svector<petri_index> down_start, path_space *down_paths)
 {
 	path_space up_inv = up_paths->inverse();
 	path_space down_inv = down_paths->inverse();
@@ -1041,15 +1035,15 @@ void process::remove_invalid_split_points(pair<int, int> up_sense_count, svector
 		net.zero_paths(down_paths, down_start);
 
 	for (int j = 0; j < up_paths->total.to.size(); j++)
-		if (net.is_place(net.arcs[up_paths->total.to[j]].second))
+		if (net.arcs[up_paths->total.to[j]].second.is_place())
 			up_paths->zero(up_paths->total.to[j]);
 
 	for (int j = 0; j < down_paths->total.to.size(); j++)
-		if (net.is_place(net.arcs[down_paths->total.to[j]].second))
+		if (net.arcs[down_paths->total.to[j]].second.is_place())
 			down_paths->zero(down_paths->total.to[j]);
 
 	for (int j = 0; j < (int)net.arcs.size(); j++)
-		if (net.is_place(net.arcs[j].first) && net.output_nodes(net.arcs[j].first).size() > 1)
+		if (net.arcs[j].first.is_place() && net.next(net.arcs[j].first).size() > 1)
 		{
 			up_paths->zero(j);
 			down_paths->zero(j);
@@ -1061,7 +1055,7 @@ svector<int> process::choose_split_points(path_space *paths, bool up, bool down)
 	svector<int> result;
 	int max;
 
-	for (smap<int, list<svector<int> > >::iterator l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
+	for (smap<petri_index, list<svector<petri_index> > >::iterator l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
 	{
 		for (int j = 0; j < (int)net.arcs.size(); j++)
 			if (paths->total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
@@ -1069,7 +1063,7 @@ svector<int> process::choose_split_points(path_space *paths, bool up, bool down)
 	}
 	if (up)
 	{
-		for (smap<int, list<svector<int> > >::iterator l = net.negative_indistinguishable.begin(); l != net.negative_indistinguishable.end(); l++)
+		for (smap<petri_index, list<svector<petri_index> > >::iterator l = net.negative_indistinguishable.begin(); l != net.negative_indistinguishable.end(); l++)
 		{
 			for (int j = 0; j < (int)net.arcs.size(); j++)
 				if (paths->total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
@@ -1078,7 +1072,7 @@ svector<int> process::choose_split_points(path_space *paths, bool up, bool down)
 	}
 	else if (down)
 	{
-		for (smap<int, list<svector<int> > >::iterator l = net.positive_indistinguishable.begin(); l != net.positive_indistinguishable.end(); l++)
+		for (smap<petri_index, list<svector<petri_index> > >::iterator l = net.positive_indistinguishable.begin(); l != net.positive_indistinguishable.end(); l++)
 		{
 			for (int j = 0; j < (int)net.arcs.size(); j++)
 				if (paths->total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
@@ -1087,12 +1081,12 @@ svector<int> process::choose_split_points(path_space *paths, bool up, bool down)
 	}
 	(*flags->log_file) << paths->total << endl;
 
-	while (paths->size() > 0 && (max = net.closest_input(paths->total.maxes(), paths->total.to, path(net.arcs.size())).second) != -1)
+	while (paths->size() > 0 && (max = net.closest_input(paths->total.maxes(), paths->total.to).second) != -1)
 	{
 		result.push_back(max);
 		*paths = paths->avoidance(max);
 
-		for (smap<int, list<svector<int> > >::iterator l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
+		for (smap<petri_index, list<svector<petri_index> > >::iterator l = net.indistinguishable.begin(); l != net.indistinguishable.end(); l++)
 		{
 			for (int j = 0; j < (int)net.arcs.size(); j++)
 				if (paths->total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
@@ -1100,7 +1094,7 @@ svector<int> process::choose_split_points(path_space *paths, bool up, bool down)
 		}
 		if (up)
 		{
-			for (smap<int, list<svector<int> > >::iterator l = net.negative_indistinguishable.begin(); l != net.negative_indistinguishable.end(); l++)
+			for (smap<petri_index, list<svector<petri_index> > >::iterator l = net.negative_indistinguishable.begin(); l != net.negative_indistinguishable.end(); l++)
 			{
 				for (int j = 0; j < (int)net.arcs.size(); j++)
 					if (paths->total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))
@@ -1109,7 +1103,7 @@ svector<int> process::choose_split_points(path_space *paths, bool up, bool down)
 		}
 		else if (down)
 		{
-			for (smap<int, list<svector<int> > >::iterator l = net.positive_indistinguishable.begin(); l != net.positive_indistinguishable.end(); l++)
+			for (smap<petri_index, list<svector<petri_index> > >::iterator l = net.positive_indistinguishable.begin(); l != net.positive_indistinguishable.end(); l++)
 			{
 				for (int j = 0; j < (int)net.arcs.size(); j++)
 					if (paths->total.nodes[j] > 0 && (net.arcs[j].first == l->first || net.arcs[j].second == l->first))

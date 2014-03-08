@@ -35,8 +35,8 @@ struct process : keyword
 	variable_space			vars;
 	variable_space			env_vars;
 	list<sstring>			args;
-	petri					net;
-	petri					env_net;
+	petri_net				net;
+	petri_net				env_net;
 	flag_space				*flags;
 
 	bool 					is_inline;
@@ -52,8 +52,8 @@ struct process : keyword
 	void reshuffle();
 
 	void generate_states();
-	void update();
-	void trim_states();
+	void elaborate_states();
+	void update_states();
 	void direct_bubble_reshuffle();
 	svector<pair<svector<int>, bool> > reshuffle_algorithm(smap<pair<int, int>, pair<bool, bool> >::iterator idx, bool forward, smap<pair<int, int>, pair<bool, bool> > *net, svector<int> cycle, svector<bool> *inverted);
 	bool insert_state_vars();
@@ -65,10 +65,10 @@ struct process : keyword
 
 
 
-	void generate_paths(pair<int, int> *up_sense_count, svector<int> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<int> down_start,  path_space *down_paths);
-	void generate_positive_paths(pair<int, int> *up_sense_count, svector<int> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<int> down_start,  path_space *down_paths);
-	void generate_negative_paths(pair<int, int> *up_sense_count, svector<int> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<int> down_start,  path_space *down_paths);
-	void remove_invalid_split_points(pair<int, int> up_sense_count, svector<int> up_start, path_space *up_paths, pair<int, int> down_sense_count, svector<int> down_start, path_space *down_paths);
+	void generate_paths(pair<int, int> *up_sense_count, svector<petri_index> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<petri_index> down_start,  path_space *down_paths);
+	void generate_positive_paths(pair<int, int> *up_sense_count, svector<petri_index> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<petri_index> down_start,  path_space *down_paths);
+	void generate_negative_paths(pair<int, int> *up_sense_count, svector<petri_index> up_start, path_space *up_paths, pair<int, int> *down_sense_count, svector<petri_index> down_start,  path_space *down_paths);
+	void remove_invalid_split_points(pair<int, int> up_sense_count, svector<petri_index> up_start, path_space *up_paths, pair<int, int> down_sense_count, svector<petri_index> down_start, path_space *down_paths);
 	svector<int> choose_split_points(path_space *paths, bool up, bool down);
 
 	void print_hse(ostream *fout = &cout);

@@ -198,26 +198,25 @@ void parallel::reorder()
 
 }
 
-svector<int> parallel::generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch)
+svector<petri_index> parallel::generate_states(petri_net *n, rule_space *p, svector<petri_index> f, smap<int, int> pbranch, smap<int, int> cbranch)
 {
 	list<instruction*>::iterator i, j;
-	svector<int> next, end;
-	svector<int> allends;
+	svector<petri_index> next, end;
+	svector<petri_index> allends;
 	smap<int, int> npbranch;
 	int npbranch_count;
-	int k;
-	int l;
 
 	if (flags->log_base_state_space())
 		(*flags->log_file) << flags->tab << "Parallel " << chp << endl;
 
 	net  = n;
 	prs = p;
-	l = net->insert_dummy(f, pbranch, cbranch, this);
-	from = svector<int>(1, net->insert_place(l, pbranch, cbranch, this));
+	petri_index l = net->push_transition(f, pbranch, cbranch, this);
+	from = svector<petri_index>(1, net->push_place(l, pbranch, cbranch, this));
 
 	npbranch_count = net->pbranch_count;
 	net->pbranch_count++;
+	int k;
 	for (i = instrs.begin(), k = instrs.size()-1; i != instrs.end(); i++, k--)
 	{
 		npbranch = pbranch;
@@ -225,14 +224,14 @@ svector<int> parallel::generate_states(petri *n, rule_space *p, svector<int> f, 
 			npbranch.insert(pair<int, int>(npbranch_count, (int)k));
 
 		next.clear();
-		next = (k == 0 ? from : net->duplicate_nodes(from));
-		for (l = 0; l < (int)next.size(); l++)
-			net->S[next[l]].pbranch = npbranch;
+		next = (k == 0 ? from : net->duplicate(from));
+		for (int l = 0; l < (int)next.size(); l++)
+			net->at(next[l]).pbranch = npbranch;
 
 		end = (*i)->generate_states(net, prs, next, npbranch, cbranch);
-		allends.push_back(net->insert_place(end, npbranch, cbranch, this));
+		allends.push_back(net->push_place(end, npbranch, cbranch, this));
 	}
-	uid.push_back(net->insert_dummy(allends, pbranch, cbranch, this));
+	uid.push_back(net->push_transition(allends, pbranch, cbranch, this));
 
 	return uid;
 }

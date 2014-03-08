@@ -16,27 +16,25 @@ struct rule
 {
 	rule();
 	rule(int uid);
-	rule(int uid, petri *g, variable_space *v, flag_space *flags, bool bubble);
-	rule(sstring u, sstring d, sstring v, variable_space *vars, petri *net, flag_space *flags);
+	rule(int uid, petri_net *g, flag_space *flags, bool bubble);
+	rule(sstring u, sstring d, sstring v, petri_net *net, flag_space *flags);
 	~rule();
 
-	petri *net;
-	variable_space *vars;
+	petri_net *net;
 
 	int uid;
-	logic guards[2];
-	logic explicit_guards[2];
-	svector<int> implicants[2];
+	canonical guards[2];
+	canonical explicit_guards[2];
+	svector<petri_index> implicants[2];
 
 	flag_space *flags;
 
 	rule &operator=(rule r);
 
-	logic &up();
-	logic &down();
+	canonical &up();
+	canonical &down();
 
-	pair<svector<int>, logic> closest_transition(int curr_place, int transition, int conflicting_state, logic rule_guard, logic implicant_state, svector<int> tail, svector<bool> *covered, int i = 0);
-	pair<svector<int>, logic> strengthen(int p, int tid, svector<bool> *covered, logic rule_guard, logic implicant_state, int t, svector<int> tail, int i = 0);
+	void strengthen(int t);
 	void gen_minterms();
 	void gen_bubbleless_minterms();
 

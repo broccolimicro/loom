@@ -13,13 +13,136 @@
 #include "../syntax/parallel.h"
 #include "../syntax/rule_space.h"
 
-node::node()
+petri_index::petri_index()
+{
+	data = -1;
+}
+
+petri_index::petri_index(int idx, bool place)
+{
+	data = place ? idx : (idx | 0x80000000);
+}
+
+petri_index::~petri_index()
+{
+
+}
+
+bool petri_index::is_place() const
+{
+	return data >= 0;
+}
+
+bool petri_index::is_trans() const
+{
+	return data < 0;
+}
+
+sstring petri_index::name() const
+{
+	return (data >= 0 ? "S" : "T") + sstring(data & 0x7FFFFFFF);
+}
+
+int petri_index::idx() const
+{
+	return data & 0x7FFFFFFF;
+}
+
+/*petri_index::operator int() const
+{
+	return (data & 0x7FFFFFFF);
+}*/
+
+petri_index &petri_index::operator=(petri_index i)
+{
+	data = i.data;
+	return *this;
+}
+
+petri_index &petri_index::operator--()
+{
+	--data;
+	return *this;
+}
+
+petri_index &petri_index::operator++()
+{
+	++data;
+	return *this;
+}
+
+petri_index &petri_index::operator--(int)
+{
+	data--;
+	return *this;
+}
+
+petri_index &petri_index::operator++(int)
+{
+	data++;
+	return *this;
+}
+
+bool operator==(petri_index i, petri_index j)
+{
+	return i.data == j.data;
+}
+
+bool operator!=(petri_index i, petri_index j)
+{
+	return i.data != j.data;
+}
+
+bool operator<(petri_index i, int j)
+{
+	return ((i.data & 0x7FFFFFFF) < j);
+}
+
+ostream &operator<<(ostream &os, petri_index i)
+{
+	os << i.name();
+	return os;
+}
+
+bool operator>(petri_index i, petri_index j)
+{
+	return i.data > j.data;
+}
+
+bool operator<(petri_index i, petri_index j)
+{
+	return i.data < j.data;
+}
+
+bool operator>=(petri_index i, petri_index j)
+{
+	return i.data >= j.data;
+}
+
+bool operator<=(petri_index i, petri_index j)
+{
+	return i.data <= j.data;
+}
+
+petri_index operator+(petri_index i, int j)
+{
+	i.data += j;
+	return i;
+}
+
+petri_index operator-(petri_index i, int j)
+{
+	i.data -= j;
+	return i;
+}
+
+petri_node::petri_node()
 {
 	owner = NULL;
 	assumptions = 1;
 }
 
-node::node(logic index, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+petri_node::petri_node(canonical index, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
 {
 	this->index = index;
 	this->active = active;
@@ -32,29 +155,29 @@ node::node(logic index, bool active, smap<int, int> pbranch, smap<int, int> cbra
 	assumptions = 1;
 }
 
-node::~node()
+petri_node::~petri_node()
 {
 	owner = NULL;
 }
 
-bool node::is_in_tail(int idx)
+bool petri_node::is_in_tail(petri_index idx)
 {
 	return (tail.find(idx) != tail.end());
 }
 
-void node::add_to_tail(int idx)
+void petri_node::add_to_tail(petri_index idx)
 {
 	tail.push_back(idx);
 	tail.unique();
 }
 
-void node::add_to_tail(svector<int> idx)
+void petri_node::add_to_tail(svector<petri_index> idx)
 {
 	tail.insert(tail.end(), idx.begin(), idx.end());
 	tail.unique();
 }
 
-pair<int, int> node::sense_count()
+pair<int, int> petri_node::sense_count()
 {
 	pair<int, int> result(0, 0);
 	for (int i = 0; i < index.terms.size(); i++)
@@ -71,374 +194,1258 @@ pair<int, int> node::sense_count()
 	return result;
 }
 
-petri::petri()
+petri_net::petri_net()
 {
 	pbranch_count = 0;
 	cbranch_count = 0;
 	prs = NULL;
 }
 
-petri::~petri()
+petri_net::~petri_net()
 {
 	prs = NULL;
 }
 
-int petri::new_transition(logic root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+petri_index petri_net::put_place(canonical root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
 {
-	int ret = T.size() | 0x80000000;
-	T.push_back(node(root, active, pbranch, cbranch, owner));
-	return ret;
+	S.push_back(petri_node(root, false, pbranch, cbranch, owner));
+	return petri_index(S.size()-1, true);
 }
 
-svector<int> petri::new_transitions(svector<logic> root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+petri_index petri_net::put_transition(canonical root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
 {
-	svector<int> result;
-	for (int i = 0; i < (int)root.size(); i++)
-		result.push_back(new_transition(root[i], active, pbranch, cbranch, owner));
+	T.push_back(petri_node(root, active, pbranch, cbranch, owner));
+	return petri_index(T.size()-1, false);
+}
+
+svector<petri_index> petri_net::put_places(svector<canonical> root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+{
+	svector<petri_index> result;
+	for (int i = 0; i < root.size(); i++)
+		result.push_back(put_place(root[i], pbranch, cbranch, owner));
 	return result;
 }
 
-int petri::new_place(logic root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+svector<petri_index> petri_net::put_transitions(svector<canonical> root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
 {
-	int ret = S.size();
-	S.push_back(node(root, false, pbranch, cbranch, owner));
-	return ret;
+	svector<petri_index> result;
+	for (int i = 0; i < root.size(); i++)
+		result.push_back(put_transition(root[i], active, pbranch, cbranch, owner));
+	return result;
 }
 
-int petri::insert_transition(int from, logic root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+void petri_net::cut(petri_index node)
 {
-	int t = new_transition(root, (owner != NULL && owner->kind() == "assignment"), pbranch, cbranch, owner);
-	if (is_trans(from))
-		cerr << "Error: Illegal arc {T[" << index(from) << "], T[" << index(t) << "]}." << endl;
-	else
+	for (int m = 0; m != M0.size(); )
 	{
-		arcs.push_back(pair<int, int>(from, t));
-		S[from].active = S[from].active || T[index(t)].active;
-	}
-
-	return t;
-}
-
-int petri::insert_transition(svector<int> from, logic root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
-{
-	int t = new_transition(root, (owner != NULL && owner->kind() == "assignment"), pbranch, cbranch, owner);
-	for (int i = 0; i < from.size(); i++)
-	{
-		if (is_trans(from[i]))
-			cerr << "Error: Illegal arc {T[" << index(from[i]) << "], T[" << index(t) << "]}." << endl;
+		if (M0[m] == node)
+			M0.erase(M0.begin() + m);
 		else
 		{
-			arcs.push_back(pair<int, int>(from[i], t));;
-			S[from[i]].active = S[from[i]].active || T[index(t)].active;
+			if (M0[m].is_place() == node.is_place() && M0[m] > node)
+				M0[m]--;
+			m++;
 		}
 	}
 
-	return t;
+	for (svector<petri_arc>::iterator arc = arcs.begin(); arc != arcs.end(); )
+	{
+		if (arc->first == node || arc->second == node)
+			arc = arcs.erase(arc);
+		else
+		{
+			if (arc->first.is_place() == node.is_place() && arc->first > node)
+				arc->first--;
+			if (arc->second.is_place() == node.is_place() && arc->second > node)
+				arc->second--;
+			arc++;
+		}
+	}
+
+	if (node.is_place())
+		S.erase(S.begin() + node.data);
+	else
+		T.erase(T.begin() + (node.data & 0x7FFFFFFF));
 }
 
-void petri::insert_sv_at(int a, logic root)
+void petri_net::cut(svector<petri_index> nodes)
+{
+	for (int i = 0; i < nodes.size(); i++)
+	{
+		cut(nodes[i]);
+		for (int j = i+1; j < nodes.size(); j++)
+			if (nodes[j].is_place() == nodes[i].is_place() && nodes[j] > nodes[i])
+				nodes[j]--;
+	}
+}
+
+svector<petri_index> petri_net::connect(svector<petri_index> from, svector<petri_index> to)
+{
+	for (int i = 0; i < from.size(); i++)
+		for (int j = 0; j < to.size(); j++)
+			connect(from[i], to[j]);
+
+	return to;
+}
+
+petri_index petri_net::connect(svector<petri_index> from, petri_index to)
+{
+	for (int i = 0; i < from.size(); i++)
+		connect(from[i], to);
+
+	return to;
+}
+
+svector<petri_index> petri_net::connect(petri_index from, svector<petri_index> to)
+{
+	for (int j = 0; j < to.size(); j++)
+		connect(from, to[j]);
+
+	return to;
+}
+
+petri_index petri_net::connect(petri_index from, petri_index to)
+{
+	if (from.is_place() && to.is_trans())
+	{
+		arcs.push_back(petri_arc(from, to));
+		at(from).active = at(from).active || at(to).active;
+	}
+	else if (from.is_trans() && to.is_place())
+		arcs.push_back(petri_arc(from, to));
+	else if (from.is_place() && to.is_place())
+		cerr << "Error: Illegal arc {" << from.name() << ", " << to.name() << "}." << endl;
+	else if (from.is_trans() && to.is_trans())
+		cerr << "Error: Illegal arc {" << from.name() << ", " << to.name() << "}." << endl;
+
+	return to;
+}
+
+petri_index petri_net::push_transition(petri_index from, canonical root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+{
+	return connect(from, put_transition(root, active, pbranch, cbranch, owner));
+}
+
+petri_index petri_net::push_transition(svector<petri_index> from, canonical root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+{
+	return connect(from, put_transition(root, active, pbranch, cbranch, owner));
+}
+
+petri_index petri_net::push_transition(petri_index from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+{
+	return connect(from, put_transition(canonical(1), false, pbranch, cbranch, owner));
+}
+
+petri_index petri_net::push_transition(svector<petri_index> from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+{
+	return connect(from, put_transition(canonical(1), false, pbranch, cbranch, owner));
+}
+
+svector<petri_index> petri_net::push_transitions(petri_index from, svector<canonical> root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+{
+	return connect(from, put_transitions(root, active, pbranch, cbranch, owner));
+}
+
+svector<petri_index> petri_net::push_transitions(svector<petri_index> from, svector<canonical> root, bool active, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+{
+	return connect(from, put_transitions(root, active, pbranch, cbranch, owner));
+}
+
+petri_index petri_net::push_place(petri_index from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+{
+	return connect(from, put_place(canonical(0), pbranch, cbranch, owner));
+}
+
+petri_index petri_net::push_place(svector<petri_index> from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+{
+	return connect(from, put_place(canonical(0), pbranch, cbranch, owner));
+}
+
+svector<petri_index> petri_net::push_places(svector<petri_index> from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+{
+	svector<petri_index> result;
+	for (int i = 0; i < from.size(); i++)
+		result.push_back(connect(from[i], put_place(canonical(0), pbranch, cbranch, owner)));
+	return result;
+}
+
+void petri_net::pinch_forward(petri_index n)
+{
+	svector<petri_index> n1 = next(n);
+	svector<petri_index> n1p = prev(n1);
+	svector<petri_index> from = prev(n), to = next(n1);
+	n1.push_back(n);
+	n1.runique();
+
+	if (M0.set_intersection(n1).size() > 0)
+		M0.merge(from);
+
+
+	connect(n1p, from);
+	connect(from, to);
+
+	cut(n1);
+}
+
+void petri_net::pinch_backward(petri_index n)
+{
+	svector<petri_index> n1 = prev(n);
+	svector<petri_index> n1n = next(n1);
+	svector<petri_index> from = prev(n1), to = next(n);
+	n1.push_back(n);
+	n1.runique();
+
+	if (M0.set_intersection(n1).size() > 0)
+		M0.merge(to);
+
+	connect(to, n1n);
+	connect(from, to);
+	cut(n1);
+}
+
+void petri_net::insert(int a, canonical root, bool active)
 {
 	smap<int, int> pbranch, cbranch;
 	instruction *owner;
-	int t, p;
+	petri_index n0, n1;
 
-	if ((*this)[arcs[a].first].pbranch.size() > (*this)[arcs[a].second].pbranch.size() ||
-		(*this)[arcs[a].first].cbranch.size() > (*this)[arcs[a].second].cbranch.size())
+	if (at(arcs[a].first).pbranch.size() > at(arcs[a].second).pbranch.size() ||
+		at(arcs[a].first).cbranch.size() > at(arcs[a].second).cbranch.size())
 	{
-		pbranch = (*this)[arcs[a].first].pbranch;
-		cbranch = (*this)[arcs[a].first].cbranch;
-		owner = (*this)[arcs[a].first].owner;
+		pbranch = at(arcs[a].first).pbranch;
+		cbranch = at(arcs[a].first).cbranch;
+		owner = at(arcs[a].first).owner;
 	}
 	else
 	{
-		pbranch = (*this)[arcs[a].second].pbranch;
-		cbranch = (*this)[arcs[a].second].cbranch;
-		owner = (*this)[arcs[a].second].owner;
+		pbranch = at(arcs[a].second).pbranch;
+		cbranch = at(arcs[a].second).cbranch;
+		owner = at(arcs[a].second).owner;
 	}
 
-	t = new_transition(root, true, pbranch, cbranch, owner);
-	p = new_place(root, pbranch, cbranch, owner);
+	if (arcs[a].first.is_place())
+	{
+		n0 = put_transition(root, active, pbranch, cbranch, owner);
+		n1 = put_place(at(arcs[a].first).index, pbranch, cbranch, owner);
+	}
+	else
+	{
+		n0 = put_place(at(arcs[a].second).index, pbranch, cbranch, owner);
+		n1 = put_transition(root, active, pbranch, cbranch, owner);
+	}
 
-	if (is_trans(arcs[a].first) && is_place(arcs[a].second))
-	{
-		connect(arcs[a].first, p);
-		connect(p, t);
-		arcs[a].first = t;
-	}
-	else if (is_place(arcs[a].first) && is_trans(arcs[a].second))
-	{
-		connect(arcs[a].first, t);
-		connect(t, p);
-		arcs[a].first = p;
-	}
+	connect(arcs[a].first, n0);
+	connect(n0, n1);
+	arcs[a].first = n1;
 }
 
-void petri::insert_sv_parallel(int from, logic root)
+void petri_net::insert_alongside(petri_index from, petri_index to, canonical root, bool active, instruction *owner)
 {
+
+}
+
+petri_index petri_net::duplicate(petri_index n)
+{
+	petri_index result;
+	if (n.is_place())
+	{
+		S.push_back(at(n));
+		result = petri_index(S.size()-1, true);
+	}
+	else
+	{
+		T.push_back(at(n));
+		result = petri_index(T.size()-1, false);
+	}
+
+	for (int i = 0; i < arcs.size(); i++)
+	{
+		if (arcs[i].first == n)
+			arcs.push_back(petri_arc(result, arcs[i].second));
+		if (arcs[i].second == n)
+			arcs.push_back(petri_arc(arcs[i].first, result));
+	}
+
+	if (M0.find(n) != M0.end())
+		M0.push_back(result);
+
+	return result;
+}
+
+svector<petri_index> petri_net::duplicate(svector<petri_index> n)
+{
+	svector<petri_index> result;
+	for (svector<petri_index>::iterator i = n.begin(); i != n.end(); i++)
+		result.push_back(duplicate(*i));
+	return result;
+}
+
+petri_index petri_net::merge(petri_index n0, petri_index n1)
+{
+	for (svector<petri_arc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
+	{
+		if (arc->second == n1)
+			arcs.push_back(petri_arc(arc->first, n0));
+		if (arc->first == n1)
+			arcs.push_back(petri_arc(n0, arc->second));
+	}
+
+	at(n0).pbranch = at(n0).pbranch.set_intersection(at(n1).pbranch);
+	at(n0).cbranch = at(n0).cbranch.set_intersection(at(n1).cbranch);
+	at(n0).index |= at(n1).index;
+	cut(n1);
+	return n0;
+}
+
+petri_index petri_net::merge(svector<petri_index> n)
+{
+	petri_index n0 = n.back();
+	n.pop_back();
+
+	for (svector<petri_arc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
+	{
+		for (svector<petri_index>::iterator ni = n.begin(); ni != n.end(); ni++)
+		{
+			if (arc->second == *ni)
+				arcs.push_back(petri_arc(arc->first, n0));
+			if (arc->first == *ni)
+				arcs.push_back(petri_arc(n0, arc->second));
+		}
+	}
+
+	for (svector<petri_index>::iterator ni = n.begin(); ni != n.end(); ni++)
+	{
+		at(n0).pbranch = at(n0).pbranch.set_intersection(at(*ni).pbranch);
+		at(n0).cbranch = at(n0).cbranch.set_intersection(at(*ni).cbranch);
+		at(n0).index |= at(*ni).index;
+	}
+	cut(n);
+	return n0;
+}
+
+svector<petri_index> petri_net::next(petri_index n)
+{
+	svector<petri_index> result;
+	for (svector<petri_arc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
+		if (arc->first == n)
+			result.push_back(arc->second);
+
+	return result.rsort();
+}
+
+svector<petri_index> petri_net::next(svector<petri_index> n)
+{
+	svector<petri_index> result;
+	for (svector<petri_arc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
+		for (svector<petri_index>::iterator ni = n.begin(); ni != n.end(); ni++)
+			if (arc->first == *ni)
+				result.push_back(arc->second);
+
+	return result.rsort();
+}
+
+svector<petri_index> petri_net::prev(petri_index n)
+{
+	svector<petri_index> result;
+	for (svector<petri_arc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
+		if (arc->second == n)
+			result.push_back(arc->first);
+
+	return result.rsort();
+}
+
+svector<petri_index> petri_net::prev(svector<petri_index> n)
+{
+	svector<petri_index> result;
+	for (svector<petri_arc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
+		for (svector<petri_index>::iterator ni = n.begin(); ni != n.end(); ni++)
+			if (arc->second == *ni)
+				result.push_back(arc->first);
+
+	return result.rsort();
+}
+
+svector<int> petri_net::outgoing(petri_index n)
+{
+	svector<int> result;
+	for (int a = 0; a < arcs.size(); a++)
+		if (arcs[a].first == n)
+			result.push_back(a);
+
+	return result;
+}
+
+svector<int> petri_net::outgoing(svector<petri_index> n)
+{
+	svector<int> result;
+	for (int a = 0; a < arcs.size(); a++)
+		for (svector<petri_index>::iterator ni = n.begin(); ni != n.end(); ni++)
+			if (arcs[a].first == *ni)
+				result.push_back(a);
+
+	return result;
+}
+
+svector<int> petri_net::incoming(petri_index n)
+{
+	svector<int> result;
+	for (int a = 0; a < arcs.size(); a++)
+		if (arcs[a].second == n)
+			result.push_back(a);
+
+	return result;
+}
+
+svector<int> petri_net::incoming(svector<petri_index> n)
+{
+	svector<int> result;
+	for (int a = 0; a < arcs.size(); a++)
+		for (svector<petri_index>::iterator ni = n.begin(); ni != n.end(); ni++)
+			if (arcs[a].second == *ni)
+				result.push_back(a);
+
+	return result;
+}
+
+svector<int> petri_net::next_arc(int n)
+{
+	svector<int> result;
+	for (int a = 0; a < arcs.size(); a++)
+		if (arcs[a].first == arcs[n].second)
+			result.push_back(a);
+
+	return result;
+}
+
+svector<int> petri_net::next_arc(svector<int> n)
+{
+	svector<int> result;
+	for (int a = 0; a < arcs.size(); a++)
+		for (svector<int>::iterator ni = n.begin(); ni != n.end(); ni++)
+			if (arcs[a].first == arcs[*ni].second)
+				result.push_back(a);
+
+	return result;
+}
+
+svector<int> petri_net::prev_arc(int n)
+{
+	svector<int> result;
+	for (int a = 0; a < arcs.size(); a++)
+		if (arcs[a].second == arcs[n].first)
+			result.push_back(a);
+
+	return result;
+}
+
+svector<int> petri_net::prev_arc(svector<int> n)
+{
+	svector<int> result;
+	for (int a = 0; a < arcs.size(); a++)
+		for (svector<int>::iterator ni = n.begin(); ni != n.end(); ni++)
+			if (arcs[a].second == arcs[*ni].first)
+				result.push_back(a);
+
+	return result;
+}
+
+bool petri_net::is_floating(petri_index n)
+{
+	for (svector<petri_arc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
+		if (arc->first == n || arc->second == n)
+			return false;
+
+	return true;
+}
+
+bool petri_net::are_connected(petri_index n0, petri_index n1)
+{
+	svector<petri_index> cf1, cf2;
+	svector<petri_index> ct1, ct2;
+
+	for (svector<petri_arc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
+	{
+		if (arc->first == n0)
+			cf2.push_back(arc->second);
+		else if (arc->second == n0)
+			cf1.push_back(arc->first);
+		if (arc->first == n1)
+			ct2.push_back(arc->second);
+		else if (arc->second == n1)
+			ct1.push_back(arc->first);
+	}
+
+	cf1.unique();
+	cf2.unique();
+	ct1.unique();
+	ct2.unique();
+
+	for (svector<petri_index>::iterator i = cf2.begin(), j = ct1.begin(); i != cf2.end() && j != ct1.end();)
+	{
+		if (*i == *j)
+			return true;
+		else if (*i < *j)
+			i++;
+		else if (*i > *j)
+			j++;
+	}
+
+	for (svector<petri_index>::iterator i = cf1.begin(), j = ct2.begin(); i != cf1.end() && j != ct2.end();)
+	{
+		if (*i == *j)
+			return true;
+		else if (*i < *j)
+			i++;
+		else if (*i > *j)
+			j++;
+	}
+
+	return false;
+}
+
+bool petri_net::have_same_source(petri_index n0, petri_index n1)
+{
+	svector<petri_index> n0in;
+	svector<petri_index> n1in;
+
+	for (svector<petri_arc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
+	{
+		if (arc->second == n0)
+			n0in.push_back(arc->first);
+		if (arc->second == n1)
+			n1in.push_back(arc->first);
+	}
+
+	n0in.unique();
+	n1in.unique();
+
+	bool diff = true;
+	if (n0in.size() == n1in.size())
+	{
+		diff = false;
+		for (svector<petri_index>::iterator n0i = n0in.begin(); n0i != n0in.end() && !diff; n0i++)
+		{
+			diff = true;
+			for (svector<petri_index>::iterator n1i = n1in.begin(); n1i != n1in.end() && diff; n1i++)
+				if (at(*n0i).index == at(*n1i).index)
+					diff = false;
+		}
+	}
+
+	return !diff;
+}
+
+bool petri_net::have_same_dest(petri_index n0, petri_index n1)
+{
+	svector<petri_index> n0out;
+	svector<petri_index> n1out;
+
+	for (svector<petri_arc>::iterator arc = arcs.begin(); arc != arcs.end(); arc++)
+	{
+		if (arc->first == n0)
+			n0out.push_back(arc->second);
+		if (arc->first == n1)
+			n1out.push_back(arc->second);
+	}
+
+	n0out.unique();
+	n1out.unique();
+
+	bool diff = true;
+	if (n0out.size() == n1out.size())
+	{
+		diff = false;
+		for (svector<petri_index>::iterator n0i = n0out.begin(); n0i != n0out.end() && !diff; n0i++)
+		{
+			diff = true;
+			for (svector<petri_index>::iterator n1i = n1out.begin(); n1i != n1out.end() && diff; n1i++)
+				if (at(*n0i).index == at(*n1i).index)
+					diff = false;
+		}
+	}
+
+	return !diff;
+}
+
+int petri_net::are_parallel_siblings(petri_index p0, petri_index p1)
+{
+	petri_node *n0 = &at(p0);
+	petri_node *n1 = &at(p1);
 	smap<int, int>::iterator bi, bj;
-	svector<int> ip = input_nodes(from);
-	svector<int> op = output_nodes(from);
-	svector<int> input_places;
-	svector<int> output_places;
-	svector<int> fvl;
-	svector<int> tvl;
-	int trans;
-	int i;
-
-	T[index(from)].index.vars(&fvl);
-	fvl.merge(vars->x_channel(fvl));
-	root.vars(&tvl);
-
-	// Implement the Physical Structure
-	input_places = duplicate_nodes(ip);
-	trans = insert_transition(input_places, root, T[index(from)].pbranch, T[index(from)].cbranch, T[index(from)].owner);
-	for (i = 0; i < (int)op.size(); i++)
-	{
-		output_places.push_back(insert_place(trans, S[op[i]].pbranch, S[op[i]].cbranch, S[op[i]].owner));
-		connect(output_places.back(), output_nodes(op[i]));
-	}
-
-	// Update Branch IDs
-	for (i = 0; i < (int)input_places.size(); i++)
-	{
-		S[ip[i]].pbranch.insert(pair<int, int>(pbranch_count, 0));
-		S[input_places[i]].pbranch.insert(pair<int, int>(pbranch_count, 1));
-	}
-	T[index(from)].pbranch.insert(pair<int, int>(pbranch_count, 0));
-	T[index(trans)].pbranch.insert(pair<int, int>(pbranch_count, 1));
-	for (i = 0; i < (int)output_places.size(); i++)
-	{
-		S[op[i]].pbranch.insert(pair<int, int>(pbranch_count, 0));
-		S[output_places[i]].pbranch.insert(pair<int, int>(pbranch_count, 1));
-	}
-
-	pbranch_count++;
+	for (bi = n0->pbranch.begin(); bi != n0->pbranch.end(); bi++)
+		for (bj = n1->pbranch.begin(); bj != n1->pbranch.end(); bj++)
+			if (bi->first == bj->first && bi->second != bj->second)
+				return bi->first;
+	return -1;
 }
 
-svector<int> petri::insert_transitions(int from, svector<logic> root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+int petri_net::are_conditional_siblings(petri_index p0, petri_index p1)
 {
-	int t, i;
-	svector<int> result;
-	for (i = 0; i < (int)root.size(); i++)
+	petri_node *n0 = &at(p0);
+	petri_node *n1 = &at(p1);
+	smap<int, int>::iterator bi, bj;
+	for (bi = n0->cbranch.begin(); bi != n0->cbranch.end(); bi++)
+		for (bj = n1->cbranch.begin(); bj != n1->cbranch.end(); bj++)
+			if (bi->first == bj->first && bi->second != bj->second)
+				return bi->first;
+	return -1;
+}
+
+bool petri_net::is_in_tail(petri_state s, svector<petri_index> i)
+{
+	int total_places = 0;
+	int num_valid_places = 0;
+	for (int k = 0; k < i.size(); k++)
 	{
-		t = new_transition(root[i], (owner->kind() == "assignment"), pbranch, cbranch, owner);
-		if (is_trans(from))
-			cerr << "Error: Illegal arc {T[" << index(from) << "], T[" << index(t) << "]}." << endl;
+		if (i[k].is_trans())
+		{
+			if (!is_in_tail(s, i[k]))
+				return false;
+		}
 		else
 		{
-			arcs.push_back(pair<int, int>(from, t));
-			S[from].active = S[from].active || T[index(t)].active;
+			total_places++;
+			if (is_in_tail(s, i[k]))
+				num_valid_places++;
+		}
+	}
+
+	if (total_places == 0 || total_places < i.size() || num_valid_places > 0)
+		return true;
+	else
+		return false;
+}
+
+bool petri_net::is_in_tail(petri_state s, petri_index i)
+{
+	for (int j = 0; j < s.state.size(); j++)
+		if (at(s.state[j]).is_in_tail(i))
+			return true;
+
+	return false;
+}
+
+petri_node &petri_net::operator[](petri_index i)
+{
+	return i.is_place() ? S[i.data] : T[i.data & 0x7FFFFFFF];
+}
+
+petri_node &petri_net::at(petri_index i)
+{
+	return i.is_place() ? S[i.data] : T[i.data & 0x7FFFFFFF];
+}
+
+pair<int, int> petri_net::closest_input(svector<int> from, svector<int> to)
+{
+	svector<int> covered(arcs.size(), 0);
+	list<pair<int, int> > nodes;
+	for (int i = 0; i < to.size(); i++)
+		nodes.push_back(pair<int, int>(0, to[i]));
+
+	for (list<pair<int, int> >::iterator n = nodes.begin(); n != nodes.end(); n = nodes.erase(n))
+	{
+		if (covered[n->second] == 0)
+		{
+			if (from.find(n->second) != from.end())
+				return *n;
+
+			for (int a = 0; a < arcs.size(); a++)
+				if (arcs[a].second == arcs[n->second].first)
+					nodes.push_back(pair<int, int>(n->first+1, a));
 		}
 
-		result.push_back(t);
+		covered[n->second]++;
 	}
+
+	return pair<int, int>(arcs.size(), -1);
+}
+
+pair<int, int> petri_net::closest_output(svector<int> from, svector<int> to)
+{
+	svector<int> covered(arcs.size(), 0);
+	list<pair<int, int> > nodes;
+	for (int i = 0; i < from.size(); i++)
+		nodes.push_back(pair<int, int>(0, from[i]));
+
+	for (list<pair<int, int> >::iterator n = nodes.begin(); n != nodes.end(); n = nodes.erase(n))
+	{
+		if (covered[n->second] == 0)
+		{
+			if (to.find(n->second) != to.end())
+				return *n;
+
+			for (int a = 0; a < arcs.size(); a++)
+				if (arcs[a].first == arcs[n->second].second)
+					nodes.push_back(pair<int, int>(n->first+1, a));
+		}
+
+		covered[n->second]++;
+	}
+
+	return pair<int, int>(arcs.size(), -1);
+}
+
+void petri_net::get_paths(svector<int> from, svector<int> to, path_space *result)
+{
+	for (int i = 0; i < from.size(); i++)
+	{
+		svector<int> ex = from;
+		ex.erase(ex.begin() + i);
+
+		result->paths.push_back(path(arcs.size(), from[i], from[i]));
+		list<path>::iterator path = ::prev(result->paths.end());
+		while (path != result->paths.end())
+		{
+			/* If we hit an arc that should be excluded or we
+			 * found a loop then we kill this path and move on.
+			 */
+			if (ex.find(path->to.front()) != ex.end() || path->nodes[path->to.front()] > 0)
+				path = result->paths.erase(path);
+			/* If we have reached one of the designated ending nodes
+			 * then we are done here and we can move on to the next path.
+			 */
+			else if (to.find(path->to.front()) != to.end())
+				path++;
+			/* Otherwise we record this location in the path and
+			 * increment to the next set of arcs.
+			 */
+			else
+			{
+				path->nodes[path->to.front()]++;
+
+				svector<int> n = next_arc(path->to.front());
+				for (int j = n.size()-1; j >= 0; j--)
+				{
+					if (j == 0)
+						path->to.front() = n[j];
+					else
+					{
+						result->paths.push_back(*path);
+						result->paths.back().to.front() = n[j];
+					}
+				}
+			}
+		}
+	}
+
+	// Accumulate the resulting paths into the total count.
+	result->total.nodes.resize(arcs.size(), 0);
+	for (list<path>::iterator path = result->begin(); path != result->end(); path++)
+	{
+		result->total.from.merge(path->from);
+		result->total.to.merge(path->to);
+		for (int i = 0; i < arcs.size(); i++)
+			result->total.nodes[i] += path->nodes[i];
+	}
+	result->total.from.unique();
+	result->total.to.unique();
+}
+
+void petri_net::zero_paths(path_space *paths, petri_index from)
+{
+	for (int i = 0; i < (int)arcs.size(); i++)
+		if (arcs[i].first == from || arcs[i].second == from)
+			paths->zero(i);
+}
+
+void petri_net::zero_paths(path_space *paths, svector<petri_index> from)
+{
+	for (int i = 0; i < (int)from.size(); i++)
+		for (int j = 0; j < (int)arcs.size(); j++)
+			if (arcs[j].first == from[i] || arcs[j].second == from[i])
+				paths->zero(j);
+}
+
+void petri_net::zero_ins(path_space *paths, petri_index from)
+{
+	for (int i = 0; i < (int)arcs.size(); i++)
+		if (arcs[i].second == from)
+			paths->zero(i);
+}
+
+void petri_net::zero_ins(path_space *paths, svector<petri_index> from)
+{
+	for (int i = 0; i < (int)from.size(); i++)
+		for (int j = 0; j < (int)arcs.size(); j++)
+			if (arcs[j].second == from[i])
+				paths->zero(j);
+}
+
+void petri_net::zero_outs(path_space *paths, petri_index from)
+{
+	for (int i = 0; i < (int)arcs.size(); i++)
+		if (arcs[i].first == from)
+			paths->zero(i);
+}
+
+void petri_net::zero_outs(path_space *paths, svector<petri_index> from)
+{
+	for (int i = 0; i < (int)from.size(); i++)
+		for (int j = 0; j < (int)arcs.size(); j++)
+			if (arcs[j].first == from[i])
+				paths->zero(j);
+}
+
+svector<int> petri_net::start_path(int from, svector<int> ex)
+{
+	svector<int> result, oa;
+	smap<int, pair<petri_index, petri_index> >::iterator ci;
+	smap<int, int>::iterator bi, bj, bk;
+	int j, k;
+	bool same;
+
+	result.push_back(from);
+	for (bi = at(arcs[from].second).cbranch.begin(); bi != at(arcs[from].second).cbranch.end(); bi++)
+	{
+		ci = conditional_places.find(bi->first);
+		if (ci != conditional_places.end())
+		{
+			oa = outgoing(ci->second.second);
+			for (j = 0; j < (int)oa.size(); j++)
+			{
+				bk = at(arcs[oa[j]].second).cbranch.find(bi->first);
+				same = (bk->second == bi->second);
+
+				for (k = 0; k < (int)ex.size() && !same; k++)
+				{
+					bj = at(arcs[ex[k]].second).cbranch.find(bi->first);
+					if (bj != at(arcs[ex[k]].second).cbranch.end() && bj->second == bk->second)
+						same = true;
+				}
+
+				if (!same)
+					result.push_back(oa[j]);
+			}
+		}
+		else
+		{
+			cerr << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
+			cout << "Failed to find the conditional branch " << bi->first << "." << endl;
+			print_branch_ids(&cout);
+		}
+	}
+	result.unique();
+
+	/*cout << "Start {" << petri_node_name(from) << "} -> {";
+	for (j = 0; j < (int)result.size(); j++)
+		cout << petri_node_name(result[j]) << " ";
+	cout << "}" << endl;*/
+
 	return result;
 }
 
-svector<int> petri::insert_transitions(svector<int> from, svector<logic> root, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+svector<int> petri_net::start_path(svector<int> from, svector<int> ex)
 {
-	int t, i, j;
-	svector<int> result;
-	for (i = 0; i < (int)root.size(); i++)
+	svector<int> result, oa;
+	smap<int, pair<petri_index, petri_index> >::iterator ci;
+	smap<int, int>::iterator bi, bj, bk;
+	int i, j, k;
+	bool same = false;
+
+	for (i = 0; i < (int)from.size(); i++)
 	{
-		t = new_transition(root[i], (owner->kind() == "assignment"), pbranch, cbranch, owner);
-		for (j = 0; j < (int)from.size(); j++)
+		result.push_back(from[i]);
+		for (bi = (*this)[arcs[from[i]].second].cbranch.begin(); bi != (*this)[arcs[from[i]].second].cbranch.end(); bi++)
 		{
-			if (is_trans(from[j]))
-				cerr << "Error: Illegal arc {T[" << index(from[j]) << "], T[" << index(t) << "]}." << endl;
+			ci = conditional_places.find(bi->first);
+			if (ci != conditional_places.end())
+			{
+				oa = outgoing(ci->second.second);
+				for (j = 0; j < (int)oa.size(); j++)
+				{
+					bk = at(arcs[oa[j]].second).cbranch.find(bi->first);
+
+					same = false;
+					for (k = 0; k < (int)from.size() && !same; k++)
+					{
+						bj = at(arcs[from[k]].second).cbranch.find(bi->first);
+						if (bj != at(arcs[from[k]].second).cbranch.end() && bj->second == bk->second)
+							same = true;
+					}
+
+					for (k = 0; k < (int)ex.size() && !same; k++)
+					{
+						bj = at(arcs[ex[k]].second).cbranch.find(bi->first);
+						if (bj != at(arcs[ex[k]].second).cbranch.end() && bj->second == bk->second)
+							same = true;
+					}
+
+					if (!same)
+						result.push_back(oa[j]);
+				}
+			}
 			else
 			{
-				arcs.push_back(pair<int, int>(from[j], t));
-				S[from[j]].active = S[from[j]].active || T[index(t)].active;
+				cerr << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
+				cout << "Failed to find the conditional branch " << bi->first << "." << endl;
+				print_branch_ids(&cout);
 			}
 		}
-
-		result.push_back(t);
 	}
+	result.unique();
+
+	/*cout << "Start {";
+	for (i = 0; i < (int)from.size(); i++)
+		cout << petri_node_name(from[i]) << " ";
+	cout << "} -> {";
+
+	for (i = 0; i < (int)result.size(); i++)
+		cout << petri_node_name(result[i]) << " ";
+
+	cout << "}" << endl;*/
+
 	return result;
 }
 
-int petri::insert_dummy(int from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+svector<petri_index> petri_net::end_path(petri_index to, svector<petri_index> ex)
 {
-	int t = new_transition(logic(1), false, pbranch, cbranch, owner);
-	if (is_trans(from))
-		cerr << "Error: Illegal arc {T[" << index(from) << "], T[" << index(t) << "]}." << endl;
-	else
-		arcs.push_back(pair<int, int>(from, t));
-	return t;
-}
+	svector<petri_index> result, oa;
+	smap<int, pair<petri_index, petri_index> >::iterator ci;
+	smap<int, int>::iterator bi, bj, bk;
+	int j, k;
+	bool same;
 
-int petri::insert_dummy(svector<int> from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
-{
-	int t = new_transition(logic(1), false, pbranch, cbranch, owner);
-	for (int i = 0; i < from.size(); i++)
+	result.push_back(to);
+	for (bi = at(to).cbranch.begin(); bi != at(to).cbranch.end(); bi++)
 	{
-		if (is_trans(from[i]))
-			cerr << "Error: Illegal arc {T[" << index(from[i]) << "], T[" << index(t) << "]}." << endl;
+		ci = conditional_places.find(bi->first);
+		if (ci != conditional_places.end())
+		{
+			oa = prev(ci->second.first);
+			for (j = 0; j < (int)oa.size(); j++)
+			{
+				bk = at(oa[j]).cbranch.find(bi->first);
+				same = (bk->second == bi->second);
+
+				for (k = 0; k < (int)ex.size() && !same; k++)
+				{
+					bj = at(ex[k]).cbranch.find(bi->first);
+					if (bj != at(ex[k]).cbranch.end() && bj->second == bk->second)
+						same = true;
+				}
+
+				if (!same)
+					result.push_back(oa[j]);
+			}
+		}
 		else
-			arcs.push_back(pair<int, int>(from[i], t));
+		{
+			cerr << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
+			cout << "Failed to find the conditional branch " << bi->first << "." << endl;
+			print_branch_ids(&cout);
+		}
 	}
-	return t;
+	result.unique();
+
+	/*cout << "End {" << petri_node_name(to) << "} -> {";
+	for (j = 0; j < (int)result.size(); j++)
+		cout << petri_node_name(result[j]) << " ";
+	cout << "}" << endl;*/
+
+	return result;
 }
 
-int petri::insert_place(int from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+svector<petri_index> petri_net::end_path(svector<petri_index> to, svector<petri_index> ex)
 {
-	int p = new_place(logic(0), pbranch, cbranch, owner);
+	svector<petri_index> result, oa;
+	smap<int, pair<petri_index, petri_index> >::iterator ci;
+	smap<int, int>::iterator bi, bj, bk;
+	int i, j, k;
+	bool same = false;
 
-	if (is_place(from))
-		cerr << "Error: Illegal arc {S[" << from << "], S[" << p << "]}." << endl;
-	else
-		arcs.push_back(pair<int, int>(from, p));
-	return p;
-}
-
-int petri::insert_place(svector<int> from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
-{
-	int p = new_place(logic(0), pbranch, cbranch, owner);
-	for (int i = 0; i < from.size(); i++)
+	for (i = 0; i < (int)to.size(); i++)
 	{
-		if (is_place(from[i]))
-			cerr << "Error: Illegal arc {S[" << from[i] << "], S[" << p << "]}." << endl;
-		else
-			arcs.push_back(pair<int, int>(from[i], p));
+		result.push_back(to[i]);
+		for (bi = at(to[i]).cbranch.begin(); bi != at(to[i]).cbranch.end(); bi++)
+		{
+			ci = conditional_places.find(bi->first);
+			if (ci != conditional_places.end())
+			{
+				oa = prev(ci->second.first);
+				for (j = 0; j < (int)oa.size(); j++)
+				{
+					bk = at(oa[j]).cbranch.find(bi->first);
+
+					same = false;
+					for (k = 0; k < (int)to.size() && !same; k++)
+					{
+						bj = (*this)[to[k]].cbranch.find(bi->first);
+						if (bj != (*this)[to[k]].cbranch.end() && bj->second == bk->second)
+							same = true;
+					}
+
+					for (k = 0; k < (int)ex.size() && !same; k++)
+					{
+						bj = at(ex[k]).cbranch.find(bi->first);
+						if (bj != at(ex[k]).cbranch.end() && bj->second == bk->second)
+							same = true;
+					}
+
+					if (!same)
+						result.push_back(oa[j]);
+				}
+			}
+			else
+			{
+				cerr << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
+				cout << "Failed to find the conditional branch " << bi->first << "." << endl;
+				print_branch_ids(&cout);
+			}
+		}
+	}
+	result.unique();
+
+	/*cout << "End {";
+	for (i = 0; i < (int)to.size(); i++)
+		cout << petri_node_name(to[i]) << " ";
+	cout << "} -> {";
+
+	for (i = 0; i < (int)result.size(); i++)
+		cout << petri_node_name(result[i]) << " ";
+
+	cout << "}" << endl;*/
+
+	return result;
+}
+
+void petri_net::expand()
+{
+	print_dot(&cout, "this");
+
+	svector<petri_state> states;
+	svector<petri_index> transitions;
+	svector<petri_arc> new_arcs;
+
+	list<pair<petri_index, petri_state> > execs;
+	petri_state start(this, M0);
+	execs.push_back(pair<petri_index, petri_state>(petri_index(), petri_state(this, M0)));
+
+	/**
+	 * Run through all possible executions from the starting index
+	 * looking for deadlock.
+	 */
+	for (list<pair<petri_index, petri_state> >::iterator exec = execs.begin(); exec != execs.end(); exec++)
+	{
+		//cout << "\tStart Execution" << endl;
+		bool done = false;
+		while (!done)
+		{
+			svector<int> places_ready;
+			svector<int> transitions_ready;
+			/*
+			 * Move transitions first so that we can force each
+			 * index to land on a place at the same time. This
+			 * allows us to check against the covered flags and
+			 * signal done.
+			 */
+			for (int j = 0; j < exec->second.state.size(); j++)
+			{
+				if (exec->second.state[j].is_trans())
+					transitions_ready.push_back(j);
+				else
+				{
+					int total = 0;
+					for (int k = j; k < exec->second.state.size(); k++)
+						if (next(exec->second.state[k])[0] == next(exec->second.state[j])[0])
+							total++;
+
+					if (total == incoming(next(exec->second.state[j])[0]).size())
+					{
+						for (int k = j+1; k < exec->second.state.size(); )
+						{
+							if (next(exec->second.state[k])[0] == next(exec->second.state[j])[0])
+								exec->second.state.erase(exec->second.state.begin() + k);
+							else
+								k++;
+						}
+						places_ready.push_back(j);
+					}
+				}
+			}
+
+			// Check to see if we are done here...
+			petri_state s = exec->second;
+			s.state.sort();
+
+			if (s.is_state())
+			{
+				svector<petri_state>::iterator found;
+				if ((found = states.find(s)) != states.end())
+				{
+					if (exec->first.data != -1 && !exec->first.is_place())
+						new_arcs.push_back(petri_arc(exec->first, petri_index(found - states.begin(), true)));
+					exec->first = petri_index(found - states.begin(), true);
+					done = true;
+				}
+				else
+				{
+					states.push_back(s);
+					if (exec->first.data != -1 && !exec->first.is_place())
+						new_arcs.push_back(petri_arc(exec->first, petri_index(states.size()-1, true)));
+					exec->first = petri_index(states.size()-1, true);
+				}
+			}
+			else
+			{
+				bool found = false;
+				for (int i = 0; !found && i < s.state.size(); i++)
+					if (s.state[i].is_trans())
+					{
+						transitions.push_back(s.state[i]);
+						if (exec->first.data != -1 && !exec->first.is_trans())
+							new_arcs.push_back(petri_arc(exec->first, petri_index(transitions.size()-1, false)));
+						exec->first = petri_index(transitions.size()-1, false);
+						found = true;
+					}
+			}
+
+			cout << "\t{";
+			for (int i = 0; i < s.state.size(); i++)
+			{
+				if (i != 0)
+					cout << " ";
+				cout << s.state[i];
+			}
+			cout << "}" << endl;
+
+			/* If we are not done, handle the next set of movements
+			 * duplicating executions or indices when necessary.
+			 */
+			if (!done && transitions_ready.size() > 0)
+			{
+				for (int j = 0; j < transitions_ready.size(); j++)
+				{
+					svector<petri_index> n = next(exec->second.state[transitions_ready[j]]);
+
+					for (int k = n.size()-1; k >= 0; k--)
+					{
+						if (k > 0)
+							exec->second.state.push_back(n[k]);
+						else
+							exec->second.state[transitions_ready[j]] = n[k];
+					}
+				}
+			}
+			else if (!done && places_ready.size() > 0)
+			{
+				for (int j = places_ready.size()-1; j >= 0; j--)
+				{
+					list<pair<petri_index, petri_state> >::iterator temp = exec;
+					if (j > 0)
+					{
+						execs.push_back(*exec);
+						temp = ::prev(execs.end());
+					}
+
+					svector<petri_index> n = next(temp->second.state[places_ready[j]]);
+
+					for (int k = n.size()-1; k >= 0; k--)
+					{
+						if (k > 0)
+						{
+							execs.push_back(*temp);
+							execs.back().second.state[places_ready[j]] = n[k];
+						}
+						else
+							temp->second.state[places_ready[j]] = n[k];
+					}
+				}
+			}
+			else if (!done)
+			{
+				cerr << "Error: Deadlock Detected" << endl;
+				done = true;
+			}
+		}
 	}
 
-	return p;
+	svector<petri_node> new_S;
+	svector<petri_node> new_T;
+
+	for (int i = 0; i < states.size(); i++)
+	{
+		petri_node new_node;
+		new_node.index = 1;
+		new_node.assumptions = 1;
+		new_node.active = false;
+		for (int j = 0; j < states[i].state.size(); j++)
+		{
+			new_node.index &= at(states[i].state[j]).index;
+			new_node.assumptions &= at(states[i].state[j]).assumptions;
+			new_node.assertions.merge(at(states[i].state[j]).assertions);
+			new_node.active = new_node.active || at(states[i].state[j]).active;
+		}
+
+		new_S.push_back(new_node);
+	}
+
+	for (int i = 0; i < transitions.size(); i++)
+		new_T.push_back(at(transitions[i]));
+
+	S.clear();
+	T.clear();
+	arcs.clear();
+	S = new_S;
+	T = new_T;
+	arcs = new_arcs;
+	M0 = svector<petri_index>(1, petri_index(0, true));
+
+	print_dot(&cout, "this");
 }
 
-svector<int> petri::insert_places(svector<int> from, smap<int, int> pbranch, smap<int, int> cbranch, instruction *owner)
+void petri_net::generate_tails()
 {
-	svector<int> res;
-	for (int i = 0; i < from.size(); i++)
-		res.push_back(insert_place(from[i], pbranch, cbranch, owner));
-	return res;
-}
+	for (int i = 0; i < S.size(); i++)
+		S[i].tail.clear();
+	for (int i = 0; i < T.size(); i++)
+		T[i].tail.clear();
 
-void petri::remove_place(int from)
-{
+	svector<petri_index> ia, oa;
+	svector<petri_index> old;
 	int i;
-	svector<int> ot = output_nodes(from);
-	svector<int> op;
-	for (i = 0; i < (int)ot.size(); i++)
-		op.merge(output_nodes(ot[i]));
-	op.unique();
-	for (i = 0; i < (int)op.size(); i++)
-		if (op[i] > from)
-			op[i]--;
-
-	bool init = false;
-
-	if (is_place(from))
+	bool done = false;
+	while (!done)
 	{
-		for (i = 0; i < (int)M0.size(); i++)
+		done = true;
+		for (i = 0; i < arcs.size(); i++)
 		{
-			if (M0[i] > from)
-				M0[i]--;
-			else if (M0[i] == from)
+			// State A->T is in the tail of T1 if A -> T -> Tail of T1 and T is either not active or not invacuous
+			if (arcs[i].first.is_trans() && (!at(arcs[i].first).active || at(arcs[i].first).possibly_vacuous))
 			{
-				M0.erase(M0.begin() + i);
-				init = true;
-				i--;
+				old = at(arcs[i].second).tail;
+				at(arcs[i].second).add_to_tail(arcs[i].first);
+				at(arcs[i].second).add_to_tail(at(arcs[i].first).tail);
+				done = done && (old == at(arcs[i].second).tail);
+			}
+			else if (arcs[i].first.is_place())
+			{
+				old = at(arcs[i].second).tail;
+				at(arcs[i].second).add_to_tail(arcs[i].first);
+				at(arcs[i].second).add_to_tail(at(arcs[i].first).tail);
+				done = done && (old == at(arcs[i].second).tail);
 			}
 		}
-
-		for (i = 0; i < (int)arcs.size();)
-		{
-			if (arcs[i].first == from || arcs[i].second == from)
-				arcs.erase(arcs.begin() + i);
-			else
-			{
-				if (arcs[i].first > from)
-					arcs[i].first--;
-				if (arcs[i].second > from)
-					arcs[i].second--;
-
-				i++;
-			}
-		}
-
-		if (init)
-			M0.insert(M0.end(), op.begin(), op.end());
-		S.erase(S.begin() + from);
 	}
-	else
-		cerr << "Error: " << index(from) << " must be a place." << endl;
-}
 
-void petri::remove_place(svector<int> from)
-{
-	for (int i = 0; i < from.size(); i++)
-		remove_place(from[i]);
-}
-
-void petri::remove_trans(int from)
-{
-	if (is_trans(from))
+	cout << "TAILS" << endl;
+	for (int i = 0; i < S.size(); i++)
 	{
-		for (int i = 0; i < arcs.size();)
-		{
-			if (arcs[i].first == from || arcs[i].second == from)
-				arcs.erase(arcs.begin() + i);
-			else
-			{
-				if (is_trans(arcs[i].first) && arcs[i].first > from)
-					arcs[i].first--;
-				if (is_trans(arcs[i].second) && arcs[i].second > from)
-					arcs[i].second--;
-
-				i++;
-			}
-		}
-
-		T.erase(T.begin() + index(from));
+		cout << "S" << i << ": ";
+		for (int j = 0; j < S[i].tail.size(); j++)
+			cout << S[i].tail[j].name();
+		cout << endl;
 	}
-	else
-		cerr << "Error: " << index(from) << " must be a transition." << endl;
-}
-
-void petri::remove_trans(svector<int> from)
-{
-	for (int i = 0; i < from.size(); i++)
-		remove_trans(from[i]);
-}
-
-void petri::update()
-{
-	svector<bool> covered;
-	svector<int> r1, r2;
-	svector<int> ia;
-
-	(*flags->log_file) << "Reset: {";
-	for (int i = 0; i < (int)M0.size(); i++)
-		cout << M0[i] << " ";
-	cout << "} " << vars->reset.print(vars) << endl;
-
-	env.simulate();
-
-	for (int i = 0; i < env.final.size(); i++)
-		S[i].index = env.final[i];
 
 	for (int i = 0; i < T.size(); i++)
 	{
-		ia = input_nodes(trans_id(i));
-
-		logic t = 1;
-		for (int l = 0; l < ia.size(); l++)
-			t &= S[ia[l]].index;
-
-		logic r;
-		if (T[i].active)
-			r = (t >> T[i].index);
-		else
-			r = (t & T[i].index);
-
-		T[i].definitely_invacuous = is_mutex(&t, &r);
-		T[i].possibly_vacuous = !T[i].definitely_invacuous;
-		T[i].definitely_vacuous = (t == r);
+		cout << "T" << i << ": ";
+		for (int j = 0; j < T[i].tail.size(); j++)
+			cout << T[i].tail[j].name();
+		cout << endl;
 	}
 }
 
-void petri::check_assertions()
+void petri_net::check_assertions()
 {
 	for (int i = 0; i < (int)S.size(); i++)
 	{
@@ -452,176 +1459,9 @@ void petri::check_assertions()
 	}
 }
 
-void petri::connect(svector<int> from, svector<int> to)
+canonical petri_net::base(svector<int> idx)
 {
-	for (int i = 0; i < from.size(); i++)
-		for (int j = 0; j < to.size(); j++)
-			connect(from[i], to[j]);
-}
-
-void petri::connect(svector<int> from, int to)
-{
-	for (int i = 0; i < from.size(); i++)
-		connect(from[i], to);
-}
-
-void petri::connect(int from, svector<int> to)
-{
-	for (int j = 0; j < to.size(); j++)
-		connect(from, to[j]);
-}
-
-void petri::connect(int from, int to)
-{
-	if (is_place(from) && is_trans(to))
-	{
-		arcs.push_back(pair<int, int>(from, to));
-		S[from].active = S[from].active || T[index(to)].active;
-	}
-	else if (is_trans(from) && is_place(to))
-		arcs.push_back(pair<int, int>(from, to));
-	else if (is_place(from) && is_place(to))
-		cerr << "Error: Illegal arc {S[" << from << "], S[" << to << "]}." << endl;
-	else if (is_trans(from) && is_trans(to))
-		cerr << "Error: Illegal arc {T[" << index(from) << "], T[" << index(to) << "]}." << endl;
-}
-
-pair<int, int> petri::closest_input(svector<int> from, svector<int> to, path p, int i)
-{
-	int count = 0;
-	svector<int> next;
-	svector<int> it, ip;
-	svector<pair<int, int> > results;
-	int j;
-	int a;
-
-	if (from.size() == 0)
-		return pair<int, int>(arcs.size(), -1);
-
-	next = to;
-
-	while (next.size() == 1)
-	{
-		count++;
-		a = next[0];
-
-		if (p[a] > 0)
-			return pair<int, int>(arcs.size(), -1);
-
-		p[a]++;
-
-		if (from.find(a) != from.end())
-			return pair<int, int>(count, a);
-
-		next.clear();
-		for (j = 0; j < (int)arcs.size(); j++)
-			if (arcs[j].second == arcs[a].first)
-				next.push_back(j);
-	}
-
-	for (j = 0; j < (int)next.size(); j++)
-		if (p[next[j]] == 0)
-		{
-			count++;
-			results.push_back(closest_input(from, svector<int>(1, next[j]), p, i+1));
-		}
-	results.unique();
-
-	if (results.size() > 0)
-		return pair<int, int>(results.front().first + count, results.front().second);
-	else
-		return pair<int, int>(arcs.size(), -1);
-}
-
-pair<int, int> petri::closest_output(svector<int> from, svector<int> to, path p, int i)
-{
-	int count = 0;
-	svector<int> next;
-	svector<int> it, ip;
-	svector<pair<int, int> > results;
-	int j;
-	int a;
-
-	if (to.size() == 0)
-		return pair<int, int>(arcs.size(), -1);
-
-	next = from;
-
-	while (next.size() == 1)
-	{
-		count++;
-		a = next[0];
-
-		if (p[a] > 0)
-			return pair<int, int>(arcs.size(), -1);
-
-		p[a]++;
-
-		if (to.find(a) != to.end())
-			return pair<int, int>(count, a);
-
-		next.clear();
-		for (j = 0; j < (int)arcs.size(); j++)
-			if (arcs[j].first == arcs[a].second)
-				next.push_back(j);
-	}
-
-	for (j = 0; j < (int)next.size(); j++)
-		if (p[next[j]] == 0)
-		{
-			count++;
-			results.push_back(closest_output(svector<int>(1, next[j]), to, p, i+1));
-		}
-	results.unique();
-
-	if (results.size() > 0)
-		return pair<int, int>(results.front().first + count, results.front().second);
-	else
-		return pair<int, int>(arcs.size(), -1);
-}
-
-bool petri::dead(int from)
-{
-	for (int i = 0; i < arcs.size(); i++)
-		if (arcs[i].first == from || arcs[i].second == from)
-			return false;
-
-	return true;
-}
-
-bool petri::is_place(int from)
-{
-	return (from >= 0);
-}
-
-bool petri::is_trans(int from)
-{
-	return (from < 0);
-}
-
-int petri::index(int from)
-{
-	return (from&0x7FFFFFFF);
-}
-
-int petri::place_id(int idx)
-{
-	return (idx&0x7FFFFFFF);
-}
-
-int petri::trans_id(int idx)
-{
-	return (idx|0x80000000);
-}
-
-sstring petri::node_name(int idx)
-{
-	return (is_trans(idx) ? "T" : "S") + sstring(index(idx));
-}
-
-logic petri::base(svector<int> idx)
-{
-	logic res(1);
+	canonical res(1);
 	int i;
 	for (i = 0; i < (int)idx.size(); i++)
 		res = res & S[idx[i]].index;
@@ -629,397 +1469,106 @@ logic petri::base(svector<int> idx)
 	return res;
 }
 
-bool petri::connected(int from, int to)
-{
-	svector<int> cf1, cf2;
-	svector<int> ct1, ct2;
-
-	for (int i = 0; i < arcs.size(); i++)
-	{
-		if (arcs[i].first == from)
-			cf2.push_back(arcs[i].second);
-		else if (arcs[i].second == from)
-			cf1.push_back(arcs[i].first);
-		if (arcs[i].first == to)
-			ct2.push_back(arcs[i].second);
-		else if (arcs[i].second == to)
-			ct1.push_back(arcs[i].first);
-	}
-
-	cf1.unique();
-	cf2.unique();
-	ct1.unique();
-	ct2.unique();
-
-	for (int i = 0, j = 0; i < cf2.size() && j < ct1.size();)
-	{
-		if (cf2[i] == ct1[j])
-			return true;
-		else if (cf2[i] < ct1[j])
-			i++;
-		else if (cf2[i] > ct1[j])
-			j++;
-	}
-
-	for (int i = 0, j = 0; i < cf1.size() && j < ct2.size();)
-	{
-		if (cf1[i] == ct2[j])
-			return true;
-		else if (cf1[i] < ct2[j])
-			i++;
-		else if (cf1[i] > ct2[j])
-			j++;
-	}
-
-	return false;
-}
-
-int petri::psiblings(int p0, int p1)
-{
-	node *n0 = &((*this)[p0]);
-	node *n1 = &((*this)[p1]);
-	smap<int, int>::iterator bi, bj;
-	for (bi = n0->pbranch.begin(); bi != n0->pbranch.end(); bi++)
-		for (bj = n1->pbranch.begin(); bj != n1->pbranch.end(); bj++)
-			if (bi->first == bj->first && bi->second != bj->second)
-				return bi->first;
-	return -1;
-}
-
-int petri::csiblings(int p0, int p1)
-{
-	node *n0 = &((*this)[p0]);
-	node *n1 = &((*this)[p1]);
-	smap<int, int>::iterator bi, bj;
-	for (bi = n0->cbranch.begin(); bi != n0->cbranch.end(); bi++)
-		for (bj = n1->cbranch.begin(); bj != n1->cbranch.end(); bj++)
-			if (bi->first == bj->first && bi->second != bj->second)
-				return bi->first;
-	return -1;
-}
-
-bool petri::same_inputs(int p0, int p1)
-{
-	svector<int> it0, it1;
-	bool diff_in = true;
-	int k, l;
-
-	it0 = input_nodes(p0);
-	it1 = input_nodes(p1);
-
-	if (it0.size() == it1.size())
-	{
-		diff_in = false;
-		for (k = 0; k < (int)it0.size() && !diff_in; k++)
-		{
-			diff_in = true;
-			for (l = 0; l < (int)it1.size() && diff_in; l++)
-				if (T[it0[k]].index == T[it1[l]].index)
-					diff_in = false;
-		}
-	}
-
-	return !diff_in;
-}
-
-bool petri::same_outputs(int p0, int p1)
-{
-	svector<int> ot0, ot1;
-	bool diff_out = true;
-	int k, l;
-
-	ot0 = output_nodes(p0);
-	ot1 = output_nodes(p1);
-
-	if (ot0.size() == ot1.size())
-	{
-		diff_out = false;
-		for (k = 0; k < (int)ot0.size() && !diff_out; k++)
-		{
-			diff_out = true;
-			for (l = 0; l < (int)ot1.size() && diff_out; l++)
-				if (T[ot0[k]].index == T[ot1[l]].index)
-					diff_out = false;
-		}
-	}
-
-	return !diff_out;
-}
-
-svector<int> petri::duplicate_nodes(svector<int> from)
-{
-	svector<int> ret;
-	for (int i = 0; i < from.size(); i++)
-	{
-		if (is_place(from[i]))
-			ret.push_back(insert_place(input_nodes(from[i]), S[from[i]].pbranch, S[from[i]].cbranch, S[from[i]].owner));
-		else
-			ret.push_back(insert_transition(input_nodes(from[i]), T[index(from[i])].index, T[index(from[i])].pbranch, T[index(from[i])].cbranch, T[index(from[i])].owner));
-
-		if (M0.find(from[i]) != M0.end())
-			M0.push_back(ret.back());
-	}
-	return ret.rsort();
-}
-
-int petri::duplicate_node(int from)
-{
-	int ret;
-	if (is_place(from))
-		ret = insert_place(input_nodes(from), S[from].pbranch, S[from].cbranch, S[from].owner);
-	else
-		ret = insert_transition(input_nodes(from), T[index(from)].index, T[index(from)].pbranch, T[index(from)].cbranch, T[index(from)].owner);
-
-	if (M0.find(from) != M0.end())
-		M0.push_back(ret);
-
-	return ret;
-}
-
-int petri::merge_places(svector<int> from)
-{
-	smap<int, int> pbranch;
-	smap<int, int> cbranch;
-	svector<pair<int, int> >::iterator ai;
-	int j;
-	logic idx(0);
-	pbranch = S[from[0]].pbranch;
-	cbranch = S[from[0]].cbranch;
-	for (j = 0, idx = 0; j < (int)from.size(); j++)
-	{
-		pbranch = pbranch.set_intersection(S[from[j]].pbranch);
-		cbranch = cbranch.set_intersection(S[from[j]].cbranch);
-		idx = idx | S[from[j]].index;
-	}
-
-	int p = new_place(idx, pbranch, cbranch, NULL);
-	for (j = 0; j < arcs.size(); j++)
-	{
-		if (from.find(arcs[j].first) != from.end())
-			arcs.push_back(pair<int, int>(p, arcs[j].second));
-		if (from.find(arcs[j].second) != from.end())
-			arcs.push_back(pair<int, int>(arcs[j].first, p));
-	}
-
-	return p;
-}
-
-int petri::merge_places(int a, int b)
-{
-	smap<int, int> pbranch;
-	smap<int, int> cbranch;
-	svector<pair<int, int> >::iterator ai;
-	int j, p;
-
-	pbranch = S[a].pbranch.set_intersection(S[b].pbranch);
-	cbranch = S[a].cbranch.set_intersection(S[b].cbranch);
-	p = new_place((S[a].index | S[b].index), pbranch, cbranch, NULL);
-	for (j = 0; j < arcs.size(); j++)
-	{
-		if (arcs[j].first == a || arcs[j].first == b)
-			arcs.push_back(pair<int, int>(p, arcs[j].second));
-		if (arcs[j].second == a || arcs[j].second == b)
-			arcs.push_back(pair<int, int>(arcs[j].first, p));
-	}
-
-	return p;
-}
-
-svector<int> petri::input_nodes(int from)
-{
-	svector<int> ret;
-	for (int i = 0; i < arcs.size(); i++)
-		if (arcs[i].second == from)
-			ret.push_back(arcs[i].first);
-	return ret.rsort();
-}
-
-svector<int> petri::input_nodes(svector<int> from)
-{
-	svector<int> ret;
-	for (int i = 0; i < arcs.size(); i++)
-		if (from.find(arcs[i].second) != from.end())
-			ret.push_back(arcs[i].first);
-	return ret.rsort();
-}
-
-svector<int> petri::output_nodes(int from)
-{
-	svector<int> ret;
-	for (int i = 0; i < arcs.size(); i++)
-		if (arcs[i].first == from)
-			ret.push_back(arcs[i].second);
-	return ret.rsort();
-}
-
-svector<int> petri::output_nodes(svector<int> from)
-{
-	svector<int> ret;
-	for (int i = 0; i < arcs.size(); i++)
-		if (from.find(arcs[i].first) != from.end())
-			ret.push_back(arcs[i].second);
-	return ret.rsort();
-}
-
-svector<int> petri::input_arcs(int from)
-{
-	svector<int> result;
-	for (int i = 0; i < (int)arcs.size(); i++)
-		if (arcs[i].second == from)
-			result.push_back(i);
-	return result;
-}
-
-svector<int> petri::input_arcs(svector<int> from)
-{
-	svector<int> result;
-	for (int i = 0; i < (int)arcs.size(); i++)
-		if (from.find(arcs[i].second) != from.end())
-			result.push_back(i);
-	return result;
-}
 
 
-svector<int> petri::output_arcs(int from)
-{
-	svector<int> result;
-	for (int i = 0; i < (int)arcs.size(); i++)
-		if (arcs[i].first == from)
-			result.push_back(i);
-	return result;
-}
-
-svector<int> petri::output_arcs(svector<int> from)
-{
-	svector<int> result;
-	for (int i = 0; i < (int)arcs.size(); i++)
-		if (from.find(arcs[i].first) != from.end())
-			result.push_back(i);
-	return result;
-}
-
-svector<int> petri::increment_arcs(svector<int> a)
-{
-	svector<int> result;
-	for (int i = 0; i < arcs.size(); i++)
-		for (int j = 0; j < a.size(); j++)
-			if (arcs[i].first == arcs[a[j]].second)
-			{
-				result.push_back(i);
-				j = a.size();
-			}
-	return result;
-}
-
-svector<int> petri::decrement_arcs(svector<int> a)
-{
-	svector<int> result;
-	for (int i = 0; i < arcs.size(); i++)
-		for (int j = 0; j < a.size(); j++)
-			if (arcs[i].second == arcs[a[j]].first)
-			{
-				result.push_back(i);
-				j = a.size();
-			}
-	return result;
-}
-
-pair<int, int> petri::get_input_sense_count(int idx)
+pair<int, int> petri_net::get_input_sense_count(petri_index idx)
 {
 	pair<int, int> result(0, 0), temp;
-	svector<int> input = input_nodes(idx);
+	svector<petri_index> input = prev(idx);
 	for (int j = 0; j < input.size(); j++)
 	{
-		temp = T[index(input[j])].sense_count();
+		temp = at(input[j]).sense_count();
 		result.first += temp.first;
 		result.second += temp.second;
 	}
 	return result;
 }
 
-pair<int, int> petri::get_input_sense_count(svector<int> idx)
+pair<int, int> petri_net::get_input_sense_count(svector<petri_index> idx)
 {
 	pair<int, int> result(0, 0), temp;
-	svector<int> input = input_nodes(idx);
+	svector<petri_index> input = prev(idx);
 	for (int j = 0; j < input.size(); j++)
 	{
-		temp = T[index(input[j])].sense_count();
+		temp = at(input[j]).sense_count();
 		result.first += temp.first;
 		result.second += temp.second;
 	}
 	return result;
 }
 
-int petri::get_split_place(int merge_place, svector<bool> *covered)
+petri_index petri_net::get_split_place(petri_index merge_place, svector<bool> *covered)
 {
-	int i = merge_place, j, k, l;
-	svector<int> ot, op, it, ip;
+	petri_index i = merge_place;
+	svector<petri_index> ot, op, it, ip;
 	svector<bool> c;
 	bool loop;
 
-	if ((*covered)[i])
-		return -1;
+	if ((*covered)[i.data])
+		return petri_index(-1, false);
 
 	loop = true;
-	it = input_nodes(i);
+	it = prev(i);
 	if ((int)it.size() <= 0)
 		return i;
 	else if ((int)it.size() == 1)
 	{
-		ot = output_nodes(i);
-		for (j = 0; j < (int)ot.size() && loop; j++)
+		ot = next(i);
+		for (int j = 0; j < (int)ot.size() && loop; j++)
 		{
-			op = output_nodes(ot[j]);
-			for (k = 0; k < (int)op.size() && loop; k++)
-				if (!(*covered)[op[k]])
+			op = next(ot[j]);
+			for (int k = 0; k < (int)op.size() && loop; k++)
+				if (!(*covered)[op[k].data])
 					loop = false;
 		}
 	}
 
-	(*covered)[i] = true;
+	(*covered)[i.data] = true;
 
 	while (loop)
 	{
-		it = input_nodes(i);
+		it = prev(i);
 		if ((int)it.size() <= 0)
 			return i;
 		else if ((int)it.size() == 1)
 		{
-			ip = input_nodes(it[0]);
+			ip = prev(it[0]);
 			if (ip.size() == 0)
 				return i;
 			i = ip[0];
 
-			if ((*covered)[i])
-				return -1;
+			if ((*covered)[i.data])
+				return petri_index(-1, false);
 		}
 		else
 		{
-			for (l = 0, k = -1; l < (int)it.size() && k == -1; l++)
+			petri_index k(-1, true);
+			int j = ip.size();
+			for (int l = 0; l < (int)it.size() && k.data == -1; l++)
 			{
-				ip = input_nodes(it[l]);
-				for (j = 0; j < (int)ip.size() && k == -1; j++)
+				ip = prev(it[l]);
+				for (j = 0; j < (int)ip.size() && k.data == -1; j++)
 				{
 					c = *covered;
 					k = get_split_place(ip[j], &c);
 				}
 			}
 
-			if (k == -1)
+			if (k.data == -1)
 				return i;
 			else
 				i = ip[--j];
 		}
 
-		(*covered)[i] = true;
+		(*covered)[i.data] = true;
 
 		loop = true;
-		ot = output_nodes(i);
-		for (j = 0; j < (int)ot.size() && loop; j++)
+		ot = next(i);
+		for (int j = 0; j < (int)ot.size() && loop; j++)
 		{
-			op = output_nodes(ot[j]);
-			for (k = 0; k < (int)op.size() && loop; k++)
-				if (!(*covered)[op[k]])
+			op = next(ot[j]);
+			for (int k = 0; k < (int)op.size() && loop; k++)
+				if (!(*covered)[op[k].data])
 					loop = false;
 		}
 	}
@@ -1027,28 +1576,27 @@ int petri::get_split_place(int merge_place, svector<bool> *covered)
 	return i;
 }
 
-void petri::add_conflict_pair(smap<int, list<svector<int> > > *c, int i, int j)
+void petri_net::add_conflict_pair(smap<petri_index, list<svector<petri_index> > > *c, petri_index i, petri_index j)
 {
-	smap<int, list<svector<int> > >::iterator ri;
-	list<svector<int> >::iterator li;
-	svector<list<svector<int> >::iterator > gi;
-	svector<int> group;
-	int k;
+	smap<petri_index, list<svector<petri_index> > >::iterator ri;
+	list<svector<petri_index> >::iterator li;
+	svector<list<svector<petri_index> >::iterator > gi;
+	svector<petri_index> group;
 
 	ri = c->find(i);
 	if (ri != c->end())
 	{
 		gi.clear();
 		for (li = ri->second.begin(); li != ri->second.end(); li++)
-			for (k = 0; k < (int)li->size(); k++)
-				if (connected(j, (*li)[k]))// || psiblings(j, (*li)[k]) != -1)
+			for (int k = 0; k < (int)li->size(); k++)
+				if (are_connected(j, (*li)[k]))// || psiblings(j, (*li)[k]) != -1)
 				{
 					gi.push_back(li);
 					k = (int)li->size();
 				}
 
-		group = svector<int>(1, j);
-		for (k = 0; k < (int)gi.size(); k++)
+		group = svector<petri_index>(1, j);
+		for (int k = 0; k < (int)gi.size(); k++)
 		{
 			group.insert(group.end(), gi[k]->begin(), gi[k]->end());
 			ri->second.erase(gi[k]);
@@ -1057,139 +1605,148 @@ void petri::add_conflict_pair(smap<int, list<svector<int> > > *c, int i, int j)
 		ri->second.push_back(group);
 	}
 	else
-		c->insert(pair<int, list<svector<int> > >(i, list<svector<int> >(1, svector<int>(1, j))));
+		c->insert(pair<petri_index, list<svector<petri_index> > >(i, list<svector<petri_index> >(1, svector<petri_index>(1, j))));
 }
 
-void petri::gen_conditional_places()
+void petri_net::gen_conditional_places()
 {
-	smap<int, pair<int, int> >::iterator ci;
-	svector<int> oa, ia, sibs;
-	int i, j, k;
+	smap<int, pair<petri_index, petri_index> >::iterator ci;
+	svector<petri_index> oa, ia;
+	svector<int> sibs;
 
 	conditional_places.clear();
-	for (i = 0; i < (int)S.size(); i++)
+	for (petri_index i(0, true); i < (int)S.size(); i++)
 	{
-		oa = output_nodes(i);
-		ia = input_nodes(i);
+		oa = next(i);
+		ia = prev(i);
 
 		sibs.clear();
-		for (j = 0; j < (int)oa.size(); j++)
-			for (k = j+1; k < (int)oa.size(); k++)
-				sibs.push_back(csiblings(oa[j], oa[k]));
+		for (int j = 0; j < (int)oa.size(); j++)
+			for (int k = j+1; k < (int)oa.size(); k++)
+				sibs.push_back(are_conditional_siblings(oa[j], oa[k]));
 		sibs.unique();
 
-		for (k = 0; k < (int)sibs.size(); k++)
+		for (int k = 0; k < (int)sibs.size(); k++)
 			if (sibs[k] != -1)
 			{
 				ci = conditional_places.find(sibs[k]);
 				if (ci == conditional_places.end())
-					conditional_places.insert(pair<int, pair<int, int> >(sibs[k], pair<int, int>(-1, i)));
+					conditional_places.insert(pair<int, pair<petri_index, petri_index> >(sibs[k], pair<petri_index, petri_index>(petri_index(-1, false), i)));
 				else
 					ci->second.second = i;
 			}
 
 		sibs.clear();
-		for (j = 0; j < (int)ia.size(); j++)
-			for (k = j+1; k < (int)ia.size(); k++)
-				sibs.push_back(csiblings(ia[j], ia[k]));
+		for (int j = 0; j < (int)ia.size(); j++)
+			for (int k = j+1; k < (int)ia.size(); k++)
+				sibs.push_back(are_conditional_siblings(ia[j], ia[k]));
 		sibs.unique();
 
-		for (k = 0; k < (int)sibs.size(); k++)
+		for (int k = 0; k < (int)sibs.size(); k++)
 			if (sibs[k] != -1)
 			{
 				ci = conditional_places.find(sibs[k]);
 				if (ci == conditional_places.end())
-					conditional_places.insert(pair<int, pair<int, int> >(sibs[k], pair<int, int>(i, -1)));
+					conditional_places.insert(pair<int, pair<petri_index, petri_index> >(sibs[k], pair<petri_index, petri_index>(i, petri_index(-1, false))));
 				else
 					ci->second.first = i;
 			}
 	}
 }
 
-bool petri::are_sibling_guards(int i, int j)
+bool petri_net::are_sibling_guards(petri_index i, petri_index j)
 {
-	svector<int> i_in = input_nodes(input_nodes(i));
-	svector<int> j_in = input_nodes(input_nodes(j));
-	for (int k = 0; k < i_in.size(); k++)
-		for (int l = 0; l < j_in.size(); l++)
-			if (i_in[k] == j_in[l])
-				return true;
+	svector<petri_index> ii = prev(i);
+	svector<petri_index> ij = prev(j);
+	for (int k = 0; k < ii.size(); k++)
+	{
+		svector<petri_index> iii = prev(ii[k]);
+		for (int l = 0; l < ij.size(); l++)
+		{
+			svector<petri_index> iij = prev(ij[l]);
+			for (int m = 0; m < iii.size(); m++)
+				for (int n = 0; n < iij.size(); n++)
+					if (iii[m] == iij[n] && !at(ii[k]).active && !at(ij[l]).active)
+						return true;
+		}
+	}
 	return false;
 }
 
-void petri::gen_conflicts()
+void petri_net::gen_conflicts()
 {
 	smap<int, list<svector<int> > >::iterator ri;
 	list<svector<int> >::iterator li;
 	svector<list<svector<int> >::iterator > gi;
 	smap<int, int>::iterator bi, bj;
 	svector<int> group;
-	svector<int> oa;
 	svector<int> temp;
-	int i, j;
-	logic t(0);
-	logic nt(0);
-
-	logic s1(0), s2(0), st;
 
 	conflicts.clear();
 	indistinguishable.clear();
 
-	for (i = 0; i < (int)S.size(); i++)
+	for (petri_index i(0, true); i < S.size(); i++)
 	{
 		cout << i << "/" << S.size() << endl;
-		oa = output_nodes(i);
+		svector<petri_index> oi = next(i);
 
-		// INDEX
-		s1 = S[i].index;
-		st = S[i].index;
-		t = 1;
-		for (j = 0; j < (int)oa.size(); j++)
-			if (T[index(oa[j])].active)
-			{
-				for (int k = 0; k < s1.terms.size(); k++)
-					for (int l = 0; l < T[index(oa[j])].index.terms.size(); l++)
-					{
-						s1.terms[k] &= T[index(oa[j])].index.terms[l];
-						st.terms[k] &= T[index(oa[j])].index.terms[l].inverse();
-					}
+		minterm ti = 1;
+		for (int j = 0; j < oi.size(); j++)
+			if (at(oi[j]).active)
+				ti &= at(oi[j]).index.terms[0];
 
-				t = t & T[index(oa[j])].index;
-			}
-
-		for (int k = 0, l = 0; k < s1.terms.size() && l < S[i].index.terms.size(); l++)
+		canonical nti = ~ti;
+		canonical si, st;
+		for (int j = 0; j < at(i).index.terms.size(); j++)
 		{
-			if (s1.terms[k] != 0 && st.terms[l] == 0)
-				s1.terms.erase(s1.terms.begin() + k);
+			si.terms.push_back(at(i).index.terms[j] & ti);
+			st.terms.push_back(at(i).index.terms[j] & ti.inverse());
+		}
+
+		for (int k = 0, l = 0; k < si.terms.size() && l < at(i).index.terms.size(); l++)
+		{
+			if (si.terms[k] != 0 && st.terms[l] == 0)
+				si.terms.erase(si.terms.begin() + k);
 			else
 			{
-				s1.terms[k] = s1.terms[k].xoutnulls() | S[i].index.terms[l];
+				si.terms[k] = si.terms[k].xoutnulls() | at(i).index.terms[l];
 				k++;
 			}
 		}
 
-
-		for (j = 0; j < (int)S.size(); j++)
+		for (petri_index j(0, true); j < S.size(); j++)
 		{
-			/* States are conflicting if:
+			canonical sj = get_effective_place_encoding(j, i);
+
+			/* States are indistinguishable if:
 			 *  - they are not the same state
-			 *  - one is not in the tail of another (the might as well be here case)
-			 *  - the transition which causes the conflict is not a vacuous firing in the other state
-			 *  - they are indistinguishable
+			 *  	> i != j
 			 *  - the two states do not exist in parallel
+			 *  	> are_parallel_siblings(i, j) < 0
+			 *  - the two state encodings are not mutually exclusive
+			 *    taking into account the inactive firings between them
+			 *  	> si & get_effective_place_encoding(j, i) != 0
 			 */
-
-			s2 = get_effective_state_encoding(j, i);
-
-			// INDEX
-			if (i != j && psiblings(i, j) < 0 && !is_mutex(&s1, &s2))
+			if (i != j && are_parallel_siblings(i, j) < 0 && !is_mutex(&si, &sj))
 			{
-				cout << "CONFLICT " << node_name(i) << "=" << s1.print(vars) << " " << node_name(j) << "=" << s2.print(vars) << endl;
+				svector<petri_index> oj = next(j);
+				minterm tj = 1;
+				for (int k = 0; k < oj.size(); k++)
+					if (at(oj[k]).active)
+						tj &= at(oj[k]).index.terms[0];
+				canonical ntj = ~tj;
+				canonical jtj = (at(j).index >> tj);
 
-				oa = output_nodes(j);
-				nt = ~t;
-				// is it a conflicting state? (e.g. not vacuous)
-				if (S[i].active && (!is_mutex(&nt, &S[i].index, &S[j].index) || (oa.size() > 0 && T[index(oa[0])].active && is_mutex(&t, &T[index(oa[0])].index))))
+				cout << "CONFLICT " << i.name() << "=" << si.print(vars) << "," << ti.print(vars) << " " << j.name() << "=" << sj.print(vars) << "," << tj.print(vars) << endl;
+
+				/* States are conflicting if:
+				 *  - they are indistinguishable
+				 *  - the conflict is not caused my non-mutually exclusive guards in a conditional
+				 *  	> !are_sibling_guards(i, j)
+				 *  - the transition which causes the conflict is not a vacuous firing in the other state
+				 *  - the transition which causes the conflict would not normally happen anyways as a result of the other state
+				 */
+				if (!is_mutex(&nti, &at(i).index, &jtj))
 				{
 					if (!are_sibling_guards(i, j))
 						add_conflict_pair(&conflicts, i, j);
@@ -1197,32 +1754,30 @@ void petri::gen_conflicts()
 						cerr << "Warning: Conditional near S" << i << " and S" << j << " has non mutually exclusive guards." << endl;
 				}
 
-				// it is at least an indistinguishable state at this point
 				add_conflict_pair(&indistinguishable, i, j);
 			}
 		}
 	}
 
 	max_indistinguishables = 0;
-	for (smap<int, list<svector<int> > >::iterator l = indistinguishable.begin(); l != indistinguishable.end(); l++)
+	for (smap<petri_index, list<svector<petri_index> > >::iterator l = indistinguishable.begin(); l != indistinguishable.end(); l++)
 		if ((int)l->second.size() > max_indistinguishables)
 			max_indistinguishables = l->second.size();
 }
 
-void petri::gen_bubbleless_conflicts()
+void petri_net::gen_bubbleless_conflicts()
 {
-	smap<int, list<svector<int> > >::iterator ri;
-	list<svector<int> >::iterator li;
-	svector<list<svector<int> >::iterator > gi;
+	smap<petri_index, list<svector<petri_index> > >::iterator ri;
+	list<svector<petri_index> >::iterator li;
+	svector<list<svector<petri_index> >::iterator > gi;
 	smap<int, int>::iterator bi, bj;
-	svector<int> group;
-	svector<int> oa;
+	svector<petri_index> group;
+	svector<petri_index> oa;
 	svector<int> vl;
 	svector<int> temp;
-	int i, j;
-	logic tp(0), ntp(0), sp1(0);
-	logic tn(0), ntn(0), sn1(0);
-	logic s2;
+	canonical ntp(0), sp1(0);
+	canonical ntn(0), sn1(0);
+	canonical s2;
 	bool parallel;
 	bool strict;
 
@@ -1233,34 +1788,36 @@ void petri::gen_bubbleless_conflicts()
 
 	gen_conflicts();
 
-	for (i = 0; i < (int)S.size(); i++)
+	for (petri_index i(0, true); i < S.size(); i++)
 	{
 		ri = conflicts.find(i);
-		oa = output_nodes(i);
+		oa = next(i);
 
 		// POSITIVE
 		vl.clear();
-		for (j = 0, tp = 1; j < (int)oa.size(); j++)
-			if (T[index(oa[j])].active)
+		canonical tp = 1;
+		for (int j = 0; j < oa.size(); j++)
+			if (at(oa[j]).active)
 			{
-				T[index(oa[j])].negative.vars(&vl);
-				tp &= T[index(oa[j])].negative;
+				at(oa[j]).negative.vars(&vl);
+				tp &= at(oa[j]).negative;
 			}
 		vl.unique();
-		sp1 = S[i].positive.hide(vl);
+		sp1 = at(i).positive.hide(vl);
 
 		// NEGATIVE
 		vl.clear();
-		for (j = 0, tn = 1; j < (int)oa.size(); j++)
-			if (T[index(oa[j])].active)
+		canonical tn = 1;
+		for (int j = 0; j < oa.size(); j++)
+			if (at(oa[j]).active)
 			{
-				T[index(oa[j])].positive.vars(&vl);
-				tn &= T[index(oa[j])].positive;
+				at(oa[j]).positive.vars(&vl);
+				tn &= at(oa[j]).positive;
 			}
 		vl.unique();
-		sn1 = S[i].negative.hide(vl);
+		sn1 = at(i).negative.hide(vl);
 
-		for (j = 0; j < (int)S.size(); j++)
+		for (petri_index j(0, true); j < S.size(); j++)
 		{
 			strict = false;
 			if (ri != conflicts.end())
@@ -1270,11 +1827,11 @@ void petri::gen_bubbleless_conflicts()
 
 			if (!strict)
 			{
-				/* A node has to have at least one output transition due to the trim function.
-				 * A node can only have one output transition if that transition is active,
+				/* A petri_node has to have at least one output transition due to the trim function.
+				 * A petri_node can only have one output transition if that transition is active,
 				 * otherwise it can have multiple.
 				 */
-				oa = output_nodes(j);
+				oa = next(j);
 
 				/* States are conflicting if:
 				 *  - they are not the same state
@@ -1284,15 +1841,15 @@ void petri::gen_bubbleless_conflicts()
 				 *  - the two states do not exist in parallel
 				 */
 
-				s2 = get_effective_state_encoding(j, i);
+				s2 = get_effective_place_encoding(j, i);
 
-				parallel = (psiblings(i, j) >= 0);
+				parallel = (are_parallel_siblings(i, j) >= 0);
 				// POSITIVE
 				if (i != j && !parallel && !is_mutex(&sp1, &s2))
 				{
 					// is it a conflicting state? (e.g. not vacuous)
 					ntp = ~tp;
-					if (S[i].active && (!is_mutex(&ntp, &sp1, &S[j].index) || (oa.size() > 0 && T[index(oa[0])].active && is_mutex(&tp, &T[index(oa[0])].index))))
+					if (at(i).active && (!is_mutex(&ntp, &sp1, &at(j).index) || (oa.size() > 0 && at(oa[0]).active && is_mutex(&tp, &at(oa[0]).index))))
 					{
 						if (!are_sibling_guards(i, j))
 							add_conflict_pair(&positive_conflicts, i, j);
@@ -1309,7 +1866,7 @@ void petri::gen_bubbleless_conflicts()
 				{
 					// is it a conflicting state? (e.g. not vacuous)
 					ntn = ~tn;
-					if (S[i].active && (!is_mutex(&ntn, &sn1, &S[j].index) || (oa.size() > 0 && T[index(oa[0])].active && is_mutex(&tn, &T[index(oa[0])].index))))
+					if (at(i).active && (!is_mutex(&ntn, &sn1, &at(j).index) || (oa.size() > 0 && at(oa[0]).active && is_mutex(&tn, &at(oa[0]).index))))
 					{
 						if (!are_sibling_guards(i, j))
 							add_conflict_pair(&negative_conflicts, i, j);
@@ -1324,38 +1881,38 @@ void petri::gen_bubbleless_conflicts()
 	}
 
 	max_positive_indistinguishables = 0;
-	for (smap<int, list<svector<int> > >::iterator l = positive_indistinguishable.begin(); l != positive_indistinguishable.end(); l++)
+	for (smap<petri_index, list<svector<petri_index> > >::iterator l = positive_indistinguishable.begin(); l != positive_indistinguishable.end(); l++)
 		if ((int)l->second.size() > max_positive_indistinguishables)
 			max_positive_indistinguishables = l->second.size();
 
 	max_negative_indistinguishables = 0;
-	for (smap<int, list<svector<int> > >::iterator l = negative_indistinguishable.begin(); l != negative_indistinguishable.end(); l++)
+	for (smap<petri_index, list<svector<petri_index> > >::iterator l = negative_indistinguishable.begin(); l != negative_indistinguishable.end(); l++)
 		if ((int)l->second.size() > max_negative_indistinguishables)
 			max_negative_indistinguishables = l->second.size();
 }
 
-void petri::gen_senses()
+void petri_net::gen_senses()
 {
 	int i;
-	for (i = 0; i < (int)S.size(); i++)
+	for (i = 0; i < S.size(); i++)
 	{
 		S[i].positive = S[i].index.pabs();
 		S[i].negative = S[i].index.nabs();
 	}
 
-	for (i = 0; i < (int)T.size(); i++)
+	for (i = 0; i < T.size(); i++)
 	{
 		T[i].positive = T[i].index.pabs();
 		T[i].negative = T[i].index.nabs();
 	}
 }
 
-logic petri::apply_debug(int pc)
+canonical petri_net::apply_debug(int pc)
 {
 	return (vars->enforcements & S[pc].assumptions);
 }
 
-void petri::trim_branch_ids()
+void petri_net::trim_branch_ids()
 {
 	smap<int, svector<int> > pbranch_counts;
 	smap<int, svector<int> > cbranch_counts;
@@ -1370,7 +1927,7 @@ void petri::trim_branch_ids()
 	for (i = 0; i < cbranch_count; i++)
 		cbranch_counts.insert(pair<int, svector<int> >(i, svector<int>()));
 
-	for (i = 0; i < (int)T.size(); i++)
+	for (i = 0; i < T.size(); i++)
 	{
 		for (bi = T[i].pbranch.begin(); bi != T[i].pbranch.end(); bi++)
 			pbranch_counts[bi->first].push_back(bi->second);
@@ -1384,14 +1941,14 @@ void petri::trim_branch_ids()
 	for (bci = cbranch_counts.begin(); bci != cbranch_counts.end(); bci++)
 		bci->second.unique();
 
-	for (i = 0; i < (int)T.size(); i++)
+	for (i = 0; i < T.size(); i++)
 	{
 		remove.clear();
 		for (bi = T[i].pbranch.begin(); bi != T[i].pbranch.end(); bi++)
 			if (pbranch_counts[bi->first].size() <= 1)
 				remove.push_back(bi);
 
-		for (j = 0; j < (int)remove.size(); j++)
+		for (j = 0; j < remove.size(); j++)
 			T[i].pbranch.erase(remove[j]);
 
 		remove.clear();
@@ -1399,18 +1956,18 @@ void petri::trim_branch_ids()
 			if (cbranch_counts[bi->first].size() <= 1)
 				remove.push_back(bi);
 
-		for (j = 0; j < (int)remove.size(); j++)
+		for (j = 0; j < remove.size(); j++)
 			T[i].cbranch.erase(remove[j]);
 	}
 
-	for (i = 0; i < (int)S.size(); i++)
+	for (i = 0; i < S.size(); i++)
 	{
 		remove.clear();
 		for (bi = S[i].pbranch.begin(); bi != S[i].pbranch.end(); bi++)
 			if (pbranch_counts[bi->first].size() <= 1)
 				remove.push_back(bi);
 
-		for (j = 0; j < (int)remove.size(); j++)
+		for (j = 0; j < remove.size(); j++)
 			S[i].pbranch.erase(remove[j]);
 
 		remove.clear();
@@ -1418,101 +1975,49 @@ void petri::trim_branch_ids()
 			if (cbranch_counts[bi->first].size() <= 1)
 				remove.push_back(bi);
 
-		for (j = 0; j < (int)remove.size(); j++)
+		for (j = 0; j < remove.size(); j++)
 			S[i].cbranch.erase(remove[j]);
 	}
 }
 
-void petri::gen_tails()
-{
-	for (int i = 0; i < (int)S.size(); i++)
-		S[i].tail.clear();
-	for (int i = 0; i < (int)T.size(); i++)
-		T[i].tail.clear();
-
-	svector<int> ia, oa;
-	svector<int> old;
-	int i;
-	bool done = false;
-	while (!done)
-	{
-		done = true;
-		for (i = 0; i < (int)arcs.size(); i++)
-		{
-			// State A->T is in the tail of T1 if A -> T -> Tail of T1 and T is either not active or not invacuous
-			if (is_trans(arcs[i].first) && (!T[index(arcs[i].first)].active || T[index(arcs[i].first)].possibly_vacuous))
-			{
-				old = S[arcs[i].second].tail;
-				S[arcs[i].second].add_to_tail(arcs[i].first);
-				S[arcs[i].second].add_to_tail(T[index(arcs[i].first)].tail);
-				done = done && (old == S[arcs[i].second].tail);
-			}
-			else if (is_place(arcs[i].first))
-			{
-				old = T[index(arcs[i].second)].tail;
-				T[index(arcs[i].second)].add_to_tail(arcs[i].first);
-				T[index(arcs[i].second)].add_to_tail(S[arcs[i].first].tail);
-				done = done && (old == T[index(arcs[i].second)].tail);
-			}
-		}
-	}
-
-	cout << "TAILS" << endl;
-	for (int i = 0; i < S.size(); i++)
-	{
-		cout << "S" << i << ": ";
-		for (int j = 0; j < S[i].tail.size(); j++)
-			cout << node_name(S[i].tail[j]);
-		cout << endl;
-	}
-
-	for (int i = 0; i < T.size(); i++)
-	{
-		cout << "T" << i << ": ";
-		for (int j = 0; j < T[i].tail.size(); j++)
-			cout << node_name(T[i].tail[j]);
-		cout << endl;
-	}
-}
-
-smap<pair<int, int>, pair<bool, bool> > petri::gen_isochronics()
+smap<pair<int, int>, pair<bool, bool> > petri_net::gen_isochronics()
 {
 	svector<pair<int, int> > net;
 
-	svector<logic> minimal_guards(vars->global.size()*2);
-	svector<int> inputs, inputs2, outputs, outputs2;
+	svector<canonical> minimal_guards(vars->global.size()*2);
+	svector<petri_index> inputs, inputs2, outputs, outputs2;
 	svector<int> tvars, ivars;
-	int idx;
-	for (int i = 0; i < T.size(); i++)
+	petri_index idx;
+	for (petri_index i(0, true); i < T.size(); i++)
 	{
-		if (T[i].active)
+		if (at(i).active)
 		{
-			inputs = input_nodes(trans_id(i));
+			inputs = prev(i);
 
 			for (int j = 0; j < inputs.size(); j++)
 			{
-				inputs2 = input_nodes(inputs[j]);
+				inputs2 = prev(inputs[j]);
 				for (int k = 0; k < inputs2.size(); k++)
-					if (T[index(inputs2[k])].index == 1)
+					if (at(inputs2[k]).index == 1)
 					{
 						idx = inputs2[k];
 						inputs2.erase(inputs2.begin() + k);
 						k = 0;
-						inputs2.merge(input_nodes(input_nodes(idx)));
+						inputs2.merge(prev(prev(idx)));
 						inputs2.unique();
 					}
 
 				for (int k = 0; k < inputs2.size(); k++)
-					if (!T[index(inputs2[k])].active)
-						for (int l = 0; l < T[i].index.terms.size(); l++)
+					if (!at(inputs2[k]).active)
+						for (int l = 0; l < at(i).index.terms.size(); l++)
 						{
-							tvars = T[i].index.terms[l].vars();
-							for (int m = 0; m < T[index(inputs2[k])].index.terms.size(); m++)
+							tvars = at(i).index.terms[l].vars();
+							for (int m = 0; m < at(inputs2[k]).index.terms.size(); m++)
 							{
-								ivars = T[index(inputs2[k])].index.terms[m].vars();
+								ivars = at(inputs2[k]).index.terms[m].vars();
 								for (int n = 0; n < tvars.size(); n++)
 									for (int o = 0; o < ivars.size(); o++)
-										net.push_back(pair<int, int>(ivars[o]*2 + T[index(inputs2[k])].index.terms[m].val(ivars[o]), tvars[n]*2 + T[i].index.terms[l].val(tvars[n])));
+										net.push_back(pair<int, int>(ivars[o]*2 + at(inputs2[k]).index.terms[m].val(ivars[o]), tvars[n]*2 + at(i).index.terms[l].val(tvars[n])));
 							}
 						}
 			}
@@ -1609,13 +2114,13 @@ smap<pair<int, int>, pair<bool, bool> > petri::gen_isochronics()
 
 	/*for (int i = 0; i < removed.size(); i++)
 	{
-		cout << vars->get_name(node_name(ed[i].first/2) << (removed[i].first%2 == 0 ? "-" : "+") << " -> " << vars->get_name(removed[i].second/2) << (removed[i].second%2 == 0 ? "-" : "+") << "\t{";
+		cout << vars->get_name(petri_node_name(ed[i].first/2) << (removed[i].first%2 == 0 ? "-" : "+") << " -> " << vars->get_name(removed[i].second/2) << (removed[i].second%2 == 0 ? "-" : "+") << "\t{";
 		for (int j = 0; j < T.size(); j++)
 		{
 			if (T[j].index.val(removed[i].second/2) == (uint32_t)removed[i].second%2)
 			{
 				cout << "T" << j << ", ";
-				inputs = input_nodes(trans_id(j));
+				inputs = input_petri_nodes(trans_id(j));
 				for (int k = 0; k < inputs.size(); k++)
 				{
 					for (int l = 0; l < S[inputs[k]].index.terms.size(); l++)
@@ -1629,82 +2134,340 @@ smap<pair<int, int>, pair<bool, bool> > petri::gen_isochronics()
 	return net2;
 }
 
-logic petri::get_effective_state_encoding(int place, int observer)
+canonical petri_net::get_effective_place_encoding(petri_index place, petri_index observer)
 {
-	if (!is_place(place))
+	list<pair<int, canonical> > idx;
+	for (int j = 0; j < arcs.size(); j++)
+		if (arcs[j].first == place && at(observer).is_in_tail(arcs[j].second))
+			idx.push_back(pair<int, canonical>(j, canonical(0)));
+
+	canonical encoding = at(place).index;
+
+	bool move_on = false;
+	while (idx.size() > 0)
 	{
-		cerr << "Error: Internal failure at line " << __LINE__ << " in " << __FILE__ << "." << endl;
-		return logic(0);
+		bool progress = false;
+		for (list<pair<int, canonical> >::iterator i = idx.begin(); i != idx.end(); )
+		{
+			//cout << idx.size() << " " << arcs[i->first].first << "->" << arcs[i->first].second << " " << i->second.print(vars) << endl;
+			int input_arc_size;
+			if (arcs[i->first].second.is_place() && (input_arc_size = incoming(arcs[i->first].second).size()) > 1)
+			{
+				int total = 0;
+				for  (list<pair<int, canonical> >::iterator j = i; j != idx.end(); j++)
+					if (arcs[j->first].second == arcs[i->first].second)
+						total++;
+
+				if (total == input_arc_size || move_on)
+				{
+					for  (list<pair<int, canonical> >::iterator j = ::next(i); j != idx.end(); )
+					{
+						if (arcs[j->first].second == arcs[i->first].second)
+						{
+							i->second &= j->second;
+							j = idx.erase(j);
+						}
+						else
+							j++;
+					}
+
+					for (int j = 0; j < arcs.size(); j++)
+					{
+						if (arcs[j].first == arcs[i->first].second)
+						{
+							if (at(observer).is_in_tail(arcs[j].second))
+								idx.push_back(pair<int, canonical>(j, i->second));
+							else if (arcs[j].second == observer)
+								encoding &= i->second;
+						}
+					}
+
+					i = idx.erase(i);
+					progress = true;
+				}
+				else
+					i++;
+			}
+			else
+			{
+				if (arcs[i->first].second.is_trans() && arcs[i->first].second != observer)
+					i->second |= ~at(arcs[i->first].second).index;
+
+				for (int j = 0; j < arcs.size(); j++)
+				{
+					if (arcs[j].first == arcs[i->first].second)
+					{
+						if (at(observer).is_in_tail(arcs[j].second))
+							idx.push_back(pair<int, canonical>(j, i->second));
+						else if (arcs[j].second == observer)
+							encoding &= i->second;
+					}
+				}
+
+				i = idx.erase(i);
+				progress = true;
+			}
+		}
+
+		if (!progress)
+			move_on = true;
+		else
+			move_on = false;
 	}
 
-	logic encoding = 0;
-	if ((*this)[observer].is_in_tail(place) && observer != place)
-	{
-		svector<int> idx = output_arcs(place);
-		while (idx.size() != 0)
-		{
-			for (int k = 0; k < idx.size();)
-			{
-				cout << node_name(arcs[idx[k]].first) << "=>" << node_name(arcs[idx[k]].second) << "{";
-				if (is_place(arcs[idx[k]].second) && (*this)[observer].is_in_tail(arcs[idx[k]].second))
-				{
-					encoding |= ~T[index(arcs[idx[k]].first)].index;
-					k++;
-				}
-				else if (is_place(arcs[idx[k]].second) && observer == arcs[idx[k]].second)
-				{
-					encoding |= ~T[index(arcs[idx[k]].first)].index;
-					idx.erase(idx.begin() + k);
-				}
-				else if (is_trans(arcs[idx[k]].second) && (observer == arcs[idx[k]].second || !(*this)[observer].is_in_tail(arcs[idx[k]].second)))
-					idx.erase(idx.begin() + k);
-				else if (is_place(arcs[idx[k]].second))
-					idx.erase(idx.begin() + k);
-				else
-					k++;
-				cout << encoding.print(vars) << "} ";
-			}
-			idx = increment_arcs(idx);
-		}
-		return encoding & S[place].index;
-	}
-	else
-		return S[place].index;
+	return encoding;
 }
 
-bool petri::trim()
+canonical petri_net::get_effective_state_encoding(petri_state state, petri_state observer)
+{
+	/*cout << "Effective State Encoding from " << state << " to " << observer << endl;
+
+	for (int i = 0; i < observer.state.size(); i++)
+	{
+		cout << observer.state[i] << ": ";
+		for (int j = 0; j < at(observer.state[i]).tail.size(); j++)
+			cout << at(observer.state[i]).tail[j] << " ";
+		cout << endl;
+	}*/
+
+	struct execution
+	{
+		execution(){}
+		execution(petri_state s){state = s; trans = canonical(0); mod = false;}
+		~execution(){}
+
+		petri_state state;
+		canonical trans;
+		bool mod;
+	};
+
+	list<execution> executions(1, execution(state));
+
+	canonical encoding = 1;
+	for (int i = 0; i < state.state.size(); i++)
+		encoding &= at(state.state[i]).index;
+
+	observer.state.sort();
+
+	for (list<execution>::iterator exec = executions.begin(); exec != executions.end(); exec = executions.erase(exec))
+	{
+		//cout << "Begin Execution" << endl;
+		while (observer.state.unique() != exec->state.state.unique() && is_in_tail(observer, exec->state.state))
+		{
+			svector<int> movable;
+			for (int i = 0; i < exec->state.state.size(); i++)
+			{
+				svector<petri_index> n = next(exec->state.state[i]);
+				if (observer.state.find(exec->state.state[i]) == observer.state.end())
+				{
+					if (exec->state.state[i].is_place())
+					{
+						int total = 0;
+						for (int k = i; k < exec->state.state.size(); k++)
+							if (next(exec->state.state[k])[0] == n[0])
+								total++;
+
+						if (total == prev(n).unique().size())
+							movable.push_back(i);
+					}
+					else
+						movable.push_back(i);
+				}
+
+				if (exec->state.state[i].is_trans() && is_in_tail(observer, exec->state.state[i]))
+				{
+					exec->trans |= ~at(exec->state.state[i]).index;
+					exec->mod = true;
+				}
+			}
+
+			//cout << exec->state << " " << exec->trans.print(vars) << endl;
+
+			if (movable.size() > 0)
+			{
+				for (int i = movable.size()-1; i >= 0; i--)
+				{
+					if (exec->state.state[movable[i]].is_place())
+					{
+						for (int k = movable[i]+1; k < exec->state.state.size(); )
+						{
+							if (next(exec->state.state[k])[0] == next(exec->state.state[movable[i]])[0])
+							{
+								for (int j = i+1; j < movable.size(); j++)
+									if (movable[j] > k)
+										movable[j]--;
+
+								exec->state.state.erase(exec->state.state.begin() + k);
+							}
+							else
+								k++;
+						}
+					}
+
+					svector<petri_index> n = next(exec->state.state[movable[i]]);
+					for (int j = n.size()-1; j >= 0; j--)
+					{
+						if (j > 0)
+						{
+							if (exec->state.state[movable[i]].is_place())
+							{
+								executions.push_back(*exec);
+								executions.back().state.state[movable[i]] = n[j];
+							}
+							else
+								exec->state.state.push_back(n[j]);
+						}
+						else
+							exec->state.state[movable[i]] = n[j];
+					}
+				}
+			}
+		}
+
+		//cout << "Done " << exec->state << " " << encoding.print(vars) << " -> ";
+		if (exec->mod)
+			encoding &= exec->trans;
+		//cout << encoding.print(vars) << endl << endl;
+	}
+
+	return encoding;
+}
+
+void petri_net::compact()
+{
+	bool change = true;
+	while (change)
+	{
+		change = false;
+		for (petri_index i(0, true); i < S.size();)
+		{
+			if (prev(i).size() == 0 && M0.find(i) == M0.end())
+			{
+				cut(i);
+				change = true;
+			}
+			else
+				i++;
+		}
+
+		for (petri_index i(0, false); i < T.size();)
+		{
+			svector<petri_index> n = next(i), p = prev(i), np = prev(n), pn = next(p), nn = next(n), pp = prev(p);
+
+			if (at(i).index == 0 || (p.size() == 0 && M0.find(i) == M0.end()))
+			{
+				cut(i);
+				change = true;
+			}
+			/*else if (at(i).index == 1 && (nn.size() == 1 || p.size() == 1) && n.size() == 1 && np.size() == 1)
+			{
+				pinch_forward(i);
+				change = true;
+			}*/
+			else if (at(i).index == 1 && (pp.size() == 1 || n.size() == 1) && p.size() == 1 && pn.size() == 1)
+			{
+				pinch_backward(i);
+				change = true;
+			}
+			else
+				i++;
+		}
+
+		// Check for petri_nodes with no input arcs
+		for (int i = 0; i < M0.size(); i++)
+		{
+			svector<int> ia = incoming(M0[i]);
+			svector<petri_index> oa = next(M0[i]);
+
+			if (ia.size() == 0 && M0[i].is_trans())
+			{
+				M0.merge(oa);
+				vars->reset = vars->reset >> at(M0[i]).index;
+				cut(M0[i]);
+				change = true;
+			}
+			else if (ia.size() == 0 && M0[i].is_place())
+			{
+				bool all_active = true;
+				for (int j = 0; all_active && j < oa.size(); j++)
+					if (!at(oa[j]).active || is_mutex(vars->reset, ~at(oa[j]).index))
+						all_active = false;
+
+				if (all_active)
+				{
+					M0.merge(oa);
+					cut(M0[i]);
+					change = true;
+				}
+			}
+		}
+
+		for (petri_index i(0, true); i < S.size(); )
+		{
+			bool vacuous = true;
+			for (petri_index j(0, false); j < T.size() && vacuous; j++)
+			{
+				vacuous = false;
+				for (smap<int, int>::iterator bi = at(i).pbranch.begin(); bi != at(i).pbranch.end() && !vacuous; bi++)
+					if (find(at(j).pbranch.begin(), at(j).pbranch.end(), *bi) == at(j).pbranch.end())
+						vacuous = true;
+			}
+
+			if (vacuous)
+			{
+				cut(i);
+				change = true;
+			}
+			else
+				i++;
+		}
+
+		for (petri_index i(0, false); i < T.size(); i++)
+			for (petri_index j = i+1; j < T.size(); )
+			{
+				if (!at(i).active && !at(j).active && prev(i) == prev(j) && next(i) == next(j))
+				{
+					at(i).index |= at(j).index;
+					cut(j);
+					change = true;
+				}
+				else
+					j++;
+			}
+	}
+}
+
+bool petri_net::trim()
 {
 	bool result = false;
-	int i, j, l;
-	svector<int> ia, oa, iia;
 	smap<int, int>::iterator bi;
 	svector<pair<int, int> >::iterator ai;
 	bool vacuous;
-	logic v;
 
 	// Remove unreachable places
 	/**
 	 * A place is "unreachable" when there is no possible state encoding
 	 * that would enable an input transition.
 	 */
-	for (i = 0; i < S.size();)
+	for (petri_index i(0, true); i < S.size();)
 	{
-		if (S[i].index == 0)
+		if (at(i).index == 0)
 		{
-			remove_place(i);
+			cut(i);
 			result = true;
 		}
 		else
 			i++;
 	}
 
-	for (i = 0; i < T.size();)
+	for (petri_index i(0, false); i < T.size();)
 	{
-		ia = input_nodes(trans_id(i));
-		oa = output_nodes(trans_id(i));
+		svector<petri_index> ia = prev(i);
+		svector<petri_index> oa = next(i);
 
-		for (j = 0, v = 1; j < ia.size(); j++)
-			v &= S[ia[j]].index;
+		canonical v = 1;
+		for (int j = 0; j < ia.size(); j++)
+			v &= at(ia[j]).index;
 
 		// Impossible and dangling transitions
 		/**
@@ -1721,9 +2484,9 @@ bool petri::trim()
 		 * no output arcs. This can happen after removing an unreachable state.
 		 * Doing so makes it's neighbors dangle.
 		 */
-		if (T[i].index == 0 || ia.size() == 0 || oa.size() == 0)
+		if (at(i).index == 0 || ia.size() == 0 || oa.size() == 0)
 		{
-			remove_trans(trans_id(i));
+			cut(i);
 			result = true;
 		}
 
@@ -1749,33 +2512,33 @@ bool petri::trim()
 		 * and have *[S1;S2], you no longer know the value of x. Therefore, the x- transition
 		 * is globally invacuous.
 		 */
-		else if (T[index(i)].definitely_vacuous && ia.size() == 1 && oa.size() == 1 && output_nodes(ia[0]).size() == 1)
+		else if (at(i).definitely_vacuous && ia.size() == 1 && oa.size() == 1 && next(ia[0]).size() == 1)
 		{
-			for (l = 0; l < arcs.size(); l++)
+			for (int l = 0; l < arcs.size(); l++)
 				if (arcs[l].second == ia[0])
 					arcs[l].second = oa[0];
 
-			S[oa[0]].assumptions = S[ia[0]].assumptions >> S[oa[0]].assumptions;
-			S[oa[0]].assertions.insert(S[oa[0]].assertions.end(), S[ia[0]].assertions.begin(), S[ia[0]].assertions.end());
+			at(oa[0]).assumptions = at(ia[0]).assumptions >> at(oa[0]).assumptions;
+			at(oa[0]).assertions.insert(at(oa[0]).assertions.end(), at(ia[0]).assertions.begin(), at(ia[0]).assertions.end());
 
-			remove_place(ia[0]);
-			remove_trans(trans_id(i));
+			cut(ia[0]);
+			cut(i);
 			result = true;
 		}
-		else if (T[index(i)].definitely_vacuous && ia.size() == 1 && oa.size() == 1 && input_nodes(oa[0]).size() == 1)
+		else if (at(i).definitely_vacuous && ia.size() == 1 && oa.size() == 1 && prev(oa[0]).size() == 1)
 		{
-			for (l = 0; l < arcs.size(); l++)
+			for (int l = 0; l < arcs.size(); l++)
 				if (arcs[l].first == oa[0])
 					arcs[l].first = ia[0];
 
-			S[ia[0]].assumptions = S[ia[0]].assumptions >> S[oa[0]].assumptions;
-			S[ia[0]].assertions.insert(S[ia[0]].assertions.end(), S[oa[0]].assertions.begin(), S[oa[0]].assertions.end());
+			at(ia[0]).assumptions = at(ia[0]).assumptions >> at(oa[0]).assumptions;
+			at(ia[0]).assertions.insert(at(ia[0]).assertions.end(), at(oa[0]).assertions.begin(), at(oa[0]).assertions.end());
 
-			remove_place(oa[0]);
-			remove_trans(trans_id(i));
+			cut(oa[0]);
+			cut(i);
 			result = true;
 		}
-		/*else if (T[index(i)].definitely_vacuous && oa.size() == 1 && input_nodes(oa[0]).size() == 1 && (output_nodes(oa[0]).size() == 1 || input_nodes(trans_id(i)).size() == 1))
+		/*else if (T[index(i)].definitely_vacuous && oa.size() == 1 && input_petri_nodes(oa[0]).size() == 1 && (output_petri_nodes(oa[0]).size() == 1 || input_petri_nodes(trans_id(i)).size() == 1))
 		{
 			for (j = 0; j < ia.size(); j++)
 			{
@@ -1808,20 +2571,20 @@ bool petri::trim()
 	 * It is equivalent to saying that "nothing" is happening in parallel with "something".
 	 * This can happen after the removal of vacuous transitions in a parallel block.
 	 */
-	for (i = 0; i < S.size(); )
+	for (petri_index i(0, true); i < S.size(); )
 	{
 		vacuous = true;
-		for (j = 0; j < T.size() && vacuous; j++)
+		for (petri_index j(0, false); j < T.size() && vacuous; j++)
 		{
 			vacuous = false;
-			for (bi = S[i].pbranch.begin(); bi != S[i].pbranch.end() && !vacuous; bi++)
-				if (find(T[j].pbranch.begin(), T[j].pbranch.end(), *bi) == T[j].pbranch.end())
+			for (bi = at(i).pbranch.begin(); bi != at(i).pbranch.end() && !vacuous; bi++)
+				if (find(at(j).pbranch.begin(), at(j).pbranch.end(), *bi) == at(j).pbranch.end())
 					vacuous = true;
 		}
 
 		if (vacuous)
 		{
-			remove_place(i);
+			cut(i);
 			result = true;
 		}
 		else
@@ -1829,40 +2592,40 @@ bool petri::trim()
 	}
 
 	// Merge Or
-	for (i = 0; i < T.size(); i++)
-		for (j = i+1; j < T.size(); )
+	for (petri_index i(0, false); i < T.size(); i++)
+		for (petri_index j = i+1; j < T.size(); )
 		{
-			if (!T[i].active && !T[j].active && input_nodes(trans_id(i)) == input_nodes(trans_id(j)) && output_nodes(trans_id(i)) == output_nodes(trans_id(j)))
+			if (!at(i).active && !at(j).active && prev(i) == prev(j) && next(i) == next(j))
 			{
-				T[i].index |= T[j].index;
-				remove_trans(trans_id(j));
+				at(i).index |= at(j).index;
+				cut(j);
 			}
 			else
 				j++;
 		}
 
-	// Check for nodes with no input arcs
-	for (i = 0; i < M0.size(); i++)
+	// Check for petri_nodes with no input arcs
+	for (int i = 0; i < M0.size(); i++)
 	{
-		ia = input_arcs(M0[i]);
+		svector<int> ia = incoming(M0[i]);
 
 		if (ia.size() == 0)
 		{
-			oa = output_nodes(M0[i]);
+			svector<petri_index> oa = next(M0[i]);
 
 			bool all_active = true;
-			for (j = 0; all_active && j < oa.size(); j++)
-				if (!T[index(oa[j])].active || is_mutex(vars->reset, ~T[index(oa[j])].index))
+			for (int j = 0; all_active && j < oa.size(); j++)
+				if (!at(oa[j]).active || is_mutex(vars->reset, ~at(oa[j]).index))
 					all_active = false;
 
 
 			if (all_active)
 			{
-				remove_place(M0[i]);
-				for (j = 0; j < oa.size(); j++)
+				cut(M0[i]);
+				for (int j = 0; j < oa.size(); j++)
 				{
-					vars->reset = vars->reset >> T[index(oa[j])].index;
-					remove_trans(oa[j]);
+					vars->reset = vars->reset >> at(oa[j]).index;
+					cut(oa[j]);
 				}
 			}
 		}
@@ -1876,16 +2639,16 @@ bool petri::trim()
 	return result;
 }
 
-void petri::merge_conflicts()
+void petri_net::merge_conflicts()
 {
-	svector<int>				remove;
-	svector<int>				ia, oa;
+	svector<petri_index>				remove;
+	svector<petri_index>				ia, oa;
 	svector<int>				vli, vlji, vljo;
-	svector<svector<int> >	groups(S.size());
-	svector<pair<logic, logic> > merge_value(S.size());	// the aggregated state encoding of input places and aggregated state encoding of output places for each group
-	svector<pair<logic, logic> >::iterator ai;
+	svector<svector<petri_index> >	groups(S.size());
+	svector<pair<canonical, canonical> > merge_value(S.size());	// the aggregated state encoding of input places and aggregated state encoding of output places for each group
+	svector<pair<canonical, canonical> >::iterator ai;
 	smap<int, int>			pbranch, cbranch;
-	int						i, j, k, p;
+	int						j, k;
 	bool					conflict;
 
 	/**
@@ -1903,33 +2666,33 @@ void petri::merge_conflicts()
 	 * then either transition can fire and place a token in that place, hence binary OR
 	 * (union).
 	 */
-	for (i = 0; i < S.size(); i++)
+	for (int i = 0; i < S.size(); i++)
 	{
-		groups[i].push_back(i);
-		if (input_nodes(i).size() == 0)
+		groups[i].push_back(petri_index(i, true));
+		if (prev(i).size() == 0)
 		{
 			merge_value[i].first = S[i].index;
 			merge_value[i].second = 0;
 		}
-		else if (output_nodes(i).size() == 0)
+		else if (next(i).size() == 0)
 		{
 			merge_value[i].first = 1;
 			merge_value[i].second = S[i].index;
 		}
 	}
 
-	for (i = 0; i < S.size(); i++)
+	for (petri_index i(0, true); i < S.size(); i++)
 	{
-		p = groups.size();
+		int p = groups.size();
 		for (j = 0; j < p; j++)
 			if (groups[j].find(i) == groups[j].end())
 			{
-				ia = input_nodes(i);
-				oa = output_nodes(i);
+				ia = prev(i);
+				oa = next(i);
 
 				conflict = true;
 				for (k = 0; k < groups[j].size() && conflict; k++)
-					if ((S[i].index & S[groups[j][k]].index) == 0)
+					if ((at(i).index & at(groups[j][k]).index) == 0)
 						conflict = false;
 
 				/**
@@ -1942,7 +2705,7 @@ void petri::merge_conflicts()
 					vlji.clear();
 					vljo.clear();
 
-					S[i].index.vars(&vli);
+					at(i).index.vars(&vli);
 					merge_value[j].first.vars(&vlji);
 					merge_value[j].second.vars(&vljo);
 
@@ -1980,10 +2743,10 @@ void petri::merge_conflicts()
 						groups[j].push_back(i);
 
 						if (ia.size() == 0)
-							merge_value[j].first = merge_value[j].first & S[i].index;
+							merge_value[j].first = merge_value[j].first & at(i).index;
 
 						if (oa.size() == 0)
-							merge_value[j].second = merge_value[j].second | S[i].index;
+							merge_value[j].second = merge_value[j].second | at(i).index;
 					//}
 				}
 			}
@@ -1993,10 +2756,10 @@ void petri::merge_conflicts()
 	 * are subsets of other groups. We need to remove these to make sure that we
 	 * only get one place for each unique set of indistinguishable places.
 	 */
-	for (i = 0; i < groups.size(); i++)
+	for (int i = 0; i < groups.size(); i++)
 		groups[i].unique();
 
-	for (i = 0; i < groups.size(); i++)
+	for (int i = 0; i < groups.size(); i++)
 		for (j = 0; j < groups.size(); j++)
 			if (i != j && (includes(groups[i].begin(), groups[i].end(), groups[j].begin(), groups[j].end()) || groups[j].size() <= 1))
 			{
@@ -2008,7 +2771,7 @@ void petri::merge_conflicts()
 			}
 
 	cout << "MERGES" << endl;
-	for (i = 0; i < groups.size(); i++)
+	for (int i = 0; i < groups.size(); i++)
 	{
 		for (j = 0; j < groups[i].size(); j++)
 			cout << groups[i][j] << " ";
@@ -2017,45 +2780,40 @@ void petri::merge_conflicts()
 	cout << endl << endl;
 
 	// Merge all of the places in each group identified above.
-	for (i = 0; i < groups.size(); i++)
+	for (int i = 0; i < groups.size(); i++)
 	{
 		pbranch.clear();
 		cbranch.clear();
 		for (j = 0; j < groups[i].size(); j++)
 		{
-			pbranch.merge(S[groups[i][j]].pbranch);
-			cbranch.merge(S[groups[i][j]].cbranch);
+			pbranch.merge(at(groups[i][j]).pbranch);
+			cbranch.merge(at(groups[i][j]).cbranch);
 		}
 		if (merge_value[i].second == 0)
 			merge_value[i].second = 1;
 
-		p = new_place((merge_value[i].first & merge_value[i].second), pbranch, cbranch, NULL);
+		petri_index p = put_place((merge_value[i].first & merge_value[i].second), pbranch, cbranch, NULL);
 		for (j = 0; j < groups[i].size(); j++)
 		{
 			for (k = 0; k < arcs.size(); k++)
 			{
 				if (arcs[k].first == groups[i][j])
-					arcs.push_back(pair<int, int>(p, arcs[k].second));
+					arcs.push_back(petri_arc(p, arcs[k].second));
 				if (arcs[k].second == groups[i][j])
-					arcs.push_back(pair<int, int>(arcs[k].first, p));
+					arcs.push_back(petri_arc(arcs[k].first, p));
 			}
 			remove.push_back(groups[i][j]);
 		}
 	}
 
 	remove.unique();
-	for (i = remove.size()-1; i >= 0; i--)
-		remove_place(remove[i]);
+	for (int i = remove.size()-1; i >= 0; i--)
+		cut(remove[i]);
 }
 
-void petri::zip()
+void petri_net::zip()
 {
-	svector<int> it0, ot0, it1, ot1, remove;
-	svector<svector<int> > groups;
-	smap<int, int> pbranch;
-	smap<int, int>::iterator bi, bj;
-	svector<pair<int, int> >::iterator ai;
-	int i, j, k, p;
+	svector<svector<petri_index> > groups;
 
 	/**
 	 * First, check the places for possible merges, and then move on to the
@@ -2070,13 +2828,13 @@ void petri::zip()
 	 * just two places at a time, we go ahead and merge all places that have
 	 * the same neighborhoods.
 	 */
-	for (i = 0; i < S.size(); i++)
-		groups.push_back(svector<int>(1, i));
-	for (i = 0; i < S.size(); i++)
+	for (petri_index i(0, true); i < S.size(); i++)
+		groups.push_back(svector<petri_index>(1, i));
+	for (petri_index i(0, true); i < S.size(); i++)
 	{
-		p = groups.size();
-		for (j = 0; j < p; j++)
-			if (groups[j].find(i) == groups[j].end() && same_inputs(i, groups[j][0]) && same_outputs(i, groups[j][0]))
+		int p = groups.size();
+		for (int j = 0; j < p; j++)
+			if (groups[j].find(i) == groups[j].end() && have_same_source(i, groups[j][0]) && have_same_dest(i, groups[j][0]))
 			{
 				groups.push_back(groups[j]);
 				groups[j].push_back(i);
@@ -2088,11 +2846,11 @@ void petri::zip()
 	 * only get one place for each unique neighborhood once we have merge all of
 	 * the places in each individual group.
 	 */
-	for (i = 0; i < groups.size(); i++)
+	for (int i = 0; i < groups.size(); i++)
 		groups[i].unique();
 	groups.unique();
-	for (i = 0; i < groups.size(); i++)
-		for (j = 0; j < groups.size(); j++)
+	for (int i = 0; i < groups.size(); i++)
+		for (int j = 0; j < groups.size(); j++)
 			if (i != j && (includes(groups[i].begin(), groups[i].end(), groups[j].begin(), groups[j].end()) || groups[j].size() <= 1))
 			{
 				groups.erase(groups.begin() + j);
@@ -2101,16 +2859,17 @@ void petri::zip()
 					i--;
 			}
 
-	for (i = 0; i < groups.size(); i++)
+	svector<petri_index> remove;
+	for (int i = 0; i < groups.size(); i++)
 		if (groups[i].size() > 1)
 		{
-			merge_places(groups[i]);
+			merge(groups[i]);
 			remove.merge(groups[i]);
 		}
 
 	remove.unique();
-	for (i = remove.size()-1; i >= 0; i--)
-		remove_place(remove[i]);
+	for (int i = remove.size()-1; i >= 0; i--)
+		cut(remove[i]);
 
 	remove.clear();
 	groups.clear();
@@ -2122,32 +2881,22 @@ void petri::zip()
 	 * have the same result. So we can just merge their output arcs and delete
 	 * all but one of the transitions.
 	 */
-	for (i = 0; i < T.size(); i++)
-		for (j = i+1; j < T.size(); j++)
-			if (T[i].index == T[j].index && input_nodes(trans_id(i)) == input_nodes(trans_id(j)))
+	for (petri_index i(0, false); i < T.size(); i++)
+		for (petri_index j = i+1; j < T.size(); j++)
+			if (at(i).index == at(j).index && prev(i) == prev(j))
 			{
-				for (k = 0; k < arcs.size(); k++)
-					if (arcs[k].second == trans_id(j))
-						arcs.push_back(pair<int, int>(arcs[k].first, trans_id(i)));
+				for (int k = 0; k < arcs.size(); k++)
+					if (arcs[k].second == j)
+						arcs.push_back(petri_arc(arcs[k].first, i));
 
-				T[i].pbranch = T[i].pbranch.set_intersection(T[j].pbranch);
-				T[i].cbranch = T[i].cbranch.set_intersection(T[j].cbranch);
+				at(i).pbranch = at(i).pbranch.set_intersection(at(j).pbranch);
+				at(i).cbranch = at(i).cbranch.set_intersection(at(j).cbranch);
 
 				remove.push_back(j);
 			}
 
 	remove.unique();
-	for (i = remove.size()-1; i >= 0; i--)
-	{
-		T.erase(T.begin() + remove[i]);
-		for (j = 0; j < arcs.size();)
-		{
-			if (arcs[j].first == remove[i] || arcs[j].second == remove[i])
-				arcs.erase(arcs.begin() + j);
-			else
-				j++;
-		}
-	}
+	cut(remove);
 
 	/* Despite our best efforts to fix up the branch id's on the fly, we still
 	 * need to clean up.
@@ -2155,498 +2904,22 @@ void petri::zip()
 	trim_branch_ids();
 }
 
-void petri::get_paths(svector<int> from, svector<int> to, path_space *p)
+
+
+void petri_net::print_dot(ostream *fout, sstring name)
 {
-	path_space t(arcs.size());
-	svector<int> ex;
-	int i;
-
-	for (i = 0; i < from.size(); i++)
-	{
-		t.clear();
-		t.push_back(path(arcs.size()));
-		ex = from;
-		ex.erase(ex.begin() + i);
-		arc_paths(from[i], to, ex, &t, p);
-	}
-
-	p->total.from.unique();
-	p->total.to.unique();
-}
-
-svector<int> petri::arc_paths(int from, svector<int> to, svector<int> ex, path_space *t, path_space *p, int i)
-{
-	path_space tmp1(arcs.size()), tmp2(arcs.size());
-	svector<int> next, curr, temp;
-	smap<int, pair<int, int> >::iterator cpi;
-	int j, k;
-	list<path>::iterator pi;
-	bool immune = false;
-
-	/*cout << sstring(i, '\t') << "Arc Paths " << from << " -> {";
-	for (j = 0; j < to.size(); j++)
-	{
-		if (j != 0)
-			cout << ", ";
-		cout << to[j];
-	}
-	cout << "}" << endl;*/
-
-	if (i == 0)
-	{
-		t->paths.front().from.push_back(from);
-		t->total.from.push_back(from);
-	}
-
-	next.push_back(from);
-
-	while (1)
-	{
-		//cout << sstring(i, '\t') << next[0] << " ";
-
-		for (pi = t->paths.begin(); pi != t->paths.end();)
-		{
-			if ((*pi)[next[0]] > 0)
-				pi = t->erase(pi);
-			else
-				pi++;
-		}
-
-		if (t->paths.size() == 0)
-		{
-			//cout << "ALREADY COVERED " << t->total << endl;
-			return svector<int>();
-		}
-
-		t->inc(next[0]);
-
-		for (j = 0; j < to.size(); j++)
-			if (next[0] == to[j])
-			{
-				for (pi = t->paths.begin(); pi != t->paths.end(); pi++)
-				{
-					pi->to.push_back(to[j]);
-					p->push_back(pi->mask());
-				}
-				//cout << "END " << t->total << endl;
-				return svector<int>();
-			}
-
-		curr = next;
-		next.clear();
-		for (j = 0; j < arcs.size(); j++)
-			for (k = 0; k < curr.size(); k++)
-				if (arcs[curr[k]].second == arcs[j].first && ex.find(j) == ex.end())
-					next.push_back(j);
-		next.unique();
-
-		if (!immune && i != 0 && is_trans(arcs[next[0]].first) && input_arcs(arcs[next[0]].first).size() > 1)
-		{
-			//cout << "PARALLEL MERGE " << t->total << endl;
-			return next;
-		}
-
-		for (cpi = conditional_places.begin(); !immune && i != 0 && cpi != conditional_places.end(); cpi++)
-			if (arcs[next[0]].first == cpi->second.first)
-			{
-				//cout << "CONDITIONAL MERGE " << t->total << endl;
-				return next;
-			}
-
-		//cout << "\t" << t->total << endl;
-
-		immune = false;
-		while (next.size() > 1)
-		{
-			curr = next;
-			tmp2 = *t;
-
-			t->clear();
-			next.clear();
-			for (j = 0; j < curr.size(); j++)
-			{
-				tmp1 = tmp2;
-				temp = arc_paths(curr[j], to, ex, &tmp1, p, i+1);
-				if (temp.size() != 0)
-				{
-					next.merge(temp);
-					immune = true;
-					t->merge(tmp1);
-				}
-			}
-
-			next.unique();
-		}
-
-		if (next.size() < 1)
-		{
-			//cout << "KILL" << endl;
-			return svector<int>();
-		}
-	}
-}
-
-void petri::filter_path_space(path_space *p)
-{
-	smap<int, pair<int, int> >::iterator ci;
-	svector<int> it, ip;
-	list<path>::iterator pi;
-	int i;
-	int count, total;
-
-	for (ci = conditional_places.begin(); ci != conditional_places.end(); ci++)
-	{
-		for (i = 0; i < (int)arcs.size(); i++)
-			if (arcs[i].second == ci->second.first)
-				it.push_back(i);
-
-		for (i = 0, count = 0, total = 0; i < (int)it.size(); i++)
-		{
-			count += (p->total[it[i]] > 0);
-			total++;
-		}
-
-		for (pi = p->paths.begin(); pi != p-> paths.end() && count > 0 && count < total; pi++)
-			for (i = 0; i < (int)it.size(); i++)
-				if ((*pi)[it[i]] > 0)
-					filter_path(ci->second.second, it[i], &(*pi));
-
-		for (int j = 0; j < (int)p->total.size(); j++)
-			p->total[j] = 0;
-
-		for (pi = p->paths.begin(); pi != p->paths.end(); pi++)
-		{
-			count = 0;
-			for (int j = 0; j < (int)pi->size(); j++)
-			{
-				p->total[j] += (*pi)[j];
-				count += (*pi)[j];
-			}
-			if (count == 0)
-				pi = p->paths.erase(pi);
-		}
-	}
-}
-
-void petri::filter_path(int from, int to, path *p)
-{
-	svector<int> next;
-	svector<int> it, ip;
-	int i;
-
-	next.push_back(to);
-
-	while (next.size() == 1)
-	{
-		to = next[0];
-		if (p->nodes[to] == 0)
-			return;
-
-		p->nodes[to] = 0;
-
-		if (arcs[to].first == from || find(p->from.begin(), p->from.end(), arcs[to].first) != p->from.end() ||
-							   	   	  find(p->to.begin(), p->to.end(), arcs[to].first) != p->to.end())
-			return;
-
-		next.clear();
-		for (i = 0; i < (int)arcs.size(); i++)
-			if (arcs[to].first == arcs[i].second)
-				next.push_back(i);
-	}
-
-	for (i = 0; i < (int)next.size(); i++)
-		filter_path(from, next[i], p);
-}
-
-void petri::zero_paths(path_space *paths, int from)
-{
-	for (int i = 0; i < (int)arcs.size(); i++)
-		if (arcs[i].first == from || arcs[i].second == from)
-			paths->zero(i);
-}
-
-void petri::zero_paths(path_space *paths, svector<int> from)
-{
-	for (int i = 0; i < (int)from.size(); i++)
-		for (int j = 0; j < (int)arcs.size(); j++)
-			if (arcs[j].first == from[i] || arcs[j].second == from[i])
-				paths->zero(j);
-}
-
-void petri::zero_ins(path_space *paths, int from)
-{
-	for (int i = 0; i < (int)arcs.size(); i++)
-		if (arcs[i].second == from)
-			paths->zero(i);
-}
-
-void petri::zero_ins(path_space *paths, svector<int> from)
-{
-	for (int i = 0; i < (int)from.size(); i++)
-		for (int j = 0; j < (int)arcs.size(); j++)
-			if (arcs[j].second == from[i])
-				paths->zero(j);
-}
-
-void petri::zero_outs(path_space *paths, int from)
-{
-	for (int i = 0; i < (int)arcs.size(); i++)
-		if (arcs[i].first == from)
-			paths->zero(i);
-}
-
-void petri::zero_outs(path_space *paths, svector<int> from)
-{
-	for (int i = 0; i < (int)from.size(); i++)
-		for (int j = 0; j < (int)arcs.size(); j++)
-			if (arcs[j].first == from[i])
-				paths->zero(j);
-}
-
-svector<int> petri::start_path(int from, svector<int> ex)
-{
-	svector<int> result, oa;
-	smap<int, pair<int, int> >::iterator ci;
-	smap<int, int>::iterator bi, bj, bk;
-	int j, k;
-	bool same;
-
-	result.push_back(from);
-	for (bi = S[arcs[from].second].cbranch.begin(); bi != S[arcs[from].second].cbranch.end(); bi++)
-	{
-		ci = conditional_places.find(bi->first);
-		if (ci != conditional_places.end())
-		{
-			oa = output_arcs(ci->second.second);
-			for (j = 0; j < (int)oa.size(); j++)
-			{
-				bk = T[index(arcs[oa[j]].second)].cbranch.find(bi->first);
-				same = (bk->second == bi->second);
-
-				for (k = 0; k < (int)ex.size() && !same; k++)
-				{
-					bj = (*this)[arcs[ex[k]].second].cbranch.find(bi->first);
-					if (bj != (*this)[arcs[ex[k]].second].cbranch.end() && bj->second == bk->second)
-						same = true;
-				}
-
-				if (!same)
-					result.push_back(oa[j]);
-			}
-		}
-		else
-		{
-			cerr << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
-			cout << "Failed to find the conditional branch " << bi->first << "." << endl;
-			print_branch_ids(&cout);
-		}
-	}
-	result.unique();
-
-	/*cout << "Start {" << node_name(from) << "} -> {";
-	for (j = 0; j < (int)result.size(); j++)
-		cout << node_name(result[j]) << " ";
-	cout << "}" << endl;*/
-
-	return result;
-}
-
-svector<int> petri::start_path(svector<int> from, svector<int> ex)
-{
-	svector<int> result, oa;
-	smap<int, pair<int, int> >::iterator ci;
-	smap<int, int>::iterator bi, bj, bk;
-	int i, j, k;
-	bool same = false;
-
-	for (i = 0; i < (int)from.size(); i++)
-	{
-		result.push_back(from[i]);
-		for (bi = (*this)[arcs[from[i]].second].cbranch.begin(); bi != (*this)[arcs[from[i]].second].cbranch.end(); bi++)
-		{
-			ci = conditional_places.find(bi->first);
-			if (ci != conditional_places.end())
-			{
-				oa = output_arcs(ci->second.second);
-				for (j = 0; j < (int)oa.size(); j++)
-				{
-					bk = (*this)[arcs[oa[j]].second].cbranch.find(bi->first);
-
-					same = false;
-					for (k = 0; k < (int)from.size() && !same; k++)
-					{
-						bj = (*this)[arcs[from[k]].second].cbranch.find(bi->first);
-						if (bj != (*this)[arcs[from[k]].second].cbranch.end() && bj->second == bk->second)
-							same = true;
-					}
-
-					for (k = 0; k < (int)ex.size() && !same; k++)
-					{
-						bj = (*this)[arcs[ex[k]].second].cbranch.find(bi->first);
-						if (bj != (*this)[arcs[ex[k]].second].cbranch.end() && bj->second == bk->second)
-							same = true;
-					}
-
-					if (!same)
-						result.push_back(oa[j]);
-				}
-			}
-			else
-			{
-				cerr << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
-				cout << "Failed to find the conditional branch " << bi->first << "." << endl;
-				print_branch_ids(&cout);
-			}
-		}
-	}
-	result.unique();
-
-	/*cout << "Start {";
-	for (i = 0; i < (int)from.size(); i++)
-		cout << node_name(from[i]) << " ";
-	cout << "} -> {";
-
-	for (i = 0; i < (int)result.size(); i++)
-		cout << node_name(result[i]) << " ";
-
-	cout << "}" << endl;*/
-
-	return result;
-}
-
-svector<int> petri::end_path(int to, svector<int> ex)
-{
-	svector<int> result, oa;
-	smap<int, pair<int, int> >::iterator ci;
-	smap<int, int>::iterator bi, bj, bk;
-	int j, k;
-	bool same;
-
-	result.push_back(to);
-	for (bi = S[to].cbranch.begin(); bi != S[to].cbranch.end(); bi++)
-	{
-		ci = conditional_places.find(bi->first);
-		if (ci != conditional_places.end())
-		{
-			oa = input_nodes(ci->second.first);
-			for (j = 0; j < (int)oa.size(); j++)
-			{
-				bk = T[index(oa[j])].cbranch.find(bi->first);
-				same = (bk->second == bi->second);
-
-				for (k = 0; k < (int)ex.size() && !same; k++)
-				{
-					bj = (*this)[ex[k]].cbranch.find(bi->first);
-					if (bj != (*this)[ex[k]].cbranch.end() && bj->second == bk->second)
-						same = true;
-				}
-
-				if (!same)
-					result.push_back(oa[j]);
-			}
-		}
-		else
-		{
-			cerr << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
-			cout << "Failed to find the conditional branch " << bi->first << "." << endl;
-			print_branch_ids(&cout);
-		}
-	}
-	result.unique();
-
-	/*cout << "End {" << node_name(to) << "} -> {";
-	for (j = 0; j < (int)result.size(); j++)
-		cout << node_name(result[j]) << " ";
-	cout << "}" << endl;*/
-
-	return result;
-}
-
-svector<int> petri::end_path(svector<int> to, svector<int> ex)
-{
-	svector<int> result, oa;
-	smap<int, pair<int, int> >::iterator ci;
-	smap<int, int>::iterator bi, bj, bk;
-	int i, j, k;
-	bool same = false;
-
-	for (i = 0; i < (int)to.size(); i++)
-	{
-		result.push_back(to[i]);
-		for (bi = S[to[i]].cbranch.begin(); bi != S[to[i]].cbranch.end(); bi++)
-		{
-			ci = conditional_places.find(bi->first);
-			if (ci != conditional_places.end())
-			{
-				oa = input_nodes(ci->second.first);
-				for (j = 0; j < (int)oa.size(); j++)
-				{
-					bk = T[index(oa[j])].cbranch.find(bi->first);
-
-					same = false;
-					for (k = 0; k < (int)to.size() && !same; k++)
-					{
-						bj = (*this)[to[k]].cbranch.find(bi->first);
-						if (bj != (*this)[to[k]].cbranch.end() && bj->second == bk->second)
-							same = true;
-					}
-
-					for (k = 0; k < (int)ex.size() && !same; k++)
-					{
-						bj = (*this)[ex[k]].cbranch.find(bi->first);
-						if (bj != (*this)[ex[k]].cbranch.end() && bj->second == bk->second)
-							same = true;
-					}
-
-					if (!same)
-						result.push_back(oa[j]);
-				}
-			}
-			else
-			{
-				cerr << "Error: Internal failure at line " << __LINE__ << " in file " << __FILE__ << "." << endl;
-				cout << "Failed to find the conditional branch " << bi->first << "." << endl;
-				print_branch_ids(&cout);
-			}
-		}
-	}
-	result.unique();
-
-	/*cout << "End {";
-	for (i = 0; i < (int)to.size(); i++)
-		cout << node_name(to[i]) << " ";
-	cout << "} -> {";
-
-	for (i = 0; i < (int)result.size(); i++)
-		cout << node_name(result[i]) << " ";
-
-	cout << "}" << endl;*/
-
-	return result;
-}
-
-node &petri::operator[](int i)
-{
-	if (is_place(i))
-		return S[i];
-	else
-		return T[index(i)];
-}
-
-void petri::print_dot(ostream *fout, sstring name)
-{
-	int i, j, k;
 	sstring label;
 	(*fout) << "digraph " << name << endl;
 	(*fout) << "{" << endl;
 
-	for (i = 0; i < (int)S.size(); i++)
-		if (!dead(i))
+	for (petri_index i(0, true); i < S.size(); i++)
+		if (!is_floating(i))
 		{
-			(*fout) << "\tS" << i << " [label=\"" << sstring(i) << " ";
-			label = S[i].index.print(vars);
+			(*fout) << "\t" << i << " [label=\"" << i << " ";
+			label = at(i).index.print(vars);
 
-			for (j = 0, k = 0; j < (int)label.size(); j++)
+			int k = 0;
+			for (int j = 0; j < label.size(); j++)
 				if (label[j] == '|')
 				{
 					(*fout) << label.substr(k, j+1 - k) << "\\n";
@@ -2656,27 +2929,27 @@ void petri::print_dot(ostream *fout, sstring name)
 			(*fout) << label.substr(k) << "\"];" << endl;
 		}
 
-	for (i = 0; i < (int)T.size(); i++)
+	for (petri_index i(0, false); i < T.size(); i++)
 	{
-		label = T[i].index.print(vars);
-		if (!T[i].active)
+		label = at(i).index.print(vars);
+		if (!at(i).active)
 			label = "[" + label + "]";
-		label = sstring(i) + " " + label;
+		label = i.name() + " " + label;
 		if (label != "")
-			(*fout) << "\tT" << i << " [shape=box] [label=\"" << label << "\"];" << endl;
+			(*fout) << "\t" << i << " [shape=box] [label=\"" << label << "\"];" << endl;
 		else
-			(*fout) << "\tT" << i << " [shape=box];" << endl;
+			(*fout) << "\t" << i << " [shape=box];" << endl;
 	}
 
-	for (i = 0; i < (int)arcs.size(); i++)
-		(*fout) << "\t" << node_name(arcs[i].first) << " -> " << node_name(arcs[i].second) << "[label=\" " << i << " \"];" <<  endl;
+	for (int i = 0; i < arcs.size(); i++)
+		(*fout) << "\t" << arcs[i].first.name() << " -> " << arcs[i].second.name() << "[label=\" " << i << " \"];" <<  endl;
 
 	(*fout) << "}" << endl;
 }
 
-void petri::print_branch_ids(ostream *fout)
+void petri_net::print_branch_ids(ostream *fout)
 {
-	for (int i = 0; i < (int)S.size(); i++)
+	for (int i = 0; i < S.size(); i++)
 	{
 		(*fout) << "S" << i << ": ";
 		for (smap<int, int>::iterator j = S[i].pbranch.begin(); j != S[i].pbranch.end(); j++)
@@ -2685,7 +2958,7 @@ void petri::print_branch_ids(ostream *fout)
 			(*fout) << "c{" << j->first << " " << j->second << "} ";
 		(*fout) << endl;
 	}
-	for (int i = 0; i < (int)T.size(); i++)
+	for (int i = 0; i < T.size(); i++)
 	{
 		(*fout) << "T" << i << ": ";
 		for (smap<int, int>::iterator j = T[i].pbranch.begin(); j != T[i].pbranch.end(); j++)
@@ -2697,128 +2970,355 @@ void petri::print_branch_ids(ostream *fout)
 	(*fout) << endl;
 }
 
-void petri::print_conflicts(ostream &fout, string name)
+void petri_net::print_conflicts(ostream &fout, string name)
 {
-	smap<int, list<svector<int> > >::iterator i;
-	list<svector<int> >::iterator lj;
-	int j;
-
 	fout << "Conflicts: " << name << endl;
-	for (i = conflicts.begin(); i != conflicts.end(); i++)
+	for (smap<petri_index, list<svector<petri_index> > >::iterator i = conflicts.begin(); i != conflicts.end(); i++)
 	{
-		fout << i->first << ": ";
-		for (lj = i->second.begin(); lj != i->second.end(); lj++)
+		fout << i->first.name() << ": ";
+		for (list<svector<petri_index> >::iterator lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
 			fout << "{";
-			for (j = 0; j < (int)lj->size(); j++)
-				fout << (*lj)[j] << " ";
+			for (int j = 0; j < lj->size(); j++)
+				fout << (*lj)[j].name() << " ";
 			fout << "} ";
 		}
 		fout << endl;
 	}
 }
 
-void petri::print_indistinguishables(ostream &fout, string name)
+void petri_net::print_indistinguishables(ostream &fout, string name)
 {
-	smap<int, list<svector<int> > >::iterator i;
-	list<svector<int> >::iterator lj;
-	int j;
+	smap<petri_index, list<svector<petri_index> > >::iterator i;
+	list<svector<petri_index> >::iterator lj;
 
 	fout << "Indistinguishables: " << name << endl;
 	for (i = indistinguishable.begin(); i != indistinguishable.end(); i++)
 	{
-		fout << i->first << ": ";
+		fout << i->first.name() << ": ";
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
 			fout << "{";
-			for (j = 0; j < (int)lj->size(); j++)
-				fout << (*lj)[j] << " ";
+			for (int j = 0; j < lj->size(); j++)
+				fout << (*lj)[j].name() << " ";
 			fout << "} ";
 		}
 		fout << endl;
 	}
 }
 
-void petri::print_positive_conflicts(ostream &fout, string name)
+void petri_net::print_positive_conflicts(ostream &fout, string name)
 {
-	smap<int, list<svector<int> > >::iterator i;
-	list<svector<int> >::iterator lj;
-	int j;
+	smap<petri_index, list<svector<petri_index> > >::iterator i;
+	list<svector<petri_index> >::iterator lj;
 
 	fout << "Negative Indistinguishables: " << name << endl;
 	for (i = negative_indistinguishable.begin(); i != negative_indistinguishable.end(); i++)
 	{
-		fout << i->first << ": ";
+		fout << i->first.name() << ": ";
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
 			fout << "{";
-			for (j = 0; j < (int)lj->size(); j++)
-				fout << (*lj)[j] << " ";
+			for (int j = 0; j < lj->size(); j++)
+				fout << (*lj)[j].name() << " ";
 			fout << "} ";
 		}
 		fout << endl;
 	}
 }
 
-void petri::print_positive_indistinguishables(ostream &fout, string name)
+void petri_net::print_positive_indistinguishables(ostream &fout, string name)
 {
-	smap<int, list<svector<int> > >::iterator i;
-	list<svector<int> >::iterator lj;
-	int j;
+	smap<petri_index, list<svector<petri_index> > >::iterator i;
+	list<svector<petri_index> >::iterator lj;
 
 	fout << "Positive Indistinguishables: " << name << endl;
 	for (i = positive_indistinguishable.begin(); i != positive_indistinguishable.end(); i++)
 	{
-		fout << i->first << ": ";
+		fout << i->first.name() << ": ";
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
 			fout << "{";
-			for (j = 0; j < (int)lj->size(); j++)
-				fout << (*lj)[j] << " ";
+			for (int j = 0; j < lj->size(); j++)
+				fout << (*lj)[j].name() << " ";
 			fout << "} ";
 		}
 		fout << endl;
 	}
 }
 
-void petri::print_negative_conflicts(ostream &fout, string name)
+void petri_net::print_negative_conflicts(ostream &fout, string name)
 {
-	smap<int, list<svector<int> > >::iterator i;
-	list<svector<int> >::iterator lj;
-	int j;
+	smap<petri_index, list<svector<petri_index> > >::iterator i;
+	list<svector<petri_index> >::iterator lj;
 
 	fout << "Positive Conflicts: " << name << endl;
 	for (i = positive_conflicts.begin(); i != positive_conflicts.end(); i++)
 	{
-		fout << i->first << ": ";
+		fout << i->first.name() << ": ";
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
 			fout << "{";
-			for (j = 0; j < (int)lj->size(); j++)
-				fout << (*lj)[j] << " ";
+			for (int j = 0; j < lj->size(); j++)
+				fout << (*lj)[j].name() << " ";
 			fout << "} ";
 		}
 		fout << endl;
 	}
 }
 
-void petri::print_negative_indistinguishables(ostream &fout, string name)
+void petri_net::print_negative_indistinguishables(ostream &fout, string name)
 {
-	smap<int, list<svector<int> > >::iterator i;
-	list<svector<int> >::iterator lj;
-	int j;
+	smap<petri_index, list<svector<petri_index> > >::iterator i;
+	list<svector<petri_index> >::iterator lj;
 
 	fout << "Negative Conflicts: " << name << endl;
 	for (i = negative_conflicts.begin(); i != negative_conflicts.end(); i++)
 	{
-		fout << i->first << ": ";
+		fout << i->first.name() << ": ";
 		for (lj = i->second.begin(); lj != i->second.end(); lj++)
 		{
 			fout << "{";
-			for (j = 0; j < (int)lj->size(); j++)
-				fout << (*lj)[j] << " ";
+			for (int j = 0; j < lj->size(); j++)
+				fout << (*lj)[j].name() << " ";
 			fout << "} ";
 		}
 		fout << endl;
 	}
+}
+
+petri_state::petri_state()
+{
+
+}
+
+/**
+ * Initializes a petri state given a single place. The resulting state
+ * is one that has an index at the given place and then enough indices
+ * at each parent parallel merge point to allow through travel of the
+ * first index.
+ */
+petri_state::petri_state(petri_net *net, svector<petri_index> start, bool backward)
+{
+	struct execution
+	{
+		execution(){}
+		execution(svector<petri_index> s, petri_net *net){state = s; covered.resize(net->S.size() + net->T.size(), false);}
+		~execution(){}
+
+		svector<petri_index> state;
+		svector<bool> covered;
+	};
+
+	state.merge(start);
+	list<execution> execs(1, execution(start, net));
+
+	/**
+	 * Run through all possible executions from the starting index
+	 * looking for deadlock.
+	 */
+	for (list<execution>::iterator exec = execs.begin(); exec != execs.end(); exec = execs.erase(exec))
+	{
+		//cout << "\tStart Execution" << endl;
+		bool done = false;
+		while (!done)
+		{
+			svector<int> movable;
+			for (int i = 0; i < exec->state.size(); i++)
+			{
+				svector<petri_index> n = backward ? net->prev(exec->state[i]) : net->next(exec->state[i]);
+				if (exec->state[i].is_place())
+				{
+					int total = 0;
+					for (int k = i; k < exec->state.size(); k++)
+						if ((backward ? net->prev(exec->state[k]) : net->next(exec->state[k]))[0] == n[0])
+							total++;
+
+					if (total == (backward ? net->next(n) : net->prev(n)).unique().size())
+						movable.push_back(i);
+				}
+				else
+					movable.push_back(i);
+			}
+
+			if (movable.size() != 0)
+			{
+				// Check to see if we are done here...
+				done = true;
+				for (int i = 0; done && i < exec->state.size(); i++)
+					if (!exec->covered[exec->state[i].is_trans() ? exec->state[i].idx() + net->S.size() : exec->state[i].idx()])
+						done = false;
+
+				// Mark the nodes we just covered...
+				for (int i = 0; i < exec->state.size(); i++)
+					exec->covered[exec->state[i].is_trans() ? exec->state[i].idx() + net->S.size() : exec->state[i].idx()] = true;
+			}
+
+			/*cout << "\t{";
+			for (int i = 0; i < exec->state.size(); i++)
+			{
+				if (i != 0)
+					cout << " ";
+				cout << exec->state[i];
+			}
+			cout << "}" << endl;*/
+
+			/* If we are not done, handle the next set of movements
+			 * duplicating executions or indices when necessary.
+			 */
+			for (int i = 0; !done && i < movable.size(); i++)
+			{
+				if (exec->state[movable[i]].is_place())
+				{
+					for (int k = movable[i]+1; k < exec->state.size(); )
+					{
+						if ((backward && net->prev(exec->state[k])[0] == net->prev(exec->state[movable[i]])[0]) ||
+						   (!backward && net->next(exec->state[k])[0] == net->next(exec->state[movable[i]])[0]))
+						{
+							for (int j = i+1; j < movable.size(); j++)
+								if (movable[j] > k)
+									movable[j]--;
+
+							exec->state.erase(exec->state.begin() + k);
+						}
+						else
+							k++;
+					}
+				}
+
+				svector<petri_index> n = backward ? net->prev(exec->state[movable[i]]) : net->next(exec->state[movable[i]]);
+				for (int k = n.size()-1; k >= 0; k--)
+				{
+					if (k > 0)
+					{
+						if (exec->state[movable[i]].is_place())
+						{
+							execs.push_back(*exec);
+							execs.back().state[movable[i]] = n[k];
+						}
+						else
+							exec->state.push_back(n[k]);
+					}
+					else
+						exec->state[movable[i]] = n[k];
+				}
+			}
+
+			/**
+			 * Every time deadlock is detected in the execution,
+			 * insert enough indices at the merge point to allow
+			 * execution to continue. Also, insert these indices
+			 * into the state we are trying to initialize.
+			 */
+			if (!done && movable.size() == 0)
+			{
+				svector<petri_index> counts;
+				// Count up how many indices we already have at each merge point.
+				for (int i = 0; i < exec->state.size(); i++)
+					counts.merge(backward ? net->next(net->prev(exec->state[i])) : net->prev(net->next(exec->state[i])));
+				counts.unique();
+
+				for (int i = 0; i < counts.size(); i++)
+				{
+					if (exec->state.find(counts[i]) == exec->state.end())
+					{
+						exec->state.push_back(counts[i]);
+						state.push_back(counts[i]);
+					}
+				}
+			}
+		}
+	}
+
+	// Sort the state so that we can have some standard for comparison.
+	this->state.sort();
+}
+
+petri_state::~petri_state()
+{
+
+}
+
+/**
+ * Count up the number of indices that equal the jth index
+ */
+int petri_state::count(int j)
+{
+	int total = 0;
+	for (int i = j; i < state.size(); i++)
+		if (state[i] == state[j])
+			total++;
+	return total;
+}
+
+/**
+ * Delete all but one of the indices that equal the jth index.
+ * This preserves the index at j.
+ */
+void petri_state::merge(int j)
+{
+	for (int i = j+1; i < state.size();)
+	{
+		if (state[i] == state[j])
+			state.erase(state.begin() + i);
+		else
+			i++;
+	}
+}
+
+bool petri_state::is_state()
+{
+	for (int i = 0; i < state.size(); i++)
+		if (state[i].is_trans())
+			return false;
+	return true;
+}
+
+petri_state &petri_state::operator=(petri_state s)
+{
+	state = s.state;
+	return *this;
+}
+
+ostream &operator<<(ostream &os, petri_state s)
+{
+	os << "{";
+	for (int i = 0; i < s.state.size(); i++)
+	{
+		if (i != 0)
+			os << " ";
+		os << s.state[i];
+	}
+	os << "}";
+	return os;
+}
+
+bool operator==(petri_state s1, petri_state s2)
+{
+	return s1.state == s2.state;
+}
+
+bool operator!=(petri_state s1, petri_state s2)
+{
+	return s1.state != s2.state;
+}
+
+bool operator<(petri_state s1, petri_state s2)
+{
+	return s1.state < s2.state;
+}
+
+bool operator>(petri_state s1, petri_state s2)
+{
+	return s1.state > s2.state;
+}
+
+bool operator<=(petri_state s1, petri_state s2)
+{
+	return s1.state <= s2.state;
+}
+
+bool operator>=(petri_state s1, petri_state s2)
+{
+	return s1.state >= s2.state;
 }

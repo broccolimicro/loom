@@ -213,10 +213,10 @@ void loop::reorder()
 
 }
 
-svector<int> loop::generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch)
+svector<petri_index> loop::generate_states(petri_net *n, rule_space *p, svector<petri_index> f, smap<int, int> pbranch, smap<int, int> cbranch)
 {
 	list<pair<sequential*, guard*> >::iterator instr_iter;
-	svector<int> start, end;
+	svector<petri_index> start, end;
 	sstring antiguard = "";
 	sstring bvname;
 	svector<sstring> bvnames;
@@ -249,7 +249,7 @@ svector<int> loop::generate_states(petri *n, rule_space *p, svector<int> f, smap
 		start.clear();
 		end.clear();
 		start = instr_iter->second->generate_states(net, prs, from, pbranch, cbranch);
-		end.push_back(net->insert_place(start, pbranch, cbranch, this));
+		end.push_back(net->push_place(start, pbranch, cbranch, this));
 		end = instr_iter->first->generate_states(net, prs, end, pbranch, cbranch);
 		net->connect(end, from);
 		antiguard += sstring(antiguard != "" ? "&" : "") + "~(" + instr_iter->second->chp + ")";
@@ -277,7 +277,7 @@ svector<int> loop::generate_states(petri *n, rule_space *p, svector<int> f, smap
 			}
 		}
 
-		vars->enforcements = vars->enforcements >> logic(bvname, vars);
+		vars->enforcements = vars->enforcements >> canonical(bvname, vars);
 		prs->excl.push_back(pair<svector<int>, int>(bvuids, 1));
 		for (int k = 0; k < (int)bvuids.size(); k++)
 			prs->excl.push_back(pair<svector<int>, int>(svector<int>(1, bvuids[k]), 0));
@@ -287,10 +287,10 @@ svector<int> loop::generate_states(petri *n, rule_space *p, svector<int> f, smap
 			antiguard += "&~" + bvnames[i];
 	}*/
 
-	logic ag = logic(antiguard, vars);
+	canonical ag = canonical(antiguard, vars);
 
 	if (ag != 0)
-		uid.push_back(net->insert_transition(f, ag, pbranch, cbranch, this));
+		uid.push_back(net->push_transition(f, ag, false, pbranch, cbranch, this));
 
 	flags->dec();
 

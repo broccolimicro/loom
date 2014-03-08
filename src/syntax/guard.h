@@ -16,8 +16,8 @@ struct guard : instruction
 	guard(instruction *parent, sstring chp, variable_space *vars, flag_space *flags);
 	~guard();
 
-	logic solution;
-	logic expected;
+	canonical solution;
+	canonical expected;
 
 	instruction *duplicate(instruction *parent, variable_space *vars, smap<sstring, sstring> convert);
 
@@ -26,7 +26,7 @@ struct guard : instruction
 	void simulate();
 	void rewrite();
 	void reorder();
-	svector<int> generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch);
+	svector<petri_index> generate_states(petri_net *n, rule_space *p, svector<petri_index> f, smap<int, int> pbranch, smap<int, int> cbranch);
 
 	void print_hse(sstring t = "", ostream *fout = &cout);
 };

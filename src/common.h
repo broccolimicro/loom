@@ -68,6 +68,4 @@ svector<type> sample(svector<type> full, svector<int> i)
 	return result;
 }
 
-#define logic canonical
-
 #endif

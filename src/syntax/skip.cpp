@@ -70,7 +70,7 @@ void skip::reorder()
 
 }
 
-svector<int> skip::generate_states(petri *n, rule_space *p, svector<int> f, smap<int, int> pbranch, smap<int, int> cbranch)
+svector<petri_index> skip::generate_states(petri_net *n, rule_space *p, svector<petri_index> f, smap<int, int> pbranch, smap<int, int> cbranch)
 {
 	flags->inc();
 	from = f;
@@ -80,7 +80,7 @@ svector<int> skip::generate_states(petri *n, rule_space *p, svector<int> f, smap
 	if (flags->log_base_state_space())
 		(*flags->log_file) << flags->tab << "Skip " << endl;
 
-	uid.push_back(net->insert_dummy(from, pbranch, cbranch, this));
+	uid.push_back(net->push_transition(from, pbranch, cbranch, this));
 	flags->dec();
 
 	return uid;
