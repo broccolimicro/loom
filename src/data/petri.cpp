@@ -2218,6 +2218,17 @@ canonical petri_net::get_effective_place_encoding(petri_index place, petri_index
 	return encoding;
 }
 
+struct effective_state_execution
+{
+	effective_state_execution(){}
+	effective_state_execution(petri_state s){state = s; trans = canonical(0); mod = false;}
+	~effective_state_execution(){}
+
+	petri_state state;
+	canonical trans;
+	bool mod;
+};
+
 canonical petri_net::get_effective_state_encoding(petri_state state, petri_state observer)
 {
 	/*cout << "Effective State Encoding from " << state << " to " << observer << endl;
@@ -2230,18 +2241,7 @@ canonical petri_net::get_effective_state_encoding(petri_state state, petri_state
 		cout << endl;
 	}*/
 
-	struct execution
-	{
-		execution(){}
-		execution(petri_state s){state = s; trans = canonical(0); mod = false;}
-		~execution(){}
-
-		petri_state state;
-		canonical trans;
-		bool mod;
-	};
-
-	list<execution> executions(1, execution(state));
+	list<effective_state_execution> executions(1, effective_state_execution(state));
 
 	canonical encoding = 1;
 	for (int i = 0; i < state.state.size(); i++)
@@ -2249,7 +2249,7 @@ canonical petri_net::get_effective_state_encoding(petri_state state, petri_state
 
 	observer.state.sort();
 
-	for (list<execution>::iterator exec = executions.begin(); exec != executions.end(); exec = executions.erase(exec))
+	for (list<effective_state_execution>::iterator exec = executions.begin(); exec != executions.end(); exec = executions.erase(exec))
 	{
 		//cout << "Begin Execution" << endl;
 		while (observer.state.unique() != exec->state.state.unique() && is_in_tail(observer, exec->state.state))

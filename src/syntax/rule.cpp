@@ -108,7 +108,8 @@ struct reductionhdl
 		implicant = r.implicant;
 		path = r.path;
 		covered = r.covered;
-		guard = r.guard;
+		end = r.end;
+		arcs = r.arcs;
 	}
 
 	reductionhdl(petri_net *net, petri_index start)
@@ -130,8 +131,9 @@ struct reductionhdl
 			this->path.push_back(petri_state(net, svector<petri_index>(1, start), true));
 		}
 
+		this->end.push_back(pair<int, canonical>(0, canonical(1)));
+
 		cout << "LOOK " << this->path.back() << endl;
-		this->guard = canonical(1);
 		this->covered.resize(net->S.size(), false);
 	}
 
@@ -142,18 +144,29 @@ struct reductionhdl
 
 	canonical implicant;
 	svector<petri_state> path;
+	svector<pair<int, int> > arcs;
+	svector<pair<int, canonical> > end;
 	svector<bool> covered;
-	canonical guard;
 
-	petri_index &at(int i)
+	petri_index &at(int e, int i)
 	{
-		return path.back().state[i];
+		return path[end[e].first].state[i];
 	}
 
-	void increment()
+	void increment(int i)
 	{
-		path.push_back(path.back());
-		path[path.size()-2].state.sort();
+		path.push_back(path[end[i].first]);
+		arcs.push_back(pair<int, int>(end[i].first, path.size()-1));
+		path[end[i].first].state.sort();
+		end[i].first = path.size()-1;
+	}
+
+	int duplicate(int i)
+	{
+		path.push_back(path[end[i].first]);
+		arcs.push_back(pair<int, int>(end[i].first, path.size()-1));
+		end.push_back(pair<int, canonical>(path.size()-1, end[i].second));
+		return end.size()-1;
 	}
 
 	void split(int i, petri_index n)
@@ -167,7 +180,8 @@ struct reductionhdl
 		implicant = r.implicant;
 		path = r.path;
 		covered = r.covered;
-		guard = r.guard;
+		arcs = r.arcs;
+		end = r.end;
 		return *this;
 	}
 };
@@ -198,200 +212,203 @@ void rule::strengthen(int t)
 		bool done = false;
 		while (!done)
 		{
-			svector<int> ready_transitions;
-			svector<int> ready_places;
-			/* Figure out which indices are ready to be moved
-			 * and separate them out into places and transitions.
-			 */
-			for (int i = 0; i < reduction->path.back().state.size(); i++)
+			for (int e = 0; e < reduction->end.size(); e++)
 			{
-				if (reduction->at(i).is_place())
-				{
-					int total = 0;
-					for (int k = i; k < reduction->path.back().state.size(); k++)
-						if (net->prev(reduction->path.back().state[k])[0] == net->prev(reduction->path.back().state[i])[0])
-							total++;
-
-					if (total == net->next(net->prev(reduction->at(i))).unique().size())
-						ready_places.push_back(i);
-				}
-				else
-					ready_transitions.push_back(i);
-			}
-
-			cout << reduction->path.back() << " " << reduction->guard.print(net->vars) << endl;
-
-			reduction->increment();
-
-			/*
-			 * This is the meat of the whole function. At this point,
-			 * we have reached a new state (where all indices are at
-			 * a place) and we need to determine whether or not we
-			 * need to add a transition to separate this place from
-			 * our initial implicant.
-			 */
-			if (reduction->path.back().is_state())
-			{
-				/* Check to see if we are done (we have already seen all
-				 * of these indices before) and then mark all indices as
-				 * seen.
+				svector<int> ready_transitions;
+				svector<int> ready_places;
+				/* Figure out which indices are ready to be moved
+				 * and separate them out into places and transitions.
 				 */
-				done = true;
 				for (int i = 0; i < reduction->path.back().state.size(); i++)
-					if (!reduction->covered[reduction->at(i).idx()])
-						done = false;
-
-				for (int i = 0; i < reduction->path.back().state.size(); i++)
-					reduction->covered[reduction->at(i).idx()] = true;
-
-				/* Check to see if we need to separate this state from the
-				 * implicant by looking for a transition to add in.
-				 */
-				svector<petri_index> o = net->next(reduction->path.back().state).unique();
-				bool is_implicant = false;
-				for (int i = 0; i < implicants[t].size(); i++)
-					for (int j = 0; j < o.size(); j++)
-						if (o[j] == implicants[t][i])
-							is_implicant = true;
-
-				canonical encoding = net->get_effective_state_encoding(reduction->path.back(), reduction->path.front());
-
-				/* If this state needs to be separated from the implicant state,
-				 * work backwards in the path until we find the closest set of
-				 * transitions that separate them. Then, use greedy to get the
-				 * least number of values needed to separate them.
-				 */
-				if (!is_implicant && (canonical(uid, 1-t) & reduction->guard & encoding) != 0)
 				{
-					cout << "Conflict " << encoding.print(net->vars) << endl;
-					bool found = false;
-					for (int i = reduction->path.size()-2; !found && i > 0; i--)
+					if (reduction->at(e, i).is_place())
 					{
-						cout << "\t" << reduction->path[i] << endl;
+						int total = 0;
+						for (int k = i; k < reduction->path.back().state.size(); k++)
+							if (net->prev(reduction->path.back().state[k])[0] == net->prev(reduction->path.back().state[i])[0])
+								total++;
 
-						if (reduction->path[i].is_state())
+						if (total == net->next(net->prev(reduction->at(e, i))).unique().size())
+							ready_places.push_back(i);
+					}
+					else
+						ready_transitions.push_back(i);
+				}
+
+				cout << reduction->path.back() << " " << reduction->end[e].second.print(net->vars) << endl;
+
+				reduction->increment(e);
+
+				/*
+				 * This is the meat of the whole function. At this point,
+				 * we have reached a new state (where all indices are at
+				 * a place) and we need to determine whether or not we
+				 * need to add a transition to separate this place from
+				 * our initial implicant.
+				 */
+				if (reduction->path.back().is_state())
+				{
+					/* Check to see if we are done (we have already seen all
+					 * of these indices before) and then mark all indices as
+					 * seen.
+					 */
+					done = true;
+					for (int i = 0; i < reduction->path.back().state.size(); i++)
+						if (!reduction->covered[reduction->at(e, i).idx()])
+							done = false;
+
+					for (int i = 0; i < reduction->path.back().state.size(); i++)
+						reduction->covered[reduction->at(e, i).idx()] = true;
+
+					/* Check to see if we need to separate this state from the
+					 * implicant by looking for a transition to add in.
+					 */
+					svector<petri_index> o = net->next(reduction->path.back().state).unique();
+					bool is_implicant = false;
+					for (int i = 0; i < implicants[t].size(); i++)
+						for (int j = 0; j < o.size(); j++)
+							if (o[j] == implicants[t][i])
+								is_implicant = true;
+
+					canonical encoding = net->get_effective_state_encoding(reduction->path.back(), reduction->path.front());
+
+					/* If this state needs to be separated from the implicant state,
+					 * work backwards in the path until we find the closest set of
+					 * transitions that separate them. Then, use greedy to get the
+					 * least number of values needed to separate them.
+					 */
+					if (!is_implicant && (canonical(uid, 1-t) & reduction->end[e].second & encoding) != 0)
+					{
+						cout << "Conflict " << encoding.print(net->vars) << endl;
+						bool found = false;
+						for (int i = reduction->path.size()-2; !found && i > 0; i--)
 						{
-							canonical transitions = 1;
-							for (int j = 0; j < reduction->path[i].state.size(); j++)
-							{
-								o = net->next(reduction->path[i].state[j]);
-								svector<petri_index> valid_o;
-								for (int k = i-1; k > 0; k--)
-									for (int l = 0; l < o.size(); l++)
-										if (reduction->path[k].state.find(o[l]) != reduction->path[k].state.end())
-											valid_o.push_back(o[l]);
-								valid_o.unique();
+							cout << "\t" << reduction->path[i] << endl;
 
-								if (valid_o.size() > 0)
-								{
-									canonical transition_term;
-									for (int k = 0; k < valid_o.size(); k++)
-										transition_term |= net->at(valid_o[k]).index;
-									transitions &= transition_term;
-								}
-							}
-							transitions = transitions.hide(uid);
-
-							canonical temp2 = 0;
-							found = true;
-							for (int l = 0; l < transitions.terms.size() && found; l++)
+							if (reduction->path[i].is_state())
 							{
-								svector<int> vlist = transitions.terms[l].vars();
-								found = false;
-								for (int j = 1; j <= vlist.size() && !found; j++)
+								canonical transitions = 1;
+								for (int j = 0; j < reduction->path[i].state.size(); j++)
 								{
-									svector<int> comb = first_combination(j);
-									do
+									o = net->next(reduction->path[i].state[j]);
+									svector<petri_index> valid_o;
+									for (int k = i-1; k > 0; k--)
+										for (int l = 0; l < o.size(); l++)
+											if (reduction->path[k].state.find(o[l]) != reduction->path[k].state.end())
+												valid_o.push_back(o[l]);
+									valid_o.unique();
+
+									if (valid_o.size() > 0)
 									{
-										canonical temp = reduction->guard;
-										canonical legal_check = 0;
-										for (int k = 0; k < comb.size(); k++)
-										{
-											temp &= canonical(vlist[comb[k]], transitions.terms[l].val(vlist[comb[k]]));
-											legal_check |= canonical(vlist[comb[k]], 1-transitions.terms[l].val(vlist[comb[k]]));
-										}
-
-										bool legal = false;
-										for (int k = 0; !legal && k < reduction->implicant.terms.size(); k++)
-											if ((legal_check & reduction->guard & reduction->implicant.terms[k]) == 0)
-												legal = true;
-
-										if (legal && temp != 0 && (temp & encoding) == 0)
-										{
-											temp2 |= temp;
-											found = true;
-										}
-									} while (next_combination(vlist.size(), &comb) && !found);
-									comb.clear();
+										canonical transition_term;
+										for (int k = 0; k < valid_o.size(); k++)
+											transition_term |= net->at(valid_o[k]).index;
+										transitions &= transition_term;
+									}
 								}
-								vlist.clear();
+								transitions = transitions.hide(uid);
+
+								canonical temp2 = 0;
+								found = true;
+								for (int l = 0; l < transitions.terms.size() && found; l++)
+								{
+									svector<int> vlist = transitions.terms[l].vars();
+									found = false;
+									for (int j = 1; j <= vlist.size() && !found; j++)
+									{
+										svector<int> comb = first_combination(j);
+										do
+										{
+											canonical temp = reduction->end[e].second;
+											canonical legal_check = 0;
+											for (int k = 0; k < comb.size(); k++)
+											{
+												temp &= canonical(vlist[comb[k]], transitions.terms[l].val(vlist[comb[k]]));
+												legal_check |= canonical(vlist[comb[k]], 1-transitions.terms[l].val(vlist[comb[k]]));
+											}
+
+											bool legal = false;
+											for (int k = 0; !legal && k < reduction->implicant.terms.size(); k++)
+												if ((legal_check & reduction->end[e].second & reduction->implicant.terms[k]) == 0)
+													legal = true;
+
+											if (legal && temp != 0 && (temp & encoding) == 0)
+											{
+												temp2 |= temp;
+												found = true;
+											}
+										} while (next_combination(vlist.size(), &comb) && !found);
+										comb.clear();
+									}
+									vlist.clear();
+								}
+								if (found && transitions != 0)
+								{
+									cout << "\tFound " << temp2.print(net->vars) << endl;
+									reduction->end[e].second = temp2;
+								}
 							}
-							if (found && transitions != 0)
+						}
+					}
+				}
+
+				/* Transitions are always handled first to ensure that
+				 * we will reach a valid state.
+				 */
+				if (!done && ready_transitions.size() > 0)
+				{
+					for (int i = 0; i < ready_transitions.size(); i++)
+					{
+						svector<petri_index> p = net->prev(reduction->at(e, ready_transitions[i]));
+						for (int j = p.size()-1; j >= 0; j--)
+						{
+							if (j > 0)
+								reduction->split(ready_transitions[i], p[j]);
+							else
+								reduction->at(e, ready_transitions[i]) = p[j];
+						}
+					}
+				}
+				/* Then places are handled. Every ordering of moving
+				 * from a place to a transition creates a new possible
+				 * execution.
+				 */
+				else if (!done && ready_places.size() > 0)
+				{
+					for (int i = ready_places.size()-1; i >= 0; i--)
+					{
+						for (int k = ready_places[i]+1; k < reduction->path.back().state.size(); )
+						{
+							if (net->prev(reduction->path.back().state[k])[0] == net->prev(reduction->path.back().state[ready_places[i]])[0])
 							{
-								cout << "\tFound " << temp2.print(net->vars) << endl;
-								reduction->guard = temp2;
+								for (int j = i+1; j < ready_places.size(); j++)
+									if (ready_places[j] > k)
+										ready_places[j]--;
+
+								reduction->path.back().state.erase(reduction->path.back().state.begin() + k);
 							}
+							else
+								k++;
 						}
-					}
-				}
-			}
 
-			/* Transitions are always handled first to ensure that
-			 * we will reach a valid state.
-			 */
-			if (!done && ready_transitions.size() > 0)
-			{
-				for (int i = 0; i < ready_transitions.size(); i++)
-				{
-					svector<petri_index> p = net->prev(reduction->at(ready_transitions[i]));
-					for (int j = p.size()-1; j >= 0; j--)
-					{
-						if (j > 0)
-							reduction->split(ready_transitions[i], p[j]);
-						else
-							reduction->at(ready_transitions[i]) = p[j];
-					}
-				}
-			}
-			/* Then places are handled. Every ordering of moving
-			 * from a place to a transition creates a new possible
-			 * execution.
-			 */
-			else if (!done && ready_places.size() > 0)
-			{
-				for (int i = ready_places.size()-1; i >= 0; i--)
-				{
-					for (int k = ready_places[i]+1; k < reduction->path.back().state.size(); )
-					{
-						if (net->prev(reduction->path.back().state[k])[0] == net->prev(reduction->path.back().state[ready_places[i]])[0])
+						list<reductionhdl>::iterator curr = reduction;
+						if (i > 0)
 						{
-							for (int j = i+1; j < ready_places.size(); j++)
-								if (ready_places[j] > k)
-									ready_places[j]--;
-
-							reduction->path.back().state.erase(reduction->path.back().state.begin() + k);
+							reductions.push_back(*reduction);
+							curr = prev(reductions.end());
 						}
-						else
-							k++;
-					}
 
-					list<reductionhdl>::iterator curr = reduction;
-					if (i > 0)
-					{
-						reductions.push_back(*reduction);
-						curr = prev(reductions.end());
-					}
-
-					svector<petri_index> p = net->prev(curr->at(ready_places[i]));
-					for (int j = p.size()-1; j >= 0; j--)
-					{
-						if (j > 0)
+						svector<petri_index> p = net->prev(curr->at(e, ready_places[i]));
+						for (int j = p.size()-1; j >= 0; j--)
 						{
-							reductions.push_back(*curr);
-							reductions.back().at(ready_places[i]) = p[j];
+							if (j > 0)
+							{
+								reductions.push_back(*curr);
+								reductions.back().at(e, ready_places[i]) = p[j];
+							}
+							else
+								curr->at(e, ready_places[i]) = p[j];
 						}
-						else
-							curr->at(ready_places[i]) = p[j];
 					}
 				}
 			}
@@ -423,20 +440,23 @@ void rule::strengthen(int t)
 	cout << "Result" << endl;
 	for (list<reductionhdl>::iterator reduction = reductions.begin(); reduction != reductions.end(); reduction++)
 	{
-		if (reduction->guard != 1)
+		for (int e = 0; e < reduction->end.size(); e++)
 		{
-			bool found = false;
-			for (int i = 0; !found && i < temp_guards.size(); i++)
-				if (temp_guards[i].first == reduction->guard)
-				{
-					temp_guards[i].second &= reduction->implicant;
-					found = true;
-				}
-
-			if (!found)
+			if (reduction->end[e].second != 1)
 			{
-				temp_guards.push_back(pair<canonical, canonical>(reduction->guard, reduction->implicant));
-				cout << reduction->guard.print(net->vars) << " -> " << net->vars->get_name(uid) << (t == 1 ? "+" : "-") << endl;
+				bool found = false;
+				for (int i = 0; !found && i < temp_guards.size(); i++)
+					if (temp_guards[i].first == reduction->end[e].second)
+					{
+						temp_guards[i].second &= reduction->implicant;
+						found = true;
+					}
+
+				if (!found)
+				{
+					temp_guards.push_back(pair<canonical, canonical>(reduction->end[e].second, reduction->implicant));
+					cout << reduction->end[e].second.print(net->vars) << " -> " << net->vars->get_name(uid) << (t == 1 ? "+" : "-") << endl;
+				}
 			}
 		}
 	}
