@@ -3092,6 +3092,16 @@ petri_state::petri_state()
 
 }
 
+struct petri_state_execution
+{
+	execution(){}
+	execution(svector<petri_index> s, petri_net *net){state = s; covered.resize(net->S.size() + net->T.size(), false);}
+	~execution(){}
+
+	svector<petri_index> state;
+	svector<bool> covered;
+};
+
 /**
  * Initializes a petri state given a single place. The resulting state
  * is one that has an index at the given place and then enough indices
@@ -3100,24 +3110,14 @@ petri_state::petri_state()
  */
 petri_state::petri_state(petri_net *net, svector<petri_index> start, bool backward)
 {
-	struct execution
-	{
-		execution(){}
-		execution(svector<petri_index> s, petri_net *net){state = s; covered.resize(net->S.size() + net->T.size(), false);}
-		~execution(){}
-
-		svector<petri_index> state;
-		svector<bool> covered;
-	};
-
 	state.merge(start);
-	list<execution> execs(1, execution(start, net));
+	list<petri_state_execution> execs(1, petri_state_execution(start, net));
 
 	/**
 	 * Run through all possible executions from the starting index
 	 * looking for deadlock.
 	 */
-	for (list<execution>::iterator exec = execs.begin(); exec != execs.end(); exec = execs.erase(exec))
+	for (list<petri_state_execution>::iterator exec = execs.begin(); exec != execs.end(); exec = execs.erase(exec))
 	{
 		//cout << "\tStart Execution" << endl;
 		bool done = false;
