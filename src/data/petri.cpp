@@ -3094,9 +3094,9 @@ petri_state::petri_state()
 
 struct petri_state_execution
 {
-	execution(){}
-	execution(svector<petri_index> s, petri_net *net){state = s; covered.resize(net->S.size() + net->T.size(), false);}
-	~execution(){}
+	petri_state_execution(){}
+	petri_state_execution(svector<petri_index> s, petri_net *net){state = s; covered.resize(net->S.size() + net->T.size(), false);}
+	~petri_state_execution(){}
 
 	svector<petri_index> state;
 	svector<bool> covered;
