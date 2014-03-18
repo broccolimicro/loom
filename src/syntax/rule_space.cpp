@@ -139,7 +139,7 @@ void rule_space::generate_minterms(flag_space *flags)
 	svector<int> vl, vl2;
 	int i, j, k;
 	petri_index tid;
-	canonical t, ti;
+	canonical t;
 	svector<bool> covered;
 	minterm reset;
 
@@ -190,12 +190,8 @@ void rule_space::generate_minterms(flag_space *flags)
 					tid = rules[vi->second.uid].implicants[i][j];
 					vl = net->at(tid).index.vars().unique();
 					svector<petri_index> ia = net->prev(tid);
-					for (k = 0, t = 1, ti = 1; k < ia.size(); k++)
-					{
+					for (k = 0, t = 1; k < ia.size(); k++)
 						t &= net->at(ia[k]).index;
-						if (net->at(ia[k]).tail_index != 0)
-							ti &= net->at(ia[k]).tail_index;
-					}
 
 					for (k = 0; k < t.terms.size();)
 					{
@@ -277,18 +273,17 @@ void rule_space::check()
 					// check if firing is inside the tail and check to make sure that if it is in the tail,
 					// it is correctly separated by the guards
 					for (int l = 0; l < rules[j].implicants[k].size() && !ok; l++)
-						if (net->at(rules[j].implicants[k][l]).is_in_tail(petri_index(i, true)))
-						{
-							//oguard = 0;
-							oguard = net->get_effective_place_encoding(petri_index(i, true), rules[j].implicants[k][l]);
-							oguard &= ~net->at(rules[j].implicants[k][l]).index;
-							/*for (int m = 0; m < oa.size(); m++)
-								oguard |= net->T[net->index(oa[m])].index;
-							oguard = ~oguard;*/
-							cout << "LOOK " << oguard.print(net->vars) << "\n" << applied_guard.print(net->vars) << "\n" << (oguard & applied_guard).print(net->vars) << endl;
+					{
+						//oguard = 0;
+						oguard = net->get_effective_place_encoding(petri_index(i, true), rules[j].implicants[k][l]);
+						oguard &= ~net->at(rules[j].implicants[k][l]).index;
+						/*for (int m = 0; m < oa.size(); m++)
+							oguard |= net->T[net->index(oa[m])].index;
+						oguard = ~oguard;*/
+						cout << "LOOK " << oguard.print(net->vars) << "\n" << applied_guard.print(net->vars) << "\n" << (oguard & applied_guard).print(net->vars) << endl;
 
-							ok = (ok || is_mutex(&applied_guard, &oguard));
-						}
+						ok = (ok || is_mutex(&applied_guard, &oguard));
+					}
 
 					if (!ok)
 					{

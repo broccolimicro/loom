@@ -12,6 +12,23 @@
 #ifndef rule_h
 #define rule_h
 
+void merge_guards(canonical &guard0, canonical implicant0, canonical &guard1, canonical implicant1);
+
+struct reductionhdl
+{
+	reductionhdl();
+	reductionhdl(const reductionhdl &r);
+	reductionhdl(petri_net *net, petri_index start);
+	~reductionhdl();
+
+	canonical implicant;
+	svector<pair<svector<petri_index>, bool> > path;
+	canonical guard;
+	svector<bool> covered;
+
+	reductionhdl &operator=(reductionhdl r);
+};
+
 struct rule
 {
 	rule();
@@ -34,6 +51,7 @@ struct rule
 	canonical &up();
 	canonical &down();
 
+	bool separate(reductionhdl &reduction, int t);
 	void strengthen(int t);
 	void gen_minterms();
 	void gen_bubbleless_minterms();

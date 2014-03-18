@@ -41,6 +41,8 @@ struct canonical
 	void clear();
 
 	void mccluskey();
+	void mccluskey_or(int separator);
+	void mccluskey_and();
 	minterm mask();
 
 	// EXTERNAL FUNCTIONS
@@ -87,8 +89,8 @@ struct canonical
 	canonical operator|(uint32_t c);
 	canonical operator&(uint32_t c);
 
-	bool operator==(canonical c);
-	bool operator!=(canonical c);
+	bool operator==(const canonical c) const;
+	bool operator!=(const canonical c) const;
 
 	bool operator==(minterm c);
 	bool operator!=(minterm c);
@@ -105,6 +107,8 @@ struct canonical
 	sstring print_assign(variable_space *v, sstring prefix = "");
 	sstring print_with_quotes(variable_space *v, sstring prefix = "");
 };
+
+bool operator<(canonical c0, canonical c1);
 
 bool is_mutex(canonical *c0, canonical *c1);
 bool is_mutex(canonical c0, canonical c1);

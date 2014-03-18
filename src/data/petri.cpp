@@ -160,23 +160,6 @@ petri_node::~petri_node()
 	owner = NULL;
 }
 
-bool petri_node::is_in_tail(petri_index idx)
-{
-	return (tail.find(idx) != tail.end());
-}
-
-void petri_node::add_to_tail(petri_index idx)
-{
-	tail.push_back(idx);
-	tail.unique();
-}
-
-void petri_node::add_to_tail(svector<petri_index> idx)
-{
-	tail.insert(tail.end(), idx.begin(), idx.end());
-	tail.unique();
-}
-
 pair<int, int> petri_node::sense_count()
 {
 	pair<int, int> result(0, 0);
@@ -236,7 +219,7 @@ svector<petri_index> petri_net::put_transitions(svector<canonical> root, bool ac
 
 void petri_net::cut(petri_index node)
 {
-	for (int m = 0; m != M0.size(); )
+	for (int m = 0; m < M0.size(); )
 	{
 		if (M0[m] == node)
 			M0.erase(M0.begin() + m);
@@ -380,7 +363,6 @@ void petri_net::pinch_forward(petri_index n)
 	if (M0.set_intersection(n1).size() > 0)
 		M0.merge(from);
 
-
 	connect(n1p, from);
 	connect(from, to);
 
@@ -395,8 +377,13 @@ void petri_net::pinch_backward(petri_index n)
 	n1.push_back(n);
 	n1.runique();
 
-	if (M0.set_intersection(n1).size() > 0)
-		M0.merge(to);
+	bool done = false;
+	for (int i = 0; !done && i < n1.size(); i++)
+		if (M0.find(n1[i]) != M0.end())
+		{
+			M0.merge(to);
+			done = true;
+		}
 
 	connect(to, n1n);
 	connect(from, to);
@@ -789,40 +776,6 @@ int petri_net::are_conditional_siblings(petri_index p0, petri_index p1)
 			if (bi->first == bj->first && bi->second != bj->second)
 				return bi->first;
 	return -1;
-}
-
-bool petri_net::is_in_tail(petri_state s, svector<petri_index> i)
-{
-	int total_places = 0;
-	int num_valid_places = 0;
-	for (int k = 0; k < i.size(); k++)
-	{
-		if (i[k].is_trans())
-		{
-			if (!is_in_tail(s, i[k]))
-				return false;
-		}
-		else
-		{
-			total_places++;
-			if (is_in_tail(s, i[k]))
-				num_valid_places++;
-		}
-	}
-
-	if (total_places == 0 || total_places < i.size() || num_valid_places > 0)
-		return true;
-	else
-		return false;
-}
-
-bool petri_net::is_in_tail(petri_state s, petri_index i)
-{
-	for (int j = 0; j < s.state.size(); j++)
-		if (at(s.state[j]).is_in_tail(i))
-			return true;
-
-	return false;
 }
 
 petri_node &petri_net::operator[](petri_index i)
@@ -1393,55 +1346,135 @@ void petri_net::expand()
 	print_dot(&cout, "this");
 }
 
-void petri_net::generate_tails()
+void petri_net::generate_observed()
 {
-	for (int i = 0; i < S.size(); i++)
-		S[i].tail.clear();
-	for (int i = 0; i < T.size(); i++)
-		T[i].tail.clear();
 
-	svector<petri_index> ia, oa;
-	svector<petri_index> old;
-	int i;
-	bool done = false;
-	while (!done)
+	for (int i = 0; i < S.size(); i++)
+		S[i].observed.clear();
+	for (int i = 0; i < T.size(); i++)
+		T[i].observed.clear();
+
+	svector<petri_index> to_update = M0;
+
+	while (to_update.size() > 0)
 	{
-		done = true;
-		for (i = 0; i < arcs.size(); i++)
+		for (int i = 0; i < to_update.size(); i++)
+			cout << to_update[i] << " ";
+		cout << endl;
+		svector<petri_index> update_next;
+		for (int i = 0; i < to_update.size(); i++)
 		{
-			// State A->T is in the tail of T1 if A -> T -> Tail of T1 and T is either not active or not invacuous
-			if (arcs[i].first.is_trans() && (!at(arcs[i].first).active || at(arcs[i].first).possibly_vacuous))
+			if (to_update[i].is_place())
 			{
-				old = at(arcs[i].second).tail;
-				at(arcs[i].second).add_to_tail(arcs[i].first);
-				at(arcs[i].second).add_to_tail(at(arcs[i].first).tail);
-				done = done && (old == at(arcs[i].second).tail);
+				map<petri_state, canonical> old = at(to_update[i]).observed;
+				at(to_update[i]).observed.clear();
+
+				petri_state s;
+				s.state.push_back(to_update[i]);
+				at(to_update[i]).observed.insert(pair<petri_state, canonical>(s, canonical()));
+
+				svector<petri_index> inputs = prev(to_update[i]);
+				for (int j = 0; j < inputs.size(); j++)
+				{
+					for (map<petri_state, canonical>::iterator k = at(inputs[j]).observed.begin(); k != at(inputs[j]).observed.end(); k++)
+					{
+						map<petri_state, canonical>::iterator l = at(to_update[i]).observed.find(k->first);
+						if (l != at(to_update[i]).observed.end())
+							l->second &= (k->second | ~at(inputs[j]).index);
+						else
+							at(to_update[i]).observed.insert(pair<petri_state, canonical>(k->first, k->second | ~at(inputs[j]).index));
+					}
+				}
+
+				if (at(to_update[i]).observed != old)
+					update_next.merge(next(to_update[i]));
 			}
-			else if (arcs[i].first.is_place())
+			else if (to_update[i].is_trans())
 			{
-				old = at(arcs[i].second).tail;
-				at(arcs[i].second).add_to_tail(arcs[i].first);
-				at(arcs[i].second).add_to_tail(at(arcs[i].first).tail);
-				done = done && (old == at(arcs[i].second).tail);
+				map<petri_state, canonical> old = at(to_update[i]).observed;
+				at(to_update[i]).observed.clear();
+				svector<petri_index> inputs = prev(to_update[i]);
+				svector<map<petri_state, canonical> > in_observed;
+				svector<petri_state> state_set;
+				for (int j = 0; j < inputs.size(); j++)
+				{
+					in_observed.push_back(at(inputs[j]).observed);
+					for (map<petri_state, canonical>::iterator k = at(inputs[j]).observed.begin(); k != at(inputs[j]).observed.end(); k++)
+						state_set.push_back(k->first);
+				}
+				state_set.unique();
+
+				cout << "\tCommon States ";
+				for (int j = 0; j < state_set.size(); j++)
+				{
+					canonical c = 0;
+					bool found = true;
+					for (int k = 0; found && k < in_observed.size(); k++)
+					{
+						map<petri_state, canonical>::iterator l = in_observed[k].find(state_set[j]);
+						if (l == in_observed[k].end())
+							found = false;
+						else
+							c |= l->second;
+					}
+
+					if (found)
+					{
+						cout << state_set[j] << " ";
+						at(to_update[i]).observed.insert(pair<petri_state, canonical>(state_set[j], c));
+						for (int k = 0; k < in_observed.size(); k++)
+							in_observed[k].erase(in_observed[k].find(state_set[j]));
+					}
+				}
+				cout << endl;
+
+				svector<map<petri_state, canonical>::iterator> j;
+				for (int k = 0; k < in_observed.size(); k++)
+					j.push_back(in_observed[k].begin());
+
+				while (j.back() != in_observed.back().end())
+				{
+					petri_state s;
+					canonical c = 0;
+					cout << "\t";
+					for (int k = 0; k < j.size(); k++)
+					{
+						cout << j[k]->first << " ";
+						s.state.merge(j[k]->first.state);
+						c |= j[k]->second;
+					}
+					cout << endl;
+
+					s.state.unique();
+
+					map<petri_state, canonical>::iterator z = at(to_update[i]).observed.find(s);
+					if (z != at(to_update[i]).observed.end())
+						z->second &= c;
+					else
+						at(to_update[i]).observed.insert(pair<petri_state, canonical>(s, c));
+
+					j[0]++;
+					for (int k = 0; j[k] == in_observed[k].end() && k < in_observed.size()-1; k++)
+					{
+						j[k] = in_observed[k].begin();
+						j[k+1]++;
+					}
+				}
+
+				if (at(to_update[i]).observed != old)
+					update_next.merge(next(to_update[i]));
 			}
 		}
+		update_next.unique();
+		to_update = update_next;
 	}
 
-	cout << "TAILS" << endl;
+	cout << "Observed" << endl;
 	for (int i = 0; i < S.size(); i++)
 	{
-		cout << "S" << i << ": ";
-		for (int j = 0; j < S[i].tail.size(); j++)
-			cout << S[i].tail[j].name();
-		cout << endl;
-	}
-
-	for (int i = 0; i < T.size(); i++)
-	{
-		cout << "T" << i << ": ";
-		for (int j = 0; j < T[i].tail.size(); j++)
-			cout << T[i].tail[j].name();
-		cout << endl;
+		cout << petri_index(i, true) << endl;
+		for (map<petri_state, canonical>::iterator j = S[i].observed.begin(); j != S[i].observed.end(); j++)
+			cout << "\t" << j->first << ": " << j->second.print(vars) << endl;
 	}
 }
 
@@ -1685,6 +1718,8 @@ void petri_net::gen_conflicts()
 	conflicts.clear();
 	indistinguishable.clear();
 
+	generate_observed();
+
 	for (petri_index i(0, true); i < S.size(); i++)
 	{
 		cout << i << "/" << S.size() << endl;
@@ -1735,7 +1770,7 @@ void petri_net::gen_conflicts()
 					if (at(oj[k]).active)
 						tj &= at(oj[k]).index.terms[0];
 				canonical ntj = ~tj;
-				canonical jtj = (at(j).index >> tj);
+				canonical jtj = (sj >> tj);
 
 				cout << "CONFLICT " << i.name() << "=" << si.print(vars) << "," << ti.print(vars) << " " << j.name() << "=" << sj.print(vars) << "," << tj.print(vars) << endl;
 
@@ -2134,217 +2169,331 @@ smap<pair<int, int>, pair<bool, bool> > petri_net::gen_isochronics()
 	return net2;
 }
 
+
+struct place_encoding_execution
+{
+	place_encoding_execution() {}
+	place_encoding_execution(const place_encoding_execution &c)
+	{
+		good = c.good;
+		net = c.net;
+		contributions = c.contributions;
+		location = c.location;
+		covered = c.covered;
+		old = c.old;
+		value = c.value;
+	}
+	place_encoding_execution(petri_index start, petri_net *n)
+	{
+		net = n;
+		location = petri_state(n, svector<petri_index>(1, start), true);
+		covered.resize(n->S.size() + n->T.size(), false);
+		value = 0;
+		old = 0;
+		good = true;
+	}
+	~place_encoding_execution() {}
+
+	petri_net *net;
+	petri_state location;
+	svector<bool> covered;
+	canonical old;
+	canonical value;
+	svector<canonical> contributions;
+	bool good;
+
+	place_encoding_execution &operator=(place_encoding_execution c)
+	{
+		good = c.good;
+		net = c.net;
+		location = c.location;
+		covered = c.covered;
+		old = c.old;
+		value = c.value;
+		contributions = c.contributions;
+		return *this;
+	}
+
+	bool check_covered(petri_index i)
+	{
+		if (i.is_trans())
+			return covered[i.idx() + net->S.size()];
+		else
+			return covered[i.idx()];
+	}
+
+	void set_covered(petri_index i)
+	{
+		if (i.is_trans())
+			covered[i.idx() + net->S.size()] = true;
+		else
+			covered[i.idx()] = true;
+	}
+};
+
 canonical petri_net::get_effective_place_encoding(petri_index place, petri_index observer)
 {
-	list<pair<int, canonical> > idx;
-	for (int j = 0; j < arcs.size(); j++)
-		if (arcs[j].first == place && at(observer).is_in_tail(arcs[j].second))
-			idx.push_back(pair<int, canonical>(j, canonical(0)));
+	cout << "Effective Place Encoding from " << place << " to " << observer << endl;
+	svector<petri_state> execs(1, petri_state(this, svector<petri_index>(1, place), false));
+	petri_state s(this, svector<petri_index>(1, observer), false);
+	svector<bool> covered(S.size() + T.size(), false);
+
+	cout << execs[0] << " -> " << s << endl;
+
+	for (int i = 0; i < execs[0].state.size(); )
+	{
+		if (s.state.find(execs[0].state[i]) != s.state.end())
+			execs[0].state.erase(execs[0].state.begin() + i);
+		else
+			i++;
+	}
 
 	canonical encoding = at(place).index;
 
-	bool move_on = false;
-	while (idx.size() > 0)
+	for (int i = 0; i < execs.size(); i++)
 	{
-		bool progress = false;
-		for (list<pair<int, canonical> >::iterator i = idx.begin(); i != idx.end(); )
+		bool done = false;
+		while (!done)
 		{
-			//cout << idx.size() << " " << arcs[i->first].first << "->" << arcs[i->first].second << " " << i->second.print(vars) << endl;
-			int input_arc_size;
-			if (arcs[i->first].second.is_place() && (input_arc_size = incoming(arcs[i->first].second).size()) > 1)
-			{
-				int total = 0;
-				for  (list<pair<int, canonical> >::iterator j = i; j != idx.end(); j++)
-					if (arcs[j->first].second == arcs[i->first].second)
-						total++;
+			execs[i].state.sort();
+			cout << execs[i] << endl;
 
-				if (total == input_arc_size || move_on)
+			svector<int> ready_places;
+			svector<int> ready_transitions;
+			for (int j = 0; j < execs[i].state.size(); j++)
+				if (execs[i].state[j].is_trans() && !covered[S.size() + execs[i].state[j].idx()])
+					ready_transitions.push_back(j);
+
+			if (ready_transitions.size() == 0)
+			{
+				for (int j = 0; j < execs[i].state.size(); j++)
 				{
-					for  (list<pair<int, canonical> >::iterator j = ::next(i); j != idx.end(); )
+					if (execs[i].state[j].is_place() && !covered[execs[i].state[j].idx()] && execs[i].state[j] != place && at(observer).observed.find(execs[i]) == at(observer).observed.end())
 					{
-						if (arcs[j->first].second == arcs[i->first].second)
+						int total = 0;
+						for (int k = j; k < execs[i].state.size(); k++)
+							if (prev(execs[i].state[k]) == prev(execs[i].state[j]))
+								total++;
+
+						if (total == next(prev(execs[i].state[j])).size())
 						{
-							i->second &= j->second;
-							j = idx.erase(j);
+							for (int k = j+1; k < execs[i].state.size(); )
+							{
+								if (prev(execs[i].state[k]) == prev(execs[i].state[j]))
+									execs[i].state.erase(execs[i].state.begin() + k);
+								else
+									k++;
+							}
+
+							ready_places.push_back(j);
+						}
+					}
+				}
+			}
+
+			if (ready_transitions.size() > 0)
+			{
+				for (int j = 0; j < ready_transitions.size(); j++)
+				{
+					covered[S.size() + execs[i].state[ready_transitions[j]].idx()] = true;
+
+					svector<petri_index> n = prev(execs[i].state[ready_transitions[j]]);
+					for (int k = n.size()-1; k >= 0; k--)
+					{
+						if (k > 0)
+							execs[i].state.push_back(n[k]);
+						else
+							execs[i].state[ready_transitions[j]] = n[k];
+					}
+				}
+			}
+			else if (ready_places.size() > 0)
+			{
+				for (int j = ready_places.size()-1; j >= 0; j--)
+				{
+					covered[execs[i].state[ready_places[j]].idx()] = true;
+					int i1 = i;
+					if (j > 0)
+					{
+						execs.push_back(execs[i]);
+						i1 = execs.size()-1;
+					}
+
+					svector<petri_index> n = prev(execs[i1].state[ready_places[j]]);
+					for (int k = n.size()-1; k >= 0; k--)
+					{
+						if (k > 0)
+						{
+							execs.push_back(execs[i1]);
+							execs.back().state[ready_places[j]] = n[k];
 						}
 						else
-							j++;
+							execs[i1].state[ready_places[j]] = n[k];
 					}
-
-					for (int j = 0; j < arcs.size(); j++)
-					{
-						if (arcs[j].first == arcs[i->first].second)
-						{
-							if (at(observer).is_in_tail(arcs[j].second))
-								idx.push_back(pair<int, canonical>(j, i->second));
-							else if (arcs[j].second == observer)
-								encoding &= i->second;
-						}
-					}
-
-					i = idx.erase(i);
-					progress = true;
 				}
-				else
-					i++;
 			}
 			else
-			{
-				if (arcs[i->first].second.is_trans() && arcs[i->first].second != observer)
-					i->second |= ~at(arcs[i->first].second).index;
-
-				for (int j = 0; j < arcs.size(); j++)
-				{
-					if (arcs[j].first == arcs[i->first].second)
-					{
-						if (at(observer).is_in_tail(arcs[j].second))
-							idx.push_back(pair<int, canonical>(j, i->second));
-						else if (arcs[j].second == observer)
-							encoding &= i->second;
-					}
-				}
-
-				i = idx.erase(i);
-				progress = true;
-			}
+				done = true;
 		}
+	}
 
-		if (!progress)
-			move_on = true;
-		else
-			move_on = false;
+	execs.unique();
+
+	for (int i = 0; i < execs.size(); i++)
+	{
+		map<petri_state, canonical>::iterator j = at(observer).observed.find(execs[i]);
+		if (j != at(observer).observed.end())
+			encoding &= j->second;
 	}
 
 	return encoding;
 }
 
-struct effective_state_execution
-{
-	effective_state_execution(){}
-	effective_state_execution(petri_state s){state = s; trans = canonical(0); mod = false;}
-	~effective_state_execution(){}
-
-	petri_state state;
-	canonical trans;
-	bool mod;
-};
-
 canonical petri_net::get_effective_state_encoding(petri_state state, petri_state observer)
 {
-	/*cout << "Effective State Encoding from " << state << " to " << observer << endl;
-
-	for (int i = 0; i < observer.state.size(); i++)
-	{
-		cout << observer.state[i] << ": ";
-		for (int j = 0; j < at(observer.state[i]).tail.size(); j++)
-			cout << at(observer.state[i]).tail[j] << " ";
-		cout << endl;
-	}*/
-
-	list<effective_state_execution> executions(1, effective_state_execution(state));
+	cout << "Effective State Encoding from " << state << " to " << observer << endl;
+	svector<pair<petri_index, canonical> > idx;
+	for (int i = 0; i < state.state.size(); i++)
+		idx.push_back(pair<petri_index, canonical>(state.state[i], canonical(0)));
 
 	canonical encoding = 1;
 	for (int i = 0; i < state.state.size(); i++)
 		encoding &= at(state.state[i]).index;
 
-	observer.state.sort();
+	cout << "Start " << encoding.print(vars) << endl;
 
-	for (list<effective_state_execution>::iterator exec = executions.begin(); exec != executions.end(); exec = executions.erase(exec))
+	canonical result = 0;
+
+	bool bypass = false;
+	while (idx.size() > 0)
 	{
-		//cout << "Begin Execution" << endl;
-		while (observer.state.unique() != exec->state.state.unique() && is_in_tail(observer, exec->state.state))
+		svector<int> movable;
+		for (int i = 0; i < idx.size(); i++)
 		{
-			svector<int> movable;
-			for (int i = 0; i < exec->state.state.size(); i++)
-			{
-				svector<petri_index> n = next(exec->state.state[i]);
-				if (observer.state.find(exec->state.state[i]) == observer.state.end())
-				{
-					if (exec->state.state[i].is_place())
-					{
-						int total = 0;
-						for (int k = i; k < exec->state.state.size(); k++)
-							if (next(exec->state.state[k])[0] == n[0])
-								total++;
+			int total = 0;
+			for (int j = i; j < idx.size(); j++)
+				if (idx[j].first == idx[i].first)
+					total++;
 
-						if (total == prev(n).unique().size())
-							movable.push_back(i);
+			if (bypass || total == prev(idx[i].first).size())
+			{
+				for (int j = i+1; j < idx.size();)
+				{
+					if (idx[j].first == idx[i].first)
+					{
+						if (idx[i].first.is_place())
+							idx[i].second &= idx[j].second;
+						else if (idx[i].first.is_trans())
+							idx[i].second |= idx[j].second;
+
+						idx.erase(idx.begin() + j);
 					}
 					else
-						movable.push_back(i);
+						j++;
 				}
 
-				if (exec->state.state[i].is_trans() && is_in_tail(observer, exec->state.state[i]))
-				{
-					exec->trans |= ~at(exec->state.state[i]).index;
-					exec->mod = true;
-				}
+				movable.push_back(i);
 			}
+		}
 
-			//cout << exec->state << " " << exec->trans.print(vars) << endl;
+		for (int i = 0; i < movable.size(); i++)
+			cout << "{" << idx[movable[i]].first << ", " << idx[movable[i]].second.print(vars) << "} ";
+		cout << endl;
 
-			if (movable.size() > 0)
+		for (int i = 0; i < movable.size(); i++)
+		{
+			if (observer.state.find(idx[movable[i]].first) != observer.state.end() || idx[movable[i]].second == 1)
 			{
-				for (int i = movable.size()-1; i >= 0; i--)
+				cout << "Done " << idx[movable[i]].second.print(vars) << endl;
+				if (idx[movable[i]].second != 1)
+					result |= idx[movable[i]].second;
+
+				for (int j = i+1; j < movable.size(); j++)
+					if (movable[j] > movable[i])
+						movable[j]--;
+				idx.erase(idx.begin() + movable[i]);
+			}
+			else
+			{
+				if (idx[movable[i]].first.is_trans())
+					idx[movable[i]].second |= ~at(idx[movable[i]].first).index;
+
+				svector<petri_index> n = next(idx[movable[i]].first);
+				for (int j = n.size()-1; j >= 0; j--)
 				{
-					if (exec->state.state[movable[i]].is_place())
+					if (j > 0)
 					{
-						for (int k = movable[i]+1; k < exec->state.state.size(); )
-						{
-							if (next(exec->state.state[k])[0] == next(exec->state.state[movable[i]])[0])
-							{
-								for (int j = i+1; j < movable.size(); j++)
-									if (movable[j] > k)
-										movable[j]--;
-
-								exec->state.state.erase(exec->state.state.begin() + k);
-							}
-							else
-								k++;
-						}
+						idx.push_back(idx[movable[i]]);
+						idx.back().first = n[j];
 					}
-
-					svector<petri_index> n = next(exec->state.state[movable[i]]);
-					for (int j = n.size()-1; j >= 0; j--)
-					{
-						if (j > 0)
-						{
-							if (exec->state.state[movable[i]].is_place())
-							{
-								executions.push_back(*exec);
-								executions.back().state.state[movable[i]] = n[j];
-							}
-							else
-								exec->state.state.push_back(n[j]);
-						}
-						else
-							exec->state.state[movable[i]] = n[j];
-					}
+					else
+						idx[movable[i]].first = n[j];
 				}
 			}
 		}
 
-		//cout << "Done " << exec->state << " " << encoding.print(vars) << " -> ";
-		if (exec->mod)
-			encoding &= exec->trans;
-		//cout << encoding.print(vars) << endl << endl;
+		bypass = false;
+		if (movable.size() == 0)
+			bypass = true;
 	}
 
-	return encoding;
+	if (result != 0)
+		return (encoding & result);
+	else
+		return encoding;
 }
 
 void petri_net::compact()
 {
+	cout << "Compacting" << endl;
 	bool change = true;
 	while (change)
 	{
 		change = false;
 		for (petri_index i(0, true); i < S.size();)
 		{
-			if (prev(i).size() == 0 && M0.find(i) == M0.end())
+			svector<int> ia = incoming(i);
+			svector<petri_index> oa = next(i);
+
+			if (ia.size() == 0)
 			{
-				cut(i);
-				change = true;
+				if (M0.find(i) != M0.end())
+				{
+					bool all_active = true;
+					for (int j = 0; all_active && j < oa.size(); j++)
+						if (!at(oa[j]).active || is_mutex(vars->reset, ~at(oa[j]).index))
+							all_active = false;
+
+					if (all_active)
+					{
+						cout << "No input edges" << endl;
+						cout << "Reset {";
+						for (int i = 0; i < M0.size(); i++)
+							cout << M0[i] << " ";
+						M0.merge(oa);
+						cut(i);
+						cout << "} -> {";
+						for (int i = 0; i < M0.size(); i++)
+							cout << M0[i] << " ";
+						cout << "}" << endl;
+						change = true;
+					}
+					else
+						i++;
+				}
+				else
+				{
+					cout << "No input edges" << endl;
+					cout << "Reset {";
+					for (int i = 0; i < M0.size(); i++)
+						cout << M0[i] << " ";
+					cut(i);
+					cout << "} -> {";
+					for (int i = 0; i < M0.size(); i++)
+						cout << M0[i] << " ";
+					cout << "}" << endl;
+					change = true;
+				}
 			}
 			else
 				i++;
@@ -2354,9 +2503,24 @@ void petri_net::compact()
 		{
 			svector<petri_index> n = next(i), p = prev(i), np = prev(n), pn = next(p), nn = next(n), pp = prev(p);
 
-			if (at(i).index == 0 || (p.size() == 0 && M0.find(i) == M0.end()))
+			if (at(i).index == 0 || p.size() == 0)
 			{
+				cout << "No input edges" << endl;
+				cout << "Reset {";
+				for (int i = 0; i < M0.size(); i++)
+					cout << M0[i] << " ";
+				if (M0.find(i) != M0.end())
+				{
+					M0.merge(n);
+					if (at(i).index != 0)
+						vars->reset = vars->reset >> at(i).index;
+				}
+
 				cut(i);
+				cout << "} -> {";
+				for (int i = 0; i < M0.size(); i++)
+					cout << M0[i] << " ";
+				cout << "}" << endl;
 				change = true;
 			}
 			/*else if (at(i).index == 1 && (nn.size() == 1 || p.size() == 1) && n.size() == 1 && np.size() == 1)
@@ -2366,40 +2530,19 @@ void petri_net::compact()
 			}*/
 			else if (at(i).index == 1 && (pp.size() == 1 || n.size() == 1) && p.size() == 1 && pn.size() == 1)
 			{
+				cout << "Pinch" << endl;
+				cout << "Reset {";
+				for (int i = 0; i < M0.size(); i++)
+					cout << M0[i] << " ";
 				pinch_backward(i);
+				cout << "} -> {";
+				for (int i = 0; i < M0.size(); i++)
+					cout << M0[i] << " ";
+				cout << "}" << endl;
 				change = true;
 			}
 			else
 				i++;
-		}
-
-		// Check for petri_nodes with no input arcs
-		for (int i = 0; i < M0.size(); i++)
-		{
-			svector<int> ia = incoming(M0[i]);
-			svector<petri_index> oa = next(M0[i]);
-
-			if (ia.size() == 0 && M0[i].is_trans())
-			{
-				M0.merge(oa);
-				vars->reset = vars->reset >> at(M0[i]).index;
-				cut(M0[i]);
-				change = true;
-			}
-			else if (ia.size() == 0 && M0[i].is_place())
-			{
-				bool all_active = true;
-				for (int j = 0; all_active && j < oa.size(); j++)
-					if (!at(oa[j]).active || is_mutex(vars->reset, ~at(oa[j]).index))
-						all_active = false;
-
-				if (all_active)
-				{
-					M0.merge(oa);
-					cut(M0[i]);
-					change = true;
-				}
-			}
 		}
 
 		for (petri_index i(0, true); i < S.size(); )
@@ -2415,7 +2558,17 @@ void petri_net::compact()
 
 			if (vacuous)
 			{
+				cout << "Vacuous" << endl;
+				cout << "Reset {";
+				for (int i = 0; i < M0.size(); i++)
+					cout << M0[i] << " ";
+				if (M0.find(i) != M0.end())
+					M0.merge(next(i));
 				cut(i);
+				cout << "} -> {";
+				for (int i = 0; i < M0.size(); i++)
+					cout << M0[i] << " ";
+				cout << "}" << endl;
 				change = true;
 			}
 			else
@@ -2427,8 +2580,18 @@ void petri_net::compact()
 			{
 				if (!at(i).active && !at(j).active && prev(i) == prev(j) && next(i) == next(j))
 				{
+					cout << "parallel guards" << endl;
+					cout << "Reset {";
+					for (int i = 0; i < M0.size(); i++)
+						cout << M0[i] << " ";
 					at(i).index |= at(j).index;
+					if (M0.find(j) != M0.end())
+						M0.push_back(i);
 					cut(j);
+					cout << "} -> {";
+					for (int i = 0; i < M0.size(); i++)
+						cout << M0[i] << " ";
+					cout << "}" << endl;
 					change = true;
 				}
 				else

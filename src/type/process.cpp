@@ -222,6 +222,7 @@ void process::reshuffle()
 void process::generate_states()
 {
 	(*flags->log_file) << "Process" << endl;
+	cout << "LOOK OVER HERE " << name << endl;
 
 	net.vars = &vars;
 	net.prs = &prs;
@@ -255,6 +256,11 @@ void process::generate_states()
 			if (!i->second.driven)
 				env_vars.reset = env_vars.reset.hide(i->second.uid);
 
+		cout << "Reset: ";
+		for (int i = 0; i < env_net.M0.size(); i++)
+			cout << env_net.M0[i] << " ";
+		cout << endl;
+		env_net.print_dot(&cout, name);
 		env_net.compact();
 	}
 
@@ -304,7 +310,6 @@ void process::update_states()
 void process::direct_bubble_reshuffle()
 {
 	net.print_dot(flags->log_file, name);
-	net.generate_tails();
 
 	// Generate bubble reshuffle graph
 	smap<pair<int, int>, pair<bool, bool> > bubble_graph = net.gen_isochronics();
@@ -527,7 +532,7 @@ bool process::insert_state_vars()
 
 	net.print_dot(flags->log_file, name);
 	cout << "tails" << endl;
-	net.generate_tails();
+	net.generate_observed();
 	cout << "conflicts" << endl;
 	net.gen_conflicts();
 	cout << "conditional places" << endl;
@@ -601,7 +606,7 @@ bool process::insert_bubbleless_state_vars()
 	svector<pair<svector<int>, svector<int> > > ip;
 
 	net.print_dot(flags->log_file, name);
-	net.generate_tails();
+	net.generate_observed();
 	net.gen_senses();
 	net.gen_bubbleless_conflicts();
 	net.gen_conditional_places();
@@ -740,7 +745,7 @@ void process::generate_prs()
 {
 	cout << "Generating " << name << endl;
 	print_dot(&cout);
-	net.generate_tails();
+	net.generate_observed();
 	prs.generate_minterms(flags);
 
 	(*flags->log_file) << "Production Rules: " << name << endl;
@@ -766,7 +771,6 @@ void process::generate_bubbleless_prs()
 void process::bubble_reshuffle()
 {
 	//net.print_dot(flags->log_file, name);
-	net.generate_tails();
 
 	cout << "Production Rules: " << name << endl;
 	prs.print(&cout);

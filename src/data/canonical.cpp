@@ -307,6 +307,344 @@ void canonical::mccluskey()
 	}
 }
 
+void canonical::mccluskey_or(int separator)
+{
+	canonical temp;
+	svector<minterm> implicants;
+	svector<minterm> primes;
+	svector<int> essentials;
+	svector<minterm> t[2] = {svector<minterm>(), svector<minterm>()};
+	minterm implicant;
+
+	int i, j, k;
+
+	svector<int> count;
+	int count_sum;
+	svector<int> vl;
+
+	smap<int, svector<int> > cov, Tcov;
+	svector<int>::iterator ci;
+
+	int max_count = implicants.size();
+	int choice;
+	pair<int, int> xdiff;
+	int diff;
+
+	for (i = 0; i < terms.size(); i++)
+	{
+		if (terms[i] != 0)
+			implicants.push_back(terms[i]);
+		else if (i < separator)
+			separator--;
+	}
+
+	// This first step is an optimization on the idea
+	// that if we are oring two canonical expressions
+	// together, then we assume that those two have
+	// already been individually simplified.
+	count.clear();
+	count.resize(implicants.size(), 0);
+
+	for (int i = 0; i < separator; i++)
+		for (int j = separator; j < implicants.size(); j++)
+		{
+			xdiff = implicants[i].xdiff_count(implicants[j]);
+			diff = implicants[i].diff_count(implicants[j]);
+			if ((diff <= 1 && xdiff.first + xdiff.second <= 1) ||
+				(xdiff.first == 0 && diff - xdiff.second == 0) ||
+				(xdiff.second == 0 && diff - xdiff.first == 0))
+			{
+				implicant = implicants[i] | implicants[j];
+				count[i]++;
+				count[j]++;
+				if (t[1].find(implicant) == t[1].end())
+					t[1].push_back(implicant);
+			}
+			else if (xdiff.first == 0 && diff - xdiff.second == 1)
+			{
+				implicant = (implicants[i] & implicants[j]).xoutnulls();
+				count[i]++;
+				if (t[1].find(implicant) == t[1].end())
+					t[1].push_back(implicant);
+			}
+			else if (xdiff.second == 0 && diff - xdiff.first == 1)
+			{
+				implicant = (implicants[i] & implicants[j]).xoutnulls();
+				count[j]++;
+				if (t[1].find(implicant) == t[1].end())
+					t[1].push_back(implicant);
+			}
+		}
+
+	count_sum = 0;
+	for (i = 0; i < implicants.size(); i++)
+	{
+		count_sum += count[i];
+		if (count[i] == 0)
+			primes.push_back(implicants[i]);
+	}
+
+	terms.clear();
+
+	/**
+	 * 1.	Find all prime implicants of the expression.
+	 */
+	while (count_sum > 0)
+	{
+		t[0].clear();
+		count.clear();
+		count.resize(t[1].size(), 0);
+
+		for (i = 0; i < t[1].size(); i++)
+		{
+			for (j = i+1; j < t[1].size(); j++)
+			{
+				xdiff = t[1][i].xdiff_count(t[1][j]);
+				diff = t[1][i].diff_count(t[1][j]);
+				if ((diff <= 1 && xdiff.first + xdiff.second <= 1) ||
+					(xdiff.first == 0 && diff - xdiff.second == 0) ||
+					(xdiff.second == 0 && diff - xdiff.first == 0))
+				{
+					implicant = t[1][i] | t[1][j];
+					count[i]++;
+					count[j]++;
+					if (t[0].find(implicant) == t[0].end())
+						t[0].push_back(implicant);
+				}
+				else if (xdiff.first == 0 && diff - xdiff.second == 1)
+				{
+					implicant = (t[1][i] & t[1][j]).xoutnulls();
+					count[i]++;
+					if (t[0].find(implicant) == t[0].end())
+						t[0].push_back(implicant);
+				}
+				else if (xdiff.second == 0 && diff - xdiff.first == 1)
+				{
+					implicant = (t[1][i] & t[1][j]).xoutnulls();
+					count[j]++;
+					if (t[0].find(implicant) == t[0].end())
+						t[0].push_back(implicant);
+				}
+			}
+		}
+
+		count_sum = 0;
+		for (i = 0; i < t[1].size(); i++)
+		{
+			count_sum += count[i];
+			if (count[i] == 0)
+				primes.push_back(t[1][i]);
+		}
+
+		t[1] = t[0];
+	}
+
+	/**
+	 * 2.	Use those prime implicants in a prime implicant chart to find the essential prime implicants of the expression, as well as other prime implicants that are necessary to cover the expression.
+	 */
+	cov.clear();
+	for (j = 0; j < implicants.size(); j++)
+		cov.insert(pair<int, svector<int> >(j, svector<int>()));
+	for (j = 0; j < implicants.size(); j++)
+	{
+		for (i = 0; i < primes.size(); i++)
+			if (primes[i].subset(implicants[j]))
+				cov[j].push_back(i);
+
+		if (cov[j].size() == 1 && essentials.find(cov[j].front()) == essentials.end())
+		{
+			essentials.push_back(cov[j].front());
+			terms.push_back(primes[cov[j].front()]);
+		}
+	}
+
+	Tcov.clear();
+	for (j = 0; j < primes.size(); j++)
+		Tcov.insert(pair<int, svector<int> >(j, svector<int>()));
+	for (j = 0; j < cov.size(); j++)
+	{
+		for (i = 0; i < essentials.size(); i++)
+			if (cov[j].find(essentials[i]) != cov[j].end())
+				break;
+
+		for (k = 0; i == essentials.size() && k < cov[j].size(); k++)
+			Tcov[cov[j][k]].push_back(j);
+	}
+
+	max_count = implicants.size();
+	while (max_count > 0)
+	{
+		max_count = 0;
+		for (i = 0; i < primes.size(); i++)
+		{
+			if (Tcov[i].size() > max_count)
+			{
+				max_count = Tcov.size();
+				choice = i;
+			}
+		}
+
+		if (max_count > 0)
+		{
+			terms.push_back(primes[choice]);
+
+			for (i = 0; i < primes.size(); i++)
+				for (j = 0; i != choice && j < Tcov[choice].size(); j++)
+				{
+					ci = Tcov[i].find(Tcov[choice][j]);
+					if (ci != Tcov[i].end())
+						Tcov[i].erase(ci);
+				}
+
+			Tcov[choice].clear();
+		}
+	}
+}
+
+void canonical::mccluskey_and()
+{
+	canonical temp;
+	svector<minterm> implicants;
+	svector<minterm> primes;
+	svector<int> essentials;
+	svector<minterm> t[2] = {svector<minterm>(), svector<minterm>()};
+	minterm implicant;
+
+	int i, j, k;
+
+	svector<int> count;
+	int count_sum;
+	svector<int> vl;
+
+	smap<int, svector<int> > cov, Tcov;
+	svector<int>::iterator ci;
+
+	int max_count = implicants.size();
+	int choice;
+	pair<int, int> xdiff;
+	int diff;
+
+	for (i = 0; i < terms.size(); i++)
+		if (terms[i] != 0)
+			implicants.push_back(terms[i]);
+
+	t[1] = implicants;
+	terms.clear();
+
+	/**
+	 * 1.	Find all prime implicants of the expression.
+	 */
+	count_sum = t[1].size();
+	while (count_sum > 0)
+	{
+		t[0].clear();
+		count.clear();
+		count.resize(t[1].size(), 0);
+		for (i = 0; i < t[1].size(); i++)
+		{
+			for (j = i+1; j < t[1].size(); j++)
+			{
+				xdiff = t[1][i].xdiff_count(t[1][j]);
+				diff = t[1][i].diff_count(t[1][j]);
+				if ((diff <= 1 && xdiff.first + xdiff.second <= 1) ||
+					(xdiff.first == 0 && diff - xdiff.second == 0) ||
+					(xdiff.second == 0 && diff - xdiff.first == 0))
+				{
+					implicant = t[1][i] | t[1][j];
+					count[i]++;
+					count[j]++;
+					if (t[0].find(implicant) == t[0].end())
+						t[0].push_back(implicant);
+				}
+				else if (xdiff.first == 0 && diff - xdiff.second == 1)
+				{
+					implicant = (t[1][i] & t[1][j]).xoutnulls();
+					count[i]++;
+					if (t[0].find(implicant) == t[0].end())
+						t[0].push_back(implicant);
+				}
+				else if (xdiff.second == 0 && diff - xdiff.first == 1)
+				{
+					implicant = (t[1][i] & t[1][j]).xoutnulls();
+					count[j]++;
+					if (t[0].find(implicant) == t[0].end())
+						t[0].push_back(implicant);
+				}
+			}
+		}
+		count_sum = 0;
+		for (i = 0; i < t[1].size(); i++)
+		{
+			count_sum += count[i];
+			if (count[i] == 0)
+				primes.push_back(t[1][i]);
+		}
+
+		t[1] = t[0];
+	}
+
+	/**
+	 * 2.	Use those prime implicants in a prime implicant chart to find the essential prime implicants of the expression, as well as other prime implicants that are necessary to cover the expression.
+	 */
+	cov.clear();
+	for (j = 0; j < implicants.size(); j++)
+		cov.insert(pair<int, svector<int> >(j, svector<int>()));
+	for (j = 0; j < implicants.size(); j++)
+	{
+		for (i = 0; i < primes.size(); i++)
+			if (primes[i].subset(implicants[j]))
+				cov[j].push_back(i);
+
+		if (cov[j].size() == 1 && essentials.find(cov[j].front()) == essentials.end())
+		{
+			essentials.push_back(cov[j].front());
+			terms.push_back(primes[cov[j].front()]);
+		}
+	}
+
+	Tcov.clear();
+	for (j = 0; j < primes.size(); j++)
+		Tcov.insert(pair<int, svector<int> >(j, svector<int>()));
+	for (j = 0; j < cov.size(); j++)
+	{
+		for (i = 0; i < essentials.size(); i++)
+			if (cov[j].find(essentials[i]) != cov[j].end())
+				break;
+
+		for (k = 0; i == essentials.size() && k < cov[j].size(); k++)
+			Tcov[cov[j][k]].push_back(j);
+	}
+
+	max_count = implicants.size();
+	while (max_count > 0)
+	{
+		max_count = 0;
+		for (i = 0; i < primes.size(); i++)
+		{
+			if (Tcov[i].size() > max_count)
+			{
+				max_count = Tcov.size();
+				choice = i;
+			}
+		}
+
+		if (max_count > 0)
+		{
+			terms.push_back(primes[choice]);
+
+			for (i = 0; i < primes.size(); i++)
+				for (j = 0; i != choice && j < Tcov[choice].size(); j++)
+				{
+					ci = Tcov[i].find(Tcov[choice][j]);
+					if (ci != Tcov[i].end())
+						Tcov[i].erase(ci);
+				}
+
+			Tcov[choice].clear();
+		}
+	}
+}
+
 minterm canonical::mask()
 {
 	minterm result;
@@ -549,7 +887,7 @@ canonical canonical::operator|(canonical c)
 	canonical result;
 	result.terms.insert(result.terms.end(), terms.begin(), terms.end());
 	result.terms.insert(result.terms.end(), c.terms.begin(), c.terms.end());
-	result.mccluskey();
+	result.mccluskey_or(terms.size());
 	return result;
 }
 
@@ -616,24 +954,22 @@ canonical canonical::operator&(uint32_t c)
 		return canonical();
 }
 
-bool canonical::operator==(canonical c)
+bool canonical::operator==(const canonical c) const
 {
-	terms.sort();
-	c.terms.sort();
-	bool result = (terms.size() == c.terms.size());
-	for (int i = 0; i < (int)terms.size() && result; i++)
-		result = result && (terms[i] == c.terms[i]);
-	return result;
+	canonical t1 = *this;
+	t1.terms.sort();
+	canonical t2 = c;
+	t2.terms.sort();
+	return t1.terms == t2.terms;
 }
 
-bool canonical::operator!=(canonical c)
+bool canonical::operator!=(const canonical c) const
 {
-	terms.sort();
-	c.terms.sort();
-	bool result = (terms.size() == c.terms.size());
-	for (int i = 0; i < (int)terms.size() && result; i++)
-		result = result && (terms[i] == c.terms[i]);
-	return !result;
+	canonical t1 = *this;
+	t1.terms.sort();
+	canonical t2 = c;
+	t2.terms.sort();
+	return t1.terms != t2.terms;
 }
 
 bool canonical::operator==(minterm c)
@@ -752,6 +1088,11 @@ sstring canonical::print_with_quotes(variable_space *vars, sstring prefix)
                 res += terms[i].print_with_quotes(vars, prefix);
         }
         return res;
+}
+
+bool operator<(canonical c0, canonical c1)
+{
+	return c0.terms < c1.terms;
 }
 
 bool is_mutex(canonical *c0, canonical *c1)

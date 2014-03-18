@@ -88,7 +88,7 @@ struct petri_node
 	~petri_node();
 
 	instruction *owner;
-	svector<petri_index> tail;		// The set of inactive states preceding an active state
+	map<petri_state, canonical> observed;
 	smap<int, int> pbranch;
 	smap<int, int> cbranch;
 	bool active;
@@ -98,17 +98,11 @@ struct petri_node
 	bool definitely_invacuous;
 
 	canonical index;
-	canonical positive;	// Negative sense variables are hideed out
-	canonical negative;	// Positive sense variables are hideed out
-
-	canonical tail_index;
+	canonical positive;	// Negative sense variables are hidden
+	canonical negative;	// Positive sense variables are hidden
 
 	canonical assumptions;
 	svector<canonical> assertions;
-
-	bool is_in_tail(petri_index idx);
-	void add_to_tail(petri_index idx);
-	void add_to_tail(svector<petri_index> idx);
 
 	pair<int, int> sense_count();
 };
@@ -194,8 +188,6 @@ struct petri_net
 	bool have_same_dest(petri_index n0, petri_index n1);
 	int are_parallel_siblings(petri_index p0, petri_index p1);
 	int are_conditional_siblings(petri_index p0, petri_index p1);
-	bool is_in_tail(petri_state s, svector<petri_index> i);
-	bool is_in_tail(petri_state s, petri_index i);
 
 	// Accessor functions
 	petri_node &operator[](petri_index i);
@@ -218,7 +210,7 @@ struct petri_net
 
 
 	void expand();
-	void generate_tails();
+	void generate_observed();
 	void check_assertions();
 
 
