@@ -70,12 +70,12 @@ minterm::minterm(sstring str)
 		val <<= (16 - (size%16))*2;
 		values.push_back(val);
 	}
+
+	values.back() &= (0xFFFFFFFF << (32 - ((size & 0xF)<<1)));
 }
 
 minterm::~minterm()
 {
-	values.clear();
-	size = 0;
 }
 
 uint32_t minterm::get(int uid)
@@ -125,6 +125,8 @@ void minterm::resize(int s, uint32_t r)
 
 		size = s+1;
 	}
+
+	values.back() &= (0xFFFFFFFF << (32 - ((size & 0xF)<<1)));
 }
 
 void minterm::clear()
@@ -300,6 +302,8 @@ minterm minterm::xoutnulls()
 		a = ~values[i] & (~values[i] >> 1) & 0x55555555;
 		result.values.push_back(values[i] | a | (a << 1));
 	}
+
+	result.values.back() &= (0xFFFFFFFF << (32 - ((result.size & 0xF)<<1)));
 	return result;
 }
 
@@ -312,6 +316,7 @@ minterm minterm::mask()
 		for (i = 0; i < (int)values.size(); i++)
 			result.values.push_back(((((values[i]>>1)&v0)^(values[i]&v0)) | ((values[i]&v1)^((values[i]<<1)&v1))));
 		result.size = size;
+		result.values.back() &= (0xFFFFFFFF << (32 - ((result.size & 0xF)<<1)));
 		return result;
 	}
 	else
@@ -324,6 +329,7 @@ minterm minterm::inverse()
 	for (int i = 0; i < values.size(); i++)
 		result.values.push_back((((values[i] << 1) & v1) | ((values[i] >> 1) & v0)));
 	result.size = size;
+	result.values.back() &= (0xFFFFFFFF << (32 - ((result.size & 0xF)<<1)));
 	return result;
 }
 
@@ -889,7 +895,8 @@ bool operator==(minterm s1, minterm s2)
 
 	bool result = true;
 
-	for (int i = 0; i < s1.values.size() && i < s2.values.size(); i++)
+	int i = 0;
+	for (i = 0; i < s1.values.size() && i < s2.values.size(); i++)
 		result = result && (s1.values[i] == s2.values[i]);
 
 	return result;
@@ -904,7 +911,8 @@ bool operator!=(minterm s1, minterm s2)
 
 	bool result = false;
 
-	for (int i = 0; i < s1.values.size(); i++)
+	int i = 0;
+	for (i = 0; i < s1.values.size(); i++)
 		result = result || (s1.values[i] != s2.values[i]);
 
 	return result;

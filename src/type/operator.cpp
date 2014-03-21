@@ -175,7 +175,7 @@ void operate::elaborate_states()
 {
 	program_execution_space execution;
 	execution.execs.push_back(program_execution());
-	svector<program_execution>::iterator exec = execution.execs.begin();
+	list<program_execution>::iterator exec = execution.execs.begin();
 	exec->init_pcs("", &net, true);
 
 	type_space::iterator j;

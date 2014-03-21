@@ -54,7 +54,6 @@ canonical::canonical(sstring s, variable_space *vars)
 		return;
 
 	svector<sstring> t = distribute(demorgan(s, -1, false));
-
 	for (int i = 0; i < t.size(); i++)
 	{
 		minterm m(t[i], vars);
@@ -305,6 +304,8 @@ void canonical::mccluskey()
 			Tcov[choice].clear();
 		}
 	}
+
+	terms.sort();
 }
 
 void canonical::mccluskey_or(int separator)
@@ -499,6 +500,8 @@ void canonical::mccluskey_or(int separator)
 			Tcov[choice].clear();
 		}
 	}
+
+	terms.sort();
 }
 
 void canonical::mccluskey_and()
@@ -643,6 +646,8 @@ void canonical::mccluskey_and()
 			Tcov[choice].clear();
 		}
 	}
+
+	terms.sort();
 }
 
 minterm canonical::mask()
@@ -957,8 +962,8 @@ canonical canonical::operator&(uint32_t c)
 bool canonical::operator==(const canonical c) const
 {
 	canonical t1 = *this;
-	t1.terms.sort();
 	canonical t2 = c;
+	t1.terms.sort();
 	t2.terms.sort();
 	return t1.terms == t2.terms;
 }
@@ -966,8 +971,8 @@ bool canonical::operator==(const canonical c) const
 bool canonical::operator!=(const canonical c) const
 {
 	canonical t1 = *this;
-	t1.terms.sort();
 	canonical t2 = c;
+	t1.terms.sort();
 	t2.terms.sort();
 	return t1.terms != t2.terms;
 }
@@ -1092,6 +1097,8 @@ sstring canonical::print_with_quotes(variable_space *vars, sstring prefix)
 
 bool operator<(canonical c0, canonical c1)
 {
+	c0.terms.sort();
+	c1.terms.sort();
 	return c0.terms < c1.terms;
 }
 

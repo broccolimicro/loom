@@ -22,6 +22,8 @@ program_counter::program_counter(string name, bool elaborate, petri_index index,
 	this->name = name;
 	this->net = net;
 	this->index = index;
+	this->n = net->next(index);
+	this->p = net->prev(index);
 	if (net->vars->reset.terms.size() > 0)
 		this->state = net->vars->reset.terms.front();
 	this->done = false;
@@ -68,16 +70,6 @@ bool program_counter::next_has_active_or_satisfied()
 			return true;
 
 	return false;
-}
-
-svector<petri_index> program_counter::output_nodes()
-{
-	return net->next(index);
-}
-
-svector<petri_index> program_counter::input_nodes()
-{
-	return net->prev(index);
 }
 
 canonical &program_counter::predicate()
@@ -399,6 +391,14 @@ void program_execution::init_rpcs(string name, petri_net *net)
 	cout << rpcs.size() << endl;
 }
 
+program_execution &program_execution::operator=(program_execution e)
+{
+	pcs = e.pcs;
+	rpcs = e.rpcs;
+	deadlock = e.deadlock;
+	return *this;
+}
+
 void program_execution_space::duplicate_execution(program_execution *exec_in, program_execution **exec_out)
 {
 	execs.push_back(*exec_in);
@@ -411,97 +411,83 @@ void program_execution_space::duplicate_counter(program_execution *exec_in, int 
 	pc_out = exec_in->pcs.size()-1;
 }
 
-bool program_execution_space::remote_end_ready(program_execution *exec, int &rpc, int &idx, svector<petri_index> &outgoing)
+bool program_execution_space::remote_end_ready(program_execution *exec, int rpc, int &idx, svector<petri_index> &outgoing, minterm state)
 {
 	outgoing.clear();
-	while (rpc < exec->rpcs.size())
+	if (idx >= exec->rpcs[rpc].end.size())
+		idx = 0;
+
+	int end = idx;
+	bool first = true;
+	while (first || idx != end)
 	{
-		minterm state;
-		for (int i = 0; i < exec->pcs.size(); i++)
-			state &= translate(exec->pcs[i].name, exec->pcs[i].net, exec->pcs[i].state, exec->rpcs[rpc].name, exec->rpcs[rpc].net);
-
-		while (idx < exec->rpcs[rpc].end.size())
+		first = false;
+		if (exec->rpcs[rpc].end[idx].is_trans() && exec->rpcs[rpc].input_size[exec->rpcs[rpc].end[idx].idx()] == 1)
 		{
-			if (exec->rpcs[rpc].end[idx].is_trans() && exec->rpcs[rpc].input_size[exec->rpcs[rpc].end[idx].idx()] == 1)
-			{
-				outgoing.merge(exec->rpcs[rpc].net->next(exec->rpcs[rpc].end[idx]));
-				return true;
-			}
-			else if (exec->rpcs[rpc].end[idx].is_trans() && exec->rpcs[rpc].count(idx) == exec->rpcs[rpc].input_size[exec->rpcs[rpc].end[idx].idx()])
-			{
-				exec->rpcs[rpc].merge(idx);
-				outgoing.merge(exec->rpcs[rpc].net->next(exec->rpcs[rpc].end[idx]));
-				return true;
-			}
-			else if (exec->rpcs[rpc].end[idx].is_place() && exec->rpcs[rpc].next_has_active_or_satisfied(exec->rpcs[rpc].end[idx], state, outgoing))
-				return true;
-
-			idx++;
+			outgoing.merge(exec->rpcs[rpc].net->next(exec->rpcs[rpc].end[idx]));
+			return true;
 		}
+		else if (exec->rpcs[rpc].end[idx].is_trans() && exec->rpcs[rpc].count(idx) == exec->rpcs[rpc].input_size[exec->rpcs[rpc].end[idx].idx()])
+		{
+			exec->rpcs[rpc].merge(idx);
+			outgoing.merge(exec->rpcs[rpc].net->next(exec->rpcs[rpc].end[idx]));
+			return true;
+		}
+		else if (exec->rpcs[rpc].end[idx].is_place() && exec->rpcs[rpc].next_has_active_or_satisfied(exec->rpcs[rpc].end[idx], state, outgoing))
+			return true;
 
-		rpc++;
-
-		while (rpc < exec->rpcs.size() && exec->rpcs[rpc].end.empty())
-			exec->rpcs.erase(exec->rpcs.begin() + rpc);
-
-		if (rpc < exec->rpcs.size())
+		idx++;
+		if (idx >= exec->rpcs[rpc].end.size())
 			idx = 0;
 	}
 
 	return false;
 }
 
-bool program_execution_space::remote_begin_ready(program_execution *exec, int &rpc, int &idx)
+bool program_execution_space::remote_begin_ready(program_execution *exec, int rpc, int &idx, minterm state)
 {
-	while (rpc < exec->rpcs.size())
-	{
-		minterm state;
-		for (int i = 0; i < exec->pcs.size(); i++)
-			state &= translate(exec->pcs[i].name, exec->pcs[i].net, exec->pcs[i].state, exec->rpcs[rpc].name, exec->rpcs[rpc].net);
+	if (idx >= exec->rpcs[rpc].begin.size())
+		idx = 0;
 
-		while (idx < exec->rpcs[rpc].begin.size())
+	int end = idx;
+	bool first = true;
+	while (first || idx != end)
+	{
+		first = false;
+		if (exec->rpcs[rpc].begin[idx].is_place() || (!exec->rpcs[rpc].net->at(exec->rpcs[rpc].begin[idx]).active && exec->rpcs[rpc].is_vacuous(exec->rpcs[rpc].begin[idx], state)))
 		{
-			if (exec->rpcs[rpc].begin[idx].is_place() || (!exec->rpcs[rpc].net->at(exec->rpcs[rpc].begin[idx]).active && exec->rpcs[rpc].is_vacuous(exec->rpcs[rpc].begin[idx], state)))
+			bool wall = false;
+			for (int j = 0; j != exec->rpcs[rpc].end.size() && !wall; j++)
+				if (exec->rpcs[rpc].begin[idx] == exec->rpcs[rpc].end[j])
+					wall = true;
+
+			if (!wall)
+				return true;
+		}
+
+		list<remote_petri_index> iter(1, exec->rpcs[rpc].begin[idx]);
+
+		for (list<remote_petri_index>::iterator n = iter.begin(); n != iter.end(); n = iter.erase(n))
+		{
+			if (n->is_trans() && exec->rpcs[rpc].net->at(*n).active && !exec->rpcs[rpc].is_one(*n) && exec->rpcs[rpc].is_vacuous(*n, state))
 			{
 				bool wall = false;
 				for (int j = 0; j != exec->rpcs[rpc].end.size() && !wall; j++)
-					if (exec->rpcs[rpc].begin[idx] == exec->rpcs[rpc].end[j])
+					if (*n == exec->rpcs[rpc].end[j])
 						wall = true;
 
 				if (!wall)
 					return true;
 			}
 
-			list<remote_petri_index> iter(1, exec->rpcs[rpc].begin[idx]);
-
-			for (list<remote_petri_index>::iterator n = iter.begin(); n != iter.end(); n = iter.erase(n))
-			{
-				if (n->is_trans() && exec->rpcs[rpc].net->at(*n).active && !exec->rpcs[rpc].is_one(*n) && exec->rpcs[rpc].is_vacuous(*n, state))
-				{
-					bool wall = false;
-					for (int j = 0; j != exec->rpcs[rpc].end.size() && !wall; j++)
-						if (*n == exec->rpcs[rpc].end[j])
-							wall = true;
-
-					if (!wall)
-						return true;
-				}
-
-				if (n->is_place() || exec->rpcs[rpc].net->at(*n).active || exec->rpcs[rpc].is_vacuous(*n, state))
-					for (svector<remote_petri_arc>::iterator a = exec->rpcs[rpc].arcs.begin(); a != exec->rpcs[rpc].arcs.end(); a++)
-						if (a->first == *n)
-							iter.push_back(a->second);
-			}
-
-			idx++;
+			if (n->is_place() || exec->rpcs[rpc].net->at(*n).active || exec->rpcs[rpc].is_vacuous(*n, state))
+				for (svector<remote_petri_arc>::iterator a = exec->rpcs[rpc].arcs.begin(); a != exec->rpcs[rpc].arcs.end(); a++)
+					if (a->first == *n)
+						iter.push_back(a->second);
 		}
 
-		rpc++;
-
-		while (rpc < exec->rpcs.size() && exec->rpcs[rpc].begin.empty())
-			exec->rpcs.erase(exec->rpcs.begin() + rpc);
-
-		if (rpc < exec->rpcs.size())
+		idx++;
+		if (idx >= exec->rpcs[rpc].begin.size())
 			idx = 0;
 	}
 
@@ -511,10 +497,9 @@ bool program_execution_space::remote_begin_ready(program_execution *exec, int &r
 void program_execution_space::full_elaborate()
 {
 	cout << "Elaborating" << endl;
-	execs.reserve(100);
 	translations.clear();
 
-	for (svector<program_execution>::iterator exec = execs.begin(); exec != execs.end(); exec++)
+	for (list<program_execution>::iterator exec = execs.begin(); exec != execs.end(); exec++)
 	{
 		for (svector<program_counter>::iterator pc = exec->pcs.begin(); pc != exec->pcs.end(); pc++)
 		{
@@ -556,129 +541,139 @@ void program_execution_space::full_elaborate()
 
 	int number_processed = 0;
 	int max_width = 0;
+	int remote = 0;
+	int ordering = 0;
+	int csplit = 0;
+	int guards = 0;
+	int total_iterations = 0;
+	petri_state seen;
 	while (execs.size() > 0)
 	{
 		if (execs.size() > max_width)
 			max_width = execs.size();
 
-		program_execution current_execution = execs.back();
+		program_execution current_execution;
+
+		if (execs.size() > 100000)
+		{
+			current_execution = execs.back();
+			execs.pop_back();
+		}
+		else
+		{
+			current_execution = execs.front();
+			execs.pop_front();
+		}
 		program_execution *exec = &current_execution;
-		execs.pop_back();
 
 		if ((number_processed/1000) != ((number_processed-1)/1000))
-			cout << "Execution " << number_processed << " " << execs.size() << endl;
+		{
+			cout << "Execution " << number_processed << " " << execs.size() << " " << remote << " " << ordering << " " << csplit << " " << guards << " " << total_iterations << " " << seen << endl;
+
+			remote = 0;
+			ordering = 0;
+			csplit = 0;
+			guards = 0;
+			total_iterations = 0;
+			seen.state.clear();
+		}
+
+		if ((number_processed/10000) != ((number_processed-1)/10000))
+			exec->pcs[0].net->print_dot(&cout, "graph");
 
 		while (!exec->done() && !exec->deadlock)
 		{
+			total_iterations++;
 			/**********************************
 			 * Handle remote program counters *
 			 **********************************/
-			bool level1 = true;
-			int rpc = 0;
-			int idx = 0;
-			while (exec->rpcs.size() > 0 && level1)
+			for (int pc = 0; pc < exec->rpcs.size(); pc++)
 			{
-				level1 = false;
+				minterm state;
+				for (int i = 0; i < exec->pcs.size(); i++)
+					state &= translate(exec->pcs[i].name, exec->pcs[i].net, exec->pcs[i].state, exec->rpcs[pc].name, exec->rpcs[pc].net);
 
-				if (remote_begin_ready(exec, rpc, idx))
+				int idx = 0;
+				svector<petri_index> outgoing;
+				while (remote_begin_ready(exec, pc, idx, state))
 				{
-					level1 = true;
+					svector<remote_petri_index> ia = exec->rpcs[pc].input_nodes(exec->rpcs[pc].begin[idx]);
+					svector<remote_petri_index> oa = exec->rpcs[pc].output_nodes(exec->rpcs[pc].begin[idx]);
 
-					svector<remote_petri_index> ia = exec->rpcs[rpc].input_nodes(exec->rpcs[rpc].begin[idx]);
-					svector<remote_petri_index> oa = exec->rpcs[rpc].output_nodes(exec->rpcs[rpc].begin[idx]);
+					/*cout << "-" << exec->rpcs[pc].name << "." << exec->rpcs[pc].begin[idx] << " {" << exec->rpcs[pc].net->at(exec->rpcs[pc].begin[idx]).index.print(exec->rpcs[pc].net->vars) << "} [" << exec->rpcs[pc].firings().print(exec->rpcs[pc].net->vars) << "] (";
+					for (int i = 0; i < exec->rpcs[pc].arcs.size(); i++)
+						cout << exec->rpcs[pc].arcs[i].first << "->" << exec->rpcs[pc].arcs[i].second << " ";
+					cout << ")" << endl;*/
 
 					if (oa.size() == 0)
-						exec->rpcs[rpc].begin.erase(exec->rpcs[rpc].begin.begin() + idx);
+						exec->rpcs[pc].begin.erase(exec->rpcs[pc].begin.begin() + idx);
 					else
 					{
 						for (svector<remote_petri_index>::iterator i = oa.begin(); i != oa.end(); i++)
+							exec->rpcs[pc].begin.push_back(*i);
+
+						for (svector<remote_petri_arc>::iterator arc = exec->rpcs[pc].arcs.begin(); ia.size() == 0 && arc != exec->rpcs[pc].arcs.end(); )
 						{
-							/*cout << "-" << exec->rpcs[rpc].name << "." << *i << " [" << exec->rpcs[rpc].firings().print(exec->rpcs[rpc].net->vars) << "] (";
-							for (int i = 0; i < exec->rpcs[rpc].arcs.size(); i++)
-								cout << exec->rpcs[rpc].arcs[i].first << "->" << exec->rpcs[rpc].arcs[i].second << " ";
-							cout << ")" << endl;*/
-							exec->rpcs[rpc].begin.push_back(*i);
+							if (arc->first == exec->rpcs[pc].begin[idx])
+								arc = exec->rpcs[pc].arcs.erase(arc);
+							else
+								arc++;
 						}
 
-						if (oa.size() > 0 || exec->rpcs[rpc].end.size() == 0)
-						{
-							for (svector<remote_petri_arc>::iterator arc = exec->rpcs[rpc].arcs.begin(); ia.size() == 0 && arc != exec->rpcs[rpc].arcs.end(); )
-							{
-								if (arc->first == exec->rpcs[rpc].begin[idx])
-									arc = exec->rpcs[rpc].arcs.erase(arc);
-								else
-									arc++;
-							}
-
-							exec->rpcs[rpc].begin.erase(exec->rpcs[rpc].begin.begin() + idx);
-						}
-						else
-						{
-							cerr << "Error! " << exec->rpcs[rpc].end.size() << " " << exec->rpcs[rpc].end.front() << endl;
-							for (svector<remote_petri_arc>::iterator arc = exec->rpcs[rpc].arcs.begin(); arc != exec->rpcs[rpc].arcs.end(); arc++)
-								cout << "(" << arc->first << "->" << arc->second << ") ";
-							cout << endl;
-						}
+						exec->rpcs[pc].begin.erase(exec->rpcs[pc].begin.begin() + idx);
 					}
 				}
-			}
 
-			level1 = true;
-			rpc = 0;
-			idx = 0;
-			while (exec->rpcs.size() > 0 && level1)
-			{
-				level1 = false;
-
-				svector<petri_index> oa;
-				if (remote_end_ready(exec, rpc, idx, oa))
+				idx = 0;
+				while (remote_end_ready(exec, pc, idx, outgoing, state))
 				{
-					level1 = true;
-
-					if (oa.size() == 0)
+					if (outgoing.size() == 0)
 					{
-						cerr << "Error: Remote net has an acyclic component at " << exec->rpcs[rpc].end[idx] << "." << endl;
-						exec->rpcs[rpc].end.erase(exec->rpcs[rpc].end.begin() + idx);
+						cerr << "Error: Remote net has an acyclic component at " << exec->rpcs[pc].end[idx] << "." << endl;
+						exec->rpcs[pc].end.erase(exec->rpcs[pc].end.begin() + idx);
 					}
 					else
 					{
-						for (int i = oa.size()-1; i >= 0; i--)
+						if (exec->rpcs[pc].end[idx].is_trans() && exec->rpcs[pc].net->at(exec->rpcs[pc].end[idx]).active && exec->rpcs[pc].net->at(exec->rpcs[pc].end[idx]).index.terms.size() > 0)
+							state = state >> exec->rpcs[pc].net->at(exec->rpcs[pc].end[idx]).index.terms.back();
+
+						if (outgoing.size() > 1)
+							remote += outgoing.size()-1;
+
+						for (int i = outgoing.size()-1; i >= 0; i--)
 						{
-							/*cout << "+" << exec->rpcs[rpc].name << "." << oa[i] << " {" << exec->rpcs[rpc].net->at(oa[i]).index.print(exec->rpcs[rpc].net->vars) << "} [" << exec->rpcs[rpc].firings().print(exec->rpcs[rpc].net->vars) << "] (";
-							for (int i = 0; i < exec->rpcs[rpc].arcs.size(); i++)
-								cout << exec->rpcs[rpc].arcs[i].first << "->" << exec->rpcs[rpc].arcs[i].second << " ";
+							/*cout << "+" << exec->rpcs[pc].name << "." << outgoing[i] << " {" << exec->rpcs[pc].net->at(outgoing[i]).index.print(exec->rpcs[pc].net->vars) << "} [" << exec->rpcs[pc].firings().print(exec->rpcs[pc].net->vars) << "] (";
+							for (int i = 0; i < exec->rpcs[pc].arcs.size(); i++)
+								cout << exec->rpcs[pc].arcs[i].first << "->" << exec->rpcs[pc].arcs[i].second << " ";
 							cout << ")" << endl;*/
 
 							program_execution *cexec = exec;
 							int cidx = idx;
 
-							if (i != 0)
+							if (i > 0)
 							{
-								if (cexec->rpcs[rpc].end[cidx].is_place())
+								if (cexec->rpcs[pc].end[cidx].is_place())
 									duplicate_execution(cexec, &cexec);
 								else
 								{
-									cexec->rpcs[rpc].end.push_back(cexec->rpcs[rpc].end[cidx]);
-									cidx = cexec->rpcs[rpc].end.size()-1;
+									cexec->rpcs[pc].end.push_back(cexec->rpcs[pc].end[cidx]);
+									cidx = cexec->rpcs[pc].end.size()-1;
 								}
 							}
 
-							remote_petri_index new_node(oa[i], cexec->rpcs[rpc].nid(oa[i]));
-							cexec->rpcs[rpc].arcs.push_back(remote_petri_arc(cexec->rpcs[rpc].end[cidx], new_node));
-							cexec->rpcs[rpc].end[cidx] = new_node;
+							remote_petri_index new_node(outgoing[i], cexec->rpcs[pc].nid(outgoing[i]));
+							cexec->rpcs[pc].arcs.push_back(remote_petri_arc(cexec->rpcs[pc].end[cidx], new_node));
+							cexec->rpcs[pc].end[cidx] = new_node;
 						}
 					}
 				}
 			}
 
-			/*cout << "State:" << endl;
-			for (int j = 0; j < exec->rpcs.size(); j++)
-			{
-				cout << exec->rpcs[j].name << "{";
-				for (int k = 0; k < exec->rpcs[j].arcs.size(); k++)
-					cout << exec->rpcs[j].arcs[k].first << "->" << exec->rpcs[j].arcs[k].second << " ";
-				cout << "} " << exec->rpcs[j].firings().print(exec->rpcs[j].net->vars) << endl;
-			}*/
+			/*cout << "{";
+			for (int j = 0; j < exec->pcs.size(); j++)
+				cout << exec->pcs[j].index;
+			cout << "}" << endl;*/
+
 			for (int j = 0; j < exec->rpcs.size(); j++)
 				for (int i = 0; i < exec->pcs.size(); i++)
 					exec->pcs[i].apply(translate(exec->rpcs[j].name, exec->rpcs[j].net, exec->rpcs[j].firings(), exec->pcs[i].name, exec->pcs[i].net));
@@ -686,20 +681,58 @@ void program_execution_space::full_elaborate()
 			/*********************************
 			 * Handle local program counters *
 			 *********************************/
-			svector<int> transitions_ready;
+			int transition_ready = -1;
 			svector<int> places_ready;
 
-			for (int pc = 0; pc < exec->pcs.size(); pc++)
+			for (int pc = exec->pcs.size()-1; transition_ready == -1 && pc >= 0; pc--)
 			{
-				if (transitions_ready.size() == 0 && exec->pcs[pc].index.is_place() && exec->pcs[pc].next_has_active_or_satisfied())
-					places_ready.push_back(pc);
-				else if (exec->pcs[pc].index.is_trans())
+				if (exec->pcs[pc].index.is_trans())
 				{
-					int incoming_size = exec->pcs[pc].input_nodes().size();
-					if (incoming_size == 1)
-						transitions_ready.push_back(pc);
-					else if (exec->count(pc) == incoming_size)	// Parallel Merge
-						transitions_ready.push_back(exec->merge(pc));
+					if (exec->pcs[pc].p.size() == 1)
+						transition_ready = pc;
+					else
+					{
+						int total = 1;
+						for (int pcj = pc+1; pcj < exec->pcs.size(); pcj++)
+							if (exec->pcs[pcj] == exec->pcs[pc])
+								total++;
+
+						if (total == exec->pcs[pc].p.size())
+						{
+							for (int pcj = pc+1; pcj < exec->pcs.size(); )
+							{
+								if (exec->pcs[pcj] == exec->pcs[pc])
+								{
+									exec->pcs[pc].state &= exec->pcs[pcj].state;
+									exec->pcs.erase(exec->pcs.begin() + pcj);
+								}
+								else
+									pcj++;
+							}
+
+							transition_ready = pc;
+						}
+					}
+				}
+			}
+
+			if (transition_ready == -1)
+			{
+				for (int pc = 0; pc < exec->pcs.size(); pc++)
+				{
+					if (exec->pcs[pc].index.is_place())
+					{
+						svector<petri_index> rn;
+						for (int i = 0; i < exec->pcs[pc].n.size(); i++)
+							if (exec->pcs[pc].net->at(exec->pcs[pc].n[i]).active || exec->pcs[pc].is_satisfied(exec->pcs[pc].n[i]))
+								rn.push_back(exec->pcs[pc].n[i]);
+
+						if (rn.size() > 0)
+						{
+							exec->pcs[pc].n = rn;
+							places_ready.push_back(pc);
+						}
+					}
 				}
 			}
 
@@ -709,55 +742,51 @@ void program_execution_space::full_elaborate()
 				cout << exec->pcs[places_ready[i]].name << ":" << exec->pcs[places_ready[i]].index << "{" << exec->pcs[places_ready[i]].state.print(exec->pcs[places_ready[i]].net->vars) << "} ";
 			cout << endl;*/
 
-			if (transitions_ready.size() > 0)
+			if (transition_ready != -1)
 			{
-				for (int i = transitions_ready.size()-1; i >= 0; i--)
-				{
-					int pc = transitions_ready[i];
+				svector<minterm> passing;
+				if (exec->pcs[transition_ready].is_active())
+					passing = exec->pcs[transition_ready].predicate().terms;
+				else
+					for (int t = 0; t < exec->pcs[transition_ready].predicate().terms.size(); t++)
+						if ((exec->pcs[transition_ready].predicate().terms[t] & exec->pcs[transition_ready].state) != 0)
+							passing.push_back(exec->pcs[transition_ready].predicate().terms[t]);
 
-					svector<petri_index> outgoing = exec->pcs[pc].output_nodes();
-					for (int j = outgoing.size()-1; j >= 0; j--)
+				if (passing.size() > 1)
+					guards += passing.size()-1;
+
+				for (int t = passing.size()-1; t >= 0; t--)
+				{
+					program_execution *texec = exec;
+					if (t > 0)
+						duplicate_execution(texec, &texec);
+
+					if (texec->pcs[transition_ready].is_active())
 					{
-						int cpc = pc;
+						texec->pcs[transition_ready].state = texec->pcs[transition_ready].state >> passing[t];
+						for (int apc = 0; apc < texec->pcs.size(); apc++)
+							if (apc != transition_ready)
+								texec->pcs[apc].apply(translate(texec->pcs[transition_ready].name, texec->pcs[transition_ready].net, passing[t], texec->pcs[apc].name, texec->pcs[apc].net));
+					}
+					else
+						texec->pcs[transition_ready].state &= passing[t];
+
+					for (int j = texec->pcs[transition_ready].n.size()-1; j >= 0; j--)
+					{
+						int cpc = transition_ready;
 						// Create a new program counter for parallel splits
 						if (j > 0)
-							duplicate_counter(exec, cpc, cpc);
+							duplicate_counter(texec, cpc, cpc);
 
-						//cout << ">" << exec->pcs[cpc].name << "." << outgoing[j] << " {" << exec->pcs[cpc].predicate().print(exec->pcs[cpc].net->vars) << "} [" << exec->pcs[cpc].state.print(exec->pcs[cpc].net->vars) << "]" << endl;
-
-						if (exec->pcs[cpc].is_active())
+						texec->pcs[cpc].index = texec->pcs[cpc].n[j];
+						texec->pcs[cpc].n.clear();
+						texec->pcs[cpc].p.clear();
+						for (int i = 0; i < texec->pcs[cpc].net->arcs.size(); i++)
 						{
-							svector<minterm> passing = exec->pcs[cpc].predicate().terms;
-							for (int t = passing.size()-1; t >= 0; t--)
-							{
-								program_execution *texec = exec;
-								if (t > 0)
-									duplicate_execution(texec, &texec);
-
-								texec->pcs[cpc].state = texec->pcs[cpc].state >> passing[t];
-								for (int apc = 0; apc < texec->pcs.size(); apc++)
-									if (apc != cpc)
-										texec->pcs[apc].apply(translate(texec->pcs[cpc].name, texec->pcs[cpc].net, passing[t], texec->pcs[apc].name, texec->pcs[apc].net));
-
-								texec->pcs[cpc].index = outgoing[j];
-							}
-						}
-						else
-						{
-							svector<minterm> passing;
-							for (int t = 0; t < exec->pcs[cpc].predicate().terms.size(); t++)
-								if ((exec->pcs[cpc].predicate().terms[t] & exec->pcs[cpc].state) != 0)
-									passing.push_back(exec->pcs[cpc].predicate().terms[t]);
-
-							for (int t = passing.size()-1; t >= 0 ; t--)
-							{
-								program_execution *texec = exec;
-								if (t > 0)
-									duplicate_execution(texec, &texec);
-
-								texec->pcs[cpc].state &= passing[t];
-								texec->pcs[cpc].index = outgoing[j];
-							}
+							if (texec->pcs[cpc].net->arcs[i].first == texec->pcs[cpc].index)
+								texec->pcs[cpc].n.push_back(texec->pcs[cpc].net->arcs[i].second);
+							if (texec->pcs[cpc].net->arcs[i].second == texec->pcs[cpc].index)
+								texec->pcs[cpc].p.push_back(texec->pcs[cpc].net->arcs[i].first);
 						}
 					}
 				}
@@ -776,47 +805,70 @@ void program_execution_space::full_elaborate()
 							places_ready[j] = temp;
 						}
 
+				if (places_ready.size() > 1)
+					ordering += places_ready.size()-1;
+
+				svector<bool> new_done;
+				for (int i = 0; i < places_ready.size(); )
+				{
+					int pc = places_ready[i];
+					bool old_done = exec->pcs[pc].done;
+					if (exec->pcs[pc].elaborate)
+					{
+						canonical old = exec->pcs[pc].net->at(exec->pcs[pc].index).index;
+						exec->pcs[pc].net->at(exec->pcs[pc].index).index.push_back(exec->pcs[pc].state);
+						exec->pcs[pc].net->at(exec->pcs[pc].index).index.mccluskey_or(exec->pcs[pc].net->at(exec->pcs[pc].index).index.terms.size()-1);
+
+						exec->pcs[pc].done = false;
+						if (exec->pcs[pc].net->at(exec->pcs[pc].index).index == old)
+							exec->pcs[pc].done = true;
+					}
+
+					if (exec->done())
+						places_ready.erase(places_ready.begin() + i);
+					else
+					{
+						i++;
+						new_done.push_back(exec->pcs[pc].done);
+					}
+
+					exec->pcs[pc].done = old_done;
+				}
+
+				if (places_ready.size() == 0)
+					for (int i = 0; i < exec->pcs.size(); i++)
+						exec->pcs[i].done = true;
+
 				for (int i = 0; i < places_ready.size(); i++)
 				{
+					seen.state.push_back(exec->pcs[places_ready[i]].index);
+					seen.state.unique();
 					program_execution *oexec = exec;
 					int pc = places_ready[i];
 
 					if (i < places_ready.size()-1)
 						duplicate_execution(oexec, &oexec);
 
-					if (oexec->pcs[pc].elaborate)
+					oexec->pcs[pc].done = new_done[i];
+
+					if (oexec->pcs[pc].n.size() > 1)
+						csplit += oexec->pcs[pc].n.size()-1;
+
+					for (int j = oexec->pcs[pc].n.size()-1; j >= 0; j--)
 					{
-						canonical old = oexec->pcs[pc].net->at(oexec->pcs[pc].index).index;
-						oexec->pcs[pc].net->at(oexec->pcs[pc].index).index.push_back(oexec->pcs[pc].state);
-						oexec->pcs[pc].net->at(oexec->pcs[pc].index).index.mccluskey();
+						program_execution *cexec = oexec;
+						if (j > 0)
+							duplicate_execution(cexec, &cexec);
 
-						oexec->pcs[pc].done = false;
-						if (oexec->pcs[pc].net->at(oexec->pcs[pc].index).index == old)
-							oexec->pcs[pc].done = true;
-					}
-
-					if (!oexec->done())
-					{
-						svector<petri_index> outgoing = oexec->pcs[pc].output_nodes();
-						for (int j = 0; j < outgoing.size(); )
+						cexec->pcs[pc].index = cexec->pcs[pc].n[j];
+						cexec->pcs[pc].n.clear();
+						cexec->pcs[pc].p.clear();
+						for (int i = 0; i < cexec->pcs[pc].net->arcs.size(); i++)
 						{
-							if (!oexec->pcs[pc].is_active(outgoing[j]) && !oexec->pcs[pc].is_satisfied(outgoing[j]))
-								outgoing.erase(outgoing.begin() + j);
-							else
-								j++;
-						}
-
-						//if (outgoing.size() > 1)
-						//	cout << "Conditional split at " << oexec->pcs[pc].name << ":" << oexec->pcs[pc].net->node_name(oexec->pcs[pc].index) << " " << outgoing.size() << endl;
-
-						for (int j = outgoing.size()-1; j >= 0; j--)
-						{
-							//cout << ">" << oexec->pcs[pc].name << "." << outgoing[j] << " [" << oexec->pcs[pc].state.print(oexec->pcs[pc].net->vars) << "]" << endl;
-							program_execution *cexec = oexec;
-							if (j > 0)
-								duplicate_execution(cexec, &cexec);
-
-							cexec->pcs[pc].index = outgoing[j];
+							if (cexec->pcs[pc].net->arcs[i].first == cexec->pcs[pc].index)
+								cexec->pcs[pc].n.push_back(cexec->pcs[pc].net->arcs[i].second);
+							if (cexec->pcs[pc].net->arcs[i].second == cexec->pcs[pc].index)
+								cexec->pcs[pc].p.push_back(cexec->pcs[pc].net->arcs[i].first);
 						}
 					}
 				}

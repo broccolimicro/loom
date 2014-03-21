@@ -39,14 +39,13 @@ struct program_counter
 	minterm state;
 	bool done;
 	bool elaborate;
+	svector<petri_index> n, p;
 
 	bool is_active();
 	bool is_active(petri_index i);
 	bool is_satisfied();
 	bool is_satisfied(petri_index i);
 	bool next_has_active_or_satisfied();
-	svector<petri_index> output_nodes();
-	svector<petri_index> input_nodes();
 	canonical &predicate();
 
 	void apply(minterm term);
@@ -126,18 +125,20 @@ struct program_execution
 
 	void init_pcs(string name, petri_net *net, bool elaborate);
 	void init_rpcs(string name, petri_net *net);
+
+	program_execution &operator=(program_execution e);
 };
 
 struct program_execution_space
 {
-	svector<program_execution> execs;
+	list<program_execution> execs;
 	svector<petri_net*> nets;
 	map<pair<pair<string, petri_net*>, pair<string, petri_net*> >, svector<pair<int, int> > > translations;
 
 	void duplicate_execution(program_execution *exec_in, program_execution **exec_out);
 	void duplicate_counter(program_execution *exec_in, int pc_in, int &pc_out);
-	bool remote_end_ready(program_execution *exec, int &rpc, int &idx, svector<petri_index> &outgoing);
-	bool remote_begin_ready(program_execution *exec, int &rpc, int &idx);
+	bool remote_end_ready(program_execution *exec, int rpc, int &idx, svector<petri_index> &outgoing, minterm state);
+	bool remote_begin_ready(program_execution *exec, int rpc, int &idx, minterm state);
 	void full_elaborate();
 	void reset();
 	void gen_translation(string name0, petri_net *net0, string name1, petri_net *net1);
