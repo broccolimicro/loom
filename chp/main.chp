@@ -1,6 +1,6 @@
 #include "channel.chp"
 
-/*inline process wchb(a4pe1of2 R, a4pe1of2 L)
+inline process wchb(a4pe1of2 R, a4pe1of2 L)
 {
 	*[
 		[	R.e & L.r.t -> R.r.t+; 
@@ -29,6 +29,67 @@ inline process pchb(a4pe1of2 R, a4pe1of2 L)
 	*[[ 1 -> L.r.t+
 	  []1 -> L.r.f+
 	  ]; [~L.e]; (L.r.t-||L.r.f-); [L.e]
+	 ]
+}
+
+inline process pchb_split(a4pe1of2 L, a4pe1of2 S, a4pe1of2 A, a4pe1of2 B)
+{
+	node<1> en := 1;
+	*[(
+		[  A.e & S.r.f & L.r.f -> A.r.f+
+		[] A.e & S.r.f & L.r.t -> A.r.t+
+		[] B.e & S.r.t & L.r.f -> B.r.f+
+		[] B.e & S.r.t & L.r.t -> B.r.t+
+		]
+	  ); en-; (S.e- || L.e-);
+	  (
+		[~A.e | ~A.r.f & ~A.r.t -> (A.r.f- || A.r.t-)] ||
+		[~B.e | ~B.r.f & ~B.r.t -> (B.r.f- || B.r.t-)]
+	  ); [~S.r.f & ~S.r.t & ~L.r.f & ~L.r.t]; en+; (S.e+ || L.e+)
+	 ]
+}
+{
+	*[[A.r.t | A.r.f]; A.e-; [~A.r.t & ~A.r.f]; A.e+] ||
+	*[[B.r.t | B.r.f]; B.e-; [~B.r.t & ~B.r.f]; B.e+] ||
+	*[[ 1 -> L.r.t+
+	  []1 -> L.r.f+
+	  ]; [~L.e]; (L.r.t-||L.r.f-); [L.e]
+	 ] ||
+	*[[ 1 -> S.r.t+
+	  []1 -> S.r.f+
+	  ]; [~S.e]; (S.r.t-||S.r.f-); [S.e]
+	 ]
+}
+
+/*inline process pchb_split(a4pe1of2 L, a4pe1of2 S, a4pe1of2 A, a4pe1of2 B)
+{
+	node<1> en := 1;
+	*[(
+		[  A.e & S.r.f & L.r.f -> A.r.f+
+		[] A.e & S.r.f & L.r.t -> A.r.t+
+		[] S.r.t -> skip
+		] ||
+		[  B.e & S.r.t & L.r.f -> B.r.f+
+		[] B.e & S.r.t & L.r.t -> B.r.t+
+		[] S.r.f -> skip
+		]
+	  ); en-; (S.e- || L.e-);
+	  (
+		[~A.e | ~A.r.f & ~A.r.t -> (A.r.f- || A.r.t-)] ||
+		[~B.e | ~B.r.f & ~B.r.t -> (B.r.f- || B.r.t-)]
+	  ); [~S.r.f & ~S.r.t & ~L.r.f & ~L.r.t]; en+; (S.e+ || L.e+)
+	 ]
+}
+{
+	*[[A.r.t | A.r.f]; A.e-; [~A.r.t & ~A.r.f]; A.e+] ||
+	*[[B.r.t | B.r.f]; B.e-; [~B.r.t & ~B.r.f]; B.e+] ||
+	*[[ 1 -> L.r.t+
+	  []1 -> L.r.f+
+	  ]; [~L.e]; (L.r.t-||L.r.f-); [L.e]
+	 ] ||
+	*[[ 1 -> S.r.t+
+	  []1 -> S.r.f+
+	  ]; [~S.e]; (S.r.t-||S.r.f-); [S.e]
 	 ]
 }*/
 
@@ -146,7 +207,7 @@ inline process pcfb_FA(a4pe1of2 Ci, a4pe1of2 A, a4pe1of2 B, a4pe1of2 S, a4pe1of2
 	 ]
 }
 
-/*inline process pcfb(a4pe1of2 R, a4pe1of2 L)
+inline process pcfb(a4pe1of2 R, a4pe1of2 L)
 {
 	node<1> en := 1;
 	*[
@@ -165,7 +226,7 @@ inline process pcfb_FA(a4pe1of2 Ci, a4pe1of2 A, a4pe1of2 B, a4pe1of2 S, a4pe1of2
 	  []1 -> L.r.f+
 	  ]; [~L.e]; (L.r.t-||L.r.f-); [L.e]
 	 ]
-}*/
+}
 
 /*inline process cmerge1b2(a4pa1of2 A, a4pa1of2 B, a4pa1of2 S, a4pa1of2 O)
 {
@@ -180,7 +241,7 @@ inline process pcfb_FA(a4pe1of2 Ci, a4pe1of2 A, a4pe1of2 B, a4pe1of2 S, a4pe1of2
 	]
 }*/
 
-/*inline process fifo0b(a4pa L, a4pa R)
+inline process fifo0b(a4pa L, a4pa R)
 {
 	*[L?;R!]
 }
@@ -190,7 +251,7 @@ inline process fifo1b(a4pa1of2 L, a4pa1of2 R)
 	dualrail i;
 	
 	*[L?i;R!i]
-}*/
+}
 
 /*inline process fifo2b(achan4p2b L, achan4p2b R)
 {
@@ -199,7 +260,7 @@ inline process fifo1b(a4pa1of2 L, a4pa1of2 R)
 	*[L?i;R!i]
 }*/
 
-/*inline process fork0b(a4pa L, a4pa R1, a4pa R2)
+inline process fork0b(a4pa L, a4pa R1, a4pa R2)
 {
 	*[L?;(R1!||R2!)]
 }
@@ -209,7 +270,7 @@ inline process fork1b(a4pa1of2 L, a4pa1of2 R1, a4pa1of2 R2)
 	dualrail val;
 	
 	*[L?val;(R1!val||R2!val)]
-}*/
+}
 
 /*inline process fork2b(achan4p2b L, achan4p2b R1, achan4p2b R2)
 {

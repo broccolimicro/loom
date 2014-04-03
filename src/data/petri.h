@@ -233,8 +233,8 @@ struct petri_net
 	smap<pair<int, int>, pair<bool, bool> > gen_isochronics();
 	canonical apply_debug(int pc);
 
-	canonical get_effective_place_encoding(petri_index place, petri_index observer);
-	canonical get_effective_state_encoding(petri_state state, petri_state observer);
+	canonical get_effective_place_encoding(petri_index place, svector<petri_index> observer);
+	canonical get_effective_state_encoding(petri_state state, petri_state observer, svector<petri_index> path);
 
 	/**
 	 * \brief	Removes vacuous pbranches, unreachable places, and dangling, vacuous, and impossible transitions.

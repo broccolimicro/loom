@@ -275,7 +275,7 @@ void rule_space::check()
 					for (int l = 0; l < rules[j].implicants[k].size() && !ok; l++)
 					{
 						//oguard = 0;
-						oguard = net->get_effective_place_encoding(petri_index(i, true), rules[j].implicants[k][l]);
+						oguard = net->get_effective_place_encoding(petri_index(i, true), svector<petri_index>(1, rules[j].implicants[k][l]));
 						oguard &= ~net->at(rules[j].implicants[k][l]).index;
 						/*for (int m = 0; m < oa.size(); m++)
 							oguard |= net->T[net->index(oa[m])].index;

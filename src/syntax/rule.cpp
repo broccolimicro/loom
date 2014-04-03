@@ -161,6 +161,48 @@ void merge_guards(canonical &guard0, canonical implicant0, canonical &guard1, ca
 	}
 }
 
+reductionpath::reductionpath()
+{
+	conflict = false;
+	placeholder = false;
+}
+
+reductionpath::reductionpath(petri_index d, bool c, bool p)
+{
+	data.push_back(d);
+	begin.push_back(d);
+	conflict = c;
+	placeholder = p;
+}
+
+reductionpath::~reductionpath()
+{
+}
+
+void reductionpath::merge(reductionpath &r)
+{
+	if (placeholder)
+	{
+		data = r.data;
+		begin = r.begin;
+		placeholder = r.placeholder;
+	}
+	else if (!r.placeholder)
+	{
+		data.merge(r.data);
+		begin.merge(r.begin);
+		begin.unique();
+	}
+}
+
+void reductionpath::push_back(petri_index i)
+{
+	if (placeholder)
+		data.front() = i;
+	else
+		data.push_back(i);
+}
+
 reductionhdl::reductionhdl()
 {
 
@@ -181,20 +223,18 @@ reductionhdl::reductionhdl(petri_net *net, petri_index start)
 		svector<petri_index> i = net->prev(start);
 		implicant = 1;
 		for (int j = 0; j < i.size(); j++)
-		{
 			implicant &= net->at(i[j]).index;
-		}
 
-		petri_state init(net, i, false);
+		petri_state init(net, i, true);
 		for (int k = 0; k < init.state.size(); k++)
-			path.push_back(pair<svector<petri_index>, bool>(svector<petri_index>(1, init.state[k]), false));
+			path.push_back(reductionpath(init.state[k], false, (i.find(init.state[k]) == i.end())));
 	}
 	else
 	{
 		implicant = net->at(start).index;
-		petri_state init(net, svector<petri_index>(1, start), false);
+		petri_state init(net, svector<petri_index>(1, start), true);
 		for (int k = 0; k < init.state.size(); k++)
-			path.push_back(pair<svector<petri_index>, bool>(svector<petri_index>(1, init.state[k]), false));
+			path.push_back(reductionpath(init.state[k], false, (init.state[k] != start)));
 	}
 	guard = 1;
 	covered.resize(net->S.size(), false);
@@ -307,14 +347,21 @@ bool rule::separate(reductionhdl &reduction, int t)
 
 	for (int i = 0; i < reduction.path.size(); i++)
 	{
-		if (reduction.path[i].second)
-			conflict.state.push_back(reduction.path[i].first.back());
-
-		observer.state.push_back(reduction.path[i].first.front());
+		if (reduction.path[i].conflict && !reduction.path[i].placeholder)
+		{
+			conflict.state.push_back(reduction.path[i].data.back());
+			observer.state.merge(reduction.path[i].begin);
+		}
 	}
-	list<petri_state> executions(1, conflict);
 
-	canonical encoding = net->get_effective_state_encoding(executions.back(), observer);
+	list<petri_state> executions(1, conflict);
+	svector<petri_index> path;
+	for (int i = 0; i < reduction.path.size(); i++)
+		if (!reduction.path[i].placeholder)
+			path.merge(reduction.path[i].data);
+	path.unique();
+
+	canonical encoding = net->get_effective_state_encoding(executions.back(), observer, path);
 
 	cout << "Conflict " << observer << " <-- " << conflict << "{" << encoding.print(net->vars) << "}" << endl;
 	bool found = false;
@@ -333,9 +380,10 @@ bool rule::separate(reductionhdl &reduction, int t)
 					{
 						bool valid = false;
 						for (int k = 0; !valid && k < reduction.path.size(); k++)
-							for (int m = reduction.path[k].first.size()-1; !valid && m >= 0; m--)
-								if (reduction.path[k].first[m] == o[l])
-									valid = true;
+							if (!reduction.path[k].placeholder)
+								for (int m = reduction.path[k].data.size()-1; !valid && m >= 0; m--)
+									if (reduction.path[k].data[m] == o[l])
+										valid = true;
 
 						if (valid)
 						{
@@ -348,11 +396,13 @@ bool rule::separate(reductionhdl &reduction, int t)
 					{
 						canonical transition_term;
 						for (int k = 0; k < valid_o.size(); k++)
-							transition_term |= net->at(valid_o[k]).index;
+							for (int l = 0; l < net->at(valid_o[k]).index.terms.size(); l++)
+								if (net->at(valid_o[k]).index.terms[l].val(uid) != (uint32_t)t)
+									transition_term |= canonical(net->at(valid_o[k]).index.terms[l]);
 						transitions &= transition_term;
 					}
 				}
-				transitions = transitions.hide(uid);
+
 				cout << "\t\tT=" << transitions.print(net->vars) << endl;
 
 				canonical temp2 = 0;
@@ -421,8 +471,9 @@ bool rule::separate(reductionhdl &reduction, int t)
 							{
 								bool valid = false;
 								for (int k = 0; !valid && k < reduction.path.size(); k++)
-									if (reduction.path[k].first.find(n[j]) != reduction.path[k].first.end())
-										valid = true;
+									if (!reduction.path[k].placeholder)
+										if (reduction.path[k].data.find(n[j]) != reduction.path[k].data.end())
+											valid = true;
 
 								if (valid)
 									ready_places.back().second.push_back(n[j]);
@@ -440,8 +491,9 @@ bool rule::separate(reductionhdl &reduction, int t)
 						{
 							bool valid = false;
 							for (int k = 0; !valid && k < reduction.path.size(); k++)
-								if (reduction.path[k].first.find(n[j]) != reduction.path[k].first.end())
-									valid = true;
+								if (!reduction.path[k].placeholder)
+									if (reduction.path[k].data.find(n[j]) != reduction.path[k].data.end())
+										valid = true;
 
 							if (valid)
 								ready_transitions.back().second.push_back(n[j]);
@@ -558,16 +610,17 @@ void rule::strengthen(int t)
 			{
 				if (i != 0)
 					cout << " ";
-				cout << reduction->path[i].first.back();
+				cout << reduction->path[i].data.back();
 			}
 			cout << "} " << reduction->guard.print(net->vars) << endl;
 
 			bool conflict = true;
 			for (int i = 0; i < reduction->path.size(); i++)
-				if (!reduction->path[i].second)
+				if (!reduction->path[i].conflict && !reduction->path[i].placeholder)
 					conflict = false;
 
-			conflict = conflict || stuck;
+			if (stuck)
+				conflict = true;
 
 			bool success = true;
 			if (conflict)
@@ -586,53 +639,56 @@ void rule::strengthen(int t)
 			done = true;
 			for (int i = 0; i < reduction->path.size(); i++)
 			{
-				if (conflict && !success)
-					reduction->path[i].second = false;
-				else if (((conflict && success) || !reduction->path[i].second) && reduction->path[i].first.back().is_place())
+				if (!reduction->path[i].placeholder)
 				{
-					/* Check to see if we need to separate this state from the
-					 * implicant by looking for a transition to add in.
-					 */
-					svector<petri_index> o = net->next(reduction->path[i].first.back()).unique();
-					bool is_implicant = false;
-					for (int j = 0; !is_implicant && j < implicants[t].size(); j++)
+					if (conflict && !success)
+						reduction->path[i].conflict = false;
+					else if (((conflict && success) || !reduction->path[i].conflict) && reduction->path[i].data.back().is_place())
 					{
-						if (net->are_parallel_siblings(implicants[t][j], reduction->path[i].first.back()) != -1)
-							is_implicant = true;
-
-						for (int k = 0; !is_implicant && k < o.size(); k++)
-							if (o[k] == implicants[t][j])
+						/* Check to see if we need to separate this state from the
+						 * implicant by looking for a transition to add in.
+						 */
+						svector<petri_index> o = net->next(reduction->path[i].data.back()).unique();
+						bool is_implicant = false;
+						for (int j = 0; !is_implicant && j < implicants[t].size(); j++)
+						{
+							if (net->are_parallel_siblings(implicants[t][j], reduction->path[i].data.back()) != -1)
 								is_implicant = true;
+
+							for (int k = 0; !is_implicant && k < o.size(); k++)
+								if (o[k] == implicants[t][j])
+									is_implicant = true;
+						}
+
+						canonical encoding = net->get_effective_place_encoding(reduction->path[i].data.back(), reduction->path[i].begin);
+
+						cout << "Checking " << reduction->path[i].data.back() << " " << conflict << " " << success << " " << is_implicant << " " << reduction->path[i].conflict << " " << encoding.print(net->vars) << " " << (canonical(uid, 1-t) & reduction->guard & encoding).print(net->vars) << endl;
+
+						/* If this state needs to be separated from the implicant state,
+						 * work backwards in the path until we find the closest set of
+						 * transitions that separate them. Then, use greedy to get the
+						 * least number of values needed to separate them.
+						 */
+						if (!is_implicant && (canonical(uid, 1-t) & reduction->guard & encoding) != 0)
+							reduction->path[i].conflict = true;
+						else
+							reduction->path[i].conflict = false;
 					}
 
-					canonical encoding = net->get_effective_place_encoding(reduction->path[i].first.back(), reduction->path[i].first.front());
+					if (reduction->path[i].data.back().is_place() && !reduction->path[i].conflict)
+					{
+						/* Check to see if we are done (we have already seen all
+						 * of these indices before) and then mark all indices as
+						 * seen.
+						 */
+						if (!reduction->covered[reduction->path[i].data.back().idx()])
+							done = false;
 
-					cout << "Checking " << reduction->path[i].first.back() << " " << conflict << " " << success << " " << is_implicant << " " << reduction->path[i].second << " " << encoding.print(net->vars) << " " << (canonical(uid, 1-t) & reduction->guard & encoding).print(net->vars) << endl;
-
-					/* If this state needs to be separated from the implicant state,
-					 * work backwards in the path until we find the closest set of
-					 * transitions that separate them. Then, use greedy to get the
-					 * least number of values needed to separate them.
-					 */
-					if (!is_implicant && (canonical(uid, 1-t) & reduction->guard & encoding) != 0)
-						reduction->path[i].second = true;
+						reduction->covered[reduction->path[i].data.back().idx()] = true;
+					}
 					else
-						reduction->path[i].second = false;
-				}
-
-				if (reduction->path[i].first.back().is_place() && !reduction->path[i].second)
-				{
-					/* Check to see if we are done (we have already seen all
-					 * of these indices before) and then mark all indices as
-					 * seen.
-					 */
-					if (!reduction->covered[reduction->path[i].first.back().idx()])
 						done = false;
-
-					reduction->covered[reduction->path[i].first.back().idx()] = true;
 				}
-				else
-					done = false;
 			}
 
 			svector<int> ready_transitions;
@@ -642,18 +698,18 @@ void rule::strengthen(int t)
 			 */
 			for (int i = 0; i < reduction->path.size(); i++)
 			{
-				svector<petri_index> n = net->prev(reduction->path[i].first.back());
-				if (!reduction->path[i].second && reduction->path[i].first.back().is_place())
+				svector<petri_index> n = net->prev(reduction->path[i].data.back());
+				if (!reduction->path[i].conflict && reduction->path[i].data.back().is_place())
 				{
 					int total = 0;
 					for (int k = i; k < reduction->path.size(); k++)
-						if (!reduction->path[k].second && net->prev(reduction->path[k].first.back())[0] == n[0])
+						if (!reduction->path[k].conflict && net->prev(reduction->path[k].data.back())[0] == n[0])
 							total++;
 
 					if (total == net->next(n).unique().size())
 						ready_places.push_back(i);
 				}
-				else if (reduction->path[i].first.back().is_trans())
+				else if (reduction->path[i].data.back().is_trans())
 					ready_transitions.push_back(i);
 			}
 
@@ -664,16 +720,16 @@ void rule::strengthen(int t)
 			{
 				for (int i = 0; i < ready_transitions.size(); i++)
 				{
-					svector<petri_index> p = net->prev(reduction->path[ready_transitions[i]].first.back());
+					svector<petri_index> p = net->prev(reduction->path[ready_transitions[i]].data.back());
 					for (int j = p.size()-1; j >= 0; j--)
 					{
 						if (j > 0)
 						{
 							reduction->path.push_back(reduction->path[ready_transitions[i]]);
-							reduction->path.back().first.push_back(p[j]);
+							reduction->path.back().data.push_back(p[j]);
 						}
 						else
-							reduction->path[ready_transitions[i]].first.push_back(p[j]);
+							reduction->path[ready_transitions[i]].data.push_back(p[j]);
 					}
 				}
 			}
@@ -687,29 +743,29 @@ void rule::strengthen(int t)
 				{
 					for (int k = ready_places[i]+1; k < reduction->path.size(); )
 					{
-						if (!reduction->path[k].second && net->prev(reduction->path[k].first.back())[0] == net->prev(reduction->path[ready_places[i]].first.back())[0])
+						if (!reduction->path[k].conflict && net->prev(reduction->path[k].data.back())[0] == net->prev(reduction->path[ready_places[i]].data.back())[0])
 						{
 							for (int j = i+1; j < ready_places.size(); j++)
 								if (ready_places[j] > k)
 									ready_places[j]--;
 
-							reduction->path[ready_places[i]].first.merge(reduction->path[k].first);
+							reduction->path[ready_places[i]].merge(reduction->path[k]);
 							reduction->path.erase(reduction->path.begin() + k);
 						}
 						else
 							k++;
 					}
 
-					svector<petri_index> p = net->prev(reduction->path[ready_places[i]].first.back());
+					svector<petri_index> p = net->prev(reduction->path[ready_places[i]].data.back());
 					for (int j = p.size()-1; j >= 0; j--)
 					{
 						if (j > 0)
 						{
 							reductions.push_back(*reduction);
-							reductions.back().path[ready_places[i]].first.push_back(p[j]);
+							reductions.back().path[ready_places[i]].data.push_back(p[j]);
 						}
 						else
-							reduction->path[ready_places[i]].first.push_back(p[j]);
+							reduction->path[ready_places[i]].data.push_back(p[j]);
 					}
 				}
 			}

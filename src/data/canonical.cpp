@@ -1195,3 +1195,26 @@ bool mergible(minterm c0, minterm c1)
 		(xdiff.first == 0 && diff - xdiff.second <= 1) ||
 		(xdiff.second == 0 && diff - xdiff.first <= 1));
 }
+
+canonical merge(canonical c0, canonical c1)
+{
+	canonical result = c0;
+
+	for (int j = 0; j < c1.terms.size(); j++)
+	{
+		bool merged = false;
+		for (int i = 0; i < result.terms.size(); i++)
+			if (mergible(result.terms[i], c1.terms[j]) && (result.terms[i] & c1.terms[j]) != 0)
+			{
+				result.terms[i] &= c1.terms[j];
+				merged = true;
+			}
+
+		if (!merged)
+			result.terms.push_back(c1.terms[j]);
+	}
+
+	result.mccluskey();
+
+	return result;
+}

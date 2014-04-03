@@ -14,6 +14,21 @@
 
 void merge_guards(canonical &guard0, canonical implicant0, canonical &guard1, canonical implicant1);
 
+struct reductionpath
+{
+	reductionpath();
+	reductionpath(petri_index d, bool c, bool p);
+	~reductionpath();
+
+	svector<petri_index> begin;
+	svector<petri_index> data;
+	bool conflict;
+	bool placeholder;
+
+	void merge(reductionpath &r);
+	void push_back(petri_index i);
+};
+
 struct reductionhdl
 {
 	reductionhdl();
@@ -22,7 +37,7 @@ struct reductionhdl
 	~reductionhdl();
 
 	canonical implicant;
-	svector<pair<svector<petri_index>, bool> > path;
+	svector<reductionpath> path;
 	canonical guard;
 	svector<bool> covered;
 

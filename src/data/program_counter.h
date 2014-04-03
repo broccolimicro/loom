@@ -37,7 +37,6 @@ struct program_counter
 	petri_net *net;
 	petri_index index;
 	minterm state;
-	bool done;
 	bool elaborate;
 	svector<petri_index> n, p;
 
@@ -53,6 +52,7 @@ struct program_counter
 };
 
 bool operator==(program_counter p1, program_counter p2);
+bool operator<(program_counter p1, program_counter p2);
 
 struct remote_petri_index : petri_index
 {
@@ -118,10 +118,10 @@ struct program_execution
 	svector<program_counter> pcs;
 	svector<remote_program_counter> rpcs;
 	bool deadlock;
+	bool done;
 
 	int count(int pci);
 	int merge(int pci);
-	bool done();
 
 	void init_pcs(string name, petri_net *net, bool elaborate);
 	void init_rpcs(string name, petri_net *net);
@@ -144,5 +144,43 @@ struct program_execution_space
 	void gen_translation(string name0, petri_net *net0, string name1, petri_net *net1);
 	minterm translate(string name0, petri_net *net0, minterm t, string name1, petri_net *net1);
 };
+
+struct program_index
+{
+	program_index();
+	program_index(string name, petri_net *net, petri_index index, minterm encoding);
+	program_index(const program_index &i);
+	~program_index();
+
+	string name;
+	petri_net *net;
+	petri_index index;
+	minterm encoding;
+
+	program_index &operator=(program_index i);
+	program_index &operator=(petri_index i);
+};
+
+bool operator==(program_index i1, program_index i2);
+bool operator!=(program_index i1, program_index i2);
+bool operator<(program_index i1, program_index i2);
+
+struct program_state
+{
+	program_state();
+	program_state(program_execution *exec);
+	program_state(const program_state &s);
+	~program_state();
+
+	svector<program_index> state;
+
+	program_state &operator=(program_execution *exec);
+	program_state &operator=(program_state s);
+};
+
+ostream &operator<<(ostream &os, program_state s);
+bool operator==(program_state s1, program_state s2);
+bool operator!=(program_state s1, program_state s2);
+bool operator<(program_state s1, program_state s2);
 
 #endif

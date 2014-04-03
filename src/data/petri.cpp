@@ -1348,52 +1348,75 @@ void petri_net::expand()
 
 void petri_net::generate_observed()
 {
-
 	for (int i = 0; i < S.size(); i++)
 		S[i].observed.clear();
 	for (int i = 0; i < T.size(); i++)
 		T[i].observed.clear();
 
-	svector<petri_index> to_update = M0;
+	svector<pair<petri_index, bool> > counters;
+	for (int i = 0; i < M0.size(); i++)
+		counters.push_back(pair<petri_index, bool>(M0[i], false));
 
-	while (to_update.size() > 0)
+	bool done = false;
+	while (!done)
 	{
-		for (int i = 0; i < to_update.size(); i++)
-			cout << to_update[i] << " ";
+		for (int i = 0; i < counters.size(); i++)
+			cout << counters[i].first << ":" << counters[i].second << " ";
 		cout << endl;
-		svector<petri_index> update_next;
-		for (int i = 0; i < to_update.size(); i++)
+
+		svector<int> movable;
+		for (int i = 0; i < counters.size(); i++)
 		{
-			if (to_update[i].is_place())
+			svector<petri_index> p = prev(counters[i].first);
+			int total = 1;
+			for (int j = i+1; j < counters.size(); j++)
+				if (counters[j].first == counters[i].first)
+					total++;
+
+			if (total == p.size())
 			{
-				map<petri_state, canonical> old = at(to_update[i]).observed;
-				at(to_update[i]).observed.clear();
+				for (int j = i+1; j < counters.size(); )
+				{
+					if (counters[j].first == counters[i].first)
+					{
+						counters[i].second = counters[i].second && counters[j].second;
+						counters.erase(counters.begin() + j);
+					}
+					else
+						j++;
+				}
 
+				movable.push_back(i);
+			}
+		}
+
+		for (int i = 0; i < movable.size(); i++)
+		{
+			map<petri_state, canonical> old = at(counters[movable[i]].first).observed;
+			at(counters[movable[i]].first).observed.clear();
+			if (!counters[movable[i]].second && counters[movable[i]].first.is_place())
+			{
 				petri_state s;
-				s.state.push_back(to_update[i]);
-				at(to_update[i]).observed.insert(pair<petri_state, canonical>(s, canonical()));
+				s.state.push_back(counters[movable[i]].first);
+				at(counters[movable[i]].first).observed.insert(pair<petri_state, canonical>(s, canonical()));
 
-				svector<petri_index> inputs = prev(to_update[i]);
+				svector<petri_index> inputs = prev(counters[movable[i]].first);
 				for (int j = 0; j < inputs.size(); j++)
 				{
 					for (map<petri_state, canonical>::iterator k = at(inputs[j]).observed.begin(); k != at(inputs[j]).observed.end(); k++)
 					{
-						map<petri_state, canonical>::iterator l = at(to_update[i]).observed.find(k->first);
-						if (l != at(to_update[i]).observed.end())
-							l->second &= (k->second | ~at(inputs[j]).index);
+						map<petri_state, canonical>::iterator l = at(counters[movable[i]].first).observed.find(k->first);
+						canonical c = (k->second | ~at(inputs[j]).index);
+						if (l != at(counters[movable[i]].first).observed.end())
+							l->second &= c;
 						else
-							at(to_update[i]).observed.insert(pair<petri_state, canonical>(k->first, k->second | ~at(inputs[j]).index));
+							at(counters[movable[i]].first).observed.insert(pair<petri_state, canonical>(k->first, c));
 					}
 				}
-
-				if (at(to_update[i]).observed != old)
-					update_next.merge(next(to_update[i]));
 			}
-			else if (to_update[i].is_trans())
+			else if (!counters[movable[i]].second && counters[movable[i]].first.is_trans())
 			{
-				map<petri_state, canonical> old = at(to_update[i]).observed;
-				at(to_update[i]).observed.clear();
-				svector<petri_index> inputs = prev(to_update[i]);
+				svector<petri_index> inputs = prev(counters[movable[i]].first);
 				svector<map<petri_state, canonical> > in_observed;
 				svector<petri_state> state_set;
 				for (int j = 0; j < inputs.size(); j++)
@@ -1421,7 +1444,7 @@ void petri_net::generate_observed()
 					if (found)
 					{
 						cout << state_set[j] << " ";
-						at(to_update[i]).observed.insert(pair<petri_state, canonical>(state_set[j], c));
+						at(counters[movable[i]].first).observed.insert(pair<petri_state, canonical>(state_set[j], c));
 						for (int k = 0; k < in_observed.size(); k++)
 							in_observed[k].erase(in_observed[k].find(state_set[j]));
 					}
@@ -1429,10 +1452,18 @@ void petri_net::generate_observed()
 				cout << endl;
 
 				svector<map<petri_state, canonical>::iterator> j;
-				for (int k = 0; k < in_observed.size(); k++)
-					j.push_back(in_observed[k].begin());
+				for (int k = 0; k < in_observed.size(); )
+				{
+					if (in_observed[k].size() > 0)
+					{
+						j.push_back(in_observed[k].begin());
+						k++;
+					}
+					else
+						in_observed.erase(in_observed.begin() + k);
+				}
 
-				while (j.back() != in_observed.back().end())
+				while (j.size() > 0 && j.back() != in_observed.back().end())
 				{
 					petri_state s;
 					canonical c = 0;
@@ -1447,11 +1478,11 @@ void petri_net::generate_observed()
 
 					s.state.unique();
 
-					map<petri_state, canonical>::iterator z = at(to_update[i]).observed.find(s);
-					if (z != at(to_update[i]).observed.end())
+					map<petri_state, canonical>::iterator z = at(counters[movable[i]].first).observed.find(s);
+					if (z != at(counters[movable[i]].first).observed.end())
 						z->second &= c;
 					else
-						at(to_update[i]).observed.insert(pair<petri_state, canonical>(s, c));
+						at(counters[movable[i]].first).observed.insert(pair<petri_state, canonical>(s, c));
 
 					j[0]++;
 					for (int k = 0; j[k] == in_observed[k].end() && k < in_observed.size()-1; k++)
@@ -1460,13 +1491,25 @@ void petri_net::generate_observed()
 						j[k+1]++;
 					}
 				}
+			}
 
-				if (at(to_update[i]).observed != old)
-					update_next.merge(next(to_update[i]));
+			if (!counters[movable[i]].second && at(counters[movable[i]].first).observed == old)
+				counters[movable[i]].second = true;
+
+			svector<petri_index> n = next(counters[movable[i]].first);
+			for (int j = n.size()-1; j >= 0; j--)
+			{
+				if (j > 0)
+					counters.push_back(pair<petri_index, bool>(n[j], counters[movable[i]].second));
+				else
+					counters[movable[i]].first = n[j];
 			}
 		}
-		update_next.unique();
-		to_update = update_next;
+
+		done = true;
+		for (int i = 0; done && i < counters.size(); i++)
+			if (!counters[i].second)
+				done = false;
 	}
 
 	cout << "Observed" << endl;
@@ -1718,8 +1761,6 @@ void petri_net::gen_conflicts()
 	conflicts.clear();
 	indistinguishable.clear();
 
-	generate_observed();
-
 	for (petri_index i(0, true); i < S.size(); i++)
 	{
 		cout << i << "/" << S.size() << endl;
@@ -1751,7 +1792,7 @@ void petri_net::gen_conflicts()
 
 		for (petri_index j(0, true); j < S.size(); j++)
 		{
-			canonical sj = get_effective_place_encoding(j, i);
+			canonical sj = get_effective_place_encoding(j, svector<petri_index>(1, i));
 
 			/* States are indistinguishable if:
 			 *  - they are not the same state
@@ -1760,7 +1801,7 @@ void petri_net::gen_conflicts()
 			 *  	> are_parallel_siblings(i, j) < 0
 			 *  - the two state encodings are not mutually exclusive
 			 *    taking into account the inactive firings between them
-			 *  	> si & get_effective_place_encoding(j, i) != 0
+			 *  	> si & get_effective_place_encoding(j, svector<petri_index>(1, i)) != 0
 			 */
 			if (i != j && are_parallel_siblings(i, j) < 0 && !is_mutex(&si, &sj))
 			{
@@ -1876,7 +1917,7 @@ void petri_net::gen_bubbleless_conflicts()
 				 *  - the two states do not exist in parallel
 				 */
 
-				s2 = get_effective_place_encoding(j, i);
+				s2 = get_effective_place_encoding(j, svector<petri_index>(1, i));
 
 				parallel = (are_parallel_siblings(i, j) >= 0);
 				// POSITIVE
@@ -2231,11 +2272,14 @@ struct place_encoding_execution
 	}
 };
 
-canonical petri_net::get_effective_place_encoding(petri_index place, petri_index observer)
+canonical petri_net::get_effective_place_encoding(petri_index place, svector<petri_index> observer)
 {
-	cout << "Effective Place Encoding from " << place << " to " << observer << endl;
+	cout << "Effective Place Encoding from " << place << " to {";
+	for (int i = 0; i < observer.size(); i++)
+		cout << observer[i] << " ";
+	cout << "}" << endl;
 	svector<petri_state> execs(1, petri_state(this, svector<petri_index>(1, place), false));
-	petri_state s(this, svector<petri_index>(1, observer), false);
+	petri_state s(this, observer, false);
 	svector<bool> covered(S.size() + T.size(), false);
 
 	cout << execs[0] << " -> " << s << endl;
@@ -2268,7 +2312,12 @@ canonical petri_net::get_effective_place_encoding(petri_index place, petri_index
 			{
 				for (int j = 0; j < execs[i].state.size(); j++)
 				{
-					if (execs[i].state[j].is_place() && !covered[execs[i].state[j].idx()] && execs[i].state[j] != place && at(observer).observed.find(execs[i]) == at(observer).observed.end())
+					bool found = false;
+					for (int k = 0; !found && k < observer.size(); k++)
+						if (at(observer[k]).observed.find(execs[i]) != at(observer[k]).observed.end())
+							found = true;
+
+					if (execs[i].state[j].is_place() && !covered[execs[i].state[j].idx()] && execs[i].state[j] != place && !found)
 					{
 						int total = 0;
 						for (int k = j; k < execs[i].state.size(); k++)
@@ -2341,15 +2390,26 @@ canonical petri_net::get_effective_place_encoding(petri_index place, petri_index
 
 	for (int i = 0; i < execs.size(); i++)
 	{
-		map<petri_state, canonical>::iterator j = at(observer).observed.find(execs[i]);
-		if (j != at(observer).observed.end())
-			encoding &= j->second;
+		canonical temp = 0;
+		bool found = false;
+		for (int j = 0; j < observer.size(); j++)
+		{
+			map<petri_state, canonical>::iterator k = at(observer[j]).observed.find(execs[i]);
+			if (k != at(observer[j]).observed.end())
+			{
+				temp |= k->second;
+				found = true;
+			}
+		}
+
+		if (found)
+			encoding &= temp;
 	}
 
 	return encoding;
 }
 
-canonical petri_net::get_effective_state_encoding(petri_state state, petri_state observer)
+canonical petri_net::get_effective_state_encoding(petri_state state, petri_state observer, svector<petri_index> path)
 {
 	cout << "Effective State Encoding from " << state << " to " << observer << endl;
 	svector<pair<petri_index, canonical> > idx;
@@ -2402,7 +2462,16 @@ canonical petri_net::get_effective_state_encoding(petri_state state, petri_state
 
 		for (int i = 0; i < movable.size(); i++)
 		{
-			if (observer.state.find(idx[movable[i]].first) != observer.state.end() || idx[movable[i]].second == 1)
+			svector<petri_index> n = next(idx[movable[i]].first);
+			for (int j = 0; j < n.size(); )
+			{
+				if (path.find(n[j]) == path.end())
+					n.erase(n.begin() + j);
+				else
+					j++;
+			}
+
+			if (n.size() == 0 || observer.state.find(idx[movable[i]].first) != observer.state.end() || idx[movable[i]].second == 1)
 			{
 				cout << "Done " << idx[movable[i]].second.print(vars) << endl;
 				if (idx[movable[i]].second != 1)
@@ -2416,9 +2485,8 @@ canonical petri_net::get_effective_state_encoding(petri_state state, petri_state
 			else
 			{
 				if (idx[movable[i]].first.is_trans())
-					idx[movable[i]].second |= ~at(idx[movable[i]].first).index;
+					idx[movable[i]].second = ::merge(idx[movable[i]].second, ~at(idx[movable[i]].first).index);
 
-				svector<petri_index> n = next(idx[movable[i]].first);
 				for (int j = n.size()-1; j >= 0; j--)
 				{
 					if (j > 0)

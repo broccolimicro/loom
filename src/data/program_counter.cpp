@@ -13,7 +13,6 @@
 program_counter::program_counter()
 {
 	net = NULL;
-	done = false;
 	elaborate = false;
 }
 
@@ -26,7 +25,6 @@ program_counter::program_counter(string name, bool elaborate, petri_index index,
 	this->p = net->prev(index);
 	if (net->vars->reset.terms.size() > 0)
 		this->state = net->vars->reset.terms.front();
-	this->done = false;
 	this->elaborate = elaborate;
 }
 
@@ -90,6 +88,14 @@ void program_counter::set(minterm term)
 bool operator==(program_counter p1, program_counter p2)
 {
 	return p1.name == p2.name && p1.net == p2.net && p1.index == p2.index;
+}
+
+bool operator<(program_counter p1, program_counter p2)
+{
+	return ((p1.name < p2.name) ||
+			(p1.name == p2.name && p1.net < p2.net) ||
+			(p1.name == p2.name && p1.net == p2.net && p1.index < p2.index) ||
+			(p1.name == p2.name && p1.net == p2.net && p1.index == p2.index && p1.state < p2.state));
 }
 
 remote_petri_index::remote_petri_index()
@@ -322,11 +328,13 @@ ostream &operator<<(ostream &os, remote_petri_index i)
 program_execution::program_execution()
 {
 	deadlock = false;
+	done = false;
 }
 
 program_execution::program_execution(const program_execution &exec)
 {
 	deadlock = exec.deadlock;
+	done = exec.done;
 	pcs.reserve(exec.pcs.size());
 	rpcs.reserve(exec.rpcs.size());
 	for (int i = 0; i < exec.pcs.size(); i++)
@@ -368,15 +376,6 @@ int program_execution::merge(int pci)
 	return pci;
 }
 
-bool program_execution::done()
-{
-	for (svector<program_counter>::iterator pci = pcs.begin(); pci != pcs.end(); pci++)
-		if (!pci->done && pci->elaborate)
-			return false;
-
-	return true;
-}
-
 void program_execution::init_pcs(string name, petri_net *net, bool elaborate)
 {
 	cout << "Initializing pc " << name << endl;
@@ -396,6 +395,7 @@ program_execution &program_execution::operator=(program_execution e)
 	pcs = e.pcs;
 	rpcs = e.rpcs;
 	deadlock = e.deadlock;
+	done = e.done;
 	return *this;
 }
 
@@ -505,9 +505,8 @@ void program_execution_space::full_elaborate()
 		{
 			cout << "Reset ";
 			for (int i = 0; i < pc->net->M0.size(); i++)
-				cout << pc->net->M0[i] << " ";
+				cout << pc->net->M0[i] << ":" << pc->net->vars->reset.print(pc->net->vars) << " ";
 			cout << endl;
-			pc->net->print_dot(&cout, pc->name);
 			if (pc->elaborate && nets.find(pc->net) == nets.end())
 				nets.push_back(pc->net);
 			for (svector<program_counter>::iterator pcj = exec->pcs.begin(); pcj != exec->pcs.end(); pcj++)
@@ -531,8 +530,11 @@ void program_execution_space::full_elaborate()
 			for (int i = 0; i < pc->net->M0.size(); i++)
 				cout << pc->net->M0[i] << " ";
 			cout << endl;
-			pc->net->print_dot(&cout, pc->name);
 		}
+		cout << "Total Reset ";
+		for (svector<program_counter>::iterator pc = exec->pcs.begin(); pc != exec->pcs.end(); pc++)
+			cout << pc->index << ":" << pc->state.print(pc->net->vars) << " ";
+		cout << endl;
 	}
 
 	for (svector<petri_net*>::iterator net = nets.begin(); net != nets.end(); net++)
@@ -543,45 +545,34 @@ void program_execution_space::full_elaborate()
 	int max_width = 0;
 	int remote = 0;
 	int ordering = 0;
-	int csplit = 0;
 	int guards = 0;
 	int total_iterations = 0;
-	petri_state seen;
+	list<program_state> observed_states;
+	int observed_state_count = 0;
 	while (execs.size() > 0)
 	{
-		if (execs.size() > max_width)
+		if ((int)execs.size() > max_width)
 			max_width = execs.size();
 
-		program_execution current_execution;
-
-		if (execs.size() > 100000)
-		{
-			current_execution = execs.back();
-			execs.pop_back();
-		}
-		else
-		{
-			current_execution = execs.front();
-			execs.pop_front();
-		}
+		program_execution current_execution = execs.back();
+		execs.pop_back();
 		program_execution *exec = &current_execution;
 
 		if ((number_processed/1000) != ((number_processed-1)/1000))
 		{
-			cout << "Execution " << number_processed << " " << execs.size() << " " << remote << " " << ordering << " " << csplit << " " << guards << " " << total_iterations << " " << seen << endl;
+			cout << "Execution " << number_processed << " " << execs.size() << " " << remote << " " << ordering << " " << guards << " " << total_iterations << " " << observed_state_count << "/" << observed_states.size() << endl;
 
 			remote = 0;
 			ordering = 0;
-			csplit = 0;
 			guards = 0;
 			total_iterations = 0;
-			seen.state.clear();
+			observed_state_count = 0;
 		}
 
 		if ((number_processed/10000) != ((number_processed-1)/10000))
 			exec->pcs[0].net->print_dot(&cout, "graph");
 
-		while (!exec->done() && !exec->deadlock)
+		while (!exec->done && !exec->deadlock)
 		{
 			total_iterations++;
 			/**********************************
@@ -678,200 +669,231 @@ void program_execution_space::full_elaborate()
 				for (int i = 0; i < exec->pcs.size(); i++)
 					exec->pcs[i].apply(translate(exec->rpcs[j].name, exec->rpcs[j].net, exec->rpcs[j].firings(), exec->pcs[i].name, exec->pcs[i].net));
 
+			exec->pcs.sort();
+
 			/*********************************
 			 * Handle local program counters *
 			 *********************************/
-			int transition_ready = -1;
-			svector<int> places_ready;
+			svector<int> ready_transitions;
+			svector<pair<petri_index, svector<int> > > ready_places;
 
-			for (int pc = exec->pcs.size()-1; transition_ready == -1 && pc >= 0; pc--)
-			{
+			/* Transitions are pretty much skipped over since at this point
+			 * they have "enabled". There is also no need to check for parallel
+			 * merges here since that is included in the requirements for a
+			 * transition to become "enabled". So basically, if there is a
+			 * transition, we just add it to the ready list.
+			 */
+			for (int pc = 0; pc < exec->pcs.size(); pc++)
 				if (exec->pcs[pc].index.is_trans())
+					ready_transitions.push_back(pc);
+
+			if (ready_transitions.size() == 0)
+			{
+				/* At this point, we want to loop through groups of program counters
+				 * where each group represents a different process in the simulation.
+				 */
+				for (int ps = 0, pe = 0; ps < exec->pcs.size(); ps = pe)
 				{
-					if (exec->pcs[pc].p.size() == 1)
-						transition_ready = pc;
+					for (; pe < exec->pcs.size() && exec->pcs[pe].name == exec->pcs[ps].name && exec->pcs[pe].net == exec->pcs[ps].net; pe++);
+
+					/* Get the list of transitions that we suspect could become enabled
+					 * at this state in this particular process.
+					 */
+					svector<petri_index> next;
+					for (int p = ps; p < pe; p++)
+						next.merge(exec->pcs[p].n);
+					next.unique();
+
+					for (int i = 0; i < next.size(); i++)
+					{
+						// Check if this transition is enabled.
+
+						// Check to see how many program counter we expect to see coming into this transition
+						svector<petri_index> prev = exec->pcs[ps].net->prev(next[i]);
+						prev.sort();
+
+						/* Figure out how many program counters are actually coming into this transition
+						 * and calculate the total state of all of those program counters.
+						 */
+						svector<int> count;
+						minterm combined;
+						for (int p = ps, j = 0; p < pe && j < prev.size(); )
+						{
+							if (exec->pcs[p].index < prev[j])
+								p++;
+							else if (prev[j] < exec->pcs[p].index)
+								j++;
+							else
+							{
+								count.push_back(p);
+								combined &= exec->pcs[p].state;
+								p++;
+								j++;
+							}
+						}
+
+						if (count.size() == prev.size())
+						{
+							/* Cool! we can do a parallel merge at this point, but is the transition
+							 * itself ready to be enabled? (i.e. is it active, or does the total state satisfy the guard?)
+							 */
+							bool satisfied = exec->pcs[ps].net->at(next[i]).active;
+							for (int j = 0; !satisfied && j < exec->pcs[ps].net->at(next[i]).index.terms.size(); j++)
+								if ((combined & exec->pcs[ps].net->at(next[i]).index.terms[j]) != 0)
+									satisfied = true;
+
+							// If so, then all places leading into this transition are designated as ready.
+							if (satisfied)
+								ready_places.push_back(pair<petri_index, svector<int> >(next[i], count));
+						}
+					}
+				}
+			}
+
+			//for (int i = 0; i < ready_transitions.size(); i++)
+			//	cout << exec->pcs[ready_transitions[i]].name << ":" << exec->pcs[ready_transitions[i]].index << "{" << exec->pcs[ready_transitions[i]].state.print(exec->pcs[ready_transitions[i]].net->vars) << "} ";
+
+			if (ready_transitions.size() != 0)
+			{
+				svector<int> j(ready_transitions.size(), 0);
+				svector<svector<minterm> > passing;
+				int count = 1;
+				for (int i = 0; i < ready_transitions.size(); i++)
+				{
+					if (exec->pcs[ready_transitions[i]].is_active())
+						passing.push_back(exec->pcs[ready_transitions[i]].net->at(exec->pcs[ready_transitions[i]].index).index.terms);
 					else
 					{
-						int total = 1;
-						for (int pcj = pc+1; pcj < exec->pcs.size(); pcj++)
-							if (exec->pcs[pcj] == exec->pcs[pc])
-								total++;
-
-						if (total == exec->pcs[pc].p.size())
-						{
-							for (int pcj = pc+1; pcj < exec->pcs.size(); )
-							{
-								if (exec->pcs[pcj] == exec->pcs[pc])
-								{
-									exec->pcs[pc].state &= exec->pcs[pcj].state;
-									exec->pcs.erase(exec->pcs.begin() + pcj);
-								}
-								else
-									pcj++;
-							}
-
-							transition_ready = pc;
-						}
+						passing.push_back(svector<minterm>());
+						for (int j = 0; j < exec->pcs[ready_transitions[i]].net->at(exec->pcs[ready_transitions[i]].index).index.terms.size(); j++)
+							if ((exec->pcs[ready_transitions[i]].net->at(exec->pcs[ready_transitions[i]].index).index.terms[j] & exec->pcs[ready_transitions[i]].state) != 0)
+								passing.back().push_back(exec->pcs[ready_transitions[i]].net->at(exec->pcs[ready_transitions[i]].index).index.terms[j]);
 					}
+					count *= passing.back().size();
 				}
-			}
 
-			if (transition_ready == -1)
-			{
-				for (int pc = 0; pc < exec->pcs.size(); pc++)
+				if (count > 1)
+					guards += count-1;
+
+				bool last = false;
+				while (!last)
 				{
-					if (exec->pcs[pc].index.is_place())
-					{
-						svector<petri_index> rn;
-						for (int i = 0; i < exec->pcs[pc].n.size(); i++)
-							if (exec->pcs[pc].net->at(exec->pcs[pc].n[i]).active || exec->pcs[pc].is_satisfied(exec->pcs[pc].n[i]))
-								rn.push_back(exec->pcs[pc].n[i]);
+					last = true;
+					for (int i = 0; last && i < j.size(); i++)
+						if (j[i] < passing[i].size()-1)
+							last = false;
 
-						if (rn.size() > 0)
-						{
-							exec->pcs[pc].n = rn;
-							places_ready.push_back(pc);
-						}
-					}
-				}
-			}
-
-			/*for (int i = 0; i < transitions_ready.size(); i++)
-				cout << exec->pcs[transitions_ready[i]].name << ":" << exec->pcs[transitions_ready[i]].index << "{" << exec->pcs[transitions_ready[i]].state.print(exec->pcs[transitions_ready[i]].net->vars) << "} ";
-			for (int i = 0; i < places_ready.size(); i++)
-				cout << exec->pcs[places_ready[i]].name << ":" << exec->pcs[places_ready[i]].index << "{" << exec->pcs[places_ready[i]].state.print(exec->pcs[places_ready[i]].net->vars) << "} ";
-			cout << endl;*/
-
-			if (transition_ready != -1)
-			{
-				svector<minterm> passing;
-				if (exec->pcs[transition_ready].is_active())
-					passing = exec->pcs[transition_ready].predicate().terms;
-				else
-					for (int t = 0; t < exec->pcs[transition_ready].predicate().terms.size(); t++)
-						if ((exec->pcs[transition_ready].predicate().terms[t] & exec->pcs[transition_ready].state) != 0)
-							passing.push_back(exec->pcs[transition_ready].predicate().terms[t]);
-
-				if (passing.size() > 1)
-					guards += passing.size()-1;
-
-				for (int t = passing.size()-1; t >= 0; t--)
-				{
 					program_execution *texec = exec;
-					if (t > 0)
+					if (!last)
 						duplicate_execution(texec, &texec);
 
-					if (texec->pcs[transition_ready].is_active())
+					for (int i = 0; i < j.size(); i++)
 					{
-						texec->pcs[transition_ready].state = texec->pcs[transition_ready].state >> passing[t];
-						for (int apc = 0; apc < texec->pcs.size(); apc++)
-							if (apc != transition_ready)
-								texec->pcs[apc].apply(translate(texec->pcs[transition_ready].name, texec->pcs[transition_ready].net, passing[t], texec->pcs[apc].name, texec->pcs[apc].net));
-					}
-					else
-						texec->pcs[transition_ready].state &= passing[t];
-
-					for (int j = texec->pcs[transition_ready].n.size()-1; j >= 0; j--)
-					{
-						int cpc = transition_ready;
-						// Create a new program counter for parallel splits
-						if (j > 0)
-							duplicate_counter(texec, cpc, cpc);
-
-						texec->pcs[cpc].index = texec->pcs[cpc].n[j];
-						texec->pcs[cpc].n.clear();
-						texec->pcs[cpc].p.clear();
-						for (int i = 0; i < texec->pcs[cpc].net->arcs.size(); i++)
+						if (texec->pcs[ready_transitions[i]].is_active())
 						{
-							if (texec->pcs[cpc].net->arcs[i].first == texec->pcs[cpc].index)
-								texec->pcs[cpc].n.push_back(texec->pcs[cpc].net->arcs[i].second);
-							if (texec->pcs[cpc].net->arcs[i].second == texec->pcs[cpc].index)
-								texec->pcs[cpc].p.push_back(texec->pcs[cpc].net->arcs[i].first);
+							texec->pcs[ready_transitions[i]].state = texec->pcs[ready_transitions[i]].state >> passing[i][j[i]];
+							for (int apc = 0; apc < texec->pcs.size(); apc++)
+								if (apc != ready_transitions[i])
+									texec->pcs[apc].apply(translate(texec->pcs[ready_transitions[i]].name, texec->pcs[ready_transitions[i]].net, passing[i][j[i]], texec->pcs[apc].name, texec->pcs[apc].net));
 						}
+						else
+							texec->pcs[ready_transitions[i]].state &= passing[i][j[i]];
+
+						for (int k = texec->pcs[ready_transitions[i]].n.size()-1; k >= 0; k--)
+						{
+							int cpc = ready_transitions[i];
+							// Create a new program counter for parallel splits
+							if (k > 0)
+								duplicate_counter(texec, cpc, cpc);
+
+							texec->pcs[cpc].index = texec->pcs[cpc].n[k];
+							texec->pcs[cpc].n.clear();
+							texec->pcs[cpc].p.clear();
+							for (int i = 0; i < texec->pcs[cpc].net->arcs.size(); i++)
+							{
+								if (texec->pcs[cpc].net->arcs[i].first == texec->pcs[cpc].index)
+									texec->pcs[cpc].n.push_back(texec->pcs[cpc].net->arcs[i].second);
+								if (texec->pcs[cpc].net->arcs[i].second == texec->pcs[cpc].index)
+									texec->pcs[cpc].p.push_back(texec->pcs[cpc].net->arcs[i].first);
+							}
+						}
+					}
+
+					j[0]++;
+					for (int i = 0; i < j.size()-1 && j[i] >= passing[i].size(); i++)
+					{
+						j[i] = 0;
+						j[i+1]++;
 					}
 				}
 			}
-			else if (places_ready.size() > 0)
+			else if (ready_places.size() > 0)
 			{
-				// We want to create a new program execution for every possible ordering of events.
-				//if (places_ready.size() > 1)
-				//	cout << "Order split " << places_ready.size() << endl;
-				for (int i = places_ready.size()-1; i >= 0; i--)
-					for (int j = i-1; exec->pcs[places_ready[i]].elaborate && j >= 0; j--)
-						if (!exec->pcs[places_ready[j]].elaborate)
+				program_state current_state(exec);
+				list<program_state>::iterator lb = lower_bound(observed_states.begin(), observed_states.end(), current_state);
+				if (lb == observed_states.end() || *lb != current_state)
+				{
+					observed_state_count++;
+					observed_states.insert(lb, current_state);
+
+					// We want to create a new program execution for every possible ordering of events.
+					//if (ready_places.size() > 1)
+					//	cout << "Order split " << ready_places.size() << endl;
+					for (int i = ready_places.size()-1; i >= 0; i--)
+						for (int j = i-1; exec->pcs[ready_places[i].second[0]].elaborate && j >= 0; j--)
+							if (!exec->pcs[ready_places[j].second[0]].elaborate)
+							{
+								pair<petri_index, svector<int> > temp = ready_places[i];
+								ready_places[i] = ready_places[j];
+								ready_places[j] = temp;
+							}
+
+					if (ready_places.size() > 1)
+						ordering += ready_places.size()-1;
+
+					svector<int> moving;
+					map<int, pair<bool, bool> > done;
+					for (int i = 0; i < ready_places.size(); i++)
+						moving.merge(ready_places[i].second);
+					moving.unique();
+
+					for (int i = 0; i < moving.size(); i++)
+						if (exec->pcs[moving[i]].elaborate)
 						{
-							int temp = places_ready[i];
-							places_ready[i] = places_ready[j];
-							places_ready[j] = temp;
+							exec->pcs[moving[i]].net->at(exec->pcs[moving[i]].index).index.push_back(exec->pcs[moving[i]].state);
+							exec->pcs[moving[i]].net->at(exec->pcs[moving[i]].index).index.mccluskey_or(exec->pcs[moving[i]].net->at(exec->pcs[moving[i]].index).index.terms.size()-1);
 						}
 
-				if (places_ready.size() > 1)
-					ordering += places_ready.size()-1;
-
-				svector<bool> new_done;
-				for (int i = 0; i < places_ready.size(); )
-				{
-					int pc = places_ready[i];
-					bool old_done = exec->pcs[pc].done;
-					if (exec->pcs[pc].elaborate)
+					for (int i = 0; i < ready_places.size(); i++)
 					{
-						canonical old = exec->pcs[pc].net->at(exec->pcs[pc].index).index;
-						exec->pcs[pc].net->at(exec->pcs[pc].index).index.push_back(exec->pcs[pc].state);
-						exec->pcs[pc].net->at(exec->pcs[pc].index).index.mccluskey_or(exec->pcs[pc].net->at(exec->pcs[pc].index).index.terms.size()-1);
+						program_execution *oexec = exec;
+						int pc = ready_places[i].second[0];
 
-						exec->pcs[pc].done = false;
-						if (exec->pcs[pc].net->at(exec->pcs[pc].index).index == old)
-							exec->pcs[pc].done = true;
-					}
+						if (i < ready_places.size()-1)
+							duplicate_execution(oexec, &oexec);
 
-					if (exec->done())
-						places_ready.erase(places_ready.begin() + i);
-					else
-					{
-						i++;
-						new_done.push_back(exec->pcs[pc].done);
-					}
-
-					exec->pcs[pc].done = old_done;
-				}
-
-				if (places_ready.size() == 0)
-					for (int i = 0; i < exec->pcs.size(); i++)
-						exec->pcs[i].done = true;
-
-				for (int i = 0; i < places_ready.size(); i++)
-				{
-					seen.state.push_back(exec->pcs[places_ready[i]].index);
-					seen.state.unique();
-					program_execution *oexec = exec;
-					int pc = places_ready[i];
-
-					if (i < places_ready.size()-1)
-						duplicate_execution(oexec, &oexec);
-
-					oexec->pcs[pc].done = new_done[i];
-
-					if (oexec->pcs[pc].n.size() > 1)
-						csplit += oexec->pcs[pc].n.size()-1;
-
-					for (int j = oexec->pcs[pc].n.size()-1; j >= 0; j--)
-					{
-						program_execution *cexec = oexec;
-						if (j > 0)
-							duplicate_execution(cexec, &cexec);
-
-						cexec->pcs[pc].index = cexec->pcs[pc].n[j];
-						cexec->pcs[pc].n.clear();
-						cexec->pcs[pc].p.clear();
-						for (int i = 0; i < cexec->pcs[pc].net->arcs.size(); i++)
+						for (int j = ready_places[i].second.size()-1; j > 0; j--)
 						{
-							if (cexec->pcs[pc].net->arcs[i].first == cexec->pcs[pc].index)
-								cexec->pcs[pc].n.push_back(cexec->pcs[pc].net->arcs[i].second);
-							if (cexec->pcs[pc].net->arcs[i].second == cexec->pcs[pc].index)
-								cexec->pcs[pc].p.push_back(cexec->pcs[pc].net->arcs[i].first);
+							oexec->pcs[ready_places[i].second[0]].state &= oexec->pcs[ready_places[i].second[j]].state;
+							oexec->pcs.erase(oexec->pcs.begin() + ready_places[i].second[j]);
 						}
+
+						oexec->pcs[pc].index = ready_places[i].first;
+						oexec->pcs[pc].n.clear();
+						oexec->pcs[pc].p.clear();
+						for (int k = 0; k < oexec->pcs[pc].net->arcs.size(); k++)
+						{
+							if (oexec->pcs[pc].net->arcs[k].first == oexec->pcs[pc].index)
+								oexec->pcs[pc].n.push_back(oexec->pcs[pc].net->arcs[k].second);
+							if (oexec->pcs[pc].net->arcs[k].second == oexec->pcs[pc].index)
+								oexec->pcs[pc].p.push_back(oexec->pcs[pc].net->arcs[k].first);
+						}
+
+						oexec->pcs.sort();
 					}
 				}
+				else
+					exec->done = true;
 			}
 			else
 			{
@@ -929,7 +951,7 @@ void program_execution_space::reset()
 
 void program_execution_space::gen_translation(string name0, petri_net *net0, string name1, petri_net *net1)
 {
-	cout << "Translation from " << name0 << " to " << name1 << endl;
+	//cout << "Translation from " << name0 << " to " << name1 << endl;
 	svector<pair<int, int> > factors;
 	for (smap<sstring, variable>::iterator vi = net0->vars->global.begin(); vi != net0->vars->global.end(); vi++)
 	{
@@ -946,7 +968,7 @@ void program_execution_space::gen_translation(string name0, petri_net *net0, str
 		else if (test.substr(0, name1.length()) == name1)
 			uid = net1->vars->get_uid(test.substr(name1.length()+1));
 
-		cout << "Looking for " << test << "{" << vi->second.uid << "} and found " << net1->vars->get_name(uid) << "{" << uid << "}" << endl;
+		//cout << "Looking for " << test << "{" << vi->second.uid << "} and found " << net1->vars->get_name(uid) << "{" << uid << "}" << endl;
 
 		if (uid != -1)
 			factors.push_back(pair<int, int>(vi->second.uid, uid));
@@ -978,4 +1000,130 @@ minterm program_execution_space::translate(string name0, petri_net *net0, minter
 	}
 	else
 		return t;
+}
+
+/* PROGRAM INDEX AND PROGRAM STATE ARE ONLY USED FOR DEBUGGING */
+
+program_index::program_index()
+{
+	net = NULL;
+}
+
+program_index::program_index(string name, petri_net *net, petri_index index, minterm encoding)
+{
+	this->name = name;
+	this->net = net;
+	this->index = index;
+	this->encoding = encoding;
+}
+
+program_index::program_index(const program_index &i)
+{
+	name = i.name;
+	net = i.net;
+	index = i.index;
+	encoding = i.encoding;
+}
+
+program_index::~program_index()
+{
+	net = NULL;
+}
+
+program_index &program_index::operator=(program_index i)
+{
+	name = i.name;
+	net = i.net;
+	index = i.index;
+	encoding = i.encoding;
+	return *this;
+}
+
+program_index &program_index::operator=(petri_index i)
+{
+	index = i;
+	return *this;
+}
+
+bool operator==(program_index i1, program_index i2)
+{
+	return (i1.name == i2.name && i1.net == i2.net && i1.index == i2.index && i1.encoding.subset(i2.encoding));
+}
+
+bool operator!=(program_index i1, program_index i2)
+{
+	return (i1.name != i2.name || i1.net != i2.net || i1.index != i2.index || !i1.encoding.subset(i2.encoding));
+}
+
+bool operator<(program_index i1, program_index i2)
+{
+	return ((i1.name < i2.name) ||
+			(i1.name == i2.name && i1.net < i2.net) ||
+			(i1.name == i2.name && i1.net == i2.net && i1.index < i2.index) ||
+			(i1.name == i2.name && i1.net == i2.net && i1.index == i2.index && i1.encoding < i2.encoding));
+}
+
+program_state::program_state()
+{
+
+}
+
+program_state::program_state(program_execution *exec)
+{
+	for (int p = 0; p < exec->pcs.size(); p++)
+		state.push_back(program_index(exec->pcs[p].name, exec->pcs[p].net, exec->pcs[p].index, exec->pcs[p].state));
+	state.sort();
+}
+
+program_state::program_state(const program_state &s)
+{
+	state = s.state;
+}
+
+program_state::~program_state()
+{
+
+}
+
+program_state &program_state::operator=(program_execution *exec)
+{
+	for (int p = 0; p < exec->pcs.size(); p++)
+		state.push_back(program_index(exec->pcs[p].name, exec->pcs[p].net, exec->pcs[p].index, exec->pcs[p].state));
+	state.sort();
+	return *this;
+}
+
+program_state &program_state::operator=(program_state s)
+{
+	state = s.state;
+	return *this;
+}
+
+ostream &operator<<(ostream &os, program_state s)
+{
+	os << "{";
+	for (int i = 0; i < s.state.size(); i++)
+	{
+		if (i != 0)
+			os << " ";
+		os << s.state[i].index << "(" << s.state[i].encoding.print(s.state[i].net->vars) << ")";
+	}
+	os << "}";
+
+	return os;
+}
+
+bool operator==(program_state s1, program_state s2)
+{
+	return s1.state == s2.state;
+}
+
+bool operator!=(program_state s1, program_state s2)
+{
+	return s1.state != s2.state;
+}
+
+bool operator<(program_state s1, program_state s2)
+{
+	return s1.state < s2.state;
 }

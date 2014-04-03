@@ -329,7 +329,10 @@ minterm minterm::inverse()
 	for (int i = 0; i < values.size(); i++)
 		result.values.push_back((((values[i] << 1) & v1) | ((values[i] >> 1) & v0)));
 	result.size = size;
-	result.values.back() &= (0xFFFFFFFF << (32 - ((result.size & 0xF)<<1)));
+	if (result.values.size() > 0)
+		result.values.back() &= (0xFFFFFFFF << (32 - ((result.size & 0xF)<<1)));
+	else
+		result.default_value = 0;
 	return result;
 }
 
@@ -644,7 +647,6 @@ minterm minterm::operator()(int i, uint32_t v)
 	return result;
 }
 
-// TODO
 minterm minterm::operator&(minterm s)
 {
 	if (s.size > size)
