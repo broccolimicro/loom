@@ -1,0 +1,6 @@
+[submodule "chp2hse"]
+	path = chp2hse
+	url = git@git.yale.edu:eb823/chp2hse.git
+[submodule "hse2prs"]
+	path = hse2prs
+	url = git@git.yale.edu:eb823/hse2prs.git
