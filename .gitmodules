@@ -1,69 +1,108 @@
 [submodule "bin/prsize"]
 	path = bin/prsize
 	url = git@git.yale.edu:eb823/prsize.git
+	ignore = dirty
 [submodule "bin/prsim"]
 	path = bin/prsim
 	url = git@git.yale.edu:eb823/prsim.git
+	ignore = dirty
 [submodule "bin/hsesim"]
 	path = bin/hsesim
 	url = git@git.yale.edu:eb823/hsesim.git
+	ignore = dirty
 [submodule "bin/hseenc"]
 	path = bin/hseenc
 	url = git@git.yale.edu:eb823/hseenc.git
+	ignore = dirty
 [submodule "bin/hseplot"]
 	path = bin/hseplot
 	url = git@git.yale.edu:eb823/hseplot.git
+	ignore = dirty
 [submodule "lib/parse"]
 	path = lib/parse
 	url = git@git.yale.edu:eb823/parse.git
+	ignore = dirty
 [submodule "lib/parse_prs"]
 	path = lib/parse_prs
 	url = git@git.yale.edu:eb823/parse_prs
+	ignore = dirty
 [submodule "lib/parse_hse"]
 	path = lib/parse_hse
 	url = git@git.yale.edu:eb823/parse_hse
+	ignore = dirty
 [submodule "lib/parse_expression"]
 	path = lib/parse_expression
 	url = git@git.yale.edu:eb823/parse_expression.git
+	ignore = dirty
 [submodule "lib/parse_astg"]
 	path = lib/parse_astg
 	url = git@git.yale.edu:eb823/parse_astg.git
+	ignore = dirty
 [submodule "lib/prs"]
 	path = lib/prs
 	url = git@git.yale.edu:eb823/prs.git
+	ignore = dirty
 [submodule "lib/petri"]
 	path = lib/petri
 	url = git@git.yale.edu:eb823/petri.git
+	ignore = dirty
 [submodule "lib/hse"]
 	path = lib/hse
 	url = git@git.yale.edu:eb823/hse.git
+	ignore = dirty
 [submodule "lib/common"]
 	path = lib/common
 	url = git@git.yale.edu:eb823/common.git
+	ignore = dirty
 [submodule "lib/boolean"]
 	path = lib/boolean
 	url = git@git.yale.edu:eb823/boolean.git
+	ignore = dirty
 [submodule "lib/interpret_boolean"]
 	path = lib/interpret_boolean
 	url = git@git.yale.edu:eb823/interpret_boolean.git
+	ignore = dirty
 [submodule "lib/interpret_hse"]
 	path = lib/interpret_hse
 	url = git@git.yale.edu:eb823/interpret_hse.git
+	ignore = dirty
 [submodule "lib/interpret_prs"]
 	path = lib/interpret_prs
 	url = git@git.yale.edu:eb823/interpret_prs.git
+	ignore = dirty
 [submodule "lib/ucs"]
 	path = lib/ucs
 	url = git@git.yale.edu:eb823/ucs.git
+	ignore = dirty
 [submodule "lib/parse_ucs"]
 	path = lib/parse_ucs
 	url = git@git.yale.edu:eb823/parse_ucs.git
+	ignore = dirty
 [submodule "lib/interpret_ucs"]
 	path = lib/interpret_ucs
 	url = git@git.yale.edu:eb823/interpret_ucs.git
+	ignore = dirty
 [submodule "lib/parse_dot"]
 	path = lib/parse_dot
 	url = git@git.yale.edu:eb823/parse_dot.git
+	ignore = dirty
 [submodule "lib/parse_chp"]
 	path = lib/parse_chp
 	url = git@git.yale.edu:eb823/parse_chp.git
+	ignore = dirty
+[submodule "bin/chpsim"]
+	path = bin/chpsim
+	url = git@git.yale.edu:eb823/chpsim.git
+	ignore = dirty
+[submodule "lib/arithmetic"]
+	path = lib/arithmetic
+	url = git@git.yale.edu:eb823/arithmetic.git
+	ignore = dirty
+[submodule "lib/chp"]
+	path = lib/chp
+	url = git@git.yale.edu:eb823/chp.git
+	ignore = dirty
+[submodule "lib/interpret_arithmetic"]
+	path = lib/interpret_arithmetic
+	url = git@git.yale.edu:eb823/interpret_arithmetic.git
+	ignore = dirty
