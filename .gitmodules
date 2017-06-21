@@ -26,10 +26,6 @@
 	path = lib/parse_prs
 	url = git@git.yale.edu:eb823/parse_prs
 	ignore = dirty
-[submodule "lib/parse_hse"]
-	path = lib/parse_hse
-	url = git@git.yale.edu:eb823/parse_hse
-	ignore = dirty
 [submodule "lib/parse_expression"]
 	path = lib/parse_expression
 	url = git@git.yale.edu:eb823/parse_expression.git
