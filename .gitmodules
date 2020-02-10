@@ -108,3 +108,6 @@
 [submodule "old/chp2hse"]
 	path = old/chp2hse
 	url = https://github.com/nbingham1/chp2hse.git
+[submodule "lib/interpret_chp"]
+	path = lib/interpret_chp
+	url = https://github.com/nbingham1/interpret_chp.git
