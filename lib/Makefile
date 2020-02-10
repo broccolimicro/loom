@@ -9,7 +9,7 @@ libs:
 	$(MAKE) -s $(MAKE_FLAGS) -C prs
 	$(MAKE) -s $(MAKE_FLAGS) -C petri
 	$(MAKE) -s $(MAKE_FLAGS) -C hse
-	$(MAKE) -s $(MAKE_FLAGS) -C chp
+	#$(MAKE) -s $(MAKE_FLAGS) -C chp
 	$(MAKE) -s $(MAKE_FLAGS) -C ucs
 
 parse:
