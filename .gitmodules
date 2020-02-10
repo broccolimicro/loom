@@ -102,3 +102,9 @@
 	path = lib/interpret_arithmetic
 	url = git@github.com:nbingham1/interpret_arithmetic.git
 	ignore = dirty
+[submodule "old/hse2prs"]
+	path = old/hse2prs
+	url = https://github.com/nbingham1/hse2prs.git
+[submodule "old/chp2hse"]
+	path = old/chp2hse
+	url = https://github.com/nbingham1/chp2hse.git
