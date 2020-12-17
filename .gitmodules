@@ -113,4 +113,7 @@
 	url = https://github.com/nbingham1/interpret_chp.git
 [submodule "bin/gated"]
 	path = bin/gated
-	url = git@github.com:nbingham1/gated.git
+	url = https://github.com/nbingham1/gated.git
+[submodule "lib/synthesize"]
+	path = lib/synthesize
+	url = https://github.com/nbingham1/synthesize.git
