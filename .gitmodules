@@ -119,4 +119,4 @@
 	url = https://github.com/nbingham1/synthesize.git
 [submodule "bin/bubble"]
 	path = bin/bubble
-	url = git@github.com:nbingham1/bubble.git
+	url = https://github.com/nbingham1/bubble.git
