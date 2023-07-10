@@ -9,6 +9,8 @@ of each tool:
  - [100%] [**hseplot**](https://github.com/nbingham1/hseplot/) renders state graphs, petri nets, and signal transition graphs.
  - [100%] [**hsesim**](https://github.com/nbingham1/hsesim/) is a simulator for Handshaking Expansions which can efficiently elaborate the whole state space of a circuit for input to hseenc.
  - [100%] [**prsim**](https://github.com/nbingham1/prsim/) is a simulator for Production Rules.
+ - [ 80%] [**bubble**](https://github.com/nbingham1/bubble/) for bubble reshuffling Production Rules.
+ - [ 80%] [**gated**](https://github.com/nbingham1/gated/) a simple logic synthesis tool to convert arithmetic expressions to boolean logic.
  - [ 20%] [**prsize**](https://github.com/nbingham1/prsize/) is an automatic sizing program for Production Rules.
 
 ## License
