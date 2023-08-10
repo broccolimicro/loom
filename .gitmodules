@@ -1,116 +1,116 @@
 [submodule "bin/prsize"]
 	path = bin/prsize
-	url = https://github.com/nbingham1/prsize.git
+	url = git@broccolimicro.io:Broccoli/prsize.git
 	ignore = dirty
 [submodule "bin/prsim"]
 	path = bin/prsim
-	url = https://github.com/nbingham1/prsim.git
+	url = git@broccolimicro.io:Broccoli/prsim.git
 	ignore = dirty
 [submodule "bin/hsesim"]
 	path = bin/hsesim
-	url = https://github.com/nbingham1/hsesim.git
+	url = git@broccolimicro.io:Broccoli/hsesim.git
 	ignore = dirty
 [submodule "bin/hseenc"]
 	path = bin/hseenc
-	url = https://github.com/nbingham1/hseenc.git
+	url = git@broccolimicro.io:Broccoli/hseenc.git
 	ignore = dirty
 [submodule "bin/hseplot"]
 	path = bin/hseplot
-	url = https://github.com/nbingham1/hseplot.git
+	url = git@broccolimicro.io:Broccoli/hseplot.git
 	ignore = dirty
 [submodule "lib/parse"]
 	path = lib/parse
-	url = https://github.com/nbingham1/parse.git
+	url = git@broccolimicro.io:Broccoli/parse.git
 	ignore = dirty
 [submodule "lib/parse_prs"]
 	path = lib/parse_prs
-	url = https://github.com/nbingham1/parse_prs
+	url = git@broccolimicro.io:Broccoli/parse_prs
 	ignore = dirty
 [submodule "lib/parse_expression"]
 	path = lib/parse_expression
-	url = https://github.com/nbingham1/parse_expression.git
+	url = git@broccolimicro.io:Broccoli/parse_expression.git
 	ignore = dirty
 [submodule "lib/parse_astg"]
 	path = lib/parse_astg
-	url = https://github.com/nbingham1/parse_astg.git
+	url = git@broccolimicro.io:Broccoli/parse_astg.git
 	ignore = dirty
 [submodule "lib/prs"]
 	path = lib/prs
-	url = https://github.com/nbingham1/prs.git
+	url = git@broccolimicro.io:Broccoli/prs.git
 	ignore = dirty
 [submodule "lib/petri"]
 	path = lib/petri
-	url = https://github.com/nbingham1/petri.git
+	url = git@broccolimicro.io:Broccoli/petri.git
 	ignore = dirty
 [submodule "lib/hse"]
 	path = lib/hse
-	url = https://github.com/nbingham1/hse.git
+	url = git@broccolimicro.io:Broccoli/hse.git
 	ignore = dirty
 [submodule "lib/common"]
 	path = lib/common
-	url = https://github.com/nbingham1/common.git
+	url = git@broccolimicro.io:Broccoli/common.git
 	ignore = dirty
 [submodule "lib/boolean"]
 	path = lib/boolean
-	url = https://github.com/nbingham1/boolean.git
+	url = git@broccolimicro.io:Broccoli/boolean.git
 	ignore = dirty
 [submodule "lib/interpret_boolean"]
 	path = lib/interpret_boolean
-	url = https://github.com/nbingham1/interpret_boolean.git
+	url = git@broccolimicro.io:Broccoli/interpret_boolean.git
 	ignore = dirty
 [submodule "lib/interpret_hse"]
 	path = lib/interpret_hse
-	url = https://github.com/nbingham1/interpret_hse.git
+	url = git@broccolimicro.io:Broccoli/interpret_hse.git
 	ignore = dirty
 [submodule "lib/interpret_prs"]
 	path = lib/interpret_prs
-	url = https://github.com/nbingham1/interpret_prs.git
+	url = git@broccolimicro.io:Broccoli/interpret_prs.git
 	ignore = dirty
 [submodule "lib/ucs"]
 	path = lib/ucs
-	url = https://github.com/nbingham1/ucs.git
+	url = git@broccolimicro.io:Broccoli/ucs.git
 	ignore = dirty
 [submodule "lib/parse_ucs"]
 	path = lib/parse_ucs
-	url = https://github.com/nbingham1/parse_ucs.git
+	url = git@broccolimicro.io:Broccoli/parse_ucs.git
 	ignore = dirty
 [submodule "lib/interpret_ucs"]
 	path = lib/interpret_ucs
-	url = https://github.com/nbingham1/interpret_ucs.git
+	url = git@broccolimicro.io:Broccoli/interpret_ucs.git
 	ignore = dirty
 [submodule "lib/parse_dot"]
 	path = lib/parse_dot
-	url = https://github.com/nbingham1/parse_dot.git
+	url = git@broccolimicro.io:Broccoli/parse_dot.git
 	ignore = dirty
 [submodule "lib/parse_chp"]
 	path = lib/parse_chp
-	url = https://github.com/nbingham1/parse_chp.git
+	url = git@broccolimicro.io:Broccoli/parse_chp.git
 	ignore = dirty
 [submodule "bin/chpsim"]
 	path = bin/chpsim
-	url = https://github.com/nbingham1/chpsim.git
+	url = git@broccolimicro.io:Broccoli/chpsim.git
 	ignore = dirty
 [submodule "lib/arithmetic"]
 	path = lib/arithmetic
-	url = https://github.com/nbingham1/arithmetic.git
+	url = git@broccolimicro.io:Broccoli/arithmetic.git
 	ignore = dirty
 [submodule "lib/chp"]
 	path = lib/chp
-	url = https://github.com/nbingham1/chp.git
+	url = git@broccolimicro.io:Broccoli/chp.git
 	ignore = dirty
 [submodule "lib/interpret_arithmetic"]
 	path = lib/interpret_arithmetic
-	url = https://github.com/nbingham1/interpret_arithmetic.git
+	url = git@broccolimicro.io:Broccoli/interpret_arithmetic.git
 	ignore = dirty
 [submodule "lib/interpret_chp"]
 	path = lib/interpret_chp
-	url = https://github.com/nbingham1/interpret_chp.git
+	url = git@broccolimicro.io:Broccoli/interpret_chp.git
 [submodule "bin/gated"]
 	path = bin/gated
-	url = https://github.com/nbingham1/gated.git
+	url = git@broccolimicro.io:Broccoli/gated.git
 [submodule "lib/synthesize"]
 	path = lib/synthesize
-	url = https://github.com/nbingham1/synthesize.git
+	url = git@broccolimicro.io:Broccoli/synthesize.git
 [submodule "bin/bubble"]
 	path = bin/bubble
-	url = https://github.com/nbingham1/bubble.git
+	url = git@broccolimicro.io:Broccoli/bubble.git
