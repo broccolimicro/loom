@@ -108,9 +108,6 @@
 [submodule "bin/gated"]
 	path = bin/gated
 	url = git@broccolimicro.io:Broccoli/gated.git
-[submodule "lib/synthesize"]
-	path = lib/synthesize
-	url = git@broccolimicro.io:Broccoli/synthesize.git
 [submodule "bin/bubble"]
 	path = bin/bubble
 	url = git@broccolimicro.io:Broccoli/bubble.git
