@@ -28,6 +28,21 @@ make
 
 ## Example
 
+**stream_complete.hse**
+```
+(_Lr+,L.r-; [L.e];
+*[_Lr-; L.r+; [~L.e]; _Lr+; L.r-; [L.e]])'1 ||
+
+_Rr+,R.r-,L.e+,v0-,v1+,v2+; [R.e&~L.r];
+*[[L.e & R.e & L.r]; _Rr-; R.r+; v2-; [~R.e]; _Rr+; R.r-; v0+; v1-; v2+;
+  [L.e & R.e & L.r]; _Rr-; R.r+; L.e-; [~R.e]; _Rr+; R.r-; v1+; v0-;
+  [~L.r]; L.e+
+ ]||
+
+(R.e+; [~R.r];
+*[[R.r]; R.e-; [~R.r]; R.e+])'1
+```
+
 ![stream](https://github.com/broccolimicro/haystack/assets/8902287/55b7a2dd-d651-4169-a9f9-57c9241a6687)
 
 ## License
