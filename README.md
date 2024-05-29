@@ -47,9 +47,9 @@ _Rr+,R.r-,L.e+,v0-,v1+,v2+; [R.e&~L.r];
 
 ## License
 
-Licensed by Cornell University under the MIT License.
+Licensed by Cornell University under the GNU GPL Version 3 License.
 
 Written by Ned Bingham.
 Copyright © 2020 Cornell University.
 
-A copy of the MIT License may be found in COPYRIGHT.
+A copy of the GNU GPL Version 3 License may be found in LICENSE.
