@@ -26,6 +26,44 @@ cd ../bin
 make
 ```
 
+## Language Definitions
+[Quasi-Delay Insensitive Circuits](https://en.wikipedia.org/wiki/Quasi-delay-insensitive_circuit)
+
+### Communicating hardware processes (CHP)
+
+**Communicating hardware processes (CHP)** is a program notation for QDI circuits inspired by Tony Hoare's communicating sequential processes (CSP) and Edsger W. Dijkstra's guarded commands. The syntax is described below in descending precedence.
+
+* **Skip** `skip` does nothing. It simply acts as a placeholder for pass-through conditions.
+* **Dataless assignment** `a+` sets the voltage of the node `a` to Vdd while `a-` sets the voltage of `a` to GND.
+* **Assignment** `a := e` evaluates the expression `e` then assigns the resulting value to the ''variable'' `a`.
+* **Send** `X!e` evaluates the expression `e` then sends the resulting value across the ''channel'' `X`. `X!` is a dataless send.
+* **Receive** `X?a` waits until there is a valid value on the ''channel'' `X` then assigns that value to the ''variable'' `a`. `X?` is a dataless receive.
+* **Probe** `#X` returns the value waiting on the ''channel'' `X` without executing the receive.
+* **Simultaneous composition** `S * T` executes the ''process fragments'' `S` and `T` at the same time.
+* **Internal parallel composition** `S, T` executes the ''process fragments'' `S` and `T` in any order.
+* **Sequential composition** `S; T` executes the ''process fragments'' `S` followed by `T`.
+* **Parallel composition** `S || T` executes the ''process fragments'' `S` and `T` in any order. This is functionally equivalent to internal parallel composition but with lower precedence.
+* **Deterministic selection** `[G0 -> S0[]G1 -> S1[]...[]Gn -> Sn]` implements choice in which `G0,G1,...,Gn` are ''guards'' which are dataless [[boolean expression]]s or data expressions that are implicitly cast using a validity check and `S0,S1,...,Sn` are ''process fragments''. Deterministic selection waits until one of the guards evaluates to Vdd, then proceeds to execute the guard's associated ''process fragment''. If two guards evaluate to Vdd during the same window of time, an error occurs. `[G]` is shorthand for `[G -> skip]` and simply implements a wait.
+* **Non-deterministic selection** `[G0 -> S0:G1 -> S1:...:Gn -> Sn]` is the same as deterministic selection except that more than one guard is allowed to evaluate to Vdd. Only the ''process fragment'' associated with the first guard to evaluate to Vdd is executed.
+* **Repetition** `*[G0 -> S0[]G1 -> S1[]...[]Gn -> Sn]` or `*[G0 -> S0:G1 -> S1:...:Gn -> Sn]` is similar to the associated selection statements except that the action is repeated while any guard evaluates to Vdd. `*[S]` is shorthand for `*[Vdd -> S]` and implements infinite repetition.
+
+### Hand-shaking expansions (HSE)
+
+**Hand-shaking expansions (HSE)** are a subset of CHP in which channel
+protocols are expanded into guards and assignments and only dataless operators
+are permitted. This is an intermediate representation toward the synthesis of
+QDI circuits.
+
+### Production rule set (PRS)
+A production rule specifies either the pull-up or pull-down network of a gate
+in a QDI circuit and follows the syntax `G -> S` in which `G` is a **guard** as
+described above and `S` is one or more **dataless assignments** in parallel as
+described above. In states not covered by the guards, it is assumed that the
+assigned nodes remain at their previous states. This can be achieved using a
+staticizor of either weak or combinational feedback. The most basic example is
+the C-element in which the guards do not cover the states where the two inputs
+are not the same value.
+
 ## Example
 
 **stream_complete.hse**
