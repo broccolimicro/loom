@@ -83,6 +83,46 @@ _Rr+,R.r-,L.e+,v0-,v1+,v2+; [R.e&~L.r];
 
 ![stream](https://github.com/broccolimicro/haystack/assets/8902287/55b7a2dd-d651-4169-a9f9-57c9241a6687)
 
+**add_complete.hse**
+```
+_Sf+,_St+,_Cof+,_Cot+,S.f-,S.t-,Co.f-,Co.t-,ABCi.e+;
+[S.e&Co.e&~A.f&~A.t&~B.f&~B.t&~Ci.f&~Ci.t];
+*[
+	(
+		[	 S.e & (A.t & B.f & Ci.f | A.f & B.t & Ci.f |
+		          A.f & B.f & Ci.t | A.t & B.t & Ci.t) -> _St-; S.t+ 
+		[] S.e & (A.t & B.t & Ci.f | A.t & B.f & Ci.t |
+		          A.f & B.t & Ci.t | A.f & B.f & Ci.f) -> _Sf-; S.f+
+		] ||
+		[  Co.e & (A.t & B.t & Ci.f | A.t & B.f & Ci.t |
+		           A.f & B.t & Ci.t | A.t & B.t & Ci.t) -> _Cot-; Co.t+
+		[] Co.e & (A.t & B.f & Ci.f | A.f & B.t & Ci.f |
+		           A.f & B.f & Ci.t | A.f & B.f & Ci.f) -> _Cof-; Co.f+
+		]
+	); ABCi.e-; [~A.t & ~A.f & ~B.t & ~B.f & ~Ci.t & ~Ci.f];
+	(
+		[~S.e -> _St+;S.t-||_Sf+;S.f-] ||
+		[~Co.e -> _Cot+;Co.t-||_Cof+;Co.f-]	
+	);
+	ABCi.e+
+] || 
+
+(S.e+; [~S.f&~S.t]; *[[S.t | S.f]; S.e-; [~S.t & ~S.f]; S.e+] ||
+
+Co.e+; [~Co.f&~Co.t]; *[[Co.t | Co.f]; Co.e-; [~Co.t & ~Co.f]; Co.e+] ||
+
+_Af+,_At+,A.f-,A.t-; [ABCi.e]; 
+*[[1->_At-;A.t+:1->_Af-;A.f+]; [~ABCi.e]; (_At+;A.t-||_Af+;A.f-); [ABCi.e]] ||
+
+_Bf+,_Bt+,B.f-,B.t-; [ABCi.e]; 
+*[[1->_Bt-;B.t+:1->_Bf-;B.f+]; [~ABCi.e]; (_Bt+;B.t-||_Bf+;B.f-); [ABCi.e]] ||
+
+_Cif+,_Cit+,Ci.f-,Ci.t-; [ABCi.e]; 
+*[[1->_Cit-;Ci.t+:1->_Cif-;Ci.f+]; [~ABCi.e]; (_Cit+;Ci.t-||_Cif+;Ci.f-); [ABCi.e]])'1
+```
+
+![haystack](https://github.com/broccolimicro/haystack/assets/8902287/ccb2403a-81f4-4797-a99e-6f4db02ab826)
+
 ## License
 
 Licensed by Cornell University under GNU GPL v3.
