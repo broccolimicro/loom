@@ -111,3 +111,12 @@
 [submodule "bin/bubble"]
 	path = bin/bubble
 	url = git@github.com:broccolimicro/bubble.git
+[submodule "googletest"]
+	path = googletest
+	url = git@github.com:google/googletest.git
+[submodule "lib/parse_spice"]
+	path = lib/parse_spice
+	url = git@github.com:broccolimicro/parse_spice.git
+[submodule "lib/interpret_spice"]
+	path = lib/interpret_spice
+	url = git@github.com:broccolimicro/interpret_spice.git

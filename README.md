@@ -26,6 +26,14 @@ cd ../bin
 make
 ```
 
+To prepare googletest
+```
+cd googletest
+mkdir build
+cmake .. -DBUILD_GMOCK=OFF
+make
+```
+
 ## Language Definitions
 [Quasi-Delay Insensitive Circuits](https://en.wikipedia.org/wiki/Quasi-delay-insensitive_circuit)
 
