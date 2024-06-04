@@ -28,6 +28,50 @@ interpret:
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_hse
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_ucs
 
+test:
+	$(MAKE) -s $(MAKE_FLAGS) -C common test
+	$(MAKE) -s $(MAKE_FLAGS) -C boolean test
+	$(MAKE) -s $(MAKE_FLAGS) -C arithmetic test
+	$(MAKE) -s $(MAKE_FLAGS) -C prs test
+	$(MAKE) -s $(MAKE_FLAGS) -C petri test
+	$(MAKE) -s $(MAKE_FLAGS) -C hse test
+	$(MAKE) -s $(MAKE_FLAGS) -C chp test
+	$(MAKE) -s $(MAKE_FLAGS) -C ucs test
+	$(MAKE) -s $(MAKE_FLAGS) -C parse test
+	$(MAKE) -s $(MAKE_FLAGS) -C parse_expression test
+	$(MAKE) -s $(MAKE_FLAGS) -C parse_prs test
+	$(MAKE) -s $(MAKE_FLAGS) -C parse_astg test
+	$(MAKE) -s $(MAKE_FLAGS) -C parse_dot test
+	$(MAKE) -s $(MAKE_FLAGS) -C parse_chp test
+	$(MAKE) -s $(MAKE_FLAGS) -C parse_ucs test
+	$(MAKE) -s $(MAKE_FLAGS) -C interpret_boolean test
+	$(MAKE) -s $(MAKE_FLAGS) -C interpret_arithmetic test
+	$(MAKE) -s $(MAKE_FLAGS) -C interpret_prs test
+	$(MAKE) -s $(MAKE_FLAGS) -C interpret_hse test
+	$(MAKE) -s $(MAKE_FLAGS) -C interpret_ucs test
+
+check:	
+	./common/test
+	./boolean/test
+	./arithmetic/test
+	./prs/test
+	./petri/test
+	./hse/test
+	./chp/test
+	./ucs/test
+	./parse/test
+	./parse_expression/test
+	./parse_prs/test
+	./parse_astg/test
+	./parse_dot/test
+	./parse_chp/test
+	./parse_ucs/test
+	./interpret_boolean/test
+	./interpret_arithmetic/test
+	./interpret_prs/test
+	./interpret_hse/test
+	./interpret_ucs/test
+
 clean:
 	$(MAKE) -s $(MAKE_FLAGS) -C common clean
 	$(MAKE) -s $(MAKE_FLAGS) -C boolean clean

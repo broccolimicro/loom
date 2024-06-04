@@ -8,6 +8,26 @@ all:
 	$(MAKE) -s $(MAKE_FLAGS) -C gated
 	$(MAKE) -s $(MAKE_FLAGS) -C prsize
 
+test:
+	$(MAKE) -s $(MAKE_FLAGS) -C hseenc test
+	$(MAKE) -s $(MAKE_FLAGS) -C hsesim test
+	$(MAKE) -s $(MAKE_FLAGS) -C chpsim test
+	$(MAKE) -s $(MAKE_FLAGS) -C hseplot test
+	$(MAKE) -s $(MAKE_FLAGS) -C prsim test
+	$(MAKE) -s $(MAKE_FLAGS) -C bubble test
+	$(MAKE) -s $(MAKE_FLAGS) -C gated test
+	$(MAKE) -s $(MAKE_FLAGS) -C prsize test
+
+check:
+	./hseenc/test
+	./hsesim/test
+	./chpsim/test
+	./hseplot/test
+	./prsim/test
+	./bubble/test
+	./gated/test
+	./prsize/test
+
 install:
 	cp hseenc/hseenc ${ACT_HOME}/bin/hseenc
 	cp hsesim/hsesim ${ACT_HOME}/bin/hsesim
