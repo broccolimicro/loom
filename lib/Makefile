@@ -16,6 +16,7 @@ parse:
 	$(MAKE) -s $(MAKE_FLAGS) -C parse
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_expression
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_prs
+	$(MAKE) -s $(MAKE_FLAGS) -C parse_spice
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_astg
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_dot
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_chp
@@ -41,6 +42,7 @@ test:
 	$(MAKE) -s $(MAKE_FLAGS) -C parse test
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_expression test
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_prs test
+	$(MAKE) -s $(MAKE_FLAGS) -C parse_spice test
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_astg test
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_dot test
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_chp test
@@ -64,6 +66,7 @@ check:
 	./parse/test
 	./parse_expression/test
 	./parse_prs/test
+	./parse_spice/test
 	./parse_astg/test
 	./parse_dot/test
 	./parse_chp/test
@@ -87,6 +90,7 @@ clean:
 	$(MAKE) -s $(MAKE_FLAGS) -C parse clean
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_expression clean
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_prs clean
+	$(MAKE) -s $(MAKE_FLAGS) -C parse_spice clean
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_astg clean
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_dot clean
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_chp clean
