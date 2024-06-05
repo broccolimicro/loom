@@ -27,6 +27,7 @@ interpret:
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_prs
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_hse
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_ucs
+	$(MAKE) -s $(MAKE_FLAGS) -C interpret_chp
 
 test:
 	$(MAKE) -s $(MAKE_FLAGS) -C common test
@@ -49,6 +50,7 @@ test:
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_prs test
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_hse test
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_ucs test
+	$(MAKE) -s $(MAKE_FLAGS) -C interpret_chp test
 
 check:	
 	./common/test
@@ -71,6 +73,7 @@ check:
 	./interpret_prs/test
 	./interpret_hse/test
 	./interpret_ucs/test
+	./interpret_chp/test
 
 clean:
 	$(MAKE) -s $(MAKE_FLAGS) -C common clean
@@ -93,4 +96,5 @@ clean:
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_prs clean
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_hse clean
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_ucs clean
+	$(MAKE) -s $(MAKE_FLAGS) -C interpret_chp clean
 	
