@@ -2,22 +2,6 @@
 	path = bin/prsize
 	url = https://github.com/broccolimicro/prsize.git
 	ignore = dirty
-[submodule "bin/prsim"]
-	path = bin/prsim
-	url = https://github.com/broccolimicro/prsim.git
-	ignore = dirty
-[submodule "bin/hsesim"]
-	path = bin/hsesim
-	url = https://github.com/broccolimicro/hsesim.git
-	ignore = dirty
-[submodule "bin/hseenc"]
-	path = bin/hseenc
-	url = https://github.com/broccolimicro/hseenc.git
-	ignore = dirty
-[submodule "bin/hseplot"]
-	path = bin/hseplot
-	url = https://github.com/broccolimicro/hseplot.git
-	ignore = dirty
 [submodule "lib/parse"]
 	path = lib/parse
 	url = https://github.com/broccolimicro/parse.git
@@ -86,10 +70,6 @@
 	path = lib/parse_chp
 	url = https://github.com/broccolimicro/parse_chp.git
 	ignore = dirty
-[submodule "bin/chpsim"]
-	path = bin/chpsim
-	url = https://github.com/broccolimicro/chpsim.git
-	ignore = dirty
 [submodule "lib/arithmetic"]
 	path = lib/arithmetic
 	url = https://github.com/broccolimicro/arithmetic.git
@@ -108,9 +88,6 @@
 [submodule "bin/gated"]
 	path = bin/gated
 	url = https://github.com/broccolimicro/gated.git
-[submodule "bin/bubble"]
-	path = bin/bubble
-	url = https://github.com/broccolimicro/bubble.git
 [submodule "googletest"]
 	path = googletest
 	url = https://github.com/google/googletest.git
