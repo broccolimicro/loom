@@ -117,3 +117,6 @@
 [submodule "lib/parse_spice"]
 	path = lib/parse_spice
 	url = https://github.com/broccolimicro/parse_spice.git
+[submodule "bin/ckt"]
+	path = bin/ckt
+	url = https://github.com/broccolimicro/ckt.git
