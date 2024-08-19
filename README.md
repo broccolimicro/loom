@@ -1,18 +1,24 @@
 # Haystack
 
 Haystack is a collection of tools for the design and verification of
-asynchronous circuits. Not all of the tools are complete. The documentation for
-each tool may be found in that tool's git repository. Below lists the state of
-each tool:
+asynchronous circuits. Not all of the tools are complete.
 
- - [  2%] [**chpsim**](https://github.com/broccolimicro/chpsim/) is a simulator for Communicating Hardware Processes.
- - [ 50%] [**hseenc**](https://github.com/broccolimicro/hseenc/) finds state space conflicts and helps to fix them with state variable assignments.
- - [100%] [**hseplot**](https://github.com/broccolimicro/hseplot/) renders state graphs, petri nets, and signal transition graphs.
- - [100%] [**hsesim**](https://github.com/broccolimicro/hsesim/) is a simulator for Handshaking Expansions which can efficiently elaborate the whole state space of a circuit for input to hseenc.
- - [100%] [**prsim**](https://github.com/broccolimicro/prsim/) is a simulator for Production Rules.
- - [100%] [**bubble**](https://github.com/broccolimicro/bubble/) for bubble reshuffling Production Rules.
- - [ 80%] [**gated**](https://github.com/broccolimicro/gated/) a simple logic synthesis tool to convert arithmetic expressions to boolean logic.
- - [ 20%] [**prsize**](https://github.com/broccolimicro/prsize/) is an automatic sizing program for Production Rules.
+## Status of Tools
+
+* **CHP Simulator (50%)** Simulate channel actions and multi-bit operations in a control flow language.
+* **Process Decomposition (0%)** Break large processes up into pipeline stages.
+* **Handshake Expansion (0%)** Expand channel actions into handshake protocols and multi-bit operations into transitions on wires.
+* **Handshake Reshuffling (0%)** Reorder transitions to simplify the state space, simplify implementation, and improve performance.
+* **HSE Simulator (100%)** Simulate transitions on wires in a control flow language.
+* **State Elaboration (100%)** Explore every state and record the state space.
+* **State Variable Insertion (80%)** Deconflict states by inserting transitions. This results in a complete state encoding.
+* **Guard Weakening (100%)** Generate production rules that implement that state space.
+* **Bubble Reshuffling (90%)** Move inverters off of isochronic forks to protect the isochronic fork assumption. This algorithm is no longer needed as this process is taken care of by state variable insertion now. However, this is left in to help with manual compilation.
+* **Automated Sizing (40%)** Size the transistors in a production rule set.
+* **Cell Generation (0%)** Break up the production rules into cells in preparation for cell layout.
+* **PR Simulator (100%)** Digital simulation of the gates and wires as represented by production rules.
+* **Netlist Synthesis (0%)** Generate a spice netlist from a production rule set.
+* **Graph Rendering (100%)** Render the petri-nets representing CHP or HSE processes.
 
 ## Build
 
