@@ -9,7 +9,7 @@ asynchronous circuits. Not all of the tools are complete.
 3. [Language Reference](#reference)
 4. [Usage](#usage)
 	1. [Circuit Synthesis](#synthesis)
-	2. [Simulation](#simulation)
+	2. [Circuit Simulation](#simulation)
 	3. [Visualization](#visualization)
 5. [Examples](#examples)
 6. [Syntax Documentation](#syntax)
