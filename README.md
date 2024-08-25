@@ -3,6 +3,21 @@
 Haystack is a collection of tools for the design and verification of
 asynchronous circuits. Not all of the tools are complete.
 
+## Table of Contents
+1. [Status of Tools](#status)
+2. [Build](#build)
+3. [Language Reference](#reference)
+4. [Usage](#usage)
+	1. [Circuit Synthesis](#synthesis)
+	2. [Simulation](#simulation)
+	3. [Visualization](#visualization)
+5. [Examples](#examples)
+6. [Syntax Documentation](#syntax)
+	1. [Internal Representation of State](#state)
+	2. [Reset Behavior](#reset)
+	3. [Limited Non-Proper Nesting](#nesting)
+
+<a name="status"></a>
 ## Status of Tools
 
 * **CHP Simulator (50%)** Simulate channel actions and multi-bit operations in a control flow language.
@@ -34,6 +49,7 @@ asynchronous circuits. Not all of the tools are complete.
 * **CHP and HSE Visualization (100%)** Render the petri-nets representing CHP or HSE processes.
 * **PRS Visualization (0%)** Render transistor diagrams of the production rule set.
 
+<a name="build"></a>
 ## Build
 
 Haystack is built in two phases: libraries then binaries.
@@ -54,6 +70,7 @@ cmake .. -DBUILD_GMOCK=OFF
 make
 ```
 
+<a name="reference"></a>
 ## Language Reference
 [Quasi-Delay Insensitive Circuits](https://en.wikipedia.org/wiki/Quasi-delay-insensitive_circuit)
 
@@ -96,6 +113,7 @@ the following syntax: `G0 -> S {G1}`. This will block the production rule from
 firing as long as G1 evaluates to GND. Instabilities on `G1` do not propagate
 out into the rest of the circuit.
 
+<a name="usage"></a>
 ## Usage
 
 **Usage:** `ckt [options] <command> [arguments]`
@@ -127,6 +145,7 @@ R.f-,R.t-,L.e+; [R.e&~L.f&~L.t];
 R.e+; [~R.f&~R.t]; *[[R.f|R.t]; R.e-; [~R.f&~R.t]; R.e+])'1
 ```
 
+<a name="synthesis"></a>
 ### Circuit Synthesis
 
 Synthesize the production rules that implement the behavioral description.
@@ -268,6 +287,7 @@ p19 1->L.t'1-/9
 .end
 ```
 
+<a name="simulation"></a>
 ### Circuit Simulation
 
 **Usage:** `ckt sim [options] <ckt-file> [sim-file]`
@@ -477,6 +497,7 @@ transitions before your current step will still be remembered.
 8       T18.0   ~R.e'1&~R.f'1&~R.t'1 -> R.e'1+
 ```
 
+<a name="visualization"></a>
 ### Visualization
 
 Create visual representations of the circuit or behavior.
@@ -501,6 +522,7 @@ Use this command to show the labels associated with every place, transition, and
 Use the following command to show the elaborated state space of the complete state coding.
 ```ckt plot -p wchb1b_complete.astg -o wchb1b.png```
 
+<a name="examples"></a>
 ## Examples
 
 The following is a set of simple examples to get you started.
@@ -593,9 +615,9 @@ Ci.f-,Ci.t-; [ABCi.e];
  ])'1
 ```
 
+<a name="syntax"></a>
 ## Syntax Documentation
-
-What is HSE? 
+ 
 HSE stands for Handshaking Expansions. It is a step in between Communicating 
 Hardware Processes (CHP) and Production Rules (PRs). Its a control flow 
 language where all actions are limited to 1 bit boolean. There are only a few 
@@ -709,7 +731,8 @@ While one of the guards `(G0,G1,...,Gn)` is true, execute the associated process
 If the guard is not specified, then the guard is assumed to be '1'. This
 is shorthand for a loop that will never exit.
 
-## Internal Representation of State
+<a name="state"></a>
+### Internal Representation of State
 
 The state of a node is represented by four basic values `(-,0,1,X)`. `-` means
 that the node is stable at either GND or VDD but the process doesn't know
@@ -731,7 +754,8 @@ If a node has a value of `X`, then it will propagate as expected. For example
 in `b-; [a]; b+` if the node `a` is unstable, then after `b+`, the node `b` will
 also be unstable.
 
-## Isochronic Regions
+<a name="regions"></a>
+### Isochronic Regions
 
 It has been shown that circuits that are entirely delay insensitive (make no
 timing assumptions) aren't that useful. One of the weakest timing assumptions
@@ -768,29 +792,8 @@ process on the left knows that `a` was `0` but that it will change to `1`. It
 just doesn't know when. Meanwhile in the process on the right, the value of `a`
 will start at `-` and transition to `1` after the assignment `a+`.
 
-## Non-Properly Nested HSE
-
-Note: Asynchronous circuits are ultimately sets of intertwined, highly parallel
-sequences of events. The most basic way to visualize this is called a petri
-net. Handshaking expansions are a way to represent that structure in a way that
-is linearized in a human readable linguistic format. However, there are also
-valid handshaking expansions that are not representable in a linguistic format.
-These are called 'non-properly nested'. The tools have some support for these
-types of HSE, however it is not entirely tested. They support an input format
-for these HSE through the graphviz dot specification. To get an example of
-this format, execute the following command on an hse:
-
-```
-hsesim file.hse -g file.dot
-```
-
-If you want to see what this graph looks like then execute this:
-
-```
-dot -Tpng file.dot > file.png
-```
-
-## Reset Behavior
+<a name="reset"></a>
+### Reset Behavior
 
 Because reset behavior can be a complex thing that has a multitude of timing
 assumptions and different possible implementations, hsesim has a very basic
@@ -828,7 +831,16 @@ and the final hse after the reset behavior has been processed looks like this:
 *[[R.f|R.t]; R.e-; [~R.f&~R.t]; R.e+])'1
 ```
 
-## Limited Non-Proper Nesting
+<a name="nesting"></a>
+### Limited Non-Proper Nesting
+
+Asynchronous circuits are ultimately sets of intertwined, highly parallel
+sequences of events. The most basic way to visualize this is called a petri
+net. Handshaking expansions are a way to represent that structure in a way that
+is linearized in a human readable linguistic format. However, there are also
+valid handshaking expansions that are not representable in a linguistic format.
+These are called 'non-properly nested'. For full non-proper nesting support,
+use the `astg` format.
 
 In order to support things like initial token buffers where you reset the
 circuit in the middle of the HSE, a limited reset-tagging system has been
