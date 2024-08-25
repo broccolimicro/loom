@@ -272,6 +272,10 @@ p19 1->L.t'1-/9
 
 **Usage:** `ckt sim [options] <ckt-file> [sim-file]`
 
+This will open up the simulator specific to the file format you give it
+(`.chp`, `.hse`, `.astg`, `.prs`). The following documentation is for the HSE
+simulator.
+
 Run the following command to open up the simulation environment:
 ```ckt sim wchb1b.hse```
 
@@ -308,6 +312,30 @@ From there you can execute any of the following commands:
 
 To begin, view set of possible reset states and then pick one.
 
+```
+(hsesim)r
+(0) {0 9 15} ~R.f&~R.t&L.e&R.e&~L.f&~L.t&~L.f'1&~L.t'1&L.e'1&R.e'1&~R.f'1&~R.t'1
+(hsesim)r0
+```
+
+If you are simulating a PRS, then there is no "reset" command like this.
+Instead, you have to directly toggle your reset signals. If you have only
+`_Reset` in your circuit then that looks like this:
+```
+(prsim) set _Reset-
+(prsim) s100
+(prsim) set _Reset+
+(prsim0 s100
+```
+If you have both `_Reset` and `Reset`, then you can do the following:
+```
+(prsim) set _Reset-,Reset+
+(prsim) s100
+(prsim) set _Reset+,Reset-
+(prsim0 s100
+```
+
+Back to the HSE examples:
 ```
 (hsesim)r
 (0) {0 9 15} ~R.f&~R.t&L.e&R.e&~L.f&~L.t&~L.f'1&~L.t'1&L.e'1&R.e'1&~R.f'1&~R.t'1
