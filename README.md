@@ -325,14 +325,14 @@ Instead, you have to directly toggle your reset signals. If you have only
 (prsim) set _Reset-
 (prsim) s100
 (prsim) set _Reset+
-(prsim0 s100
+(prsim) s100
 ```
 If you have both `_Reset` and `Reset`, then you can do the following:
 ```
 (prsim) set _Reset-,Reset+
 (prsim) s100
 (prsim) set _Reset+,Reset-
-(prsim0 s100
+(prsim) s100
 ```
 
 Back to the HSE examples:
