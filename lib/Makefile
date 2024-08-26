@@ -23,10 +23,12 @@ parse:
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_dot
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_chp
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_ucs
+	$(MAKE) -s $(MAKE_FLAGS) -C gdstk lib
 
 interpret:
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_boolean
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_arithmetic
+	$(MAKE) -s $(MAKE_FLAGS) -C interpret_phy
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_prs
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_hse
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_ucs
@@ -84,6 +86,8 @@ clean:
 	$(MAKE) -s $(MAKE_FLAGS) -C common clean
 	$(MAKE) -s $(MAKE_FLAGS) -C boolean clean
 	$(MAKE) -s $(MAKE_FLAGS) -C arithmetic clean
+	$(MAKE) -s $(MAKE_FLAGS) -C phy clean
+	$(MAKE) -s $(MAKE_FLAGS) -C sch clean
 	$(MAKE) -s $(MAKE_FLAGS) -C prs clean
 	$(MAKE) -s $(MAKE_FLAGS) -C petri clean
 	$(MAKE) -s $(MAKE_FLAGS) -C hse clean
@@ -97,8 +101,10 @@ clean:
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_dot clean
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_chp clean
 	$(MAKE) -s $(MAKE_FLAGS) -C parse_ucs clean
+	$(MAKE) -s $(MAKE_FLAGS) -C gdstk clean
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_boolean clean
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_arithmetic clean
+	$(MAKE) -s $(MAKE_FLAGS) -C interpret_phy clean
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_prs clean
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_hse clean
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_ucs clean

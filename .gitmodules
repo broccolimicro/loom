@@ -103,3 +103,9 @@
 [submodule "lib/phy"]
 	path = lib/phy
 	url = https://github.com/broccolimicro/phy.git
+[submodule "lib/interpret_phy"]
+	path = lib/interpret_phy
+	url = https://github.com/broccolimicro/interpret_phy.git
+[submodule "lib/gdstk"]
+	path = lib/gdstk
+	url = https://github.com/heitzmann/gdstk.git

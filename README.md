@@ -55,6 +55,7 @@ asynchronous circuits. Not all of the tools are complete.
 Haystack is built in two phases: libraries then binaries.
 
 ```
+sudo apt install ninja-build # for gdstk
 git submodule update --init --recursive
 cd lib
 make
