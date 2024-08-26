@@ -6,6 +6,8 @@ libs:
 	$(MAKE) -s $(MAKE_FLAGS) -C common
 	$(MAKE) -s $(MAKE_FLAGS) -C boolean
 	$(MAKE) -s $(MAKE_FLAGS) -C arithmetic
+	$(MAKE) -s $(MAKE_FLAGS) -C phy
+	$(MAKE) -s $(MAKE_FLAGS) -C sch
 	$(MAKE) -s $(MAKE_FLAGS) -C prs
 	$(MAKE) -s $(MAKE_FLAGS) -C petri
 	$(MAKE) -s $(MAKE_FLAGS) -C hse

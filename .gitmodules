@@ -97,3 +97,9 @@
 [submodule "bin/ckt"]
 	path = bin/ckt
 	url = https://github.com/broccolimicro/ckt.git
+[submodule "lib/sch"]
+	path = lib/sch
+	url = https://github.com/broccolimicro/sch.git
+[submodule "lib/phy"]
+	path = lib/phy
+	url = https://github.com/broccolimicro/phy.git
