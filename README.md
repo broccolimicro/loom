@@ -48,6 +48,10 @@ asynchronous circuits. Not all of the tools are complete.
 * **Netlist Synthesis (0%)** Generate a spice netlist from a production rule set.
 * **CHP and HSE Visualization (100%)** Render the petri-nets representing CHP or HSE processes.
 * **PRS Visualization (0%)** Render transistor diagrams of the production rule set.
+* **Cell Generation (0%)** Break large subcircuits into cells.
+* **Cell Layout (80%)** Generate the layouts for those cells.
+* **Placement (0%)** Place the cells to start the layout of larger subcircuits.
+* **Routing (0%)** Route paths finish the layout of larger subcircuits.
 
 <a name="build"></a>
 ## Build
