@@ -109,3 +109,6 @@
 [submodule "lib/gdstk"]
 	path = lib/gdstk
 	url = https://github.com/heitzmann/gdstk.git
+[submodule "lib/interpret_sch"]
+	path = lib/interpret_sch
+	url = https://github.com/broccolimicro/interpret_sch.git
