@@ -173,9 +173,13 @@ Synthesize the production rules that implement the behavioral description.
  - `*.hse`          handshaking expansions
  - `*.prs`          production rules
  - `*.astg`         asynchronous signal transition graph
+ - `*.spi`          spice netlist
 
 If you just want to generate the final circuit, simply run the following command:
-```ckt wchb1b.hse```
+
+```
+ckt wchb1b.hse
+```
 
 This is the generated production rule set.
 ```
@@ -202,7 +206,10 @@ L.e'1&v2&_Reset->v3- {v2}
 ```
 
 This will print the production rules out on the console. If you want to see all of the intermediate steps, run this:
-```ckt --all --out wchb1b wchb1b.hse```
+
+```
+ckt --all --out wchb1b wchb1b.hse
+```
 
 This will save the elaborated state space to `wchb1b_predicate.astg`, save the
 complete state coded state space to `wchb1b_complete.astg`, and the final
@@ -292,6 +299,15 @@ p19 1->L.t'1-/9
 .end
 ```
 
+This command also accepts `*.spi` files for automated cell layout.
+
+```
+ckt nand.spi sky130.py
+klayout nand.gds &
+```
+
+See [sky130.py](https://github.com/broccolimicro/floret/blob/main/tech/sky130.py) 
+
 <a name="simulation"></a>
 ### Circuit Simulation
 
@@ -302,7 +318,10 @@ This will open up the simulator specific to the file format you give it
 simulator.
 
 Run the following command to open up the simulation environment:
-```ckt sim wchb1b.hse```
+
+```
+ckt sim wchb1b.hse
+```
 
 It will bring you to a prompt that looks like this:
 
@@ -519,13 +538,22 @@ Create visual representations of the circuit or behavior.
  - `-s,--sync`       Render half synchronization actions
 
 Use the following command to show the elaborated state space from the generated astg.
-```ckt plot -p wchb1b_predicate.astg -o wchb1b.png```
+
+```
+ckt plot -p wchb1b_predicate.astg -o wchb1b.png
+```
 
 Use this command to show the labels associated with every place, transition, and arc.
-```ckt plot -l wchb1b.hse -o wchb1b.png```
+
+```
+ckt plot -l wchb1b.hse -o wchb1b.png
+```
 
 Use the following command to show the elaborated state space of the complete state coding.
-```ckt plot -p wchb1b_complete.astg -o wchb1b.png```
+
+```
+ckt plot -p wchb1b_complete.astg -o wchb1b.png
+```
 
 <a name="examples"></a>
 ## Examples
@@ -839,13 +867,12 @@ and the final hse after the reset behavior has been processed looks like this:
 <a name="nesting"></a>
 ### Limited Non-Proper Nesting
 
-Asynchronous circuits are ultimately sets of intertwined, highly parallel
-sequences of events. The most basic way to visualize this is called a petri
-net. Handshaking expansions are a way to represent that structure in a way that
-is linearized in a human readable linguistic format. However, there are also
-valid handshaking expansions that are not representable in a linguistic format.
-These are called 'non-properly nested'. For full non-proper nesting support,
-use the `astg` format.
+Asynchronous circuits are collections of intertwined, sequences of events. The
+most basic way to visualize this is called a petri net. Handshaking expansions
+represent that structure in a way that is human readable. However, there are
+also valid handshaking expansions that are not representable in such a
+linguistic format. These are called 'non-properly nested'. For full non-proper
+nesting support, use the `astg` format.
 
 In order to support things like initial token buffers where you reset the
 circuit in the middle of the HSE, a limited reset-tagging system has been
