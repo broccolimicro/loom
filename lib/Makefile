@@ -29,6 +29,7 @@ interpret:
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_boolean
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_arithmetic
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_phy
+	$(MAKE) -s $(MAKE_FLAGS) -C interpret_sch
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_prs
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_hse
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_ucs
@@ -105,6 +106,7 @@ clean:
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_boolean clean
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_arithmetic clean
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_phy clean
+	$(MAKE) -s $(MAKE_FLAGS) -C interpret_sch clean
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_prs clean
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_hse clean
 	$(MAKE) -s $(MAKE_FLAGS) -C interpret_ucs clean
