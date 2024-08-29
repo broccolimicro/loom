@@ -43,12 +43,11 @@ asynchronous circuits. Not all of the tools are complete.
 * **Automated Sizing (40%)** Size the transistors in a production rule set.
 	- This functionality is currently limited to the prsize binary. It has not
 	  yet been integrated into the larger synthesis system.
-* **Cell Generation (0%)** Break up the production rules into cells in preparation for cell layout.
 * **PR Simulator (100%)** Digital simulation of the gates and wires as represented by production rules.
 * **Netlist Synthesis (0%)** Generate a spice netlist from a production rule set.
 * **CHP and HSE Visualization (100%)** Render the petri-nets representing CHP or HSE processes.
 * **PRS Visualization (0%)** Render transistor diagrams of the production rule set.
-* **Cell Generation (0%)** Break large subcircuits into cells.
+* **Cell Generation (0%)** Break large subcircuits into cells for cell-layout.
 * **Cell Layout (80%)** Generate the layouts for those cells.
 * **Placement (0%)** Place the cells to start the layout of larger subcircuits.
 * **Routing (0%)** Route paths finish the layout of larger subcircuits.
