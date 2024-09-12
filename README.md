@@ -1,6 +1,6 @@
-# Haystack
+# Loom
 
-Haystack is a collection of tools for the design and verification of
+Loom is a collection of tools for the design and verification of
 asynchronous circuits. Not all of the tools are complete.
 
 ## Table of Contents
@@ -55,7 +55,7 @@ asynchronous circuits. Not all of the tools are complete.
 <a name="build"></a>
 ## Build
 
-Haystack is built in two phases: libraries then binaries.
+Loom is built in two phases: libraries then binaries.
 
 ```
 sudo apt install ninja-build # for gdstk
@@ -120,13 +120,13 @@ out into the rest of the circuit.
 <a name="usage"></a>
 ## Usage
 
-**Usage:** `ckt [options] <command> [arguments]`
+**Usage:** `lm [options] <command> [arguments]`
 
 **Execute a sub-command:**
  - `sim`           simulate the described circuit
  - `plot`          render the described circuit in various ways
 
-Use `ckt help <command>` for more information about a command.
+Use `lm help <command>` for more information about a command.
 
 **General Options:**
  - `-h,--help`      display this information
@@ -154,7 +154,7 @@ R.e+; [~R.f&~R.t]; *[[R.f|R.t]; R.e-; [~R.f&~R.t]; R.e+])'1
 
 Synthesize the production rules that implement the behavioral description.
 
-**Usage:** `ckt [options] <file>`
+**Usage:** `lm [options] <file>`
 
 **Options:**
  - `--no-cmos`      uses bubble reshuffling instead of state variables to make the production rules cmos implementable, combine with `--rules` to avoid cmos implementability altogether.
@@ -177,7 +177,7 @@ Synthesize the production rules that implement the behavioral description.
 If you just want to generate the final circuit, simply run the following command:
 
 ```
-ckt wchb1b.hse
+lm wchb1b.hse
 ```
 
 This is the generated production rule set.
@@ -207,7 +207,7 @@ L.e'1&v2&_Reset->v3- {v2}
 This will print the production rules out on the console. If you want to see all of the intermediate steps, run this:
 
 ```
-ckt --all --out wchb1b wchb1b.hse
+lm --all --out wchb1b wchb1b.hse
 ```
 
 This will save the elaborated state space to `wchb1b_predicate.astg`, save the
@@ -301,7 +301,7 @@ p19 1->L.t'1-/9
 This command also accepts `*.spi` files for automated cell layout.
 
 ```
-ckt nand.spi sky130.py
+lm nand.spi sky130.py
 klayout nand.gds &
 ```
 
@@ -310,7 +310,7 @@ See [sky130.py](https://github.com/broccolimicro/floret/blob/main/tech/sky130.py
 <a name="simulation"></a>
 ### Circuit Simulation
 
-**Usage:** `ckt sim [options] <ckt-file> [sim-file]`
+**Usage:** `lm sim [options] <lm-file> [sim-file]`
 
 This will open up the simulator specific to the file format you give it
 (`.chp`, `.hse`, `.astg`, `.prs`). The following documentation is for the HSE
@@ -319,7 +319,7 @@ simulator.
 Run the following command to open up the simulation environment:
 
 ```
-ckt sim wchb1b.hse
+lm sim wchb1b.hse
 ```
 
 It will bring you to a prompt that looks like this:
@@ -390,7 +390,7 @@ You'll notice the ID's `P0`, `P9`, and `P15`. These refer to specific semicolons
 following command outside of the interactive simulation environment. See the
 **Visualization** section for more details.
 
-```ckt plot -l wchb1b.hse -o wchb1b.png```
+```lm plot -l wchb1b.hse -o wchb1b.png```
 
 Now that you have set the current state to a reset state, you may take a look
 at the current state.
@@ -525,7 +525,7 @@ transitions before your current step will still be remembered.
 
 Create visual representations of the circuit or behavior.
 
-**Usage:** `ckt plot [options] file...`
+**Usage:** `lm plot [options] file...`
 
 **Options:**
  - `-o`              Specify the output file name, formats other than 'dot' are passed onto graphviz dot for rendering
@@ -539,19 +539,19 @@ Create visual representations of the circuit or behavior.
 Use the following command to show the elaborated state space from the generated astg.
 
 ```
-ckt plot -p wchb1b_predicate.astg -o wchb1b.png
+lm plot -p wchb1b_predicate.astg -o wchb1b.png
 ```
 
 Use this command to show the labels associated with every place, transition, and arc.
 
 ```
-ckt plot -l wchb1b.hse -o wchb1b.png
+lm plot -l wchb1b.hse -o wchb1b.png
 ```
 
 Use the following command to show the elaborated state space of the complete state coding.
 
 ```
-ckt plot -p wchb1b_complete.astg -o wchb1b.png
+lm plot -p wchb1b_complete.astg -o wchb1b.png
 ```
 
 <a name="examples"></a>
