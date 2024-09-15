@@ -55,23 +55,16 @@ asynchronous circuits. Not all of the tools are complete.
 <a name="build"></a>
 ## Build
 
-Loom is built in two phases: libraries then binaries.
-
 ```
 sudo apt install ninja-build # for gdstk
 git submodule update --init --recursive
-cd lib
-make
-cd ../bin
 make
 ```
 
-To prepare googletest
+To generate test binaries and then run the tests
 ```
-cd googletest
-mkdir build
-cmake .. -DBUILD_GMOCK=OFF
-make
+make test
+make check
 ```
 
 <a name="reference"></a>
