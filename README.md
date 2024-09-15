@@ -56,7 +56,7 @@ asynchronous circuits. Not all of the tools are complete.
 ## Build
 
 ```
-sudo apt install ninja-build # for gdstk
+sudo apt install ninja-build libqhull-dev # for gdstk
 git submodule update --init --recursive
 make
 ```
