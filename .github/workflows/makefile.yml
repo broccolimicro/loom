@@ -1,0 +1,64 @@
+name: Build and Upload Release Binaries
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            binary_name: your_binary_linux
+            extension: ""
+          - os: macos-latest
+            binary_name: your_binary_mac
+            extension: ""
+          - os: windows-latest
+            binary_name: your_binary_windows
+            extension: ".exe"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive # This ensures submodules are pulled and initialized
+
+      - name: Install dependencies on Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y build-essential ninja-build
+
+      - name: Install dependencies on macOS
+        if: matrix.os == 'macos-latest'
+        run: brew install cmake # or any other required dependencies for macOS
+
+      - name: Install dependencies on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install cmake
+          choco install visualstudio2022buildtools
+          choco install mingw
+
+      - name: Build binary on Linux and macOS
+        if: matrix.os != 'windows-latest'
+        run: make
+        shell: bash
+
+      - name: Build binary on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          cmake -G "MinGW Makefiles"
+          mingw32-make
+        shell: cmd
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./build/${{ matrix.binary_name }}${{ matrix.extension }}
+          asset_name: ${{ matrix.binary_name }}${{ matrix.extension }}
+          asset_content_type: application/octet-stream
