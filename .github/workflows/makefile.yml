@@ -34,7 +34,7 @@ jobs:
 
       - name: Install dependencies on macOS
         if: matrix.os == 'macos-latest'
-        run: brew install cmake # or any other required dependencies for macOS
+        run: brew install cmake ninja qhull # or any other required dependencies for macOS
 
       - name: Install dependencies on Windows
         if: matrix.os == 'windows-latest'
@@ -42,6 +42,8 @@ jobs:
           choco install cmake
           choco install visualstudio2022buildtools
           choco install mingw
+          choco install ninja
+          choco install qhull
 
       - name: Build binary on Linux and macOS
         if: matrix.os != 'windows-latest'
