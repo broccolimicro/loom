@@ -45,7 +45,9 @@ jobs:
 
       - name: Install dependencies on Windows
         if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
         run: |
+          pacman -Syu --noconfirm
           pacman -S --needed --noconfirm base-devel
           pacman -S --needed --noconfirm mingw-w64-x86_64-toolchain
           pacman -S --needed --noconfirm mingw-w64-x86_64-cmake
@@ -61,10 +63,8 @@ jobs:
 
       - name: Build binary on Windows
         if: matrix.os == 'windows-latest'
-        run: |
-          cmake -G "MinGW Makefiles"
-          mingw32-make
-        shell: cmd
+        shell: msys2 {0}
+        run: make
 
       - name: Upload Release Asset
         if: github.event_name == 'release'
