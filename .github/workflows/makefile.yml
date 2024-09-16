@@ -75,3 +75,5 @@ jobs:
           asset_path: ${{ matrix.from }}
           asset_name: ${{ matrix.to }}
           asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.LOOM_RELEASE }}
