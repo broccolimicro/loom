@@ -44,8 +44,9 @@ jobs:
           choco install mingw
           choco install pacman
           choco install ninja
-          pacman -S mingw-w64-x86_64-qhull
           choco install graphviz
+          pacman -S mingw-w64-x86_64-qhull
+          pacman -S mingw-w64-x86_64-zlib
 
       - name: Build binary on Linux and macOS
         if: matrix.os != 'windows-latest'
