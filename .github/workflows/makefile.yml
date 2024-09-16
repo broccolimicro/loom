@@ -42,6 +42,7 @@ jobs:
           choco install cmake
           choco install visualstudio2022buildtools
           choco install mingw
+          choco install pacman
           choco install ninja
           pacman -S mingw-w64-x86_64-qhull
           choco install graphviz
