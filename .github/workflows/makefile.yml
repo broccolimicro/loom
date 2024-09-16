@@ -13,14 +13,14 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         include:
           - os: ubuntu-latest
-            binary_name: lm-linux
-            extension: ""
+            from: "lm"
+            to: "lm-linux"
           - os: macos-latest
-            binary_name: lm-macos
-            extension: ""
+            from: "lm"
+            to: "lm-macos"
           - os: windows-latest
-            binary_name: lm-windows
-            extension: ".exe"
+            from: "lm.exe"
+            to: "lm-windows.exe"
 
     steps:
       - name: Checkout code
@@ -72,6 +72,6 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./build/${{ matrix.binary_name }}${{ matrix.extension }}
-          asset_name: ${{ matrix.binary_name }}${{ matrix.extension }}
+          asset_path: ${{ matrix.from }}
+          asset_name: ${{ matrix.to }}
           asset_content_type: application/octet-stream
