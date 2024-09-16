@@ -1,5 +1,12 @@
 .PHONY: gdstk googletest lib install
 
+ifeq ($(OS),Windows_NT)
+    UNAME_S := $(OS)
+else
+    UNAME_S := $(shell uname -s)
+endif
+
+
 # Use + instead of spaces in the below list
 LIBS = \
 	lib/common \
@@ -41,8 +48,16 @@ lib: gdstk
 test: googletest
 	@$(foreach item,$(LIBS),echo "$(subst +, ,$(item))"; $(MAKE) -s $(MAKE_FLAGS) -C $(subst +, ,$(item)) test;)
 
+ifeq ($(UNAME_S),Darwin)
+gdstk:
+	grep "CMAKE_OSX_DEPLOYMENT_TARGET" lib/gdstk/Makefile || ( \
+		mv lib/gdstk/Makefile lib/gdstk/Makefile_old; \
+		sed 's/Ninja/Ninja \-DCMAKE_OSX_DEPLOYMENT_TARGET\=12\.0/g' lib/gdstk/Makefile_old > lib/gdstk/Makefile)
+	$(MAKE) -s $(MAKE_FLAGS) -C lib/gdstk lib
+else
 gdstk:
 	$(MAKE) -s $(MAKE_FLAGS) -C lib/gdstk lib
+endif
 
 googletest:
 	mkdir -p googletest/build; cd googletest/build; cmake .. -DBUILD_GMOCK=OFF
