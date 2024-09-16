@@ -54,6 +54,12 @@ gdstk:
 		mv lib/gdstk/Makefile lib/gdstk/Makefile_old; \
 		sed 's/Ninja/Ninja \-DCMAKE_OSX_DEPLOYMENT_TARGET\=12\.0/g' lib/gdstk/Makefile_old > lib/gdstk/Makefile)
 	$(MAKE) -s $(MAKE_FLAGS) -C lib/gdstk lib
+else ifeq ($(UNAME_S),Windows_NT)
+gdstk:
+	grep "CMAKE_PREFIX_PATH" lib/gdstk/Makefile || ( \
+		mv lib/gdstk/Makefile lib/gdstk/Makefile_old; \
+		sed 's/Ninja/Ninja \-DCMAKE_PREFIX_PATH\="\/mingw64\/"/g' lib/gdstk/Makefile_old > lib/gdstk/Makefile)
+	$(MAKE) -s $(MAKE_FLAGS) -C lib/gdstk lib
 else
 gdstk:
 	$(MAKE) -s $(MAKE_FLAGS) -C lib/gdstk lib

@@ -41,12 +41,12 @@ jobs:
         run: |
           choco install mingw
           choco install pacman
-					pacman --noconfirm -S mingw-w64-x86_64-cmake
-					pacman --noconfirm -S mingw-w64-x86_64-ninja
-					pacman --noconfirm -S mingw-w64-x86_64-gcc
-					pacman --noconfirm -S mingw-w64-x86_64-qhull
+          pacman --noconfirm -S mingw-w64-x86_64-cmake
+          pacman --noconfirm -S mingw-w64-x86_64-ninja
+          pacman --noconfirm -S mingw-w64-x86_64-gcc
+          pacman --noconfirm -S mingw-w64-x86_64-qhull
           pacman --noconfirm -S mingw-w64-x86_64-zlib
-					pacman --noconfirm -S mingw-w64-x86_64-graphviz
+          pacman --noconfirm -S mingw-w64-x86_64-graphviz
           
       - name: Build binary on Linux and macOS
         if: matrix.os != 'windows-latest'
