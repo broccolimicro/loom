@@ -36,17 +36,23 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: brew install cmake ninja qhull graphviz # or any other required dependencies for macOS
 
+      - name: Install MSYS2
+        if: matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          path-type: inherit
+
       - name: Install dependencies on Windows
         if: matrix.os == 'windows-latest'
         run: |
-          choco install mingw
-          choco install pacman
-          pacman --noconfirm -S mingw-w64-x86_64-cmake
-          pacman --noconfirm -S mingw-w64-x86_64-ninja
-          pacman --noconfirm -S mingw-w64-x86_64-gcc
-          pacman --noconfirm -S mingw-w64-x86_64-qhull
-          pacman --noconfirm -S mingw-w64-x86_64-zlib
-          pacman --noconfirm -S mingw-w64-x86_64-graphviz
+          pacman -S --needed --noconfirm base-devel
+          pacman -S --needed --noconfirm mingw-w64-x86_64-toolchain
+          pacman -S --needed --noconfirm mingw-w64-x86_64-cmake
+          pacman -S --needed --noconfirm mingw-w64-x86_64-ninja
+          pacman -S --needed --noconfirm mingw-w64-x86_64-qhull
+          pacman -S --needed --noconfirm mingw-w64-x86_64-zlib
+          pacman -S --needed --noconfirm mingw-w64-x86_64-graphviz
           
       - name: Build binary on Linux and macOS
         if: matrix.os != 'windows-latest'
