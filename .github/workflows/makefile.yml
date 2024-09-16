@@ -13,13 +13,13 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         include:
           - os: ubuntu-latest
-            binary_name: your_binary_linux
+            binary_name: lm-linux
             extension: ""
           - os: macos-latest
-            binary_name: your_binary_mac
+            binary_name: lm-macos
             extension: ""
           - os: windows-latest
-            binary_name: your_binary_windows
+            binary_name: lm-windows
             extension: ".exe"
 
     steps:
