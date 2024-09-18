@@ -16,7 +16,7 @@ jobs:
             from: "lm-linux.deb"
             to: "lm-linux.deb"
           - os: macos-latest
-            from: "lm"
+            from: "lm-macos"
             to: "lm-macos"
           - os: windows-latest
             from: "lm-windows.zip"
@@ -61,38 +61,23 @@ jobs:
       - name: Build binary on Linux
         if: matrix.os == 'ubuntu-latest'
         run: |
-          make
-          mkdir -p lm-linux/usr/local/bin
-          cp lm lm-linux/usr/local/bin
-          mkdir -p lm-linux/DEBIAN
-          mkdir -p debian
-          touch debian/control
-          echo "Package: loom" > DEBIAN/control
-          echo "Version: 0.7-0" >> DEBIAN/control
-          echo "Section: base" >> DEBIAN/control
-          echo "Priority: optional" >> DEBIAN/control
-          echo "Architecture: amd64" >> DEBIAN/control
-          dpkg-shlibdeps -O lm | sed 's/.*Depends=/Depends: /g' >> DEBIAN/control
-          echo "Maintainer: Edward Bingham <edward.bingham@broccolimicro.io>" >> DEBIAN/control
-          echo "Description: Loom" >> DEBIAN/control
-          echo " A programming language for quasi-delay insensitive asynchronous circuits" >> DEBIAN/control
-          dpkg-deb --build --root-owner-group lm-linux
+          make lib
+          make deb
         shell: bash
 
       - name: Build binary on macOS
         if: matrix.os == 'macos-latest'
-        run: make
+        run: |
+					make lib
+					make macos
         shell: bash
 
       - name: Build binary on Windows
         if: matrix.os == 'windows-latest'
         shell: msys2 {0}
         run: |
-          make
-          mkdir -p lm-windows
-          ldd lm.exe | grep "mingw64" | sed 's/.*\/mingw64/\/mingw64/g' | sed 's/ (.*$//g' | xargs -I{} cp {} lm-windows
-          cp lm.exe lm-windows
-          zip -r lm-windows.zip lm-windows
+          make lib
+					make windows
 
       - name: Upload Release Asset
         if: github.event_name == 'release'

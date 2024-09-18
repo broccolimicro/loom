@@ -37,10 +37,33 @@ LIBS = \
 	lib/interpret_chp \
 	bin/ckt
 
-all: lib install
+all: lib
 
-install:
-	cp bin/ckt/lm .
+linux:
+	mkdir -p lm-linux/usr/local/bin
+	cp bin/ckt/lm lm-linux/usr/local/bin
+	mkdir -p lm-linux/DEBIAN
+	mkdir -p debian
+	touch debian/control
+	echo "Package: loom" > lm-linux/DEBIAN/control
+	echo "Version: 0.8-0" >> lm-linux/DEBIAN/control
+	echo "Section: base" >> lm-linux/DEBIAN/control
+	echo "Priority: optional" >> lm-linux/DEBIAN/control
+	echo "Architecture: amd64" >> lm-linux/DEBIAN/control
+	dpkg-shlibdeps -O lm-linux/usr/local/bin/lm | sed 's/.*Depends=/Depends: /g' >> lm-linux/DEBIAN/control
+	echo "Maintainer: Edward Bingham <edward.bingham@broccolimicro.io>" >> lm-linux/DEBIAN/control
+	echo "Description: Loom" >> lm-linux/DEBIAN/control
+	echo " A programming language for quasi-delay insensitive asynchronous circuits" >> lm-linux/DEBIAN/control
+	dpkg-deb --build --root-owner-group lm-linux
+
+windows:
+	mkdir -p lm-windows
+	cp bin/ckt/lm.exe lm-windows
+	ldd lm-windows/lm.exe | grep "mingw64" | sed 's/.*\/mingw64/\/mingw64/g' | sed 's/ (.*$//g' | xargs -I{} cp {} lm-windows
+	zip -r lm-windows.zip lm-windows
+
+macos:
+	cp bin/ckt.lm lm-macos
 
 lib: gdstk
 	@$(foreach item,$(LIBS),echo "$(subst +, ,$(item))"; $(MAKE) -s $(MAKE_FLAGS) -C $(subst +, ,$(item));)
