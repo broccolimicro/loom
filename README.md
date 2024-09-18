@@ -20,14 +20,12 @@ asynchronous circuits. Not all of the tools are complete.
 <a name="status"></a>
 ## Status of Tools
 
-* **CHP Simulator (50%)** Simulate channel actions and multi-bit operations in a control flow language.
-	- Still has false positive instability errors. Need to implement quantifier
-	  elimination with cylindrical algebraic decomposition to be able to test
-		whether expressions are tautilogically true/false to correctly handle guards.
+### Synthesis
+* **Templating(0%)** parameterize your module specifications.
+* **Modules (0%)** be able to break up your circuit into modules and construct larger systems.
 * **Process Decomposition (0%)** Break large processes up into pipeline stages.
 * **Handshake Expansion (0%)** Expand channel actions into handshake protocols and multi-bit operations into transitions on wires.
 * **Handshake Reshuffling (0%)** Reorder transitions to simplify the state space, simplify implementation, and improve performance.
-* **HSE Simulator (100%)** Simulate transitions on wires in a control flow language.
 * **State Elaboration (100%)** Explore every state and record the state space.
 * **State Variable Insertion (80%)** Deconflict states by inserting transitions. This results in a complete state encoding.
 	- The current implementation is not yet able to solve every possible encoding
@@ -43,15 +41,31 @@ asynchronous circuits. Not all of the tools are complete.
 * **Device Level Sizing (90%)** Size the transistors in a production rule set.
 	- Haven't tied in the PN ratio yet.
 * **Gate Level Sizing (0%)** Size the gates using logical effort.
-* **PR Simulator (100%)** Digital simulation of the gates and wires as represented by production rules.
 * **Netlist Synthesis (99%)** Generate a spice netlist from a production rule set.
 	- Need to generate device perimeter and area values among other parameters.
-* **CHP and HSE Visualization (100%)** Render the petri-nets representing CHP or HSE processes.
-* **PRS Visualization (0%)** Render transistor diagrams of the production rule set.
 * **Cell Generation (0%)** Break large subcircuits into cells for cell-layout.
 * **Cell Layout (80%)** Generate the layouts for those cells.
 * **Placement (0%)** Place the cells to start the layout of larger subcircuits.
 * **Routing (0%)** Route paths finish the layout of larger subcircuits.
+
+### Simulation
+
+* **CHP Simulator (50%)** Simulate channel actions and multi-bit operations in a control flow language.
+	- Still has false positive instability errors. Need to implement quantifier
+	  elimination with cylindrical algebraic decomposition to be able to test
+		whether expressions are tautilogically true/false to correctly handle guards.
+* **HSE Simulator (100%)** Simulate transitions on wires in a control flow language.
+* **PR Simulator (100%)** Digital simulation of the gates and wires as represented by production rules.
+* **Spice Simulator Tie-in (0%)** Tie a spice simulator to the binary so that you can simulate at any level.
+* **Co-simulation of all levels (0%)** Cosimulate the behavioral spec against the wire-level spec, the digital circuit behavior, and the analog circuit behavior.
+
+### Visualization
+
+* **CHP and HSE (100%)** Render the petri-nets representing CHP or HSE processes.
+* **State Space (0%)** Render the state space of HSE or PRS.
+* **Transistor Networks (0%)** Render transistor diagrams of the production rule set.
+* **Waveforms (100%)** Export to VCD for viewing in GTKWave.
+* **Event Rule (0%)** Debug your system using an event rule representation instead of waveforms.
 
 <a name="build"></a>
 ## Build
