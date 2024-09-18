@@ -68,8 +68,8 @@ jobs:
       - name: Build binary on macOS
         if: matrix.os == 'macos-latest'
         run: |
-					make lib
-					make macos
+          make lib
+          make macos
         shell: bash
 
       - name: Build binary on Windows
@@ -77,7 +77,7 @@ jobs:
         shell: msys2 {0}
         run: |
           make lib
-					make windows
+          make windows
 
       - name: Upload Release Asset
         if: github.event_name == 'release'
