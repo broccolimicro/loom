@@ -1,7 +1,3 @@
-[submodule "bin/prsize"]
-	path = bin/prsize
-	url = https://github.com/broccolimicro/prsize.git
-	ignore = dirty
 [submodule "lib/parse"]
 	path = lib/parse
 	url = https://github.com/broccolimicro/parse.git
