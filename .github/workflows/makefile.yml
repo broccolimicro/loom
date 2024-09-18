@@ -13,8 +13,8 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         include:
           - os: ubuntu-latest
-            from: "lm"
-            to: "lm-linux"
+            from: "lm-linux.deb"
+            to: "lm-linux.deb"
           - os: macos-latest
             from: "lm"
             to: "lm-macos"
@@ -30,7 +30,7 @@ jobs:
 
       - name: Install dependencies on Linux
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y build-essential ninja-build libqhull-dev libgraphviz-dev
+        run: sudo apt-get update && sudo apt-get install -y build-essential ninja-build libqhull-dev libgraphviz-dev pax-utils
 
       - name: Install dependencies on macOS
         if: matrix.os == 'macos-latest'
@@ -58,8 +58,28 @@ jobs:
           pacman -S --needed --noconfirm mingw-w64-x86_64-graphviz
           pacman -S zip
 
-      - name: Build binary on Linux and macOS
-        if: matrix.os != 'windows-latest'
+      - name: Build binary on Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          make
+          mkdir -p lm-linux/usr/local/bin
+          mkdir -p lm-linux/DEBIAN
+          mkdir -p debian
+          touch debian/control
+          echo "Package: loom" > DEBIAN/control
+          echo "Version: 0.7-0" >> DEBIAN/control
+          echo "Section: base" >> DEBIAN/control
+          echo "Priority: optional" >> DEBIAN/control
+          echo "Architecture: amd64" >> DEBIAN/control
+          dpkg-shlibdeps -O lm | sed 's/.*Depends=/Depends: /g' >> DEBIAN/control
+          echo "Maintainer: Edward Bingham <edward.bingham@broccolimicro.io>" >> DEBIAN/control
+          echo "Description: Loom" >> DEBIAN/control
+          echo " A programming language for quasi-delay insensitive asynchronous circuits" >> DEBIAN/control
+          dpkg-deb --build --root-owner-group lm-linux
+        shell: bash
+
+      - name: Build binary on macOS
+        if: matrix.os == 'macos-latest'
         run: make
         shell: bash
 
