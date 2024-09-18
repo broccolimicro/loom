@@ -40,11 +40,12 @@ asynchronous circuits. Not all of the tools are complete.
 	- This doesn't always correctly identify isochronic forks in the production
 	  rule set. This is because a literal can show up in a guard, but that
 		doesn't mean the guard acknowledges any transitions on that literal.
-* **Automated Sizing (40%)** Size the transistors in a production rule set.
-	- This functionality is currently limited to the prsize binary. It has not
-	  yet been integrated into the larger synthesis system.
+* **Device Level Sizing (90%)** Size the transistors in a production rule set.
+	- Haven't tied in the PN ratio yet.
+* **Gate Level Sizing (0%)** Size the gates using logical effort.
 * **PR Simulator (100%)** Digital simulation of the gates and wires as represented by production rules.
-* **Netlist Synthesis (0%)** Generate a spice netlist from a production rule set.
+* **Netlist Synthesis (9%)** Generate a spice netlist from a production rule set.
+	- Need to generate device perimeter and area values among other parameters.
 * **CHP and HSE Visualization (100%)** Render the petri-nets representing CHP or HSE processes.
 * **PRS Visualization (0%)** Render transistor diagrams of the production rule set.
 * **Cell Generation (0%)** Break large subcircuits into cells for cell-layout.
