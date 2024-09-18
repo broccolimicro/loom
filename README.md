@@ -44,7 +44,7 @@ asynchronous circuits. Not all of the tools are complete.
 	- Haven't tied in the PN ratio yet.
 * **Gate Level Sizing (0%)** Size the gates using logical effort.
 * **PR Simulator (100%)** Digital simulation of the gates and wires as represented by production rules.
-* **Netlist Synthesis (9%)** Generate a spice netlist from a production rule set.
+* **Netlist Synthesis (99%)** Generate a spice netlist from a production rule set.
 	- Need to generate device perimeter and area values among other parameters.
 * **CHP and HSE Visualization (100%)** Render the petri-nets representing CHP or HSE processes.
 * **PRS Visualization (0%)** Render transistor diagrams of the production rule set.
