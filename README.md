@@ -21,7 +21,7 @@ asynchronous circuits. Not all of the tools are complete.
 ## Status of Tools
 
 ### Synthesis
-* **Templating(0%)** parameterize your module specifications.
+* **Templating (0%)** parameterize your module specifications.
 * **Modules (0%)** be able to break up your circuit into modules and construct larger systems.
 * **Process Decomposition (0%)** Break large processes up into pipeline stages.
 * **Handshake Expansion (0%)** Expand channel actions into handshake protocols and multi-bit operations into transitions on wires.
