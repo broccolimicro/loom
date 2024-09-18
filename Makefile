@@ -63,7 +63,7 @@ windows:
 	zip -r lm-windows.zip lm-windows
 
 macos:
-	cp bin/ckt.lm lm-macos
+	cp bin/ckt/lm lm-macos
 
 lib: gdstk
 	@$(foreach item,$(LIBS),echo "$(subst +, ,$(item))"; $(MAKE) -s $(MAKE_FLAGS) -C $(subst +, ,$(item));)
