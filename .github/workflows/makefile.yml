@@ -19,8 +19,8 @@ jobs:
             from: "lm"
             to: "lm-macos"
           - os: windows-latest
-            from: "lm.exe"
-            to: "lm-windows.exe"
+            from: "lm-windows.zip"
+            to: "lm-windows.zip"
 
     steps:
       - name: Checkout code
@@ -56,7 +56,8 @@ jobs:
           pacman -S --needed --noconfirm mingw-w64-x86_64-qhull
           pacman -S --needed --noconfirm mingw-w64-x86_64-zlib
           pacman -S --needed --noconfirm mingw-w64-x86_64-graphviz
-          
+          pacman -S zip
+
       - name: Build binary on Linux and macOS
         if: matrix.os != 'windows-latest'
         run: make
@@ -65,7 +66,12 @@ jobs:
       - name: Build binary on Windows
         if: matrix.os == 'windows-latest'
         shell: msys2 {0}
-        run: make
+        run: |
+          make
+          mkdir -p lm-windows
+          ldd lm.exe | grep "mingw64" | sed 's/.*\/mingw64/\/mingw64/g' | sed 's/ (.*$//g' | xargs -I{} cp {} lm-windows
+          cp lm.exe lm-windows
+          zip -r lm-windows.zip lm-windows
 
       - name: Upload Release Asset
         if: github.event_name == 'release'
