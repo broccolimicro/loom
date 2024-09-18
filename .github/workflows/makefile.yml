@@ -63,6 +63,7 @@ jobs:
         run: |
           make
           mkdir -p lm-linux/usr/local/bin
+					cp lm lm-linux/usr/local/bin
           mkdir -p lm-linux/DEBIAN
           mkdir -p debian
           touch debian/control
