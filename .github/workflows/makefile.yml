@@ -56,7 +56,7 @@ jobs:
           pacman -S --needed --noconfirm mingw-w64-x86_64-qhull
           pacman -S --needed --noconfirm mingw-w64-x86_64-zlib
           pacman -S --needed --noconfirm mingw-w64-x86_64-graphviz
-          pacman -S zip
+          pacman -S --needed --noconfirm zip
 
       - name: Build binary on Linux
         if: matrix.os == 'ubuntu-latest'
