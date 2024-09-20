@@ -61,14 +61,12 @@ jobs:
       - name: Build binary on Linux
         if: matrix.os == 'ubuntu-latest'
         run: |
-          make lib
           make linux
         shell: bash
 
       - name: Build binary on macOS
         if: matrix.os == 'macos-latest'
         run: |
-          make lib
           make macos
         shell: bash
 
@@ -76,7 +74,6 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: msys2 {0}
         run: |
-          make lib
           make windows
 
       - name: Upload Release Asset

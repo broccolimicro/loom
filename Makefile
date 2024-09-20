@@ -39,7 +39,7 @@ LIBS = \
 
 all: lib
 
-linux:
+linux: lib
 	mkdir -p lm-linux/usr/local/bin
 	cp bin/ckt/lm lm-linux/usr/local/bin
 	mkdir -p lm-linux/DEBIAN
@@ -55,14 +55,16 @@ linux:
 	echo "Description: Loom" >> lm-linux/DEBIAN/control
 	echo " A programming language for quasi-delay insensitive asynchronous circuits" >> lm-linux/DEBIAN/control
 	dpkg-deb --build --root-owner-group lm-linux
+	rm -rf debian lm-linux
 
-windows:
+windows: lib
 	mkdir -p lm-windows
 	cp bin/ckt/lm.exe lm-windows
 	ldd lm-windows/lm.exe | grep "mingw64" | sed 's/.*\/mingw64/\/mingw64/g' | sed 's/ (.*$$//g' | xargs -I{} cp {} lm-windows
 	zip -r lm-windows.zip lm-windows
+	rm -rf lm-windows
 
-macos:
+macos: lib
 	cp bin/ckt/lm lm-macos
 
 lib: gdstk
