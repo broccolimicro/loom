@@ -30,11 +30,11 @@ jobs:
 
       - name: Install dependencies on Linux
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y build-essential ninja-build libqhull-dev libgraphviz-dev pax-utils
+        run: sudo apt-get update && sudo apt-get install -y build-essential ninja-build libqhull-dev libgraphviz-dev pax-utils curl
 
       - name: Install dependencies on macOS
         if: matrix.os == 'macos-latest'
-        run: brew install cmake ninja qhull graphviz # or any other required dependencies for macOS
+        run: brew install cmake ninja qhull graphviz curl # or any other required dependencies for macOS
 
       - name: Install MSYS2
         if: matrix.os == 'windows-latest'
@@ -57,6 +57,7 @@ jobs:
           pacman -S --needed --noconfirm mingw-w64-x86_64-zlib
           pacman -S --needed --noconfirm mingw-w64-x86_64-graphviz
           pacman -S --needed --noconfirm zip
+          pacman -S --needed --noconfirm curl
 
       - name: Build binary on Linux
         if: matrix.os == 'ubuntu-latest'
@@ -93,7 +94,7 @@ jobs:
       - name: Get Latest Release Upload URL
         if: github.event_name != 'release'
         run: |
-          upload_url="$(curl --silent --location https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'first | .upload_url')"
+          upload_url="$(curl -sSL https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'first | .upload_url')"
           echo UPLOAD_URL=$upload_url >> $GITHUB_ENV
         shell: bash
 
