@@ -93,7 +93,7 @@ jobs:
       - name: Get Latest Release Upload URL
         if: github.event_name != 'release'
         run: |
-          upload_url="$(curl -sL https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'map(select(.prerelease)) | first | .upload_url')"
+          upload_url="$(curl --silent --location https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'first | .upload_url')"
           echo UPLOAD_URL=$upload_url >> $GITHUB_ENV
         shell: bash
 
