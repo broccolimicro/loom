@@ -62,6 +62,7 @@ jobs:
       - name: Build binary on Linux
         if: matrix.os == 'ubuntu-latest'
         run: |
+					git fetch --tags
           make linux MAINTAINER_NAME="$MAINTAINER_NAME" MAINTAINER_EMAIL="$MAINTAINER_EMAIL"
         shell: bash
         env:
