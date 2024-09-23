@@ -100,7 +100,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const release_id = "${{ steps.get_release_info.outputs.release_id }}";
+            const release_id = parseInt("${{ steps.get_release_info.outputs.release_id }}", 10);
             const assets = await github.repos.listReleaseAssets({
               owner: context.repo.owner,
               repo: context.repo.repo,
