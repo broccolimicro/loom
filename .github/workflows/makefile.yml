@@ -71,7 +71,7 @@ jobs:
             release_info="$(curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'first')"
             echo "url=$(echo "$release_info" | jq -r '.upload_url')" >> $GITHUB_OUTPUT
             echo "release_id=$(echo "$release_info" | jq -r '.id')" >> $GITHUB_OUTPUT
-            echo "asset_id=$(echo "$release_info" | jq -r '.assets | .[] | select(.name == "'lm-macos'") | .id')" >> $GITHUB_OUTPUT
+            echo "asset_id=$(echo "$release_info" | jq -r '.assets | .[] | select(.name == "'${{ matrix.to }}'") | .id')" >> $GITHUB_OUTPUT
           fi
         shell: bash
         env:
