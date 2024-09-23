@@ -66,10 +66,12 @@ jobs:
           if [ "${{ github.event_name }}" = "release" ]; then
             echo "url=${{ github.event.release.upload_url }}" >> $GITHUB_OUTPUT
             echo "release_id=${{ github.event.release.id }}" >> $GITHUB_OUTPUT
+            echo "asset_id=" >> $GITHUB_OUTPUT
           else
             release_info="$(curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'first')"
             echo "url=$(echo "$release_info" | jq -r '.upload_url')" >> $GITHUB_OUTPUT
             echo "release_id=$(echo "$release_info" | jq -r '.id')" >> $GITHUB_OUTPUT
+            echo "asset_id=$(echo "$release_info" | jq -r '.assets | .[] | select(.name == "'lm-macos'") | .id')" >> $GITHUB_OUTPUT
           fi
         shell: bash
         env:
@@ -96,26 +98,11 @@ jobs:
         run: |
           make windows
 
-      - name: Check and Delete Existing Asset
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const release_id = ${{ steps.get_release_info.outputs.release_id }};
-            const assets = await github.repos.listReleaseAssets({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id
-            });
-
-            const asset = assets.data.find(a => a.name === "${{ matrix.to }}");
-            if (asset) {
-              console.log(`Deleting existing asset: ${asset.name}`);
-              await github.repos.deleteReleaseAsset({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                asset_id: asset.id
-              });
-            }
+      - name: Delete Existing Asset
+        if: steps.get_release_info.outputs.asset_id != ''
+        run: |
+          curl -sSL -X DELETE -H "Authorization: Bearer ${GITHUB_TOKEN}" "https://api.github.com/repos/${{ github.repository }}/releases/assets/${{ steps.get_release_info.outputs.asset_id }}"
+        shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.LOOM_RELEASE }}
 
