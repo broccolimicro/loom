@@ -27,6 +27,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive # This ensures submodules are pulled and initialized
+          fetch-tags: true
 
       - name: Install dependencies on Linux
         if: matrix.os == 'ubuntu-latest'
@@ -59,10 +60,19 @@ jobs:
           pacman -S --needed --noconfirm zip
           pacman -S --needed --noconfirm curl
 
+      - name: Get Latest Release Upload URL
+        id: get_upload_url
+        if: github.event_name != 'release'
+        run: |
+          upload_url="$(curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'first | .upload_url')"
+          echo "::set-output name=url::$upload_url"
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.LOOM_RELEASE }}
+
       - name: Build binary on Linux
         if: matrix.os == 'ubuntu-latest'
         run: |
-          git fetch --tags
           make linux MAINTAINER_NAME="$MAINTAINER_NAME" MAINTAINER_EMAIL="$MAINTAINER_EMAIL"
         shell: bash
         env:
@@ -92,21 +102,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.LOOM_RELEASE }}
 
-      - name: Get Latest Release Upload URL
-        if: github.event_name != 'release'
-        run: |
-          curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://api.github.com/repos/broccolimicro/loom/releases
-          upload_url="$(curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'first | .upload_url')"
-          echo "UPLOAD_URL=\"$upload_url\"" >> $GITHUB_ENV
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.LOOM_RELEASE }}
-
       - name: Upload Latest Release Asset
         if: github.event_name != 'release'
         uses: actions/upload-release-asset@v1
         with:
-          upload_url: ${{ env.UPLOAD_URL }}
+          upload_url: ${{ steps.get_upload_url.outputs.url }}
           asset_path: ${{ matrix.from }}
           asset_name: ${{ matrix.to }}
           asset_content_type: application/octet-stream
