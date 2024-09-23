@@ -60,14 +60,16 @@ jobs:
           pacman -S --needed --noconfirm zip
           pacman -S --needed --noconfirm curl
 
-      - name: Get Latest Release Upload URL
-        id: get_upload_url
+      - name: Get Latest Release Info
+        id: get_release_info
         run: |
           if [ "${{ github.event_name }}" = "release" ]; then
             echo "url=\"${{ github.event.release.upload_url }}\"" >> $GITHUB_OUTPUT
+            echo "release_id=\"${{ github.event.release.id }}\"" >> $GITHUB_OUTPUT
           else
-            upload_url="$(curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'first | .upload_url')"
-            echo "url=\"$upload_url\"" >> $GITHUB_OUTPUT
+            release_info="$(curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'first')"
+            echo "url=\"$(echo "$release_info" | jq -r '.upload_url')\"" >> $GITHUB_OUTPUT
+            echo "release_id=\"$(echo "$release_info" | jq -r '.id')\"" >> $GITHUB_OUTPUT
           fi
         shell: bash
         env:
@@ -94,10 +96,38 @@ jobs:
         run: |
           make windows
 
+      - name: Check and Delete Existing Asset
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const release_id = "${{ steps.get_release_info.outputs.release_id }}";
+            const assets = await github.repos.listReleaseAssets({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id
+            });
+
+            const asset = assets.data.find(a => a.name === "${{ matrix.to }}");
+            if (asset) {
+              console.log(`Deleting existing asset: ${asset.name}`);
+              await github.repos.deleteReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                asset_id: asset.id
+              });
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.LOOM_RELEASE }}
+
+      - name: Check if file exists
+        run: |
+          ls -la ${{ matrix.from }}
+          echo "url=${{ steps.get_release_info.outputs.url }}"
+
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         with:
-          upload_url: ${{ steps.get_upload_url.outputs.url }}
+          upload_url: ${{ steps.get_release_info.outputs.url }}
           asset_path: ${{ matrix.from }}
           asset_name: ${{ matrix.to }}
           asset_content_type: application/octet-stream
