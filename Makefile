@@ -49,7 +49,7 @@ linux: lib
 	touch debian/control
 	echo "Package: loom" > lm-linux/DEBIAN/control
 	git fetch --tags --no-recurse-submodules
-	git describe --tags --abbrev=0 | sed 's/v\([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\)/\1.\2-\3/g' | xargs -I{} echo "Version: {}" >> lm-linux/DEBIAN/control
+	git rev-list --tags --max-count=1 | xargs -I{} git describe --tags {} | sed 's/v\([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\)/\1.\2-\3/g' | xargs -I{} echo "Version: {}" >> lm-linux/DEBIAN/control
 	echo "Section: base" >> lm-linux/DEBIAN/control
 	echo "Priority: optional" >> lm-linux/DEBIAN/control
 	echo "Architecture: amd64" >> lm-linux/DEBIAN/control
