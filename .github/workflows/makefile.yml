@@ -106,11 +106,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.LOOM_RELEASE }}
 
-      - name: Check if file exists
-        run: |
-          ls -la ${{ matrix.from }}
-          echo "url=${{ steps.get_release_info.outputs.url }}"
-
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         with:
