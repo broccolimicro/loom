@@ -62,10 +62,13 @@ jobs:
 
       - name: Get Latest Release Upload URL
         id: get_upload_url
-        if: github.event_name != 'release'
         run: |
-          upload_url="$(curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'first | .upload_url')"
-          echo "::set-output name=url::$upload_url"
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "url=\"${{ github.event.release.upload_url }}\"" >> $GITHUB_OUTPUT
+          else
+            upload_url="$(curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'first | .upload_url')"
+            echo "url=\"$upload_url\"" >> $GITHUB_OUTPUT
+          fi
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.LOOM_RELEASE }}
@@ -92,18 +95,6 @@ jobs:
           make windows
 
       - name: Upload Release Asset
-        if: github.event_name == 'release'
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ matrix.from }}
-          asset_name: ${{ matrix.to }}
-          asset_content_type: application/octet-stream
-        env:
-          GITHUB_TOKEN: ${{ secrets.LOOM_RELEASE }}
-
-      - name: Upload Latest Release Asset
-        if: github.event_name != 'release'
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.get_upload_url.outputs.url }}
