@@ -6,7 +6,6 @@ else
     UNAME_S := $(shell uname -s)
 endif
 
-
 # Use + instead of spaces in the below list
 LIBS = \
 	lib/common \
@@ -37,6 +36,9 @@ LIBS = \
 	lib/interpret_chp \
 	bin/ckt
 
+MAINTAINER_NAME = $(shell git config user.name)
+MAINTAINER_EMAIL = $(shell git config user.email)
+
 all: lib
 
 linux: lib
@@ -51,7 +53,7 @@ linux: lib
 	echo "Priority: optional" >> lm-linux/DEBIAN/control
 	echo "Architecture: amd64" >> lm-linux/DEBIAN/control
 	dpkg-shlibdeps -O lm-linux/usr/local/bin/lm | sed 's/.*Depends=/Depends: /g' >> lm-linux/DEBIAN/control
-	git config user.email | xargs -I{} echo "Maintainer: Edward Bingham <{}>" >> lm-linux/DEBIAN/control
+	echo "Maintainer: $(MAINTAINER_NAME) <$(MAINTAINER_EMAIL)>" >> lm-linux/DEBIAN/control
 	echo "Description: Loom" >> lm-linux/DEBIAN/control
 	echo " A programming language for quasi-delay insensitive asynchronous circuits" >> lm-linux/DEBIAN/control
 	dpkg-deb --build --root-owner-group lm-linux

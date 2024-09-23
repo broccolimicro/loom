@@ -61,8 +61,11 @@ jobs:
       - name: Build binary on Linux
         if: matrix.os == 'ubuntu-latest'
         run: |
-          make linux
+          make linux MAINTAINER_NAME="$MAINTAINER_NAME" MAINTAINER_EMAIL="$MAINTAINER_EMAIL"
         shell: bash
+        env:
+          MAINTAINER_NAME: ${{ vars.MAINTAINER_NAME }}
+          MAINTAINER_EMAIL: ${{ vars.MAINTAINER_EMAIL }}
 
       - name: Build binary on macOS
         if: matrix.os == 'macos-latest'
@@ -81,6 +84,24 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ matrix.from }}
+          asset_name: ${{ matrix.to }}
+          asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.LOOM_RELEASE }}
+
+      - name: Get Latest Release Upload URL
+        if: github.event_name != 'release'
+        run: |
+          upload_url="$(curl -sL https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'map(select(.prerelease)) | first | .upload_url')"
+          echo UPLOAD_URL=$upload_url >> $GITHUB_ENV
+        shell: bash
+
+      - name: Upload Latest Release Asset
+        if: github.event_name != 'release'
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ env.UPLOAD_URL }}
           asset_path: ${{ matrix.from }}
           asset_name: ${{ matrix.to }}
           asset_content_type: application/octet-stream
