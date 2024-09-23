@@ -94,11 +94,12 @@ jobs:
       - name: Get Latest Release Upload URL
         if: github.event_name != 'release'
         run: |
-          curl -sSL https://api.github.com/repos/broccolimicro/loom/releases
-          curl -sSL https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'first | .upload_url'
-          upload_url="$(curl -sSL https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'first | .upload_url')"
+          curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://api.github.com/repos/broccolimicro/loom/releases
+          upload_url="$(curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'first | .upload_url')"
           echo "UPLOAD_URL=\"$upload_url\"" >> $GITHUB_ENV
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.LOOM_RELEASE }}
 
       - name: Upload Latest Release Asset
         if: github.event_name != 'release'
