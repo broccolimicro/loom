@@ -64,12 +64,12 @@ jobs:
         id: get_release_info
         run: |
           if [ "${{ github.event_name }}" = "release" ]; then
-            echo "url=\"${{ github.event.release.upload_url }}\"" >> $GITHUB_OUTPUT
-            echo "release_id=\"${{ github.event.release.id }}\"" >> $GITHUB_OUTPUT
+            echo "url=${{ github.event.release.upload_url }}" >> $GITHUB_OUTPUT
+            echo "release_id=${{ github.event.release.id }}" >> $GITHUB_OUTPUT
           else
             release_info="$(curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" https://api.github.com/repos/broccolimicro/loom/releases | jq -r 'first')"
-            echo "url=\"$(echo "$release_info" | jq -r '.upload_url')\"" >> $GITHUB_OUTPUT
-            echo "release_id=\"$(echo "$release_info" | jq -r '.id')\"" >> $GITHUB_OUTPUT
+            echo "url=$(echo "$release_info" | jq -r '.upload_url')" >> $GITHUB_OUTPUT
+            echo "release_id=$(echo "$release_info" | jq -r '.id')" >> $GITHUB_OUTPUT
           fi
         shell: bash
         env:
@@ -100,7 +100,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const release_id = parseInt("${{ steps.get_release_info.outputs.release_id }}", 10);
+            const release_id = ${{ steps.get_release_info.outputs.release_id }};
             const assets = await github.repos.listReleaseAssets({
               owner: context.repo.owner,
               repo: context.repo.repo,
