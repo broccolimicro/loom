@@ -35,19 +35,19 @@ permalink:                /:categories/:title:output_ext
 
 collections:
   lang:
-		label: Languages
+    label: Languages
     output: true
     permalink: /:collection/:title:output_ext
   comp:
-		label: Compilation
+    label: Compilation
     output: true
     permalink: /:collection/:title:output_ext
   sim:
-		label: Simulation
+    label: Simulation
     output: true
     permalink: /:collection/:title:output_ext
   vis:
-		label: Visualization
+    label: Visualization
     output: true
     permalink: /:collection/:title:output_ext
 
