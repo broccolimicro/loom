@@ -8,7 +8,7 @@ layout: post
  
 Create visual representations of the circuit or behavior.
 
-**Usage:** `lm plot [options] file...`
+**Usage:** `lm show [options] file...`
 
 **Options:**
  - `-o`              Specify the output file name, formats other than 'dot' are passed onto graphviz dot for rendering
@@ -22,19 +22,19 @@ Create visual representations of the circuit or behavior.
 Use the following command to show the elaborated state space from the generated astg.
 
 ```
-lm plot -p wchb1b_predicate.astg -o wchb1b.png
+lm show -p wchb1b_predicate.astg -o wchb1b.png
 ```
 
 Use this command to show the labels associated with every place, transition, and arc.
 
 ```
-lm plot -l wchb1b.hse -o wchb1b.png
+lm show -l wchb1b.hse -o wchb1b.png
 ```
 
 Use the following command to show the elaborated state space of the complete state coding.
 
 ```
-lm plot -p wchb1b_complete.astg -o wchb1b.png
+lm show -p wchb1b_complete.astg -o wchb1b.png
 ```
 
 
