@@ -35,8 +35,12 @@ permalink:                /:categories/:title:output_ext
 collections:
   lang:
     output: true
-    sort_by: date
     permalink: /:collection/:title:output_ext
+    order:
+      - languages.md
+      - chp.md
+      - hse.md
+      - prs.md
   comp:
     output: true
     sort_by: date
