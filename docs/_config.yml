@@ -37,16 +37,21 @@ collections:
     output: true
     sort_by: date
     permalink: /:collection/:title:output_ext
+  comp:
+    output: true
+    sort_by: date
+    permalink: /:collection/:title:output_ext
   sim:
     output: true
     sort_by: date
     permalink: /:collection/:title:output_ext
-	vis:
+  vis:
     output: true
     sort_by: date
     permalink: /:collection/:title:output_ext
 
 ordered_collections:
   - lang
+  - comp
   - sim
   - vis
