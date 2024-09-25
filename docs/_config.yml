@@ -35,15 +35,19 @@ permalink:                /:categories/:title:output_ext
 collections:
   lang:
     output: true
+    sort_by: order
     permalink: /:collection/:title:output_ext
   comp:
     output: true
+    sort_by: order
     permalink: /:collection/:title:output_ext
   sim:
     output: true
+    sort_by: order
     permalink: /:collection/:title:output_ext
   vis:
     output: true
+    sort_by: order
     permalink: /:collection/:title:output_ext
 
 ordered_collections:
