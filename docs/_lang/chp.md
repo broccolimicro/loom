@@ -1,145 +1,146 @@
 ---
-title: Communicating Hardware Processes (CHP)
+title: Communicating Hardware Processes
 author: Edward Bingham
 date: 2024-09-24
 category: Language
 layout: post
 ---
- 
-HSE stands for Handshaking Expansions. It is a step in between Communicating 
-Hardware Processes (CHP) and Production Rules (PRs). Its a control flow 
-language where all actions are limited to 1 bit boolean. There are only a few 
-basic syntax structures most of which are composition operators. Spacing is
-ignored during parsing. The following list explains what each syntax does.
-Composition operators are listed by precedence from weakest to strongest.
 
--------------------------------------------------------------------------------
+**Communicating Hardware Processes (CHP)** is a program notation for QDI
+circuits inspired by Tony Hoare's communicating sequential processes
+(CSP) and Edsger W. Dijkstra's guarded commands. For example, this is how one
+might write an adder with sources for the input channels `A` and `B` and a sink
+for the output channel `S`. The environment is placed in a separate isochronic
+region.
 
 ```
-skip
+*[ A?a, B?b; S!(a+b) ] ||
+(
+  *[ A!rand() ] ||
+  *[ B!rand() ] ||
+  *[ S? ]
+)'1
 ```
 
-This is just a no-op.
+The syntax is described below in descending precedence. Spacing is
+ignored during parsing.
 
--------------------------------------------------------------------------------
+## Data Types
 
-```
-x-
-x+
-```
+There are currently only three data types supported by Loom. A **node**
+is a single wire in the circuit. A **variable** is an integer type
+encoded on a collection of nodes. A **channel** facilitates
+communication between processes with a request, acknowledge or request,
+enable protocol. Currently, data types are implied by the operators on them.
 
-Every variable in HSE represents a node in the circuit. `x-` sets the voltage
-on that node to GND and `x+` sets the voltage on that node to VDD.
+## Skip
 
--------------------------------------------------------------------------------
+`skip` skips to the next action.
 
-```
-P0 || P1 || ... || Pn
-```
+## Assignment
 
-Parallel composition: do `P0`, `P1`, ..., and `Pn` in any interleaving.
+`a+` sets the voltage of the **node** `a` to Vdd while `a-` sets the voltage of
+`a` to GND. `b := e` evaluates the expression `e` then assigns the resulting
+value to the **variable** `b`.
 
--------------------------------------------------------------------------------
+## Channel Operators
 
-```
-P0;P1;...;Pn
-```
+**Send** `X!e` evaluates the expression `e` then sends the resulting value
+across the **channel** `X`. `X!` is a dataless send. 
 
-Sequential composition: do `P0`, then `P1`, then ..., then `Pn`.
+**Receive** `X?a` waits until there is a valid value on the **channel** `X`
+then assigns that value to the **variable** `a`. `X?` is a dataless receive.
 
--------------------------------------------------------------------------------
+**Probe** `#X` returns the value waiting on the **channel** `X` without
+executing the receive.
 
-```
-P0,P1,...,Pn
-```
+## Parallel Composition
 
-Internal parallel composition is the same as parallel composition.
+`P0 || P1 || ... || Pn` executes the processes `P0`, `P1`, ..., and `Pn` in
+parallel. Keep in mind the difference between "parallel" and "concurrent".
 
--------------------------------------------------------------------------------
+* **parallel** two parallel processes can execute in any order or at the same time.
+* **concurrent** two concurrent processes can execute in any order.
 
+## Sequential Composition
+
+`P0;P1;...;Pn` executes first executes the process `P0`, then `P1`, then ..., then `Pn`.
+
+## Internal Parallel Composition
+
+`P0,P1,...,Pn` is the same as parallel composition, but with higher precendence.
+
+## Wait
+
+A **guard** is a dataless [[boolean expression] or expression that is
+implicitly cast using a validity check on the encoding. The guard evaluates to
+`Vdd` when the data is valid and `GND` when it is neutral.
+
+`[G]` waits for the guard `G` to evaluate to `Vdd` before continuing.
+
+## Selection
+
+The selection composition represents choice. The guard `G0`, `G1`, ..., `Gn`
+represent the condition of the selection and `P0`, `P1`, ..., `Pn` are the
+processes that are executed for each condition.
+
+A deterministic selection statement is represented by the thick bar operator
+`[]`. The guards are guaranteed by the user to be mutually exclusive so only
+one can ever evaluate to true at any given time. The tooling will throw an
+error if a deterministic selection violates this mutual exclusion constraint.
 ```
 [ G0 -> P0
 [] G1 -> P1
 ...
 [] Gn -> Pn
 ]
+```
 
+A non-deterministic selection state is represented by the thin bar operator
+`:`. An arbiter or in some extreme cases, a synchronizer, will be used to
+guarantee the mutual exclusion of the selection.
+```
 [ G0 -> P0
 : G1 -> P1
 ...
 : Gn -> Pn
 ]
-
-[G]
 ```
 
-The selection composition represents choice. `G0`, `G1`, ..., `Gn` are called guards. 
-They are boolean expressions that represent the condition of the selection and 
-`P0`, `P1`, ..., `Pn` are the processes that are executed for each condition.
-
-A selection statement can either be deterministic as represented by the thick
-bar operator `[]` or non-deterministic as represented by the thin bar operator 
-`:`. If it is a deterministic selection, then the guards are guaranteed by the
-user to be mutually exclusive so only one can ever evaluate to true at any
-given time. Meanwhile if it is non-deterministic, then an arbiter or in
-some extreme cases, a synchronizer, must be used to guarantee the mutual
-exclusion of the selection. Ultimately the selection operator implements the
-following:
-
+Ultimately the selection operator implements the following:
 If `G0` do `P0`, if `G1` do `P1`, ... If `Gn` do `Pn`, else wait.
 
-If there is no process specified as in the third example, then the process
-is just a `skip`. This is shorthand for a wait until operation, also
-known simply as a 'guard'.
+## Repetition
 
--------------------------------------------------------------------------------
+Repetition behaves almost the same as the non-repetitive selection
+statement. Think of it like a while loop. While one of the guards
+`(G0,G1,...,Gn)` is true, execute the associated process `(P0,P1,...,Pn)`.
+Else, exit the loop.
 
+Repetition can either be deterministic as represented by the thick bar.
 ```
-*[ G0 -> P0
-[] G1 -> P1
-...
-[] Gn -> Pn
-]
-
-*[ G0 -> P0
-: G1 -> P1
-...
-: Gn -> Pn
-]
-
-*[P]
+*[  G0 -> P0
+ [] G1 -> P1
+ ...
+ [] Gn -> Pn
+ ]
 ```
 
-Repetitive selection behaves almost the same as the non-repetitive selection
-statement. Think of it like a while loop.
+Or it can be non-deterministic as represented by the thin bar.
+```
+*[ G0 -> P0
+ : G1 -> P1
+ ...
+ : Gn -> Pn
+ ]
+```
 
-While one of the guards `(G0,G1,...,Gn)` is true, execute the associated process
-`(P0,P1,...,Pn)`. Else, exit the loop.
+`*[S]` is shorthand for `*[Vdd -> S]` and implements infinite repetition.
 
-If the guard is not specified, then the guard is assumed to be '1'. This
-is shorthand for a loop that will never exit.
+## Timing Assumption
 
-## Internal Representation of State
-
-The state of a node is represented by four basic values `(-,0,1,X)`. `-` means
-that the node is stable at either GND or VDD but the process doesn't know
-which. `0` means the node is stable at GND. `1` means the node is stable at
-VDD. And `X` means the node is unstable or metastable (some unknown value
-between GND and VDD).
-
-`a+` drives the node `a` to `1` and `a-` drives the node `a` to `0`. If two 
-assignments interfere as in `a+,a-`, then the value of the node `a` will
-be driven to `X`. If an assignment is unstable as in `[a];b+||a-`, then the
-node `b` will be drive to `X`.  
-
-If there is a selection like `[1->a+:1->a-];b-`, then at the semicolon before
-`b-`, the value of the node `a` will be `-`. (Yes I know this example does not
-represent a real circuit because you don't know when the selection has
-completed).
-
-If a node has a value of `X`, then it will propagate as expected. For example
-in `b-; [a]; b+` if the node `a` is unstable, then after `b+`, the node `b` will
-also be unstable.
+`{G}` blocks as long as G evaluates to GND. Instabilities on `G` are not
+propagated out into the rest of the circuit.
 
 ## Isochronic Regions
 
@@ -173,18 +174,18 @@ x'1+
 ```
 
 If there are two processes in two isochronic regions like `(a-;b+;P)'0 || ([b]; a+)'1`,
-then during the process `P`, the value of the node `a` will be `-` because the
-process on the left knows that `a` was `0` but that it will change to `1`. It
+then during the process `P`, the value of the node `a` will be unknown because the
+process on the left knows that `a` was `GND` but that it will change to `Vdd`. It
 just doesn't know when. Meanwhile in the process on the right, the value of `a`
-will start at `-` and transition to `1` after the assignment `a+`.
+will start unknown and transition to `Vdd` after the assignment `a+`.
 
 ## Reset Behavior
 
 Because reset behavior can be a complex thing that has a multitude of timing
-assumptions and different possible implementations, hsesim has a very basic
-reset implementation. It goes as follows: as long as there isn't any choice to
-be made, and we don't enter a loop, execute transitions and accumulate their
-affect on the state into a reset state. Here is an example:
+assumptions and different possible implementations, Loom has a very basic
+reset implementation. As long as there isn't any choice to be made, and we
+don't enter a repetition, execute transitions and accumulate their affect on
+the state into a reset state. Here is an example:
 
 ```
 R.f-,R.t-,L.e+; [R.e&~L.f&~L.t];
