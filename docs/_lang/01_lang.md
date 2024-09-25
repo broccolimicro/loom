@@ -1,5 +1,5 @@
 ---
-title: Languages
+title: <b>Languages</b>
 author: Edward Bingham
 date: 2024-09-24
 category: Language
