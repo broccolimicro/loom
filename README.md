@@ -1,4 +1,4 @@
-# Loom &nbsp; [![Build Status](https://github.com/broccolimicro/loom/actions/workflows/makefile.yml/badge.svg)](https://github.com/broccolimicro/loom/actions/workflows/makefile.yml) [![License](https://img.shields.io/badge/Licence-GNU_GPU_v3-blue.svg)](./LICENSE) [![Documentation](https://img.shields.io/badge/Documentation-green.svg)](https://broccolimicro.github.io/loom)
+# Loom &nbsp; [![Build Status](https://github.com/broccolimicro/loom/actions/workflows/release.yml/badge.svg)](https://github.com/broccolimicro/loom/actions/workflows/release.yml) [![License](https://img.shields.io/badge/Licence-GNU_GPU_v3-blue.svg)](./LICENSE) [![Documentation](https://img.shields.io/badge/Documentation-green.svg)](https://broccolimicro.github.io/loom)
 
 Loom is a collection of tools for the design and verification of
 asynchronous circuits. Not all of the tools are complete.

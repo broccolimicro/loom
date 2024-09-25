@@ -1,4 +1,4 @@
-name: Build and Upload Release Binaries
+name: Build and Release
 
 on:
   release:
