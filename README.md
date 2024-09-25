@@ -61,9 +61,9 @@ $ lm wchb1b.hse sky130.py
 ```
 
 <a name="build"></a>
-## Build and Linux
+## Build and Install
 
-Build
+Build the executable.
 ```
 sudo apt install ninja-build libqhull-dev libgraphviz-dev
 git submodule update --init --recursive
