@@ -18,19 +18,19 @@ isochronic region.
 ```
 S.f-,S.t-,Co.f-,Co.t-,ABCi.e+; [S.e&Co.e&~A.f&~A.t&~B.f&~B.t&~Ci.f&~Ci.t];
 *[
-	(
-		[	S.e & (A.t & B.f & Ci.f | A.f & B.t & Ci.f | A.f & B.f & Ci.t | A.t & B.t & Ci.t) -> S.t+ 
-		[]	S.e & (A.t & B.t & Ci.f | A.t & B.f & Ci.t | A.f & B.t & Ci.t | A.f & B.f & Ci.f) -> S.f+
-		] ||
-		[   Co.e & (A.t & B.t & Ci.f | A.t & B.f & Ci.t | A.f & B.t & Ci.t | A.t & B.t & Ci.t) -> Co.t+
-		[]  Co.e & (A.t & B.f & Ci.f | A.f & B.t & Ci.f | A.f & B.f & Ci.t | A.f & B.f & Ci.f) -> Co.f+
-		]
-	); ABCi.e-; [~A.t & ~A.f & ~B.t & ~B.f & ~Ci.t & ~Ci.f];
-	(
-		[~S.e -> S.t-,S.f-] ||
-		[~Co.e -> Co.t-,Co.f-]
-	);
-	ABCi.e+
+  (
+    [  S.e & (A.t & B.f & Ci.f | A.f & B.t & Ci.f | A.f & B.f & Ci.t | A.t & B.t & Ci.t) -> S.t+ 
+    []  S.e & (A.t & B.t & Ci.f | A.t & B.f & Ci.t | A.f & B.t & Ci.t | A.f & B.f & Ci.f) -> S.f+
+    ] ||
+    [   Co.e & (A.t & B.t & Ci.f | A.t & B.f & Ci.t | A.f & B.t & Ci.t | A.t & B.t & Ci.t) -> Co.t+
+    []  Co.e & (A.t & B.f & Ci.f | A.f & B.t & Ci.f | A.f & B.f & Ci.t | A.f & B.f & Ci.f) -> Co.f+
+    ]
+  ); ABCi.e-; [~A.t & ~A.f & ~B.t & ~B.f & ~Ci.t & ~Ci.f];
+  (
+    [~S.e -> S.t-,S.f-] ||
+    [~Co.e -> Co.t-,Co.f-]
+  );
+  ABCi.e+
 ] || 
 
 (S.e+; [~S.f&~S.t]; *[[S.t | S.f]; S.e-; [~S.t & ~S.f]; S.e+] ||
