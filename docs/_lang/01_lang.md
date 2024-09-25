@@ -1,10 +1,9 @@
 ---
-title: <b>Languages</b>
+title: Languages
 author: Edward Bingham
 date: 2024-09-24
 category: Language
 layout: post
-order: 1
 ---
 
 Loom supports multiple different languages for different stages of the synthesis.

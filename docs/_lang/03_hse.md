@@ -4,7 +4,6 @@ author: Edward Bingham
 date: 2024-09-24
 category: Language
 layout: post
-order: 3
 ---
 
 **Hand Shaking Expansions (HSE)** are a subset of CHP in which channel

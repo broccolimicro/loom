@@ -6,6 +6,7 @@ description: >
   Synthesize quasi-delay insensitive circuits.
 
 remote_theme: sighingnow/jekyll-gitbook
+extra_css: extra.css
 
 toc:
   enabled: true
@@ -34,20 +35,20 @@ permalink:                /:categories/:title:output_ext
 
 collections:
   lang:
+		label: Languages
     output: true
-    sort_by: order
     permalink: /:collection/:title:output_ext
   comp:
+		label: Compilation
     output: true
-    sort_by: order
     permalink: /:collection/:title:output_ext
   sim:
+		label: Simulation
     output: true
-    sort_by: order
     permalink: /:collection/:title:output_ext
   vis:
+		label: Visualization
     output: true
-    sort_by: order
     permalink: /:collection/:title:output_ext
 
 ordered_collections:
