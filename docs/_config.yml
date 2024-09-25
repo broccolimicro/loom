@@ -1,11 +1,37 @@
+title:            Loom
+longtitle:        Loom Language Documentation
+author:           Edward Bingham
+email:            edward.bingham@broccolimicro.io
+description: >
+  Synthesize quasi-delay insensitive circuits.
+
 remote_theme: sighingnow/jekyll-gitbook
-syntax_highlighter_style: colorful
+
 toc:
   enabled: true
   h_min: 1
   h_max: 3
+
 tracker:
   google_analytics: "G-FT6E284Y58"
+
+markdown:         kramdown
+kramdown:
+  auto_ids:               true
+  input:                  GFM
+  math_engine:            mathjax
+  smart_quotes:           lsquo,rsquo,ldquo,rdquo
+  toc_levels:             1..6
+  syntax_highlighter:     rouge
+  syntax_highlighter_opts:
+    guess_lang:           true
+
+syntax_highlighter_style: colorful
+
+markdown_ext:             markdown,mkdown,mkdn,mkd,md
+
+permalink:                /:categories/:year-:month-:day-:title:output_ext
+
 collections:
   pages:
     output: true
@@ -15,6 +41,7 @@ collections:
     output: true
     sort_by: date
     permalink: /:collection/:year-:month-:day-:title:output_ext
+
 ordered_collections:
   - posts
   - pages
