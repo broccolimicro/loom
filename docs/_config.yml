@@ -33,16 +33,20 @@ markdown_ext:             markdown,mkdown,mkdn,mkd,md
 permalink:                /:categories/:title:output_ext
 
 collections:
-  pages:
+  lang:
     output: true
     sort_by: date
     permalink: /:collection/:title:output_ext
-  others:
+  sim:
+    output: true
+    sort_by: date
+    permalink: /:collection/:title:output_ext
+	vis:
     output: true
     sort_by: date
     permalink: /:collection/:title:output_ext
 
 ordered_collections:
-  - posts
-  - pages
-  - others
+  - lang
+  - sim
+  - vis
