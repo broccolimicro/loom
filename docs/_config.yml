@@ -6,3 +6,7 @@ toc:
   h_max: 3
 tracker:
   google_analytics: "G-FT6E284Y58"
+ordered_collections:
+  - posts
+  - pages
+  - others
