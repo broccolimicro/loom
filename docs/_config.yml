@@ -6,6 +6,15 @@ toc:
   h_max: 3
 tracker:
   google_analytics: "G-FT6E284Y58"
+collections:
+  pages:
+    output: true
+    sort_by: date
+    permalink: /:collection/:year-:month-:day-:title:output_ext
+  others:
+    output: true
+    sort_by: date
+    permalink: /:collection/:year-:month-:day-:title:output_ext
 ordered_collections:
   - posts
   - pages
