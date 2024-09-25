@@ -4,6 +4,7 @@ author: Edward Bingham
 date: 2024-09-24
 category: Language
 layout: post
+order: 4
 ---
 
 A production rule specifies either the pull-up or pull-down network of a gate

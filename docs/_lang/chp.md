@@ -4,6 +4,7 @@ author: Edward Bingham
 date: 2024-09-24
 category: Language
 layout: post
+order: 2
 ---
 
 **Communicating Hardware Processes (CHP)** is a program notation for QDI

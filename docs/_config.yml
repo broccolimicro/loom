@@ -36,22 +36,14 @@ collections:
   lang:
     output: true
     permalink: /:collection/:title:output_ext
-    order:
-      - languages.md
-      - chp.md
-      - hse.md
-      - prs.md
   comp:
     output: true
-    sort_by: date
     permalink: /:collection/:title:output_ext
   sim:
     output: true
-    sort_by: date
     permalink: /:collection/:title:output_ext
   vis:
     output: true
-    sort_by: date
     permalink: /:collection/:title:output_ext
 
 ordered_collections:
