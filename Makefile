@@ -36,8 +36,8 @@ LIBS = \
 	lib/interpret_chp \
 	bin/ckt
 
-MAINTAINER_NAME = $(shell git config user.name)
-MAINTAINER_EMAIL = $(shell git config user.email)
+MAINTAINER_NAME = "$(shell git config user.name)"
+MAINTAINER_EMAIL = "$(shell git config user.email)"
 
 all: lib
 
