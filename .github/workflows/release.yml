@@ -23,11 +23,19 @@ jobs:
             to: "lm-windows.zip"
 
     steps:
-      - name: Checkout code
+      - name: Checkout code for workflow_dispatch
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: actions/checkout@v3
         with:
           submodules: recursive # This ensures submodules are pulled and initialized
           fetch-tags: true
+
+      - name: Checkout code for release
+        if: ${{ github.event_name == 'release' }}
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive # This ensures submodules are pulled and initialized
+          fetch-tags: false
 
       - name: Install dependencies on Linux
         if: matrix.os == 'ubuntu-latest'

@@ -122,7 +122,7 @@ make check
 * **Gate Level Sizing (0%)** Size the gates using logical effort.
 * **Netlist Synthesis (99%)** Generate a spice netlist from a production rule set.
 	- Need to generate device perimeter and area values among other parameters.
-* **Cell Generation (0%)** Break large subcircuits into cells for cell-layout.
+* **Cell Generation (100%)** Break large subcircuits into cells for cell-layout.
 * **Cell Layout (80%)** Generate the layouts for those cells.
 * **Placement (0%)** Place the cells to start the layout of larger subcircuits.
 * **Routing (0%)** Route paths finish the layout of larger subcircuits.
