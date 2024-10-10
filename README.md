@@ -60,7 +60,7 @@ Or do layout.
 $ lm wchb1b.hse sky130.py
 ```
 
-![wchb1b](https://github.com/user-attachments/assets/9499c5b5-91d1-4f77-8924-16b471cdbbc2)
+![wchb1b](https://github.com/user-attachments/assets/7337f6f7-7d8e-4ec4-80ae-6e5c24b931ab)
 
 <a name="build"></a>
 ## Build and Install
