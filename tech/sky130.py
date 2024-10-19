@@ -15,6 +15,7 @@ BEOL    = True # back-end-of-line checks
 OFFGRID = True # manufacturing grid/angle checks
 
 dbunit(5e-3)
+scale(1e6)
 
 no = -1
 diff = paint("diff.drawing", 65, 20)
@@ -283,17 +284,18 @@ width(via4, 160)
 width(met5, 320)
 
 nfet = nmos("sky130_fd_pr__nfet_01v8", 26)
-subst(nfet, diff, no, no, 50, 0)
+subst(nfet, diff, diff_label, diff_pin, 50, 0)
 subst(nfet, nsdm, no, no, 25, 25)
+subst(nfet, no, pwell_label, pwell_pin, 0, 0) 
 pfet = pmos("sky130_fd_pr__pfet_01v8", 26)
-subst(pfet, diff, no, no, 50, 0)
+subst(pfet, diff, diff_label, no, 50, 0)
 subst(pfet, psdm, no, no, 25, 25)
-subst(pfet, nwell, no, no, 36, 36)
+subst(pfet, nwell, nwell_label, nwell_pin, 36, 36)
 pfet_hvt = pmos("sky130_fd_pr__pfet_01v8_hvt", 26)
-subst(pfet_hvt, diff, no, no, 50, 0)
+subst(pfet_hvt, diff, diff_label, diff_pin, 50, 0)
 subst(pfet_hvt, psdm, no, no, 25, 25)
 subst(pfet_hvt, hvtp, no, no, 11, 11)
-subst(pfet_hvt, nwell, no, no, 36, 36)
+subst(pfet_hvt, nwell, nwell_label, nwell_pin, 36, 36)
 
 p = route(poly, poly_label, poly_pin)
 m0 = route(li1, li1_label, li1_pin)
