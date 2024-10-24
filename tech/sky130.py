@@ -14,8 +14,11 @@ FEOL    = True # front-end-of-line checks
 BEOL    = True # back-end-of-line checks
 OFFGRID = True # manufacturing grid/angle checks
 
+# Define Global Rules
 dbunit(5e-3)
+scale(1e6)
 
+# Define Paint Layers
 no = -1
 diff = paint("diff.drawing", 65, 20)
 tap = paint("tap.drawing", 65, 44)
@@ -261,6 +264,7 @@ cp1m_waffleDrop = paint("cp1m.waffleDrop", 33, 24)
 cfom_waffleDrop = paint("cfom.waffleDrop", 22, 24)
 cmm5_waffleDrop = paint("cmm5.waffleDrop", 117, 4)
 
+# Define DRC Rules
 fill(nwell)
 fill(dnwell)
 fill(hvtp)
@@ -282,37 +286,27 @@ width(met4, 60)
 width(via4, 160)
 width(met5, 320)
 
-nfet = nmos("sky130_fd_pr__nfet_01v8", 26)
-subst(nfet, diff, no, no, 50, 0)
-subst(nfet, nsdm, no, no, 25, 25)
-pfet = pmos("sky130_fd_pr__pfet_01v8", 26)
-subst(pfet, diff, no, no, 50, 0)
-subst(pfet, psdm, no, no, 25, 25)
-subst(pfet, nwell, no, no, 36, 36)
-pfet_hvt = pmos("sky130_fd_pr__pfet_01v8_hvt", 26)
-subst(pfet_hvt, diff, no, no, 50, 0)
-subst(pfet_hvt, psdm, no, no, 25, 25)
-subst(pfet_hvt, hvtp, no, no, 11, 11)
-subst(pfet_hvt, nwell, no, no, 36, 36)
+enclosing(diff, poly, no, 50)
+enclosing(nsdm, diff, 25, 25)
+enclosing(psdm, diff, 25, 25)
+enclosing(hvtp, psdm, 11, 11)
+enclosing(nwell, psdm, 36, 36)
+enclosing(nwell, hvtp, 36, 36)
+enclosing(poly, diff, no, 26)
+enclosing(diff, licon1, 8, 12)
 
-p = route(poly, poly_label, poly_pin)
-m0 = route(li1, li1_label, li1_pin)
-m1 = route(met1, met1_label, met1_pin)
-m2 = route(met2, met2_label, met2_pin)
-m3 = route(met3, met3_label, met3_pin)
-m4 = route(met4, met4_label, met4_pin)
-m5 = route(met5, met5_label, met5_pin)
-
-via(licon1, no, no, nfet, m0, 8, 12, 0, 16)
-via(licon1, no, no, pfet, m0, 8, 12, 0, 16)
-via(licon1, no, no, pfet_hvt, m0, 8, 12, 0, 16)
-
-via(licon1, no, no, p, m0, 10, 16, 0, 16)
-via(mcon, no, no, m0, m1, 0, 0, 6, 12)
-via(via1, no, no, m1, m2, 11, 11, 11, 17)
-via(via2, no, no, m2, m3, 8, 17, 13, 13)
-via(via3, no, no, m3, m4, 12, 18, 13, 13)
-via(via4, no, no, m4, m5, 38, 38, 62, 62)
+enclosing(poly, licon1, 10, 16)
+enclosing(li1, licon1, 0, 16)
+enclosing(li1, mcon, 0, 0)
+enclosing(met1, mcon, 6, 12)
+enclosing(met1, via1, 11, 11)
+enclosing(met2, via1, 11, 17)
+enclosing(met2, via2, 8, 17)
+enclosing(met3, via2, 13, 13)
+enclosing(met3, via3, 12, 18)
+enclosing(met4, via3, 13, 13)
+enclosing(met4, via4, 38, 38)
+enclosing(met5, via4, 62, 62)
 
 spacing(diff, diff, 54)
 spacing(hvtp, hvtp, 76)
@@ -335,3 +329,35 @@ spacing(b_and(licon1, poly), b_or(diff, tap), 38)
 spacing(b_and(poly, b_not(diff)), diff, 15)
 
 bound(areaid_sc)
+
+# Define Routing and Device Models
+df = subst(diff, diff_label, diff_pin)
+ns = subst(nsdm, no, no)
+ps = subst(psdm, no, no)
+hv = subst(hvtp, no, no)
+nw = well(nwell, nwell_label, nwell_pin)
+pw = well(no, pwell_label, pwell_pin)
+
+p = route(poly, poly_label, poly_pin)
+m0 = route(li1, li1_label, li1_pin)
+m1 = route(met1, met1_label, met1_pin)
+m2 = route(met2, met2_label, met2_pin)
+m3 = route(met3, met3_label, met3_pin)
+m4 = route(met4, met4_label, met4_pin)
+m5 = route(met5, met5_label, met5_pin)
+
+nfet = nmos("svt", "sky130_fd_pr__nfet_01v8", [df, ns, pw])
+pfet = pmos("svt", "sky130_fd_pr__pfet_01v8", [df, ps, nw])
+pfet_hvt = pmos("hvt", "sky130_fd_pr__pfet_01v8_hvt", [df, ps, hv, nw])
+
+via(nfet, m0, licon1)
+via(pfet, m0, licon1)
+via(pfet_hvt, m0, licon1)
+via(p, m0, licon1)
+via(m0, m1, mcon)
+via(m1, m2, via1)
+via(m2, m3, via2)
+via(m3, m4, via3)
+via(m4, m5, via4)
+
+

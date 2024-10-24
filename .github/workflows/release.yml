@@ -123,3 +123,14 @@ jobs:
           asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.LOOM_RELEASE }}
+
+      - name: Upload Install Script
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.get_release_info.outputs.url }}
+          asset_path: "install.sh"
+          asset_name: "install.sh"
+          asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.LOOM_RELEASE }}

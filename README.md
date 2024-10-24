@@ -120,8 +120,7 @@ make check
 * **Device Level Sizing (90%)** Size the transistors in a production rule set.
 	- Haven't tied in the PN ratio yet.
 * **Gate Level Sizing (0%)** Size the gates using logical effort.
-* **Netlist Synthesis (99%)** Generate a spice netlist from a production rule set.
-	- Need to generate device perimeter and area values among other parameters.
+* **Netlist Synthesis (100%)** Generate a spice netlist from a production rule set.
 * **Cell Generation (100%)** Break large subcircuits into cells for cell-layout.
 * **Cell Layout (80%)** Generate the layouts for those cells.
 * **Placement (0%)** Place the cells to start the layout of larger subcircuits.
