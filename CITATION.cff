@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Bingham"
+  given-names: "Ned"
+  orcid: "https://orcid.org/0000-0001-9701-9143"
+- family-names: "Manohar"
+  given-names: "Rajit"
+  orcid: "https://orcid.org/0000-0001-8211-6602"
+title: "Loom: Compiler for Asynchronous Circuits"
+version: v0.9.2
+doi: 10.5281/zenodo.13992089
+date-released: 2024-10-25
+url: "https://github.com/broccolimicro/loom/tree/v0.9.2"
