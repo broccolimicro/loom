@@ -4,6 +4,11 @@ authors:
 - family-names: "Bingham"
   given-names: "Ned"
   orcid: "https://orcid.org/0000-0001-9701-9143"
+- family-names: "Kramer"
+  given-names: "Nicholas"
+- family-names: "Manohar"
+  given-names: "Rajit"
+  orcid: "https://orcid.org/0000-0001-8211-6602"
 title: "Loom: Compiler for Asynchronous Circuits"
 doi: 10.5281/zenodo.13992088
 date-released: 2024-10-25
