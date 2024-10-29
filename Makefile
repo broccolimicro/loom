@@ -71,7 +71,7 @@ macos: lib
 	cp bin/ckt/lm lm-macos
 
 lib: gdstk
-	@$(foreach item,$(LIBS),echo "$(subst +, ,$(item))"; $(MAKE) -s $(MAKE_FLAGS) -C $(subst +, ,$(item));)
+	@$(foreach item,$(LIBS),echo "$(subst +, ,$(item))"; $(MAKE) VERSION="v$(shell cat VERSION)" -s $(MAKE_FLAGS) -C $(subst +, ,$(item));)
 
 test: googletest
 	@$(foreach item,$(LIBS),echo "$(subst +, ,$(item))"; $(MAKE) -s $(MAKE_FLAGS) -C $(subst +, ,$(item)) test;)
