@@ -343,10 +343,10 @@ df = subst(diff, diff_label, diff_pin)
 ns = subst(nsdm, no, no)
 ps = subst(psdm, no, no)
 hvp = subst(hvtp, no, no)
-hvn = subst(hvntm, no, no)
-lvn = subst(lvtn, no, no)
-nvn = subst(nvtn, no, no)
-hvx = subst(hvi, no, no)
+hvn = subst(hvntm, no, no) # TODO(edward.bingham) DRC rules
+lvn = subst(lvtn, no, no)  # TODO(edward.bingham) DRC rules
+nvn = subst(nvtn, no, no)  # TODO(edward.bingham) DRC rules
+hvx = subst(hvi, no, no)   # TODO(edward.bingham) DRC rules
 nw = well(nwell, nwell_label, nwell_pin)
 pw = well(no, pwell_label, pwell_pin)
 
@@ -358,14 +358,14 @@ m3 = route(met3, met3_label, met3_pin)
 m4 = route(met4, met4_label, met4_pin)
 m5 = route(met5, met5_label, met5_pin)
 
-nfet = nmos("svt", "sky130_fd_pr__nfet_01v8", [df, ns, pw], [hvp, lvn, hvx])
-nfet_lvt = nmos("lvt", "sky130_fd_pr__nfet_01v8_lvt", [df, ns, lvn, pw], [nvn])
+nfet = nmos("svt", "sky130_fd_pr__nfet_01v8", [df, ns, pw], exclude=[hvp, lvn, hvx], bins=[(0,500)])
+nfet_lvt = nmos("lvt", "sky130_fd_pr__nfet_01v8_lvt", [df, ns, lvn, pw], exclude=[nvn], bins=[(0,500)])
 nfet_pin = nmos("npin", "sky130_fd_pr__nfet_g5v0d10v5", [df, ns, hvn, pw, hvx])
 nfet_nvt = nmos("nvt", "sky130_fd_pr__nfet_05v0_nvt", [df, ns, nvn, lvn, pw])
 
-pfet = pmos("svt", "sky130_fd_pr__pfet_01v8", [df, ps, nw], [hvp, lvn, hvx])
-pfet_hvt = pmos("hvt", "sky130_fd_pr__pfet_01v8_hvt", [df, ps, hvp, nw])
-pfet_lvt = pmos("lvt", "sky130_fd_pr__pfet_01v8_lvt", [df, ps, lvn, nw])
+pfet = pmos("svt", "sky130_fd_pr__pfet_01v8", [df, ps, nw], exclude=[hvp, lvn, hvx], bins=[(0,500)])
+pfet_hvt = pmos("hvt", "sky130_fd_pr__pfet_01v8_hvt", [df, ps, hvp, nw], bins=[(0,500)])
+pfet_lvt = pmos("lvt", "sky130_fd_pr__pfet_01v8_lvt", [df, ps, lvn, nw], bins=[(0,500)])
 pfet_pin = nmos("ppin", "sky130_fd_pr__pfet_g5v0d10v5", [df, ps, nw, hvx])
 
 via(nfet, m0, licon1)
