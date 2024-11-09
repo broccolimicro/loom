@@ -39,7 +39,10 @@ LIBS = \
 MAINTAINER_NAME = "$(shell git config user.name)"
 MAINTAINER_EMAIL = "$(shell git config user.email)"
 
-all: lib
+all: version lib
+
+version:
+	@git rev-list --tags --max-count=1 | xargs -I{} git describe --tags {} | cut -c2- > VERSION
 
 linux: lib
 	mkdir -p lm-linux/usr/local/bin
