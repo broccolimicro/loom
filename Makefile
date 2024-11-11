@@ -47,6 +47,8 @@ version:
 linux: lib
 	mkdir -p lm-linux/usr/local/bin
 	cp bin/ckt/lm lm-linux/usr/local/bin
+	mkdir -p lm-linux/usr/local/share/
+	cp -r tech lm-linux/usr/local/share
 	mkdir -p lm-linux/DEBIAN
 	mkdir -p debian
 	touch debian/control
