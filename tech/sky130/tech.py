@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 from loom import *
 
 AL = 0  # do not change
@@ -268,6 +266,8 @@ cmm5_waffleDrop = paint("cmm5.waffleDrop", 117, 4)
 nvtn = paint("nvtn", 251, 0)
 
 # Define DRC Rules
+difftap = b_or(diff, tap)
+
 fill(nwell)
 fill(nwell_pin)
 fill(nwell_label)
@@ -276,6 +276,7 @@ fill(hvtp)
 fill(lvtn)
 fill(nsdm)
 fill(psdm)
+fill(hvi)
 fill(pwell_pin)
 fill(pwell_label)
 width(diff, 30)
@@ -342,6 +343,17 @@ spacing(poly, licon1, 18)
 spacing(b_and(b_and(diff, b_not(uhvi)), nsdm), nwell, 68)
 spacing(b_and(licon1, poly), b_or(diff, tap), 38)
 spacing(b_and(poly, b_not(diff)), diff, 15)
+
+width(hvi, 120)
+spacing(hvi, hvi, 140)
+#spacing(b_and(hvi, nwell), nwell, 400)
+#width(b_and(b_and(diff, hvi), b_not(b_and(psdm, diff))), 58)
+#width(b_and(b_and(diff, hvi), b_and(psdm, diff)), 30)
+enclosing(hvi, b_and(difftap, nwell), 66)
+spacing(b_and(hvi, nwell), difftap, 86)
+enclosing(hvi, difftap, 36)
+spacing(hvi, difftap, 36)
+#spacing(b_and(b_and(hvi, diff), b_not(nwell)), nwell, 86)
 
 bound(areaid_sc)
 
