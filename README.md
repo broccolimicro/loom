@@ -28,7 +28,8 @@ R.e+; [~R.f&~R.t]; *[[R.f|R.t]; R.e-; [~R.f&~R.t]; R.e+])'1
 Compile your functional specification to production rules.
 
 ```
-$ lm wchb1b.hse
+$ lm build -r wchb1b.hse
+$ cat wchb1b.prs
 require driven, stable, noninterfering
 @_12&R.t<1>|_Reset<3>&L.t<3>&R.e<3>->v3-
 @_13&~R.t<1>|~_Reset<1>|~L.t<2>&~R.e<2>->v3+
@@ -57,10 +58,11 @@ Vdd<0.1>->_12- [weak]
 Or do layout.
 
 ```
-$ lm wchb1b.hse sky130.py
+$ lm build wchb1b.hse
+$ klayout wchb1b.gds
 ```
 
-![wchb1b](https://github.com/user-attachments/assets/7337f6f7-7d8e-4ec4-80ae-6e5c24b931ab)
+![wchb1b](https://github.com/user-attachments/assets/726b96d3-6ebe-49f3-8830-6ac17941b804)
 
 <a name="build"></a>
 ## Build and Install
@@ -122,7 +124,7 @@ make check
 * **Gate Level Sizing (0%)** Size the gates using logical effort.
 * **Netlist Synthesis (100%)** Generate a spice netlist from a production rule set.
 * **Cell Generation (100%)** Break large subcircuits into cells for cell-layout.
-* **Cell Layout (80%)** Generate the layouts for those cells.
+* **Cell Layout (96%)** Generate the layouts for those cells.
 * **Placement (0%)** Place the cells to start the layout of larger subcircuits.
 * **Routing (0%)** Route paths finish the layout of larger subcircuits.
 
