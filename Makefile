@@ -39,7 +39,7 @@ LIBS = \
 MAINTAINER_NAME = "$(shell git config user.name)"
 MAINTAINER_EMAIL = "$(shell git config user.email)"
 
-all: version lib
+all: lib
 
 version:
 	@git fetch --tags --no-recurse-submodules
