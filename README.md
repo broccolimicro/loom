@@ -166,8 +166,7 @@ make check
 	- This doesn't always correctly identify isochronic forks in the production
 	  rule set. This is because a literal can show up in a guard, but that
 		doesn't mean the guard acknowledges any transitions on that literal.
-* **Device Level Sizing (90%)** Size the transistors in a production rule set.
-	- Haven't tied in the PN ratio yet.
+* **Device Level Sizing (100%)** Size the transistors in a production rule set.
 * **Gate Level Sizing (0%)** Size the gates using logical effort.
 * **Netlist Synthesis (100%)** Generate a spice netlist from a production rule set.
 * **Cell Generation (100%)** Break large subcircuits into cells for cell-layout.
