@@ -67,30 +67,77 @@ $ klayout wchb1b.gds
 <a name="build"></a>
 ## Build and Install
 
-Build the executable.
+### Linux
+
+Install dependencies
 ```
 sudo apt install ninja-build libqhull-dev libgraphviz-dev
-git submodule update --init --recursive
-make
 ```
 
-Install for Linux:
+Clone the repository
+```
+git clone https://github.com/broccolimicro/loom.git
+cd loom
+git submodule update --init --recursive
+```
+
+Build and Install
 ```
 make linux
 sudo dpkg -i lm-linux.deb
 ```
 
-Install for Windows:
+### Windows
+
+Install dependencies
+```
+pacman -Syu --noconfirm
+pacman -S --needed --noconfirm base-devel
+pacman -S --needed --noconfirm msys2-runtime-devel
+pacman -S --needed --noconfirm mingw-w64-x86_64-toolchain
+pacman -S --needed --noconfirm mingw-w64-x86_64-cmake
+pacman -S --needed --noconfirm mingw-w64-x86_64-ninja
+pacman -S --needed --noconfirm mingw-w64-x86_64-qhull
+pacman -S --needed --noconfirm mingw-w64-x86_64-zlib
+pacman -S --needed --noconfirm mingw-w64-x86_64-graphviz
+pacman -S --needed --noconfirm zip
+pacman -S --needed --noconfirm curl
+```
+
+Clone the repository
+```
+git clone https://github.com/broccolimicro/loom.git
+cd loom
+git submodule update --init --recursive
+```
+
+Build
 ```
 make windows
 # this creates lm-windows.zip
 ```
 
-Install for Mac OS:
+### Mac OS
+
+Install dependencies
+```
+brew install cmake ninja qhull graphviz curl 
+```
+
+Clone the repository
+```
+git clone https://github.com/broccolimicro/loom.git
+cd loom
+git submodule update --init --recursive
+```
+
+Build
 ```
 make macos
 # this creates lm-macos
 ```
+
+### Run Tests
 
 To generate test binaries and then run the tests
 ```
