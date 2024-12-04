@@ -4,9 +4,18 @@ Loom is a collection of tools for the design and verification of
 asynchronous circuits. Not all of the tools are complete.
 
 ## Table of Contents
+1. [Install](#install)
 1. [Example](#example)
-3. [Build and Install](#build)
+3. [Build From Source](#build)
 2. [Development Status](#status)
+
+<a name="install"></a>
+## Install
+
+This install script downloads the appropriate binaries for your system and places them in `/usr/local` (or `C:\Program Files (x86)\Loom` on windows)
+```
+curl -L https://raw.githubusercontent.com/broccolimicro/loom/refs/heads/main/install.sh | sudo bash
+```
 
 <a name="example"></a>
 ## Example
