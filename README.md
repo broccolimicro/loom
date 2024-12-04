@@ -90,9 +90,13 @@ cd loom
 git submodule update --init --recursive
 ```
 
-Build and Install
+Build
 ```
 make linux
+```
+
+Install
+```
 sudo dpkg -i lm-linux.deb
 ```
 
@@ -124,7 +128,12 @@ git submodule update --init --recursive
 Build
 ```
 make windows
-# this creates lm-windows.zip
+```
+
+Install
+```
+unzip lm-windows.zip -d "C:\\Program Files (x86)"
+export PATH="C:\\Program Files (x86)\\Loom\\bin:$PATH"
 ```
 
 ### Mac OS
@@ -144,7 +153,16 @@ git submodule update --init --recursive
 Build
 ```
 make macos
-# this creates lm-macos
+```
+
+Install
+```
+tar -xzvf lm-macos.tar.gz
+cp lm-macos/bin/lm /usr/local/bin
+cp lm-macos/share/tech /usr/local/share
+chmod +x /usr/local/bin/lm
+chown -R root:staff /usr/local/share/tech
+chmod -R ug+rw /usr/local/share/tech 
 ```
 
 ### Run Tests
