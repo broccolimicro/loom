@@ -16,8 +16,8 @@ jobs:
             from: "lm-linux.deb"
             to: "lm-linux.deb"
           - os: macos-latest
-            from: "lm-macos"
-            to: "lm-macos"
+            from: "lm-macos.tar.gz"
+            to: "lm-macos.tar.gz"
           - os: windows-latest
             from: "lm-windows.zip"
             to: "lm-windows.zip"
