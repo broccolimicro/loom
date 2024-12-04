@@ -95,6 +95,7 @@ pacman -Syu --noconfirm
 pacman -S --needed --noconfirm base-devel
 pacman -S --needed --noconfirm msys2-runtime-devel
 pacman -S --needed --noconfirm mingw-w64-x86_64-toolchain
+pacman -S --needed --noconfirm mingw-w64-x86_64-dlfcn
 pacman -S --needed --noconfirm mingw-w64-x86_64-cmake
 pacman -S --needed --noconfirm mingw-w64-x86_64-ninja
 pacman -S --needed --noconfirm mingw-w64-x86_64-qhull
