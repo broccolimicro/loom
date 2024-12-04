@@ -4,8 +4,30 @@ TAG=$(curl -Ls "https://api.github.com/repos/broccolimicro/loom/releases?per_pag
 OS=$(uname)
 
 if [ "$OS" = "Linux" ]; then
-	curl -L https://github.com/broccolimicro/loom/releases/download/$TAG/lm-linux.deb -o lm-linux.deb
-	sudo dpkg -i lm-linux.deb
+	TEMP_DIR="$(mktemp -d)"
+	DEB_URL="https://github.com/broccolimicro/loom/releases/download/$TAG/lm-linux.deb"
+
+	# Check if the script is run with root permissions
+	if [ "$(id -u)" -ne 0 ]; then
+	  echo "This installer requires root privileges. Please run with sudo."
+	  exit 1
+	fi
+
+	echo "Downloading installation files..."
+	if curl -L "$DEB_URL" -o "$TEMP_DIR/lm-linux.deb"; then
+	  echo "Download successful."
+	else
+	  echo "Failed to download tarball. Please check the URL or your internet connection."
+	  exit 1
+	fi
+
+	dpkg -i "$TEMP_DIR/lm-linux.deb"
+	
+	rm -rf "$TEMP_DIR"
+
+	# Post-install message
+	echo "Installation complete!"
+	echo "You can now use the 'lm' command."
 elif [ "$OS" = "Darwin" ]; then
 	# Define target directories
 	BIN_DIR="/usr/local/bin"
