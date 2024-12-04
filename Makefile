@@ -74,7 +74,11 @@ windows: lib
 	rm -rf lm-windows
 
 macos: lib
-	cp bin/ckt/lm lm-macos
+	mkdir -p lm-macos/bin
+	mkdir -p lm-macos/share
+	cp bin/ckt/lm lm-macos/bin/lm
+	cp -r tech lm-macos/share/tech
+	tar -czvf lm-macos.tar.gz lm-macos
 
 lib: gdstk
 	@$(foreach item,$(LIBS),echo "$(subst +, ,$(item))"; $(MAKE) VERSION="v$(shell cat VERSION)" -s $(MAKE_FLAGS) -C $(subst +, ,$(item));)
