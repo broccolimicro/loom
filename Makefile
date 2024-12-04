@@ -67,13 +67,13 @@ linux: lib
 	rm -rf debian lm-linux
 
 windows: lib
-	mkdir -p lm-windows/bin
-	mkdir -p lm-windows/share
-	cp bin/ckt/lm.exe lm-windows/bin/lm.exe
-	cp -r tech lm-windows/share/tech
-	ldd lm-windows/bin/lm.exe | grep "mingw64" | sed 's/.*\/mingw64/\/mingw64/g' | sed 's/ (.*$$//g' | xargs -I{} cp {} lm-windows/bin
-	zip -r lm-windows.zip lm-windows
-	rm -rf lm-windows
+	mkdir -p Loom/bin
+	mkdir -p Loom/share
+	cp bin/ckt/lm.exe Loom/bin/lm.exe
+	cp -r tech Loom/share/tech
+	ldd Loom/bin/lm.exe | grep "mingw64" | sed 's/.*\/mingw64/\/mingw64/g' | sed 's/ (.*$$//g' | xargs -I{} cp {} Loom/bin
+	zip -r lm-windows.zip Loom
+	rm -rf Loom
 
 macos: lib
 	mkdir -p lm-macos/bin

@@ -88,7 +88,42 @@ elif [ "$OS" = "Darwin" ]; then
 	echo "Installation complete!"
 	echo "You can now use the 'lm' command."
 else
-	curl -L https://github.com/broccolimicro/loom/releases/download/$TAG/lm-windows.zip -o lm-windows.zip
-	unzip lm-windows.zip
+	# Define target directories
+	BIN_DIR="C:\\Program Files (x86)"
+	TEMP_DIR="$(mktemp -d)"
+	TARBALL_URL="https://github.com/broccolimicro/loom/releases/download/$TAG/lm-windows.zip"
+
+	echo "Downloading installation files..."
+	if curl -L "$TARBALL_URL" -o "$TEMP_DIR/lm-windows.zip"; then
+	  echo "Download successful."
+	else
+	  echo "Failed to download tarball. Please check the URL or your internet connection."
+	  exit 1
+	fi
+
+	echo "Extracting files..."
+	if unzip "$TEMP_DIR/lm-windows.zip" -d "$TEMP_DIR"; then
+	  echo "Extraction complete."
+	else
+	  echo "Failed to extract files. Exiting."
+	  exit 1
+	fi
+
+	# Install binary
+	echo "Installing Loom to $BIN_DIR..."
+	if cp -r $TEMP_DIR/Loom "$BIN_DIR/"; then
+	  chmod +x "$BIN_DIR/Loom/bin/lm"
+	  chmod -R ug+rw "$BIN_DIR/Loom/share/tech"
+	  echo "Loom installed successfully."
+	else
+	  echo "Failed to install Loom. Please check permissions and try again."
+	  exit 1
+	fi
+
+	rm -rf "$TEMP_DIR"
+
+	# Post-install message
+	echo "Installation complete!"
+	echo "You can now use the 'lm' command."
 fi
 
