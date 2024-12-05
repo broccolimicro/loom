@@ -108,3 +108,6 @@
 [submodule "lib/interpret_sch"]
 	path = lib/interpret_sch
 	url = https://github.com/broccolimicro/interpret_sch.git
+[submodule "lib/parse_cog"]
+	path = lib/parse_cog
+	url = https://github.com/broccolimicro/parse_cog.git

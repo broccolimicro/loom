@@ -14,7 +14,7 @@ asynchronous circuits. Not all of the tools are complete.
 
 This install script downloads the appropriate binaries for your system and places them in `/usr/local` (or `C:\Program Files (x86)\Loom` on windows)
 ```
-curl -L https://raw.githubusercontent.com/broccolimicro/loom/refs/heads/main/install.sh | sudo bash
+curl -sL https://raw.githubusercontent.com/broccolimicro/loom/refs/heads/main/install.sh | sudo bash
 ```
 
 <a name="example"></a>
