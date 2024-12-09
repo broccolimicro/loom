@@ -22,16 +22,41 @@ curl -sL https://raw.githubusercontent.com/broccolimicro/loom/refs/heads/main/in
 
 Write your functional specification.
 
-**wchb1b.hse**
+**wchb1b.cog**
 ```
-R.f-,R.t-,L.e+; [R.e&~L.f&~L.t];
-*[[  R.e & L.f -> R.f+
-  [] R.e & L.t -> R.t+
-  ]; L.e-; [~R.e&~L.f&~L.t]; R.f-,R.t-; L.e+
- ]||
-
-(L.f-,L.t-; [L.e];  *[[1->L.f+:1->L.t+]; [~L.e]; L.f-,L.t-; [L.e]]||
-R.e+; [~R.f&~R.t]; *[[R.f|R.t]; R.e-; [~R.f&~R.t]; R.e+])'1
+region 1 {
+	L.f- and L.t-;
+	await L.e;
+	while {
+		L.f+ xor L.t+;
+		await ~L.e;
+		L.f- and L.t-;
+		await L.e
+	}
+} and {
+	L.e+ and R.f- and R.t-;
+	await R.e & ~L.f & ~L.t;
+	while {
+		await R.e & L.f {
+			R.f+
+		} or await R.e & L.t {
+			R.t+
+		};
+		L.e-;
+		await ~R.e & ~L.f & ~L.t;
+		R.f- and R.t-;
+		L.e+
+	}
+} and region 1 {
+	R.e+;
+	await ~R.f & ~R.t;
+	while {
+		await R.f | R.t;
+		R.e-;
+		await ~R.f & ~R.t;
+		R.e+
+	}
+}
 ```
 
 Compile your functional specification to production rules.
@@ -72,6 +97,20 @@ $ klayout wchb1b.gds
 ```
 
 ![wchb1b](https://github.com/user-attachments/assets/726b96d3-6ebe-49f3-8830-6ac17941b804)
+
+Loom also supports a process calculus called Hand-Shaking Expansions (HSE)
+
+**wchb1b.hse**
+```
+R.f-,R.t-,L.e+; [R.e&~L.f&~L.t];
+*[[  R.e & L.f -> R.f+
+  [] R.e & L.t -> R.t+
+  ]; L.e-; [~R.e&~L.f&~L.t]; R.f-,R.t-; L.e+
+ ]||
+
+(L.f-,L.t-; [L.e];  *[[1->L.f+:1->L.t+]; [~L.e]; L.f-,L.t-; [L.e]]||
+R.e+; [~R.f&~R.t]; *[[R.f|R.t]; R.e-; [~R.f&~R.t]; R.e+])'1
+```
 
 <a name="build"></a>
 ## Build and Install

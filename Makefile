@@ -25,6 +25,7 @@ LIBS = \
 	lib/parse_astg \
 	lib/parse_dot \
 	lib/parse_chp \
+	lib/parse_cog \
 	lib/parse_ucs \
 	lib/interpret_boolean \
 	lib/interpret_arithmetic \
