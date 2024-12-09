@@ -25,35 +25,35 @@ Write your functional specification.
 **wchb1b.cog**
 ```
 region 1 {
-	L.f- and L.t-;
-	await L.e;
+	L.f- and L.t-
+	await L.e
 	while {
-		L.f+ xor L.t+;
-		await ~L.e;
-		L.f- and L.t-;
+		L.f+ xor L.t+
+		await ~L.e
+		L.f- and L.t-
 		await L.e
 	}
 } and {
-	L.e+ and R.f- and R.t-;
-	await R.e & ~L.f & ~L.t;
+	L.e+ and R.f- and R.t-
+	await R.e & ~L.f & ~L.t
 	while {
 		await R.e & L.f {
 			R.f+
 		} or await R.e & L.t {
 			R.t+
-		};
-		L.e-;
-		await ~R.e & ~L.f & ~L.t;
-		R.f- and R.t-;
+		}
+		L.e-
+		await ~R.e & ~L.f & ~L.t
+		R.f- and R.t-
 		L.e+
 	}
 } and region 1 {
-	R.e+;
-	await ~R.f & ~R.t;
+	R.e+
+	await ~R.f & ~R.t
 	while {
-		await R.f | R.t;
-		R.e-;
-		await ~R.f & ~R.t;
+		await R.f | R.t
+		R.e-
+		await ~R.f & ~R.t
 		R.e+
 	}
 }
