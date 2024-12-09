@@ -62,7 +62,7 @@ region 1 {
 Compile your functional specification to production rules.
 
 ```
-$ lm build -r wchb1b.hse
+$ lm build -r wchb1b.cog
 $ cat wchb1b.prs
 require driven, stable, noninterfering
 @_12&R.t<1>|_Reset<3>&L.t<3>&R.e<3>->v3-
@@ -92,7 +92,7 @@ Vdd<0.1>->_12- [weak]
 Or do layout.
 
 ```
-$ lm build wchb1b.hse
+$ lm build wchb1b.cog
 $ klayout wchb1b.gds
 ```
 
