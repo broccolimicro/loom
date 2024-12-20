@@ -1,11 +1,11 @@
 # Loom &nbsp; [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13992088.svg)](https://doi.org/10.5281/zenodo.13992088) [![Documentation](https://img.shields.io/badge/Documentation-blue.svg)](https://broccolimicro.github.io/loom) [![Tests](https://github.com/broccolimicro/loom/actions/workflows/test.yml/badge.svg)](https://github.com/broccolimicro/loom/actions/workflows/test.yml) [![Release](https://github.com/broccolimicro/loom/actions/workflows/release.yml/badge.svg)](https://github.com/broccolimicro/loom/actions/workflows/release.yml)
 
-Loom is a compiler for quasi-delay insensitive asynchronous circuits. Loom is
-in early stages of development. The core compilation kernel is still under
-development. Today, Loom is able to reliably compile a wire-level specification
-that has no state-conflicts down to cell layouts and a spice netlist. There is
-currently limited functionality to solve state-conflicts, and this
-functionality is under active development. See the
+Loom is a compiler for Quasi-Delay Insensitive (QDI) asynchronous circuits.
+While the core compilation kernel is still a work in progress, it can reliably
+compile a wire-level specification without state-conflicts down to a
+cell-mapped spice netlist and automatically generated custom cell layouts that
+are mostly DRC and LVS clean. There is currently limited functionality to
+solve state-conflicts which is under active development. See the
 [Development Status](#status) section for more details.
 
 The longer term goal is to be able to compile a specification that looks
@@ -231,6 +231,12 @@ make check
 <a name="status"></a>
 ## Development Status
 
+The current focus is on **State Variable Insertion**, followed by the following priorities:
+1. Modules
+2. Templating
+3. Placement
+4. Routing
+
 ### Synthesis
 * **Templating (0%)** parameterize your module specifications.
 * **Modules (0%)** be able to break up your circuit into modules and construct larger systems.
@@ -264,7 +270,8 @@ make check
 	  elimination with cylindrical algebraic decomposition to be able to test
 		whether expressions are tautilogically true/false to correctly handle guards.
 * **HSE Simulator (100%)** Simulate transitions on wires in a control flow language.
-* **PR Simulator (100%)** Digital simulation of the gates and wires as represented by production rules.
+* **PR Simulator (90%)** Digital simulation of the gates and wires as represented by production rules.
+	- There's a bug associated with timing assumptions in this simulator.
 * **Spice Simulator Tie-in (0%)** Tie a spice simulator to the binary so that you can simulate at any level.
 * **Co-simulation of all levels (0%)** Cosimulate the behavioral spec against the wire-level spec, the digital circuit behavior, and the analog circuit behavior.
 
