@@ -1,7 +1,23 @@
 # Loom &nbsp; [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13992088.svg)](https://doi.org/10.5281/zenodo.13992088) [![Documentation](https://img.shields.io/badge/Documentation-blue.svg)](https://broccolimicro.github.io/loom) [![Tests](https://github.com/broccolimicro/loom/actions/workflows/test.yml/badge.svg)](https://github.com/broccolimicro/loom/actions/workflows/test.yml) [![Release](https://github.com/broccolimicro/loom/actions/workflows/release.yml/badge.svg)](https://github.com/broccolimicro/loom/actions/workflows/release.yml)
 
-Loom is a collection of tools for the design and verification of
-asynchronous circuits. Not all of the tools are complete.
+Loom is a compiler for quasi-delay insensitive asynchronous circuits. Loom is
+in early stages of development. The core compilation kernel is still under
+development. Today, Loom is able to reliably compile a wire-level specification
+that has no state-conflicts down to cell layouts and a spice netlist. There is
+currently limited functionality to solve state-conflicts, and this
+functionality is under active development. See the
+[Development Status](#status) section for more details.
+
+The longer term goal is to be able to compile a specification that looks
+roughly like this:
+```
+func adder(chan<int<4>> A, B; chan<int<1>> Ci; chan<int<4>> S; chan<int<1>> Co) {
+	while {
+		int<5> s = A.recv()+B.recv()+Ci.recv()
+		S.send(s[0:4]) and Co.send(s[4])
+	}
+}
+```
 
 ## Table of Contents
 1. [Install](#install)
