@@ -1,0 +1,69 @@
+{
+	S.f- and S.t- and Co.f- and Co.t- and ABCi.e+
+	await S.e & Co.e & ~A.f & ~A.t & ~B.f & ~B.t & ~Ci.f & ~Ci.t
+	while {
+		await S.e & (A.t & B.f & Ci.f | A.f & B.t & Ci.f | A.f & B.f & Ci.t | A.t & B.t & Ci.t) {
+			S.t+
+		} or await S.e & (A.t & B.t & Ci.f | A.t & B.f & Ci.t | A.f & B.t & Ci.t | A.f & B.f & Ci.f) {
+			S.f+
+		} and await Co.e & (A.t & B.t & Ci.f | A.t & B.f & Ci.t | A.f & B.t & Ci.t | A.t & B.t & Ci.t) {
+			Co.t+
+		} or await Co.e & (A.t & B.f & Ci.f | A.f & B.t & Ci.f | A.f & B.f & Ci.t | A.f & B.f & Ci.f) {
+			Co.f+
+		}
+		ABCi.e-
+		await ~A.t & ~A.f & ~B.t & ~B.f & ~Ci.t & ~Ci.f
+		await ~S.e {
+			S.t- and S.f-
+		} and await ~Co.e {
+			Co.t- and Co.f-
+		}
+		ABCi.e+
+	}
+} and region 1 {
+	S.e+
+	await ~S.f&~S.t
+	while {
+		await S.t | S.f
+		S.e-
+		await ~S.t & ~S.f
+		S.e+
+	}
+} and region 1 {
+	Co.e+
+	await ~Co.f&~Co.t
+	while {
+		await Co.t | Co.f
+		Co.e-
+		await ~Co.t & ~Co.f
+		Co.e+
+	}
+} and region 1 {
+	A.f- and A.t-
+	await ABCi.e 
+	while {
+		A.t+ xor A.f+
+		await ~ABCi.e
+		A.t- and A.f-
+		await ABCi.e
+	}
+} and region 1 {
+	B.f- and B.t-
+	await ABCi.e 
+	while {
+		B.t+ xor B.f+
+		await ~ABCi.e
+		B.t- and B.f-
+		await ABCi.e
+	}
+} and region 1 {
+	Ci.f- and Ci.t-
+	await ABCi.e 
+	while {
+		Ci.t+ xor Ci.f+
+		await ~ABCi.e
+		Ci.t- and Ci.f-
+		await ABCi.e
+	}
+}
+

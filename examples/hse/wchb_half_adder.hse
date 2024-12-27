@@ -1,0 +1,30 @@
+([AB.e]; A.f-, A.t-;
+*[ [1 -> A.f+ : 1 -> A.t+]; [~AB.e]; A.f-,A.t-; [AB.e] ] ||
+
+[AB.e]; B.f-, B.t-;
+*[ [1 -> B.f+ : 1 -> B.t+]; [~AB.e]; B.f-,B.t-; [AB.e] ])'1 || 
+
+[ ~A.f & ~A.t & ~B.f & ~B.t & S.e & Co.e ];
+AB.e+, S.f-, S.t-, Co.f-, Co.t-; 
+*[(
+    [  S.e & (A.f & B.f | A.t & B.t) -> S.f+
+    [] S.e & (A.f & B.t | A.t & B.f) -> S.t+
+    ] ||
+    [  Co.e & (A.f | B.f) -> Co.f+
+    [] Co.e & (A.t & B.t) -> Co.t+
+    ]
+  ); AB.e-;
+  [~A.f & ~A.t & ~B.f & ~B.t]; (
+    [~S.e]; S.f-,S.t-||
+    [~Co.e];Co.f-,Co.t-
+  ); AB.e+
+ ] ||
+
+
+([~S.f & ~S.t]; S.e+;
+*[ [ S.f | S.t]; S.e-; [~S.f & ~S.t]; S.e+ ] ||
+
+[~Co.f & ~Co.t]; Co.e+;
+*[ [ Co.f | Co.t]; Co.e-; [~Co.f & ~Co.t]; Co.e+ ])'1
+
+
