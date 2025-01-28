@@ -355,11 +355,15 @@ enclosing(hvi, difftap, 36)
 spacing(hvi, difftap, 36)
 #spacing(b_and(b_and(hvi, diff), b_not(nwell)), nwell, 86)
 
+# Maximum distance from well tap to diffusion is 6um. However, we find the
+# embedded square which makes it 4.243um
+enclosing(tap, diff, -848, -848)
+
 bound(areaid_sc)
 
 # Define Routing and Device Models
-nw = well(nwell, nwell_label, nwell_pin, resist=1700)
-pw = well(no, pwell_label, pwell_pin, resist=3050)
+nw = well(nwell, nwell_label, nwell_pin, tap, resist=1700)
+pw = well(no, pwell_label, pwell_pin, tap, resist=3050)
 
 nd     = subst(diff, diff_label, diff_pin, mask=[nsdm], excl=[hvtp, lvtn, hvi], well=pw, thick=.12, resist=120)
 nd_lvt = subst(diff, diff_label, diff_pin, mask=[nsdm, lvtn], excl=[nvtn], well=pw, thick=.12, resist=120)
@@ -379,6 +383,8 @@ m3 = route(met3, met3_label, met3_pin, thick=.845, resist=0.047)
 m4 = route(met4, met4_label, met4_pin, thick=.845, resist=0.047)
 m5 = route(met5, met5_label, met5_pin, thick=1.26, resist=0.029)
 
+via(nw, m0, licon1, thick=.9361, resist=185)
+via(pw, m0, licon1, thick=.9361, resist=185)
 via(nd, m0, licon1, thick=.9361, resist=185)
 via(nd_lvt, m0, licon1, thick=.9361, resist=185)
 via(nd_pin, m0, licon1, thick=.9361, resist=185)
