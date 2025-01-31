@@ -198,7 +198,7 @@ export PATH="C:\\Program Files (x86)\\Loom\\bin:$PATH"
 
 Install dependencies
 ```
-brew install cmake ninja qhull graphviz curl opencl-headers ocl-icd
+brew install cmake ninja qhull graphviz curl opencl-headers opencl-clhpp-headers ocl-icd
 ```
 
 Clone the repository

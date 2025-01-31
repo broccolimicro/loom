@@ -43,7 +43,7 @@ jobs:
 
       - name: Install dependencies on macOS
         if: matrix.os == 'macos-latest'
-        run: brew install cmake ninja qhull graphviz curl opencl-headers ocl-icd # or any other required dependencies for macOS
+        run: brew install cmake ninja qhull graphviz curl opencl-headers opencl-clhpp-headers ocl-icd # or any other required dependencies for macOS
 
       - name: Install MSYS2
         if: matrix.os == 'windows-latest'
