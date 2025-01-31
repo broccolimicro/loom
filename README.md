@@ -170,6 +170,7 @@ pacman -S --needed --noconfirm mingw-w64-x86_64-qhull
 pacman -S --needed --noconfirm mingw-w64-x86_64-zlib
 pacman -S --needed --noconfirm mingw-w64-x86_64-graphviz
 pacman -S --needed --noconfirm mingw-w64-x86_64-opencl-headers
+pacman -S --needed --noconfirm mingw-w64-x86_64-opencl-clhpp
 pacman -S --needed --noconfirm mingw-w64-x86_64-opencl-icd
 pacman -S --needed --noconfirm zip
 pacman -S --needed --noconfirm curl
