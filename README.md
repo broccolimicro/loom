@@ -135,7 +135,7 @@ R.e+; [~R.f&~R.t]; *[[R.f|R.t]; R.e-; [~R.f&~R.t]; R.e+])'1
 
 Install dependencies
 ```
-sudo apt install ninja-build libqhull-dev libgraphviz-dev
+sudo apt install ninja-build libqhull-dev libgraphviz-dev opencl-headers ocl-icd-opencl-dev mesa-opencl-icd 
 ```
 
 Clone the repository
@@ -169,6 +169,8 @@ pacman -S --needed --noconfirm mingw-w64-x86_64-ninja
 pacman -S --needed --noconfirm mingw-w64-x86_64-qhull
 pacman -S --needed --noconfirm mingw-w64-x86_64-zlib
 pacman -S --needed --noconfirm mingw-w64-x86_64-graphviz
+pacman -S --needed --noconfirm mingw-w64-x86_64-opencl-headers
+pacman -S --needed --noconfirm mingw-w64-x86_64-opencl-icd
 pacman -S --needed --noconfirm zip
 pacman -S --needed --noconfirm curl
 ```
@@ -195,7 +197,7 @@ export PATH="C:\\Program Files (x86)\\Loom\\bin:$PATH"
 
 Install dependencies
 ```
-brew install cmake ninja qhull graphviz curl 
+brew install cmake ninja qhull graphviz curl opencl-headers ocl-icd
 ```
 
 Clone the repository
