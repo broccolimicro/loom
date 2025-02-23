@@ -1,0 +1,61 @@
+S1.f-,S1.t-,Co1.f-,Co1.t-,ABCi1.e+; [S1.e&Co1.e&~A1.f&~A1.t&~B1.f&~B1.t&~Ci1.f&~Ci1.t];
+*[
+	(
+		[	S1.e & (A1.t & B1.f & Ci1.f | A1.f & B1.t & Ci1.f | A1.f & B1.f & Ci1.t | A1.t & B1.t & Ci1.t) -> S1.t+ 
+		[]	S1.e & (A1.t & B1.t & Ci1.f | A1.t & B1.f & Ci1.t | A1.f & B1.t & Ci1.t | A1.f & B1.f & Ci1.f) -> S1.f+
+		] ||
+		[   Co1.e & (A1.t & B1.t & Ci1.f | A1.t & B1.f & Ci1.t | A1.f & B1.t & Ci1.t | A1.t & B1.t & Ci1.t) -> Co1.t+
+		[]  Co1.e & (A1.t & B1.f & Ci1.f | A1.f & B1.t & Ci1.f | A1.f & B1.f & Ci1.t | A1.f & B1.f & Ci1.f) -> Co1.f+
+		]
+	); ABCi1.e-; [~A1.t & ~A1.f & ~B1.t & ~B1.f & ~Ci1.t & ~Ci1.f];
+	(
+		[~S1.e -> S1.t-,S1.f-] ||
+		[~Co1.e -> Co1.t-,Co1.f-]
+	);
+	ABCi1.e+
+] || 
+
+(S1.e+; [~S1.f&~S1.t]; *[[S1.t | S1.f]; S1.e-; [~S1.t & ~S1.f]; S1.e+] ||
+
+Co1.e+; [~Co1.f&~Co1.t]; *[[Co1.t | Co1.f]; Co1.e-; [~Co1.t & ~Co1.f]; Co1.e+] ||
+
+A1.f-,A1.t-; [ABCi1.e]; 
+*[[1->A1.t+:1->A1.f+]; [~ABCi1.e]; A1.t-,A1.f-; [ABCi1.e]] ||
+
+B1.f-,B1.t-; [ABCi1.e];
+*[[1->B1.t+:1->B1.f+]; [~ABCi1.e]; B1.t-,B1.f-; [ABCi1.e]] ||
+
+Ci1.f-,Ci1.t-; [ABCi1.e];
+*[[1->Ci1.t+:1->Ci1.f+]; [~ABCi1.e]; Ci1.t-,Ci1.f-; [ABCi1.e]])'1
+
+
+S2.f-,S2.t-,Co2.f-,Co2.t-,ABCi2.e+; [S2.e&Co2.e&~A2.f&~A2.t&~B2.f&~B2.t&~Ci2.f&~Ci2.t];
+*[
+	(
+		[	S2.e & (A2.t & B2.f & Ci2.f | A2.f & B2.t & Ci2.f | A2.f & B2.f & Ci2.t | A2.t & B2.t & Ci2.t) -> S2.t+ 
+		[]	S2.e & (A2.t & B2.t & Ci2.f | A2.t & B2.f & Ci2.t | A2.f & B2.t & Ci2.t | A2.f & B2.f & Ci2.f) -> S2.f+
+		] ||
+		[   Co2.e & (A2.t & B2.t & Ci2.f | A2.t & B2.f & Ci2.t | A2.f & B2.t & Ci2.t | A2.t & B2.t & Ci2.t) -> Co2.t+
+		[]  Co2.e & (A2.t & B2.f & Ci2.f | A2.f & B2.t & Ci2.f | A2.f & B2.f & Ci2.t | A2.f & B2.f & Ci2.f) -> Co2.f+
+		]
+	); ABCi2.e-; [~A2.t & ~A2.f & ~B2.t & ~B2.f & ~Ci2.t & ~Ci2.f];
+	(
+		[~S2.e -> S2.t-,S2.f-] ||
+		[~Co2.e -> Co2.t-,Co2.f-]
+	);
+	ABCi2.e+
+] || 
+
+(S2.e+; [~S2.f&~S2.t]; *[[S2.t | S2.f]; S2.e-; [~S2.t & ~S2.f]; S2.e+] ||
+
+Co2.e+; [~Co2.f&~Co2.t]; *[[Co2.t | Co2.f]; Co2.e-; [~Co2.t & ~Co2.f]; Co2.e+] ||
+
+A2.f-,A2.t-; [ABCi2.e]; 
+*[[1->A2.t+:1->A2.f+]; [~ABCi2.e]; A2.t-,A2.f-; [ABCi2.e]] ||
+
+B2.f-,B2.t-; [ABCi2.e];
+*[[1->B2.t+:1->B2.f+]; [~ABCi2.e]; B2.t-,B2.f-; [ABCi2.e]] ||
+
+Ci2.f-,Ci2.t-; [ABCi2.e];
+*[[1->Ci2.t+:1->Ci2.f+]; [~ABCi2.e]; Ci2.t-,Ci2.f-; [ABCi2.e]])'1
+
