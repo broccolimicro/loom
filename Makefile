@@ -41,6 +41,7 @@ MAINTAINER_NAME = "$(shell git config user.name)"
 MAINTAINER_EMAIL = "$(shell git config user.email)"
 
 all: lib
+	cp bin/ckt/lm .
 
 version:
 	@git fetch --tags --no-recurse-submodules
