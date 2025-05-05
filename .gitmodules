@@ -46,17 +46,9 @@
 	path = lib/interpret_prs
 	url = https://github.com/broccolimicro/interpret_prs.git
 	ignore = dirty
-[submodule "lib/ucs"]
-	path = lib/ucs
-	url = https://github.com/broccolimicro/ucs.git
-	ignore = dirty
 [submodule "lib/parse_ucs"]
 	path = lib/parse_ucs
 	url = https://github.com/broccolimicro/parse_ucs.git
-	ignore = dirty
-[submodule "lib/interpret_ucs"]
-	path = lib/interpret_ucs
-	url = https://github.com/broccolimicro/interpret_ucs.git
 	ignore = dirty
 [submodule "lib/parse_dot"]
 	path = lib/parse_dot
@@ -111,3 +103,15 @@
 [submodule "lib/parse_cog"]
 	path = lib/parse_cog
 	url = https://github.com/broccolimicro/parse_cog.git
+[submodule "lib/flow"]
+	path = lib/flow
+	url = https://github.com/broccolimicro/flow.git
+[submodule "lib/parse_verilog"]
+	path = lib/parse_verilog
+	url = https://github.com/broccolimicro/parse_verilog.git
+[submodule "lib/interpret_flow"]
+	path = lib/interpret_flow
+	url = https://github.com/broccolimicro/interpret_flow.git
+[submodule "lib/weaver"]
+	path = lib/weaver
+	url = https://github.com/broccolimicro/weaver.git
