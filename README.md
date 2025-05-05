@@ -234,11 +234,7 @@ make check
 <a name="status"></a>
 ## Development Status
 
-The current focus is on **State Variable Insertion**, followed by the following priorities:
-1. Modules
-2. Templating
-3. Placement
-4. Routing
+![LoomArchitecture](https://github.com/user-attachments/assets/25e92ab3-69bc-474a-ae2a-04ec60623c4f)
 
 ### Synthesis
 * **Templating (0%)** parameterize your module specifications.
