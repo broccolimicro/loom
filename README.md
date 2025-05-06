@@ -8,16 +8,7 @@ are mostly DRC and LVS clean. There is currently limited functionality to
 solve state-conflicts which is under active development. See the
 [Development Status](#status) section for more details.
 
-The longer term goal is to be able to compile a specification that looks
-roughly like this:
-```
-func adder(chan<int<4>> A, B; chan<int<1>> Ci; chan<int<4>> S; chan<int<1>> Co) {
-	while {
-		int<5> s = A.recv()+B.recv()+Ci.recv()
-		S.send(s[0:4]) and Co.send(s[4])
-	}
-}
-```
+![LoomArchitecture](https://github.com/user-attachments/assets/25e92ab3-69bc-474a-ae2a-04ec60623c4f)
 
 ## Table of Contents
 1. [Install](#install)
@@ -232,21 +223,15 @@ make check
 ```
 
 <a name="status"></a>
-## Development Status
-
-The current focus is on **State Variable Insertion**, followed by the following priorities:
-1. Modules
-2. Templating
-3. Placement
-4. Routing
+## Development Status (May 5, 2025)
 
 ### Synthesis
 * **Templating (0%)** parameterize your module specifications.
-* **Modules (0%)** be able to break up your circuit into modules and construct larger systems.
+* **Modules (40%)** be able to break up your circuit into modules and construct larger systems.
 * **Process Decomposition (0%)** Break large processes up into pipeline stages.
-* **Handshake Expansion (0%)** Expand channel actions into handshake protocols and multi-bit operations into transitions on wires.
+* **Handshake Expansion (20%)** Expand channel actions into handshake protocols and multi-bit operations into transitions on wires.
 * **Handshake Reshuffling (0%)** Reorder transitions to simplify the state space, simplify implementation, and improve performance.
-* **State Elaboration (100%)** Explore every state and record the state space.
+* **State Elaboration (90%)** Explore every state and record the state space.
 * **State Variable Insertion (80%)** Deconflict states by inserting transitions. This results in a complete state encoding.
 	- The current implementation is not yet able to solve every possible encoding
 		problem. There are some transition insertion locations it can't see yet.
@@ -263,7 +248,7 @@ The current focus is on **State Variable Insertion**, followed by the following 
 * **Netlist Synthesis (100%)** Generate a spice netlist from a production rule set.
 * **Cell Generation (100%)** Break large subcircuits into cells for cell-layout.
 * **Cell Layout (96%)** Generate the layouts for those cells.
-* **Placement (0%)** Place the cells to start the layout of larger subcircuits.
+* **Placement (20%)** Place the cells to start the layout of larger subcircuits.
 * **Routing (0%)** Route paths finish the layout of larger subcircuits.
 
 ### Simulation
