@@ -18,6 +18,7 @@ LIBS = \
 	lib/hse \
 	lib/chp \
 	lib/flow \
+	lib/weaver \
 	lib/parse \
 	lib/parse_expression \
 	lib/parse_prs \
