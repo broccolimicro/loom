@@ -1,0 +1,8 @@
+import "dataflow"
+
+func top() {
+	var chan L, R
+	source(L) and
+	buffer(L, R) and
+	sink(R)
+}

@@ -1,0 +1,63 @@
+func source(chan R) {
+	while {
+		R.send(rand())
+	}
+}
+
+func sink(chan L) {
+	while {
+		L.recv()
+	}
+}
+
+func buffer(chan L, R) {
+	var fixed x
+	while {
+		x = L.recv()
+		R.send(x)
+	}
+}
+
+func copy(chan L, A, B) {
+	var fixed x
+	while {
+		x = L.recv()
+		A.send(x) and B.send(x)
+	}
+}
+
+func add(chan A, B; chan S) {
+	while {
+		S.send(A.recv() + B.recv())
+	}
+}
+
+func split(chan C; chan L; chan A, B) {
+	var fixed c, x
+	while {
+		x = L.recv() and c = C.recv()
+		await c == 0 {
+			A.send(x)
+		} or await c == 1 {
+			B.send(x)
+		}
+	}
+}
+
+func merge(chan C; chan A, B; chan R) {
+	var fixed c, x
+	while {
+		c = C.recv()
+		await c == 0 {
+			x = A.recv()
+		} or await c == 1 {
+			x = B.recv()
+		}
+		R.send(x)
+	}
+}
+
+struct test(bool a, b) {
+	a -> b-
+	~a -> b+
+}
