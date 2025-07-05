@@ -17,7 +17,8 @@ LIBS = \
 	lib/petri \
 	lib/hse \
 	lib/chp \
-	lib/ucs \
+	lib/flow \
+	lib/weaver \
 	lib/parse \
 	lib/parse_expression \
 	lib/parse_prs \
@@ -27,14 +28,15 @@ LIBS = \
 	lib/parse_chp \
 	lib/parse_cog \
 	lib/parse_ucs \
+	lib/parse_verilog \
 	lib/interpret_boolean \
 	lib/interpret_arithmetic \
 	lib/interpret_phy \
 	lib/interpret_sch \
 	lib/interpret_prs \
 	lib/interpret_hse \
-	lib/interpret_ucs \
 	lib/interpret_chp \
+	lib/interpret_flow \
 	bin/ckt
 
 MAINTAINER_NAME = "$(shell git config user.name)"
