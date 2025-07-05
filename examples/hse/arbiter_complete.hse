@@ -4,9 +4,9 @@
 (B.r-; [B.e];
 *[B.r+; [~B.e]; B.r-; [B.e]])'1 ||
 
-S.r-,A.e+,B.e+; [S.e & ~A.r & ~B.r];
-*[[ A.r -> S.r+; [~S.e]; A.e-; [~A.r]; S.r-; [S.e]; A.e+
-  : B.r -> S.r+; [~S.e]; B.e-; [~B.r]; S.r-; [S.e]; B.e+
+x+,y+,S.r-,A.e+,B.e+; [S.e & ~A.r & ~B.r];
+*[[ A.r -> x-; S.r+; [~S.e]; A.e-; [~A.r]; x+; S.r-; [S.e]; A.e+
+  : B.r -> y-; S.r+; [~S.e]; B.e-; [~B.r]; y+; S.r-; [S.e]; B.e+
   ]
  ]
 
