@@ -57,7 +57,7 @@ func merge(chan C; chan A, B; chan R) {
 	}
 }
 
-struct test(bool a, b) {
+/*struct test(bool a, b) {
 	a -> b-
 	~a -> b+
-}
+}*/
