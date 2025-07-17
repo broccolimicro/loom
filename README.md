@@ -223,11 +223,11 @@ make check
 ```
 
 <a name="status"></a>
-## Development Status (May 5, 2025)
+## Development Status (July 17, 2025)
 
 ### Synthesis
 * **Templating (0%)** parameterize your module specifications.
-* **Modules (40%)** be able to break up your circuit into modules and construct larger systems.
+* **Modules (60%)** be able to break up your circuit into modules and construct larger systems.
 * **Process Decomposition (0%)** Break large processes up into pipeline stages.
 * **Handshake Expansion (20%)** Expand channel actions into handshake protocols and multi-bit operations into transitions on wires.
 * **Handshake Reshuffling (0%)** Reorder transitions to simplify the state space, simplify implementation, and improve performance.
