@@ -96,7 +96,9 @@ ifeq ($(UNAME_S),Darwin)
 gdstk:
 	grep "CMAKE_OSX_DEPLOYMENT_TARGET" lib/gdstk/Makefile || ( \
 		mv lib/gdstk/Makefile lib/gdstk/Makefile_old; \
-		sed 's/Ninja/Ninja \-DCMAKE_OSX_DEPLOYMENT_TARGET\=12\.0/g' lib/gdstk/Makefile_old > lib/gdstk/Makefile)
+		sed 's/Ninja/Ninja \-DCMAKE_OSX_DEPLOYMENT_TARGET\=15\.0/g' lib/gdstk/Makefile_old > lib/gdstk/Makefile; \
+		mv lib/gdstk/CMakeLists.txt lib/gdstk/CMakeLists.txt_old; \
+		sed 's/-mmacosx-version-min\=[0-9][0-9]\.[0-9]/-mmacosx-version-min\=15\.0/g' lib/gdstk/CMakeLists.txt_old > lib/gdstk/CMakeLists.txt)
 	$(MAKE) -s $(MAKE_FLAGS) -C lib/gdstk lib
 else ifeq ($(UNAME_S),Windows_NT)
 gdstk:
