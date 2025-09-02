@@ -5,3 +5,5 @@ __pycache__
 lm
 *.deb
 *.zip
+*.gds
+*_ext.*

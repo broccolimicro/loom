@@ -1,0 +1,93 @@
+func source(chan R) {
+	while {
+		R.send(rand())
+	}
+}
+
+func sink(chan L) {
+	while {
+		L.recv()
+	}
+}
+
+func buffer(chan L, R) {
+	while {
+		R.send(L.recv())
+	}
+}
+
+func copy(chan L, A, B) {
+	var fixed x
+	while {
+		x = L.recv()
+		A.send(x) and B.send(x)
+	}
+}
+
+func add(chan A, B; chan S) {
+	while {
+		S.send(A.recv() + B.recv())
+	}
+}
+
+func split(chan C; chan L; chan A, B) {
+	while {
+		await C.probe() == 0 {
+			A.send(L.recv())
+		} or await C.probe() == 1 {
+			B.send(L.recv())
+		}
+	}
+}
+
+func merge(chan C; chan A, B; chan R) {
+	while {
+		await C.probe() == 0 {
+			C.recv() and R.send(A.recv())
+		} or await C.probe() == 1 {
+			C.recv() and R.send(B.recv())
+		}
+	}
+}
+
+proto wchb1b() {
+	region 1 {
+		L.f- and L.t-
+		await L.e
+		while {
+			L.f+ xor L.t+
+			await ~L.e
+			L.f- and L.t-
+			await L.e
+		}
+	} and {
+		L.e+ and R.f- and R.t-
+		await R.e & ~L.f & ~L.t
+		while {
+			await R.e & L.f {
+				R.f+
+			} or await R.e & L.t {
+				R.t+
+			}
+			L.e-
+			await ~R.e & ~L.f & ~L.t
+			R.f- and R.t-
+			L.e+
+		}
+	} and region 1 {
+		R.e+
+		await ~R.f & ~R.t
+		while {
+			await R.f | R.t
+			R.e-
+			await ~R.f & ~R.t
+			R.e+
+		}
+	}
+}
+
+
+circ test(bool a, b) {
+	a -> b-
+	~a -> b+
+}

@@ -271,4 +271,19 @@ make check
 * **Waveforms (100%)** Export to VCD for viewing in GTKWave.
 * **Event Rule (0%)** Debug your system using an event rule representation instead of waveforms.
 
+## Design Invariant Goals
 
+* The higher level language cannot opinionate the implementation of a dialect.
+* There must be separate submodules for:
+	- **parser** - the abstract syntax tree for a particular language and the code to
+	  fill the tree based on text file input.
+	- **interpreter** - map the abstract syntax tree to the base dialect
+	- **base** - the actual implementation of a dialect
+	- **binder** - used by the interpreter to handle translation between higher level
+	  language variables and types and the variables and types the base dialect
+    knows how to handle.
+* The higher level language cannot know anything about a given dialect except for the code in the **binder**.
+* The **parser** must work independently of any other submodule
+* The **interpreter** must work independently of any other submodule other than the **base** and the **parser**
+* The **base** must work independently of any other submodule
+* The **binder** must work independently of any other submodule other than the **base** and the higher level language

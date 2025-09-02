@@ -73,9 +73,6 @@
 [submodule "lib/interpret_chp"]
 	path = lib/interpret_chp
 	url = https://github.com/broccolimicro/interpret_chp.git
-[submodule "bin/gated"]
-	path = bin/gated
-	url = https://github.com/broccolimicro/gated.git
 [submodule "googletest"]
 	path = googletest
 	url = https://github.com/google/googletest.git
