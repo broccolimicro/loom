@@ -3,7 +3,7 @@
 " Maintainer:	Ned Bingham
 " Latest Revision: 26 April 2025
 
-syn keyword	wFeatures func struct
+syn keyword	wFeatures func struct circ proto
 syn keyword wInclude import
 syn keyword wControlFlow while await and or xor
 syn keyword wTypes chan fixed ufixed bool

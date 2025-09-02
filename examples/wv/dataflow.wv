@@ -50,7 +50,7 @@ func merge(chan C; chan A, B; chan R) {
 	}
 }
 
-proto wchb1b() {
+proto wchb1b() : buffer {
 	region 1 {
 		L.f- and L.t-
 		await L.e
