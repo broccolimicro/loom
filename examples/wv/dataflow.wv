@@ -11,10 +11,8 @@ func sink(chan L) {
 }
 
 func buffer(chan L, R) {
-	var fixed x
 	while {
-		x = L.recv()
-		R.send(x)
+		R.send(L.recv())
 	}
 }
 
@@ -33,27 +31,22 @@ func add(chan A, B; chan S) {
 }
 
 func split(chan C; chan L; chan A, B) {
-	var fixed c, x
 	while {
-		x = L.recv() and c = C.recv()
-		await c == 0 {
-			A.send(x)
-		} or await c == 1 {
-			B.send(x)
+		await C.probe() == 0 {
+			A.send(L.recv())
+		} or await C.probe() == 1 {
+			B.send(L.recv())
 		}
 	}
 }
 
 func merge(chan C; chan A, B; chan R) {
-	var fixed c, x
 	while {
-		c = C.recv()
-		await c == 0 {
-			x = A.recv()
-		} or await c == 1 {
-			x = B.recv()
+		await C.probe() == 0 {
+			C.recv() and R.send(A.recv())
+		} or await C.probe() == 1 {
+			C.recv() and R.send(B.recv())
 		}
-		R.send(x)
 	}
 }
 
@@ -94,7 +87,7 @@ proto wchb1b() {
 }
 
 
-ckt test(bool a, b) {
+circ test(bool a, b) {
 	a -> b-
 	~a -> b+
 }
