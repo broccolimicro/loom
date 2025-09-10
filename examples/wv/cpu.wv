@@ -1,0 +1,120 @@
+func imem(chan Addr, Rd) {
+	var fixed mem[256]
+	while {
+		Rd.send(mem[Addr.recv()])
+	}
+}
+
+func dmem(chan Addr, Cmd, Rd, Wr) {
+	var fixed mem[256]
+	while {
+		await Cmd.probe() == 0 {
+			Cmd.recv()
+			Rd.send(mem[Addr.recv()])
+		} or await Cmd.probe() == 1 {
+			Cmd.recv()
+			mem[Addr.recv()] = Wr.recv()
+		}
+	}
+}
+
+func fetch(chan Addr, Inc, Jmp) {
+	var fixed pc = 0
+	while {
+		Addr.send(pc)
+		await Jmp.probe() {
+			pc = Jmp.recv()
+		} or await Inc.probe() {
+			Inc.recv()
+			pc = pc + 1
+		}
+	}
+}
+
+// 0: add rd, rs, rt
+// 1: mul rd, rs, rt
+// 2: and rd, rs, rt
+// 3: or rd, rs, rt
+// 4: shl rd, rs, rt
+// 5: shr rd, rs, rt
+// 6: not rd, rs, _
+// 7: neg rd, rs, _
+// 8: imm rd, cnst, _
+// 9: ld rd, addr, _
+// 10: st _, addr, rt
+// 11: bz _, addr, rt
+// 12: blz _, addr, rt
+// 13: jmp _, addr, _
+func decode(chan InsRd, Alu, Rs, Rt, Rd, DataAddr, DataCmd, DataRd, DataWr, Inc, Jmp) {
+	var fixed reg[16]
+	while {
+		op = InsRd.recv()
+		fn = op[0:4]
+		rs = op[4:8]
+		rt = op[8:12]
+		rd = op[12:16]
+		await fn < 8 { // alu operations    
+			Alu.send(fn[0:3])
+			Rs.send(rf[rs])
+			await fn < 6 {
+				Rt.send(rf[rt])
+			} or await fn >= 6 {
+				skip
+			}
+			rf[rd] = Rd.recv()
+		} or await fn == 8 { // imm
+			rf[rd] = rs
+		} or await fn == 9 { // ld
+			DataCmd.send(0)
+			DataAddr.send(rs)
+			rf[rd] = DataRd.recv()
+		} or await fn == 10 { // st
+			DataCmd.send(1)
+			DataAddr.send(rs)
+			DataWr.send(rf[rt])
+		} or await fn == 11 {
+			await rf[rt] == 0 {
+				Jmp.send(rs)
+			} or await rf[rt] ~= 0 {
+				Inc.send()
+			}
+		} or await fn == 12 {
+			await rf[rt] < 0 {
+				Jmp.send(rs)
+			} or await rf[rt] ~= 0 {
+				Inc.send()
+			}
+		} or await fn == 13 {
+			Jmp.send(rs)
+		}
+	}
+}
+
+func execute(chan Fn, A, B, R) {
+	while {
+		await Fn.probe() == 0 & A.probe() & B.probe() { // add
+			R.send(A.recv() + B.recv())
+		} or await Fn.probe() == 1 & A.probe() & B.probe() { // mul
+			R.send(A.recv() * B.recv())
+		} or await Fn.probe() == 2 & A.probe() & B.probe() { // and
+			R.send(A.recv() && B.recv())
+		} or await Fn.probe() == 3 & A.probe() & B.probe() { // or
+			R.send(A.recv() || B.recv())
+		} or await Fn.probe() == 4 & A.probe() & B.probe() { // shl
+			R.send(A.recv() << B.recv())
+		} or await Fn.probe() == 5 & A.probe() & B.probe() { // shr
+			R.send(A.recv() >> B.recv())
+		} or await Fn.probe() == 6 & A.probe() { // not
+			R.send(!A.recv())
+		} or await Fn.probe() == 7 & A.probe() { // neg
+			R.send(-A.recv())
+		}
+	}
+}
+
+func cpu(chan InsAddr, InsRd, DataAddr, DataCmd, DataRd, DataWr) {
+	var chan Inc, Jmp, Fn, Rs, Rt, Rd, Mem, Wb
+	fetch(InsAddr, Inc, Jmp) and
+		decode(InsRd, Fn, Rs, Rt, Rd, DataAddr, DataCmd, DataRd, DataWr, Inc, Jmp) and
+		execute(Fn, Rs, Rt, Rd)
+}
