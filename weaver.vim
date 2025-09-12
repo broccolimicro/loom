@@ -5,7 +5,7 @@
 
 syn keyword	wFeatures func struct circ proto
 syn keyword wInclude import
-syn keyword wControlFlow while await and or xor var
+syn keyword wControlFlow while await if and or xor var
 syn keyword wTypes chan fixed ufixed bool
 syn keyword wTodo contained TODO FIXME NOTE DESIGN
 syn match   wLineComment "//.*$" contains=wTodo

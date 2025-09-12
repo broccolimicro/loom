@@ -32,9 +32,9 @@ func add(chan A, B; chan S) {
 
 func split(chan C; chan L; chan A, B) {
 	while {
-		await C.probe() == 0 {
+		if C.probe() == 0 {
 			A.send(L.recv())
-		} or await C.probe() == 1 {
+		} or if C.probe() == 1 {
 			B.send(L.recv())
 		}
 	}
@@ -42,9 +42,9 @@ func split(chan C; chan L; chan A, B) {
 
 func merge(chan C; chan A, B; chan R) {
 	while {
-		await C.probe() == 0 {
+		if C.probe() == 0 && valid(A.probe()) {
 			C.recv() and R.send(A.recv())
-		} or await C.probe() == 1 {
+		} or if C.probe() == 1 && valid(A.probe()) {
 			C.recv() and R.send(B.recv())
 		}
 	}
@@ -86,8 +86,8 @@ proto wchb1b() : buffer {
 	}
 }
 
-
 circ test(bool a, b) {
 	a -> b-
 	~a -> b+
 }
+
