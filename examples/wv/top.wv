@@ -1,8 +1,16 @@
+import "algorithm"
+//import "cpu"
 import "dataflow"
 
 func top() {
-	var chan L, R
+	var chan L, R;
 	source(L) and
-	buffer(L, R) and
-	sink(R)
+		buffer(L, R) and
+		sink(R)
+
+	// Pico Processor
+	//var chan InsAddr, InsRd, DataAddr, DataCmd, DataRd, DataWr;
+	//imem(InsAddr, InsRd) and
+	//	dmem(DataAddr, DataCmd, DataRd, DataWr) and
+	//	cpu(InsAddr, InsRd, DataAddr, DataCmd, DataRd, DataWr)
 }

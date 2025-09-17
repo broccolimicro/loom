@@ -1,51 +1,174 @@
-func source(chan R) {
+type transform {
+	fixed x
+	fixed y
+}
+
+func source(chan L) {
 	while {
-		R.send(rand())
+		L.send(rand())
 	}
 }
 
-func sink(chan L) {
+func sink(chan R) {
 	while {
-		L.recv()
+		R.recv()
 	}
 }
 
 func buffer(chan L, R) {
+	var fixed l;
+	while {
+		l = L.recv();
+		R.send(l)
+	}
+}
+
+func buffer2(chan L, R) {
 	while {
 		R.send(L.recv())
 	}
 }
 
-func copy(chan L, A, B) {
-	var fixed x
+func copy(chan L, R0, R1) {
+	var fixed l;
 	while {
-		x = L.recv()
-		A.send(x) and B.send(x)
+		l = L.recv();
+		R0.send(l) and R1.send(l)
 	}
 }
 
-func add(chan A, B; chan S) {
+
+func func(chan L0, L1, R) {
+	while {
+		l0 = L0.recv() and l1 = L1.recv();
+		R.send(l0 | l1)
+	}
+}
+
+func split(chan L, Cc, R0, R1) {
+	var fixed cc, l;
+	while {
+		cc = Cc.probe();
+		l = L.recv();
+		if cc == 0  {
+			R0.send(l)
+		} or if cc == 1 {
+			R1.send(l)
+		}
+		Cc.recv()
+	}
+	//while {
+	//	await Cc.probe() == 0 {
+	//		A.send(L.recv()) and Cc.recv()
+	//	} or await Cc.probe() == 1 {
+	//		B.send(L.recv()) and Cc.recv()
+	//	}
+	//}
+}
+
+func merge(chan L0, L1, Cc, R) {
+	var fixed l;
+	while {
+		c = Cc.recv();
+		await c == 0 {
+			l = L0.recv()
+		} or await c == 1 {
+			l = L1.recv()
+		}
+		R.send(l)
+
+		// More ideal
+		//	await Cc.probe() == 0 {
+		//		Cc.recv() and R.send(A.recv())
+		//	} or await Cc.probe() == 1 {
+		//		Cc.recv() and R.send(B.recv())
+		//	}
+
+		//New malicious test
+		//if valid(Cc.probe() == 0 && L0.probe()) {
+		//	//Cc.recv() and R.send(L0.recv())
+		//	R.send(valid(L0.recv()))
+		//} or if valid(Cc.probe()) == 1 && L1.probe() {
+		//	//Cc.recv() and R.send(L1.recv())
+		//	valid(R.send(L1.recv()))
+		//}
+		//Cc.recv()
+	}
+}
+
+func add(chan A, B, S) {
+	var fixed s;
 	while {
 		S.send(A.recv() + B.recv())
 	}
 }
 
-func split(chan C; chan L; chan A, B) {
+func ds_add(chan A, B, S) {
 	while {
-		if C.probe() == 0 {
-			A.send(L.recv())
-		} or if C.probe() == 1 {
-			B.send(L.recv())
+		WIDTH=16;
+		s = (Ad.probe() + Bd.probe() + ci) % _.pow(2, WIDTH) and
+			co = (Ad.probe() + Bd.probe() + ci) / _.pow(2, WIDTH);
+
+		await Ac.probe()==0 | Bc.probe()==0 | s[WIDTH] ~= ci {
+			Sc.send(0) and Sd.send(s[0:WIDTH]);
+			ci=co;
+
+			await Ac.probe()==0 {
+				Ac.recv() and Ad.recv()
+
+			} or await Ac.probe() ~= 0 {
+				skip 
+
+			} and await Bc.probe()==0 {
+				Bc.recv() and Bd.recv()
+
+			} or await Bc.probe() ~= 0 {
+				skip
+			}
+
+		} or await Ac.probe()==1 & Bc.probe()==1 & co ~= ci {
+			Sc.send(1) and Sd.send(s[0:WIDTH]);
+			ci=co
+
+		} or await Ac.probe()==1 & Bc.probe()==1 & co==ci {
+			Sc.send(0) and Sd.send(s[0:WIDTH]);
+			ci=0;
+			Ac.recv() and Ad.recv() and Bc.recv() and Bd.recv()
 		}
 	}
 }
 
-func merge(chan C; chan A, B; chan R) {
+func ds_add_flat(chan Ac, Ad, Bc, Bd, Sc, Sd) {
+	var fixed ci;
 	while {
-		if C.probe() == 0 && valid(A.probe()) {
-			C.recv() and R.send(A.recv())
-		} or if C.probe() == 1 && valid(A.probe()) {
-			C.recv() and R.send(B.recv())
+		//if C.probe() == 0 && valid(A.probe()) {
+		//	C.recv() and R.send(A.recv())
+		//} or if C.probe() == 1 && valid(A.probe()) {
+		//	C.recv() and R.send(B.recv())
+		await Ac.probe()==0 & Bc.probe()==0 {
+			s = Ad.probe() + Bd.probe() + ci;
+			Ac.recv() and Ad.recv() and Bc.recv() and Bd.recv();
+			Sc.send(0) and Sd.send(s[0:4]);
+			ci = s[4]
+		} or await Ac.probe()==0 & Bc.probe()==1 {
+			s = Ad.probe() + Bd.probe() + ci;
+			Ac.recv() and Ad.recv();
+			Sc.send(0) and Sd.send(s[0:4]);
+			ci = s[4]
+		} or await Ac.probe()==1 & Bc.probe()==0 {
+			s = Ad.probe() + Bd.probe() + ci;
+			Bc.recv() and Bd.recv();
+			Sc.send(0) and Sd.send(s[0:4]);
+			ci = s[4]
+		} or await Ac.probe()==1 & Bc.probe()==1 & s[4] ~= ci {
+			s = Ad.probe() + Bd.probe() + ci;
+			Sc.send(0) and Sd.send(s[0:4]);
+			ci = s[4]
+		} or await Ac.probe()==1 & Bc.probe()==1 & s[4] == ci {
+			s = Ad.probe() + Bd.probe() + ci;
+			Ac.recv() and Ad.recv() and Bc.recv() and Bd.recv();
+			Sc.send(1) and Sd.send(s[0:4]);
+			ci = 0
 		}
 	}
 }
@@ -91,3 +214,14 @@ circ test(bool a, b) {
 	~a -> b+
 }
 
+func error_invalid() {
+	var transform t;
+	var fixed a, b, c;
+	while {
+		t = transform(1, 2);
+		valid(a);
+		await a && valid(b) {
+			a = b + valid(c)
+		}
+	}
+}

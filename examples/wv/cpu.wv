@@ -1,31 +1,31 @@
 func imem(chan Addr, Rd) {
-	var fixed mem[256]
+	var fixed mem[256];
 	while {
 		Rd.send(mem[Addr.recv()])
 	}
 }
 
 func dmem(chan Addr, Cmd, Rd, Wr) {
-	var fixed mem[256]
+	var fixed mem[256];
 	while {
 		await Cmd.probe() == 0 {
-			Cmd.recv()
+			Cmd.recv();
 			Rd.send(mem[Addr.recv()])
 		} or await Cmd.probe() == 1 {
-			Cmd.recv()
+			Cmd.recv();
 			mem[Addr.recv()] = Wr.recv()
 		}
 	}
 }
 
 func fetch(chan Addr, Inc, Jmp) {
-	var fixed pc = 0
+	var fixed pc = 0;
 	while {
-		Addr.send(pc)
+		Addr.send(pc);
 		await Jmp.probe() {
 			pc = Jmp.recv()
 		} or await Inc.probe() {
-			Inc.recv()
+			Inc.recv();
 			pc = pc + 1
 		}
 	}
@@ -46,31 +46,31 @@ func fetch(chan Addr, Inc, Jmp) {
 // 12: blz _, addr, rt
 // 13: jmp _, addr, _
 func decode(chan InsRd, Alu, Rs, Rt, Rd, DataAddr, DataCmd, DataRd, DataWr, Inc, Jmp) {
-	var fixed reg[16]
+	var fixed reg[16];
 	while {
-		op = InsRd.recv()
-		fn = op[0:4]
-		rs = op[4:8]
-		rt = op[8:12]
-		rd = op[12:16]
+		op = InsRd.recv();
+		fn = op[0:4];
+		rs = op[4:8];
+		rt = op[8:12];
+		rd = op[12:16];
 		await fn < 8 { // alu operations    
-			Alu.send(fn[0:3])
+			Alu.send(fn[0:3]);
 			Rs.send(rf[rs])
-			await fn < 6 {
-				Rt.send(rf[rt])
-			} or await fn >= 6 {
-				skip
-			}
+				await fn < 6 {
+					Rt.send(rf[rt])
+				} or await fn >= 6 {
+					skip
+				}
 			rf[rd] = Rd.recv()
 		} or await fn == 8 { // imm
 			rf[rd] = rs
 		} or await fn == 9 { // ld
-			DataCmd.send(0)
-			DataAddr.send(rs)
+			DataCmd.send(0);
+			DataAddr.send(rs);
 			rf[rd] = DataRd.recv()
 		} or await fn == 10 { // st
-			DataCmd.send(1)
-			DataAddr.send(rs)
+			DataCmd.send(1);
+			DataAddr.send(rs);
 			DataWr.send(rf[rt])
 		} or await fn == 11 {
 			await rf[rt] == 0 {
@@ -113,7 +113,7 @@ func execute(chan Fn, A, B, R) {
 }
 
 func cpu(chan InsAddr, InsRd, DataAddr, DataCmd, DataRd, DataWr) {
-	var chan Inc, Jmp, Fn, Rs, Rt, Rd, Mem, Wb
+	var chan Inc, Jmp, Fn, Rs, Rt, Rd, Mem, Wb;
 	fetch(InsAddr, Inc, Jmp) and
 		decode(InsRd, Fn, Rs, Rt, Rd, DataAddr, DataCmd, DataRd, DataWr, Inc, Jmp) and
 		execute(Fn, Rs, Rt, Rd)
