@@ -1,18 +1,15 @@
 # Loom &nbsp; [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13992088.svg)](https://doi.org/10.5281/zenodo.13992088) [![Documentation](https://img.shields.io/badge/Documentation-blue.svg)](https://broccolimicro.github.io/loom) [![Tests](https://github.com/broccolimicro/loom/actions/workflows/test.yml/badge.svg)](https://github.com/broccolimicro/loom/actions/workflows/test.yml) [![Release](https://github.com/broccolimicro/loom/actions/workflows/release.yml/badge.svg)](https://github.com/broccolimicro/loom/actions/workflows/release.yml)
 
-Loom is a compiler for Quasi-Delay Insensitive (QDI) asynchronous circuits.
-While the core compilation kernel is still a work in progress, it can reliably
-compile a wire-level specification without state-conflicts down to a
-cell-mapped spice netlist and automatically generated custom cell layouts that
-are mostly DRC and LVS clean. There is currently limited functionality to
-solve state-conflicts which is under active development. See the
-[Development Status](#status) section for more details.
+Loom is a circuit compiler for a language called Weaver. The goal is to make it
+easy to design complex computer architectures that are both performant and
+energy efficient.
 
 ![LoomArchitecture](https://github.com/user-attachments/assets/25e92ab3-69bc-474a-ae2a-04ec60623c4f)
 
 ## Table of Contents
 1. [Install](#install)
-1. [Example](#example)
+1. [Function Example](#function_example)
+1. [Protocol Example](#protocol_example)
 3. [Build From Source](#build)
 2. [Development Status](#status)
 
@@ -24,100 +21,166 @@ This install script downloads the appropriate binaries for your system and place
 curl -sL https://raw.githubusercontent.com/broccolimicro/loom/refs/heads/main/install.sh | sudo bash
 ```
 
-<a name="example"></a>
-## Example
+## Examples
 
-Write your functional specification.
+Loom has two separate backends. One compiles from a data-level specification to
+verilog and the other compiles from a wire-level specification to QDI circuits
+in a spice netlist. On the frontend, these two backends are accessible through
+different "dialects". Below we show two different examples with these flows.
+It is our long-term goal to unify these backends to be able to select the
+timing model when compiling. See [Development Status](#status) for more
+information.
 
-**wchb1b.cog**
+<a name="function_example"></a>
+### Function Example
+
+Start by creating your project directory and initializing your project.
 ```
-region 1 {
-	L.f- and L.t-
-	await L.e
+$ mkdir mychip
+$ cd mychip
+$ lm mod init mychip
+```
+
+Then add **top.wv** with the following.
+```
+func add(chan A, B; chan S) {
 	while {
-		L.f+ xor L.t+
-		await ~L.e
-		L.f- and L.t-
-		await L.e
+		S.send(A.recv() + B.recv())
 	}
-} and {
-	L.e+ and R.f- and R.t-
-	await R.e & ~L.f & ~L.t
+}
+
+func split(chan C; chan L; chan A, B) {
 	while {
-		await R.e & L.f {
-			R.f+
-		} or await R.e & L.t {
-			R.t+
+		if C.probe() == 0 {
+			A.send(L.recv())
+		} or if C.probe() == 1 {
+			B.send(L.recv())
 		}
-		L.e-
-		await ~R.e & ~L.f & ~L.t
-		R.f- and R.t-
-		L.e+
-	}
-} and region 1 {
-	R.e+
-	await ~R.f & ~R.t
-	while {
-		await R.f | R.t
-		R.e-
-		await ~R.f & ~R.t
-		R.e+
 	}
 }
 ```
 
-Compile your functional specification to production rules.
-
+And then build your chip, creating **build/rtl/split.v** and **build/rtl/add.v**.
 ```
-$ lm build -r wchb1b.cog
-$ cat wchb1b.prs
+$ lm build
+```
+
+<a name="protocol_example"></a>
+### Protocol Example
+
+Now we're going to edit **top.wv** putting the following at the top.
+```
+import "buffer"
+```
+
+Then we can create a new file **buffer.wv** with the following.
+```
+func buffer(chan L, R) {
+	while {
+		R.send(L.recv())
+	}
+}
+
+proto wchb1b() : buffer {
+	region 1 {
+		L.f- and L.t-
+		await L.e
+		while {
+			L.f+ xor L.t+
+			await ~L.e
+			L.f- and L.t-
+			await L.e
+		}
+	} and {
+		L.e+ and R.f- and R.t-
+		await R.e & ~L.f & ~L.t
+		while {
+			await R.e & L.f {
+				R.f+
+			} or await R.e & L.t {
+				R.t+
+			}
+			L.e-
+			await ~R.e & ~L.f & ~L.t
+			R.f- and R.t-
+			L.e+
+		}
+	} and region 1 {
+		R.e+
+		await ~R.f & ~R.t
+		while {
+			await R.f | R.t
+			R.e-
+			await ~R.f & ~R.t
+			R.e+
+		}
+	}
+}
+```
+
+You can list out the modules with `lm mod show`.
+```
+$ lm mod show
+buffer:buffer(chan,chan)
+buffer:wchb1b()
+top:add(chan,chan,chan)
+top:split(chan,chan,chan,chan)
+```
+
+We can build just the wchb1b, producing `build/ckt/wchb1b.prs`.
+```
+$ lm build "buffer:wchb1b()"
+$ cat build/ckt/wchb1b.prs
 require driven, stable, noninterfering
-@_12&R.t<1>|_Reset<3>&L.t<3>&R.e<3>->v3-
-@_13&~R.t<1>|~_Reset<1>|~L.t<2>&~R.e<2>->v3+
-@_12&R.f<1>|_Reset<3>&L.f<3>&R.e<3>->v2-
-@_13&~R.f<1>|~_Reset<1>|~L.f<2>&~R.e<2>->v2+
-_Reset<3>&v0<3>&L.e'1<3>->v1- {v0}
-~_Reset<1>|~v0<1>|~L.e'1<1>->v1+
-_Reset<3>&v1<3>&L.e'1<3>->v0- {v1}
-~_Reset<1>|~v1<1>|~L.e'1<1>->v0+
-R.f'1<1>|R.t'1<1>->R.e'1-
-~R.t'1<2>&~R.f'1<2>->R.e'1+
-v3<1>->R.t-
-~v3<1>->R.t+
-v2<1>->R.f-
-~v2<1>->R.f+
-R.f<1>|R.t<1>->L.e-
-~R.t<2>&~R.f<2>->L.e+
-v1<1>->L.t'1-
-~v1<1>->L.t'1+
-v0<1>->L.f'1-
-~v0<1>->L.f'1+
-Vdd<0.1>->_12- [weak]
-~GND<0.1>->_13+ [weak]
+_Reset&L.t&R.e->v3- [keep]
+~_Reset|~L.t&~R.e->v3+ [keep]
+_Reset&L.f&R.e->v2- [keep]
+~_Reset|~L.f&~R.e->v2+ [keep]
+_Reset&v0&L.e'1->v1- {v0}
+~_Reset|~v0|~L.e'1->v1+
+_Reset&v1&L.e'1->v0- {v1}
+~_Reset|~v1|~L.e'1->v0+
+R.f'1|R.t'1->R.e'1-
+~R.t'1&~R.f'1->R.e'1+
+v3->R.t-
+~v3->R.t+
+v2->R.f-
+~v2->R.f+
+R.f|R.t->L.e-
+~R.t&~R.f->L.e+
+v1->L.t'1-
+~v1->L.t'1+
+v0->L.f'1-
+~v0->L.f'1+
 ```
 
-Or do layout.
+And you can keep doing that with each build result.
+```
+$ lm build build/ckt/wchb1b.prs
+```
+
+Or we can build the whole project again, synthesizing a layout for the `wchb1b`.
+```
+$ lm build
+$ find build/
+build/
+build/gds
+build/gds/wchb1b.gds
+build/spi
+build/spi/wchb1b.spi
+build/rtl
+build/rtl/add.v
+build/rtl/split.v
+build/rtl/buffer.v
+build/ckt
+build/ckt/wchb1b.prs
+```
 
 ```
-$ lm build wchb1b.cog
-$ klayout wchb1b.gds
+$ klayout build/gds/wchb1b.gds
 ```
 
 ![wchb1b](https://github.com/user-attachments/assets/726b96d3-6ebe-49f3-8830-6ac17941b804)
-
-Loom also supports a process calculus called Hand-Shaking Expansions (HSE)
-
-**wchb1b.hse**
-```
-R.f-,R.t-,L.e+; [R.e&~L.f&~L.t];
-*[[  R.e & L.f -> R.f+
-  [] R.e & L.t -> R.t+
-  ]; L.e-; [~R.e&~L.f&~L.t]; R.f-,R.t-; L.e+
- ]||
-
-(L.f-,L.t-; [L.e];  *[[1->L.f+:1->L.t+]; [~L.e]; L.f-,L.t-; [L.e]]||
-R.e+; [~R.f&~R.t]; *[[R.f|R.t]; R.e-; [~R.f&~R.t]; R.e+])'1
-```
 
 <a name="build"></a>
 ## Build and Install
@@ -223,12 +286,18 @@ make check
 ```
 
 <a name="status"></a>
-## Development Status (July 17, 2025)
+## Development Status (Sept 17, 2025)
 
 ### Synthesis
 * **Templating (0%)** parameterize your module specifications.
 * **Modules (60%)** be able to break up your circuit into modules and construct larger systems.
 * **Process Decomposition (0%)** Break large processes up into pipeline stages.
+* **Fold (0%)** fold multiple assignments to get a dynamic single assignment form.
+* **Flatten (0%)** flatten multiple conditions into a single stage-wide condition.
+* **Map to Flow Templates (95%)** map that pipeline stage onto a flow template.
+* **Synthesize Verilog from Flow (95%)** generate verilog logic from that flow template.
+* **Synthesize PRS from Flow (0%)** generate QDI logic from that flow template.
+* **Arithmetic Simplification (70%)** reduce arithmetic expressions to simpler forms, preserving semantics.
 * **Handshake Expansion (20%)** Expand channel actions into handshake protocols and multi-bit operations into transitions on wires.
 * **Handshake Reshuffling (0%)** Reorder transitions to simplify the state space, simplify implementation, and improve performance.
 * **State Elaboration (90%)** Explore every state and record the state space.
@@ -266,6 +335,7 @@ make check
 ### Visualization
 
 * **CHP and HSE (100%)** Render the petri-nets representing CHP or HSE processes.
+* **Flow (80%)** Render flow templates.
 * **State Space (0%)** Render the state space of HSE or PRS.
 * **Transistor Networks (0%)** Render transistor diagrams of the production rule set.
 * **Waveforms (100%)** Export to VCD for viewing in GTKWave.
