@@ -4,7 +4,7 @@ Loom is a circuit compiler for a language called Weaver. The goal is to make it
 easy to design complex computer architectures that are both performant and
 energy efficient.
 
-![LoomArchitecture](https://github.com/user-attachments/assets/25e92ab3-69bc-474a-ae2a-04ec60623c4f)
+![LoomArchitecture](https://github.com/user-attachments/assets/5a34cbb4-41bf-492b-bc20-511102e78537)
 
 ## Table of Contents
 1. [Install](#install)
@@ -293,7 +293,7 @@ make check
 * **Modules (60%)** be able to break up your circuit into modules and construct larger systems.
 * **Process Decomposition (0%)** Break large processes up into pipeline stages.
 * **Fold (0%)** fold multiple assignments to get a dynamic single assignment form.
-* **Flatten (0%)** flatten multiple conditions into a single stage-wide condition.
+* **Flatten (20%)** flatten multiple conditions into a single stage-wide condition.
 * **Map to Flow Templates (95%)** map that pipeline stage onto a flow template.
 * **Synthesize Verilog from Flow (95%)** generate verilog logic from that flow template.
 * **Synthesize PRS from Flow (0%)** generate QDI logic from that flow template.
