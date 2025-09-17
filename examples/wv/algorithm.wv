@@ -1,0 +1,95 @@
+func countdown(chan L, R) {
+	var fixed i;
+	while {
+		await i ~= 0 {
+			i = i - 1
+		} or await i == 0 {
+			R.send(i);
+			i = L.recv()
+		}
+	}
+}
+
+func counter(chan L, R) {
+	var fixed i, n;
+	while {
+		await i ~= n {
+			i = i + 1
+		} or await i == n {
+			R.send(n);
+			i = 0;
+			n = L.recv()
+		}
+	}
+}
+
+func gcd(chan A, B, R) {
+	var fixed a, b, temp;
+	while {
+		b = 0;
+		await b ~= 0 {
+			temp = a % b;
+			a = b;
+			b = a
+		} or await b == 0 {
+			R.send(b);
+			a = A.recv() and b = B.recv()
+		}
+	}
+}
+
+func fib(chan RST, OUT) {
+	var fixed n, n_prev;
+	while {
+		await n < 256 {
+			OUT.send(n);
+			n = n + n_prev;
+			n_prev = n - n_prev
+
+		} or await n >= 256 {
+			n_prev = 1;
+			n = 1
+		}
+	}
+}
+
+func collatz(chan N, LOG) {
+	var fixed n;
+	while {
+		n = N.recv();
+		while n ~= 1 {
+			LOG.send(n);
+			while n ~= 1 && n < 100 {
+				//LOG.send(n);
+				await n % 2 == 0 {
+					n = n / 2
+				} or await n % 2 ~= 0 {
+					n = 3 * n + 1
+				}
+			}
+		}
+		LOG.send(1)
+	}
+}
+
+//func mask() {}
+//func ReLU() {}
+//func clamp() {}
+//func affine() {}
+//func productsum() {}
+//func RGBtoGrayscale() {}
+//func exponentialSmooth() {}
+//
+//func fft() {}
+//func md5() {}
+//func sha256() {}
+//func bitPack() {}
+//func bitUnpack() {}
+//func firFilter() {}
+//func serialize() {}
+//func deserialize() {}
+//func blackSholes() {}
+
+// See industry-standard DSP++ benchmarks
+//BDTI DSP Kernel Benchmarks™ (BDTImark2000)
+//EEMBC’s FPMark™ and Core Benchmarks
