@@ -52,9 +52,9 @@ func add(chan A, B; chan S) {
 func split(chan C; chan L; chan A, B) {
 	while {
 		if C.probe() == 0 {
-			A.send(L.recv())
+			A.send(L.recv()) and C.recv()
 		} or if C.probe() == 1 {
-			B.send(L.recv())
+			B.send(L.recv()) and C.recv()
 		}
 	}
 }
