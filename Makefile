@@ -120,4 +120,6 @@ check:
 
 clean:
 	@$(foreach item,$(LIBS),echo "$(subst +, ,$(item))"; $(MAKE) -s $(MAKE_FLAGS) -C $(subst +, ,$(item)) clean;)
-	
+ifeq ($(UNAME_S),Darwin)
+	rm -rf lm-macos lm-macos.tar.gz
+endif
