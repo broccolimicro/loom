@@ -1,0 +1,27 @@
+func add(chan Ac, Ad, Bc, Bd, Sc, Sd) {
+	var fixed ci, s;
+	while {
+		s = Ad.probe() + Bd.probe() + ci;
+		await Ac.probe()==0 & Bc.probe()==0 & Ad.probe() & Bd.probe() {
+			Ac.recv() and Ad.recv() and Bc.recv() and Bd.recv();
+			Sc.send(0) and Sd.send(s[0:4]);
+			ci = s[4]
+		} or await Ac.probe()==0 & Bc.probe()==1 & Ad.probe() & Bd.probe() {
+			Ac.recv() and Ad.recv();
+			Sc.send(0) and Sd.send(s[0:4]);
+			ci = s[4]
+		} or await Ac.probe()==1 & Bc.probe()==0 & Ad.probe() & Bd.probe() {
+			Bc.recv() and Bd.recv();
+			Sc.send(0) and Sd.send(s[0:4]);
+			ci = s[4]
+		} or await Ac.probe()==1 & Bc.probe()==1 & s[4] ~= ci & Ad.probe() & Bd.probe() {
+			Sc.send(0) and Sd.send(s[0:4]);
+			ci = s[4]
+		} or await Ac.probe()==1 & Bc.probe()==1 & s[4] == ci & Ad.probe() & Bd.probe() {
+			Ac.recv() and Ad.recv() and Bc.recv() and Bd.recv();
+			Sc.send(1) and Sd.send(s[0:4]);
+			ci = 0
+		}
+	}
+}
+
