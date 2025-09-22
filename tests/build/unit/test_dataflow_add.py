@@ -74,6 +74,3 @@ def test_dataflow_add():
 	tb = test.Bench("dataflow_add", "cocotb_dataflow_add")
 	tb.source("rtl/dataflow_add.v")
 	tb.run()
-
-if __name__ == "__main__":
-	test_adder()
