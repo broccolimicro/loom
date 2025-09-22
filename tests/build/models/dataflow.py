@@ -31,11 +31,31 @@ class Split:
 
 	def cycle(self):
 		while True:
-			if not self.Cc.isValid() or not self.L.isValid():
+			if self.Cc.isValid() and self.L.isValid() and self.Cc.probe() == 0:
+				c = self.Cc.recv()
+				self.R0.send(self.L.recv())
+			elif self.Cc.isValid() and self.L.isValid() and self.Cc.probe() == 1:
+				c = self.Cc.recv()
+				self.R1.send(self.L.recv())
+			else:
 				return
 
-			c = self.Cc.recv()
-			if c == 0:
-				self.R0.send(self.L.recv())
-			elif c == 1:
-				self.R1.send(self.L.recv())
+class Merge:
+	def __init__(self, Cc, L0, L1, R, log=None):
+		self.Cc = Cc
+		self.L0 = L0
+		self.L1 = L1
+		self.R = R
+
+		self.log = log
+
+	def cycle(self):
+		while True:
+			if self.Cc.isValid() and self.L0.isValid() and self.Cc.probe() == 0:
+				self.Cc.recv()
+				self.R.send(self.L0.recv())
+			elif self.Cc.isValid() and self.L1.isValid() and self.Cc.probe() == 1:
+				self.Cc.recv()
+				self.R.send(self.L1.recv())
+			else:
+				return
