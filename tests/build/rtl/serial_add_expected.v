@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module serial_add_target(
+module serial_add_expected(
 	input wire clk,
 	input wire reset,
 	input wire Ac_valid,
@@ -125,7 +125,7 @@ module serial_add_target(
 `ifndef SYNTHESIS
 	initial begin
 		$dumpfile("dump.vcd");
-		$dumpvars(0, serial_add_target);
+		$dumpvars(0, serial_add_expected);
 	end
 `endif
 endmodule

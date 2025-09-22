@@ -77,9 +77,9 @@ async def cocotb_serial_add(dut):
 
 	log.done()
 
-def test_serial_add_target():
-	tb = test.Bench("serial_add_target", "cocotb_serial_add")
-	tb.source("rtl/serial_add_target.v")
+def test_serial_add_expected():
+	tb = test.Bench("serial_add_expected", "cocotb_serial_add")
+	tb.source("rtl/serial_add_expected.v")
 	tb.run()
 
 #def test_serial_add():
