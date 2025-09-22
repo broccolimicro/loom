@@ -1,4 +1,4 @@
-class Model:
+class Add:
 	def __init__(self, Ac, Ad, Bc, Bd, Sc, Sd, log=None):
 		self.Ac = Ac
 		self.Ad = Ad

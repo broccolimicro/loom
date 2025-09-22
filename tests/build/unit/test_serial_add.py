@@ -12,7 +12,7 @@ from puffs import test
 from puffs import fixed
 from puffs import channel
 
-from models import serial_add
+from models import serial
 
 @cocotb.test()
 async def cocotb_serial_add(dut):
@@ -60,7 +60,7 @@ async def cocotb_serial_add(dut):
 	sinkSc = channel.Sink(Sc, values=Sc_tokens, log=log)
 	sinkSd = channel.Sink(Sd, values=Sd_tokens, log=log)
 
-	model = serial_add.Model(Ac, Ad, Bc, Bd, Sc, Sd, log)
+	model = serial.Add(Ac, Ad, Bc, Bd, Sc, Sd, log)
 
 	for _ in range(10000):
 		srcAc.cycle()
@@ -82,10 +82,10 @@ def test_serial_add_expected():
 	tb.source("rtl/serial_add_expected.v")
 	tb.run()
 
-#def test_serial_add():
-#	tb = test.Bench("serial_add", "cocotb_serial_add")
-#	tb.source("rtl/serial_add.v")
-#	tb.run()
+def test_serial_add():
+	tb = test.Bench("serial_add", "cocotb_serial_add")
+	tb.source("rtl/serial_add.v")
+	tb.run()
 
 if __name__ == "__main__":
 	test_adder()

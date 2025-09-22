@@ -59,21 +59,6 @@ module serial_add_expected(
 	assign Bd_ready = (branch_ready[0]||branch_ready[2]||branch_ready[4]);
 	assign Ad_ready = (branch_ready[0]||branch_ready[1]||branch_ready[4]);
 
-`ifndef SYNTHESIS
-	wire Ac;
-	wire Bc;
-	wire Sc;
-	wire [3:0] Ad;
-	wire [3:0] Bd;
-	wire [3:0] Sd;
-	assign Ac = Ac_valid ? Ac_data : 1'bZ;
-	assign Ad = Ad_valid ? Ad_data : 4'bZ;
-	assign Bc = Bc_valid ? Bc_data : 1'bZ;
-	assign Bd = Bd_valid ? Bd_data : 4'bZ;
-	assign Sc = Sc_valid ? Sc_data : 1'bZ;
-	assign Sd = Sd_valid ? Sd_data : 4'bZ;
-`endif
-
 	always @(posedge clk) begin
 		if (reset) begin
 			Sc_valid_reg <= 0;
@@ -123,6 +108,19 @@ module serial_add_expected(
 	end
 
 `ifndef SYNTHESIS
+	wire Ac;
+	wire Bc;
+	wire Sc;
+	wire [3:0] Ad;
+	wire [3:0] Bd;
+	wire [3:0] Sd;
+	assign Ac = Ac_valid ? Ac_data : 1'bZ;
+	assign Ad = Ad_valid ? Ad_data : 4'bZ;
+	assign Bc = Bc_valid ? Bc_data : 1'bZ;
+	assign Bd = Bd_valid ? Bd_data : 4'bZ;
+	assign Sc = Sc_valid ? Sc_data : 1'bZ;
+	assign Sd = Sd_valid ? Sd_data : 4'bZ;
+
 	initial begin
 		$dumpfile("dump.vcd");
 		$dumpvars(0, serial_add_expected);
