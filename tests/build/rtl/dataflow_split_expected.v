@@ -53,7 +53,7 @@ module dataflow_split_expected(
 			if (R1_ready) begin
 				R1_valid_reg <= 0;
 			end
-		end else if (branch_valid[1]&&(R1_ready||~R1_valid_reg)) begin
+		end else if (branch_valid[1]&&(R1_ready||!R1_valid_reg)) begin
 			R1_state <= L_data;
 			R1_valid_reg <= 1;
 			if (R0_ready) begin
