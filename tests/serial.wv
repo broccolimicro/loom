@@ -1,25 +1,25 @@
 func add(chan Ac, Ad, Bc, Bd, Sc, Sd) {
-	var fixed ci, s;
+	var fixed ci
 	while {
-		s = Ad.probe() + Bd.probe() + ci;
-		await Ac.probe()==0 & Bc.probe()==0 & Ad.probe() & Bd.probe() {
-			Ac.recv() and Ad.recv() and Bc.recv() and Bd.recv();
-			Sc.send(0) and Sd.send(s[0:4]);
+		var fixed s = Ad.probe() + Bd.probe() + ci
+		if Ac.probe()==0 && Bc.probe()==0 {
+			Ac.recv() and Ad.recv() and Bc.recv() and Bd.recv()
+			Sc.send(0) and Sd.send(s[0:4])
 			ci = s[4]
-		} or await Ac.probe()==0 & Bc.probe()==1 & Ad.probe() & Bd.probe() {
-			Ac.recv() and Ad.recv();
-			Sc.send(0) and Sd.send(s[0:4]);
+		} or if Ac.probe()==0 && Bc.probe()==1 {
+			Ac.recv() and Ad.recv()
+			Sc.send(0) and Sd.send(s[0:4])
 			ci = s[4]
-		} or await Ac.probe()==1 & Bc.probe()==0 & Ad.probe() & Bd.probe() {
-			Bc.recv() and Bd.recv();
-			Sc.send(0) and Sd.send(s[0:4]);
+		} or if Ac.probe()==1 && Bc.probe()==0 {
+			Bc.recv() and Bd.recv()
+			Sc.send(0) and Sd.send(s[0:4])
 			ci = s[4]
-		} or await Ac.probe()==1 & Bc.probe()==1 & s[4] ~= ci & Ad.probe() & Bd.probe() {
-			Sc.send(0) and Sd.send(s[0:4]);
+		} or if Ac.probe()==1 && Bc.probe()==1 && s[4] ~= ci {
+			Sc.send(0) and Sd.send(s[0:4])
 			ci = s[4]
-		} or await Ac.probe()==1 & Bc.probe()==1 & s[4] == ci & Ad.probe() & Bd.probe() {
-			Ac.recv() and Ad.recv() and Bc.recv() and Bd.recv();
-			Sc.send(1) and Sd.send(s[0:4]);
+		} or if Ac.probe()==1 && Bc.probe()==1 && s[4] == ci {
+			Ac.recv() and Ad.recv() and Bc.recv() and Bd.recv()
+			Sc.send(1) and Sd.send(s[0:4])
 			ci = 0
 		}
 	}

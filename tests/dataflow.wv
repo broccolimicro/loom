@@ -17,9 +17,8 @@ func buffer(chan L, R) {
 }
 
 func copy(chan L, R0, R1) {
-	var fixed l
 	while {
-		l = L.recv()
+		var fixed l = L.recv()
 		R0.send(l) and R1.send(l)
 	}
 }
@@ -35,11 +34,10 @@ func split(chan L, Cc, R0, R1) {
 }
 
 func merge(chan L0, L1, Cc, R) {
-	var fixed l;
 	while {
-		await Cc.probe() == 0 {
+		if Cc.probe() == 0 {
 			R.send(L0.recv()) and Cc.recv()
-		} or await Cc.probe() == 1 {
+		} or if Cc.probe() == 1 {
 			R.send(L1.recv()) and Cc.recv()
 		}
 	}
