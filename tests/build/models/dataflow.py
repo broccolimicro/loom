@@ -1,3 +1,20 @@
+class Copy:
+	def __init__(self, L, R0, R1, log=None):
+		self.L = L
+		self.R0 = R0
+		self.R1 = R1
+
+		self.log = log
+
+	def cycle(self):
+		while True:
+			if self.L.isValid():
+				l = self.L.recv()
+				self.R0.send(l)
+				self.R1.send(l)
+			else:
+				return
+
 class Add:
 	def __init__(self, width, A, B, S, signed=False, log=None):
 		self.A = A
