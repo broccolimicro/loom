@@ -1,3 +1,17 @@
+class Buffer:
+	def __init__(self, L, R, log=None):
+		self.L = L
+		self.R = R
+
+		self.log = log
+
+	def cycle(self):
+		while True:
+			if self.L.isValid():
+				self.R.send(self.L.recv())
+			else:
+				return
+
 class Copy:
 	def __init__(self, L, R0, R1, log=None):
 		self.L = L
