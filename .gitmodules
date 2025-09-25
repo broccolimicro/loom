@@ -112,3 +112,6 @@
 [submodule "lib/weaver"]
 	path = lib/weaver
 	url = https://github.com/broccolimicro/weaver.git
+[submodule "bin/studio"]
+	path = bin/studio
+	url = git@github.com:broccolimicro/studio.git
