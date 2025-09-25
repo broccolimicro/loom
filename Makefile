@@ -89,6 +89,9 @@ macos: lib
 lib: gdstk
 	@$(foreach item,$(LIBS),echo "$(subst +, ,$(item))"; $(MAKE) VERSION="v$(shell cat VERSION)" -s $(MAKE_FLAGS) -C $(subst +, ,$(item));)
 
+wasm:
+	@$(foreach item,$(LIBS),echo "$(subst +, ,$(item))"; $(MAKE) VERSION="v$(shell cat VERSION)" -s $(MAKE_FLAGS) -C $(subst +, ,$(item)) wasm;)
+
 test: googletest
 	@$(foreach item,$(LIBS),echo "$(subst +, ,$(item))"; $(MAKE) -s $(MAKE_FLAGS) -C $(subst +, ,$(item)) test;)
 
