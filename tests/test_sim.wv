@@ -1,0 +1,79 @@
+
+func buffer() {
+	region 1 {
+		Lr- and i = 0
+		await Le
+		while {
+			Lr = i
+			i = i + 1
+			await ~Le
+			Lr-
+			await Le
+		}
+	} and {
+		Rr- and Le+
+		await Re & ~Lr
+		while {
+			Rr = Lr
+			Le-
+			await ~Re & ~Lr
+			Rr-
+			Le+
+			await Re
+		}
+	} and region 1 {
+		Re+
+		await ~Rr
+		while {
+			await Rr
+			Re-
+			await ~Rr
+			Re+
+		}
+	}
+}
+
+func buffer2() {
+	region 1 {
+		Lr- and i = 0
+		await Le
+		while {
+			Lr = i
+			i = i + 1
+			await ~Le
+			Lr-
+			await Le
+		}
+	} and {
+		var fixed mem[10]
+		mem = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+		ri = 0
+		wi = 0
+		Rr- and Le+
+		await Re & ~Lr
+		while {
+			if ri ~= wi && valid(Re)
+			Rr = mem[ri]
+			ri = (ri + 1)%10
+			await ~Re
+			Rr-
+		} and while {
+			if (wi + 1)%10 ~= ri
+			mem[wi] = Lr
+			wi = (wi + 1)%10
+			Le-
+			await ~Lr
+			Le+
+		}
+	} and region 1 {
+		Re+
+		await ~Rr
+		while {
+			await Rr
+			Re-
+			await ~Rr
+			Re+
+		}
+	}
+}
+

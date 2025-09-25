@@ -18,7 +18,8 @@ func buffer(chan L, R) {
 
 func copy(chan L, R0, R1) {
 	while {
-		var fixed l = L.recv()
+		var fixed l
+		l = L.recv()
 		R0.send(l) and R1.send(l)
 	}
 }

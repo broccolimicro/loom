@@ -1,5 +1,6 @@
 import "dataflow"
 import "serial"
+import "test_sim"
 
 func top() {
 }

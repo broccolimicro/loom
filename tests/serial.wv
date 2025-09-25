@@ -1,7 +1,8 @@
 func add(chan Ac, Ad, Bc, Bd, Sc, Sd) {
 	var fixed ci
 	while {
-		var fixed s = Ad.probe() + Bd.probe() + ci
+		var fixed s
+		s = Ad.probe() + Bd.probe() + ci
 		if Ac.probe()==0 && Bc.probe()==0 {
 			Ac.recv() and Ad.recv() and Bc.recv() and Bd.recv()
 			Sc.send(0) and Sd.send(s[0:4])
