@@ -8,10 +8,10 @@ func imem(chan Addr, Rd) {
 func dmem(chan Addr, Cmd, Rd, Wr) {
 	var fixed mem[256];
 	while {
-		await Cmd.probe() == 0 {
+		if Cmd.probe() == 0 {
 			Cmd.recv();
 			Rd.send(mem[Addr.recv()])
-		} or await Cmd.probe() == 1 {
+		} or if Cmd.probe() == 1 {
 			Cmd.recv();
 			mem[Addr.recv()] = Wr.recv()
 		}
@@ -53,38 +53,38 @@ func decode(chan InsRd, Alu, Rs, Rt, Rd, DataAddr, DataCmd, DataRd, DataWr, Inc,
 		rs = op[4:8];
 		rt = op[8:12];
 		rd = op[12:16];
-		await fn < 8 { // alu operations    
+		if fn < 8 { // alu operations    
 			Alu.send(fn[0:3]);
 			Rs.send(rf[rs])
-				await fn < 6 {
+				if fn < 6 {
 					Rt.send(rf[rt])
-				} or await fn >= 6 {
+				} or if fn >= 6 {
 					skip
 				}
 			rf[rd] = Rd.recv()
-		} or await fn == 8 { // imm
+		} or if fn == 8 { // imm
 			rf[rd] = rs
-		} or await fn == 9 { // ld
+		} or if fn == 9 { // ld
 			DataCmd.send(0);
 			DataAddr.send(rs);
 			rf[rd] = DataRd.recv()
-		} or await fn == 10 { // st
+		} or if fn == 10 { // st
 			DataCmd.send(1);
 			DataAddr.send(rs);
 			DataWr.send(rf[rt])
-		} or await fn == 11 {
-			await rf[rt] == 0 {
+		} or if fn == 11 {
+			if rf[rt] == 0 {
 				Jmp.send(rs)
-			} or await rf[rt] ~= 0 {
+			} or if rf[rt] ~= 0 {
 				Inc.send()
 			}
-		} or await fn == 12 {
-			await rf[rt] < 0 {
+		} or if fn == 12 {
+			if rf[rt] < 0 {
 				Jmp.send(rs)
-			} or await rf[rt] ~= 0 {
+			} or if rf[rt] ~= 0 {
 				Inc.send()
 			}
-		} or await fn == 13 {
+		} or if fn == 13 {
 			Jmp.send(rs)
 		}
 	}
@@ -92,21 +92,21 @@ func decode(chan InsRd, Alu, Rs, Rt, Rd, DataAddr, DataCmd, DataRd, DataWr, Inc,
 
 func execute(chan Fn, A, B, R) {
 	while {
-		await Fn.probe() == 0 & A.probe() & B.probe() { // add
+		if Fn.probe() == 0 { // add
 			R.send(A.recv() + B.recv())
-		} or await Fn.probe() == 1 & A.probe() & B.probe() { // mul
+		} or if Fn.probe() == 1 { // mul
 			R.send(A.recv() * B.recv())
-		} or await Fn.probe() == 2 & A.probe() & B.probe() { // and
+		} or if Fn.probe() == 2 { // and
 			R.send(A.recv() && B.recv())
-		} or await Fn.probe() == 3 & A.probe() & B.probe() { // or
+		} or if Fn.probe() == 3 { // or
 			R.send(A.recv() || B.recv())
-		} or await Fn.probe() == 4 & A.probe() & B.probe() { // shl
+		} or if Fn.probe() == 4 { // shl
 			R.send(A.recv() << B.recv())
-		} or await Fn.probe() == 5 & A.probe() & B.probe() { // shr
+		} or if Fn.probe() == 5 { // shr
 			R.send(A.recv() >> B.recv())
-		} or await Fn.probe() == 6 & A.probe() { // not
+		} or if Fn.probe() == 6 { // not
 			R.send(!A.recv())
-		} or await Fn.probe() == 7 & A.probe() { // neg
+		} or if Fn.probe() == 7 { // neg
 			R.send(-A.recv())
 		}
 	}
