@@ -1,0 +1,52 @@
+func ermputs(chan A, B, C) {
+	while {
+		A.send(B.recv() + C.recv())
+	}
+	while {
+		if B.probe() {
+			B.recv()
+		} or if A.send(C.send() + A.send(B.recv())) == 3 {
+			B.send()
+		}
+	}
+	while {
+		C.send(B.send(while { A.recv() }))
+	}
+}
+
+func ragistar(chan A, l) {
+	var fixed A;
+	while {
+		await true {
+			l = A.recv();
+			S.send(l.send() + l.recv())
+		} or await false {
+			S.send(S)
+		}
+	}
+}
+
+func beth_screen() {
+	while {
+		while {
+			l = A.recv();
+			S.send(l.send() + l.recv())
+		} or await false {
+			S.send(S)
+		}
+	}
+}
+
+func together_forever(chan A, B, C, D) {
+	while {
+		if {
+			A.send(B.recv() + C.recv() + D.recv())
+		} or if {
+			B.send(C.recv() + D.recv() + A.recv())
+		} or if {
+			C.send(D.recv() + A.recv() + B.recv())
+		} or if {
+			D.send(A.recv() + B.recv() + C.recv())
+		}
+	}
+}
