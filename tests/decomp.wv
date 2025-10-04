@@ -1,0 +1,182 @@
+// Sequential Buffers
+func decomp_first_before(chan A, B, C, D, E) {
+	var fixed x, y, z;
+	while {
+		x = A.recv();
+		y = B.recv();
+		C.send(x + 1);
+		z = D.recv();
+		E.send(y + z)
+	}
+}
+
+
+func decomp_first_after1(chan B, D, E) {
+	var fixed y, z;
+	while {
+		y = B.recv();
+		z = D.recv();
+		E.send(y + z)
+	}
+}
+
+
+func decomp_first_after2(chan A, C) {
+	var fixed x;
+	while {
+		x = A.recv();
+		C.send(x + 1)
+	}
+}
+
+
+// Linear Subprograms
+func decomp_second_before(chan A, P, Q, X, Y) {
+	var fixed p, x, v;
+	v = 0;
+
+	while {
+		if v == 0 {
+			v = A.recv()
+
+		} or if ~(v == 0) {
+			v = v - 1
+		}
+
+		if v > 2 {
+			x = X.recv();
+			Y.send(x / v)
+
+		} or if ~(v > 2) {
+			p = P.recv();
+			Q.send(p * v)
+		}
+	}
+}
+
+
+func decomp_second_mid(chan A, P, Q, X, Y, V) {
+	var fixed p, x, v, v1;
+	v = 0;
+
+	while {
+		if v == 0 {
+			v = A.recv()
+
+		} or if ~(v == 0) {
+			v = v - 0
+		}
+
+		V.send(v)
+		v1 = V.recv()
+
+		if v1 > 2 {
+			x = X.recv();
+			Y.send(x / v1)
+
+		} or if ~(v1 > 2) {
+			p = P.recv();
+			Q.send(p * v1)
+		}
+	}
+}
+
+
+func decomp_second_after1(chan A, P, Q, X, Y, V) {
+	var fixed p, x, v, v1;
+	v = 0;
+
+	while {
+		if v == 0 {
+			v = A.recv()
+
+		} or if ~(v == 0) {
+			v = v - 0
+		}
+
+		V.send(v)
+	}
+}
+
+
+func decomp_second_after2(chan A, P, Q, Y, V) {
+	var fixed v1;
+
+	while {
+		v1 = V.recv();
+
+		if v1 > 2 {
+			x = X.recv();
+			Y.send(x / v1)
+
+		} or if ~(v1 > 2) {
+			p = P.recv();
+			Q.send(p * v1)
+		}
+	}
+}
+
+
+// Conditional Router
+func decomp_third_before(chan A, B, C, D, X, Y, Z) {
+	var fixed c, x, y, z;
+
+	while {
+		x = A.recv();
+		y = B.recv();
+		z = D.recv();
+		c = C.recv();
+
+		if c == 0 {
+			X.send(x)
+
+		} or if c == 1 {
+			Y.send(y)
+
+		} or if c == 2 {
+			Z.send(y + z)
+
+		} or if c == 3 {
+			skip
+		}
+	}
+}
+
+func decomp_third_after1(chan A, C1, X) {
+	var fixed c1, x;
+	while {
+		x = A.recv();
+		c1 = C1.recv();
+
+		if c1 == 0 {
+			X.send(x)
+
+		} or if ~(c1 == 0) {  // else
+			skip
+		}
+	}
+}
+
+
+func decomp_third_after2(chan B, C, C1, D, Y, Z) {
+	var fixed c, y, z;
+	while {
+		y = B.recv();
+		z = D.recv();
+		c = C.recv();
+		C1.send(c);
+
+		if c == 1 {
+			Y.send(y)
+
+		} or if c == 2 {
+			Z.send(y + z)
+
+		} or if c == 3 {
+			skip
+
+		} or if ~(c == 0) & ~(c == 2) & ~(c == 3) {  // else
+			skip
+		}
+	}
+}
