@@ -9,16 +9,6 @@ endif
 # Use + instead of spaces in the below list
 LIBS = \
 	lib/common \
-	lib/boolean \
-	lib/arithmetic \
-	lib/phy \
-	lib/sch \
-	lib/prs \
-	lib/petri \
-	lib/hse \
-	lib/chp \
-	lib/flow \
-	lib/weaver \
 	lib/parse \
 	lib/parse_expression \
 	lib/parse_prs \
@@ -29,6 +19,16 @@ LIBS = \
 	lib/parse_cog \
 	lib/parse_ucs \
 	lib/parse_verilog \
+	lib/boolean \
+	lib/arithmetic \
+	lib/phy \
+	lib/sch \
+	lib/prs \
+	lib/petri \
+	lib/hse \
+	lib/chp \
+	lib/flow \
+	lib/weaver \
 	lib/interpret_boolean \
 	lib/interpret_arithmetic \
 	lib/interpret_phy \
