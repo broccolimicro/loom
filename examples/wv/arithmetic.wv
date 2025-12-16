@@ -1,0 +1,197 @@
+func ReLU(chan IN, OUT) {
+	var fixed x
+	while {
+		x = IN.recv()
+		if x > 0 {
+			OUT.send(x)
+		} or if !(x > 0) {
+			OUT.send(0)
+		}
+	}
+}
+
+func sign(chan IN, OUT) {
+	var fixed x
+	while {
+		x = IN.recv()
+		if x == 0 {
+			OUT.send(0)
+		} or if x > 0 {
+			OUT.send(1)
+		} or if x < 0 {
+			OUT.send(-1) //TODO: 0 - 1?
+		}
+	}
+}
+
+func abs(chan IN, OUT) {
+	var fixed x
+	while {
+		x = IN.recv()
+		if x > 0 {
+			OUT.send(x)
+		} or if !(x > 0) {
+			OUT.send(-x)  //TODO: 0 - x?
+		}
+	}
+}
+
+func min(chan IN0, IN1, OUT) {
+	var fixed x, y
+	while {
+		x = IN0.recv() and
+			y = IN1.recv()
+		if x > y {
+			OUT.send(y)
+		} or if !(x > y) {
+			OUT.send(x)
+		}
+	}
+}
+
+//func max(chan IN0, IN1, OUT) { min(IN1, IN0, OUT) }
+func max(chan IN0, IN1, OUT) {
+	var fixed x, y
+	while {
+		x = IN0.recv() and
+			y = IN1.recv()
+		if x > y {
+			OUT.send(x)
+		} or if !(x > y) {
+			OUT.send(y)
+		}
+	}
+}
+
+//TODO: more naive or test ternary?
+func threshold(chan X, T, OUT) {
+	while {
+		OUT.send(X.recv() >= T.recv() ? 1 : 0)
+	}
+}
+
+func clamp(chan LO, N, HI, OUT) {
+	var fixed lo,n,hi
+	while {
+		lo = LO.recv() and
+			n = N.recv() and
+			hi = HI.recv()
+		if n > hi {
+			OUT.send(hi)
+		} or if n < lo {
+			OUT.send(lo)
+		} or if !(n > hi) & !(n < lo) {
+			OUT.send(n)
+		}
+	}
+}
+
+func compare_and_swap(chan IN0, IN1, OUT1, OUT2) {
+	var fixed x, y
+	while {
+		x = IN0.recv() and
+			y = IN1.recv()
+
+		if x > y {
+			OUT0.send(y) and
+				OUT1.send(x)
+
+		} or if !(x > y) {
+			OUT0.send(x) and
+				OUT1.send(y)
+		}
+	}
+}
+
+func median_of_three(chan IN0, IN1, IN2, OUT) {
+	var fixed x, y, z
+	while {
+		x = IN0.recv() and
+			y = IN1.recv() and
+			z = IN2.recv()
+
+		if x <= y {
+			if y <= z {
+				OUT.send(y)  // (x <=) y <= z
+
+			} or if x <= z {
+				OUT.send(z)  // (x <=) z < y
+
+			} or if !(y <= z) & !(x <= z) {
+				OUT.send(x)  // z < (x <=) y
+			}
+
+		} or if !(x <= y) {
+			if x <= z {
+				OUT.send(x)  // y (< x) <= z
+
+			} or if y <= z {
+				OUT.send(z)  // y <= z (< x)
+
+			} or if !(x <= z) & !(y <= z) {
+				OUT.send(y)  // z < y (< x)
+			}
+		}
+	}
+}
+
+func add(chan IN0, IN1, OUT) {
+	while {
+		OUT.send(IN0.recv() + IN1.recv())
+	}
+}
+
+func saturating_add(chan IN0, IN1, OUT) {
+	var fixed x, y, z
+	while {
+		x = IN0.recv() and
+			y = IN1.recv();
+		z = x + y
+		if z < x {
+			z = -1
+		}
+		OUT.send(z)
+	}
+}
+
+func multiply(chan IN0, IN1, OUT) {
+	while {
+		OUT.send(IN0.recv() * IN1.recv())
+	}
+}
+
+func running_max(chan PREV, NEXT, OUT) {}
+
+//TODO: NOTE these skew towards 1 output channel
+
+func matmul_2x2(chan A00,A01,A10,A11, B00,B01,B10,B11, OUT00,OUT01,OUT10,OUT11) {
+	var fixed a00,a01,a10,a11, b00,b01,b10,b11
+	while {
+		a00 = A00.recv() and
+			a01 = A01.recv() and
+			a10 = A10.recv() and
+			a11 = A11.recv() and
+			b00 = B00.recv() and
+			b01 = B01.recv() and
+			b10 = B10.recv() and
+			b11 = B11.recv();
+		OUT00.send(a00*b00 + a01*b10) and
+		OUT01.send(a00*b01 + a01*b11) and
+		OUT10.send(a10*b00 + a11*b10) and
+		OUT11.send(a10*b01 + a11*b11) and
+	}
+}
+
+//func processing_element(chan LEFT, TOP, RIGHT, DOWN, PARTIAL, SUM) {
+//	var a, b, sum
+//	while {
+//		sum = PARTIAL.recv() and
+//			a = LEFT.recv() and
+//			b = TOP.recv();
+//		sum = sum + a * b;
+//		SUM.send(sum) and
+//			RIGHT.send(a) and
+//			DOWN.send(b)
+//	}
+//}
+
