@@ -1,4 +1,4 @@
-.PHONY: gdstk googletest lib install
+.PHONY: gdstk googletest lib install coverage-all coverage-collect coverage-report
 
 ifeq ($(OS),Windows_NT)
     UNAME_S := $(OS)
@@ -38,6 +38,8 @@ LIBS = \
 	lib/interpret_chp \
 	lib/interpret_flow \
 	bin/ckt
+
+COVERAGE_INFOS := $(LIBS:%=%/coverage_%*.info)
 
 MAINTAINER_NAME = "$(shell git config user.name)"
 MAINTAINER_EMAIL = "$(shell git config user.email)"
@@ -117,6 +119,22 @@ endif
 googletest:
 	mkdir -p googletest/build; cd googletest/build; cmake .. -DBUILD_GMOCK=OFF
 	$(MAKE) -s $(MAKE_FLAGS) -C googletest/build
+
+coverage-all: coverage-collect coverage-report
+
+coverage-collect:
+	@rm -f coverage_merged.info
+	@$(foreach item,$(LIBS), \
+		echo "== Coverage: $(item) =="; \
+		$(MAKE) -C $(item) coverage; \
+		lcov -a coverage_merged.info \
+		     -a $(item)/coverage_filtered.info \
+		     -o coverage_merged.info || \
+		cp $(item)/coverage_filtered.info coverage_merged.info; \
+	)
+
+coverage-report:
+	genhtml coverage_merged.info --output-directory coverage_report_all
 
 check:	
 	@$(foreach item,$(LIBS),echo "$(subst +, ,$(item))"; ./$(subst +, ,$(item))/test;)

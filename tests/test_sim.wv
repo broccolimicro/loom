@@ -1,5 +1,5 @@
 
-func buffer() {
+/*func buffer() {
 	region 1 {
 		Lr- and i = 0
 		await Le
@@ -75,5 +75,5 @@ func buffer2() {
 			Re+
 		}
 	}
-}
+}*/
 
