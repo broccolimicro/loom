@@ -1,76 +1,109 @@
-func countdown(chan L, R) {
-	var fixed i;
+//TODO: halts on decomp
+//func countdown(chan L, R) {
+//	var fixed i=0
+//	while {
+//		if i == 0 {
+//			R.send(i);
+//			i = L.recv()
+//		} or if !(i == 0) {
+//			i = i - 1
+//		}
+//	}
+//}
+
+//TODO: halts on decomp
+//func counter(chan L, R) {
+//	var fixed i, n
+//	while {
+//		if i == n {
+//			R.send(n);
+//			i = 0;
+//			n = L.recv()
+//		} or if !(i == n) {
+//			i = i + 1
+//		}
+//	}
+//}
+
+// via Newton's method
+////TODO: n?
+//func isqrt(chan IN, OUT) {
+//	var fixed x, y
+//	while {
+//		x = IN.recv();
+//		y = (x + 1) / 2
+//		while y < x {
+//			x = y;
+//			y = (x + n / x) / 2
+//		}
+//		OUT.send(x)
+//	}
+//}
+
+func squared_distance(chan X0, X1, Y0, Y1, OUT) {
+	var fixed dx, dy
 	while {
-		await i ~= 0 {
-			i = i - 1
-		} or await i == 0 {
-			R.send(i);
-			i = L.recv()
-		}
+		dx = X1.recv() - X0.recv() and
+			dy = Y1.recv() - Y0.recv();
+		OUT.send((dx * dx) + (dy * dy))
 	}
 }
 
-func counter(chan L, R) {
-	var fixed i, n;
-	while {
-		await i ~= n {
-			i = i + 1
-		} or await i == n {
-			R.send(n);
-			i = 0;
-			n = L.recv()
-		}
-	}
-}
+//TODO: halts on decomp
+//// iterative euclid GCD
+//func gcd(chan A, B, R) {
+//	var fixed a, b, q, r;
+//	b = 0;
+//	while {
+//		if b > 0 {
+//			q = a / b;  // quotient
+//			r = a - q * b;  // remainder: a % b
+//			a = b;
+//			b = r
+//
+//		} or if ~(b > 0) {  // else
+//			R.send(a);
+//			a = A.recv();
+//			b = B.recv()
+//		}
+//	}
+//}
 
-func gcd(chan A, B, R) {
-	var fixed a, b, temp;
-	while {
-		b = 0;
-		await b ~= 0 {
-			temp = a % b;
-			a = b;
-			b = a
-		} or await b == 0 {
-			R.send(b);
-			a = A.recv() and b = B.recv()
-		}
-	}
-}
+//TODO: halts on decomp
+//func fib(chan RST, OUT) {
+//	var fixed n, n_prev
+//	while {
+//		if n < 256 {
+//			OUT.send(n);
+//			n = n + n_prev;
+//			n_prev = n - n_prev
+//
+//		} or if !(n < 256) {
+//			n_prev = 1;
+//			n = 1
+//		}
+//	}
+//}
 
-func fib(chan RST, OUT) {
-	var fixed n, n_prev;
-	while {
-		await n < 256 {
-			OUT.send(n);
-			n = n + n_prev;
-			n_prev = n - n_prev
-
-		} or await n >= 256 {
-			n_prev = 1;
-			n = 1
-		}
-	}
-}
-
-func collatz(chan N, LOG) {
-	var fixed n;
-	while {
-		n = N.recv();
-		while n ~= 1 {
-			LOG.send(n);
-			while n ~= 1 && n < 100 {
-				//LOG.send(n);
-				await n % 2 == 0 {
-					n = n / 2
-				} or await n % 2 ~= 0 {
-					n = 3 * n + 1
-				}
-			}
-		}
-		LOG.send(1)
-	}
-}
+//TODO: halts on decomp
+//func collatz(chan N, LOG) {
+//	var fixed n
+//	while {
+//		n = N.recv()
+//		while n ~= 1 {
+//			LOG.send(n)
+//			while n ~= 1 && n < 100 {
+//				//LOG.send(n)
+//				if n % 2 == 0 {
+//					n = n / 2
+//				} or if !(n % 2 == 0) {
+//					n = 3 * n + 1
+//				}
+//			}
+//		}
+//		LOG.send(1)
+//	}
+//}
 
 //func mask() {}
 //func ReLU() {}
@@ -93,3 +126,61 @@ func collatz(chan N, LOG) {
 // See industry-standard DSP++ benchmarks
 //BDTI DSP Kernel Benchmarks™ (BDTImark2000)
 //EEMBC’s FPMark™ and Core Benchmarks
+
+
+//TODO: halts on decomp
+//// Bresenham's line algorithm
+//func bresenhams_line(chan X0, X1, Y0, Y1, Px, Py) {
+//	// assuming x0 <= x1
+//	var fixed x0, x1, y0, y1, dx, dy, D
+//
+//	while {
+//		x0 = X0.recv() and
+//			x1 = X1.recv() and
+//			y0 = Y0.recv() and
+//			y1 = Y1.recv();
+//		dy = y1 - y0 and
+//			dx = x1 - x0;
+//		D = (2 * dy) - dx
+//
+//		while x0 <= x1 {
+//			Px.send(x0) and
+//				Py.send(y0)
+//
+//			if D > 0 {
+//				y0 = y0 + 1 and
+//					D = D - (2 * dx)
+//
+//			} or if !(D > 0) {
+//				skip
+//			}
+//
+//			D = D + (2 * dy) and
+//				x0 = x0 + 1
+//		}
+//	}
+//}
+
+//TODO: halts on decomp
+//func fizzbuzz(chan IN, OUT) {
+//	var fixed x, fizz, buzz;
+//	fizz = 3030;
+//	buzz = 0505
+//	while {
+//		x = IN.recv()
+//		//if x % 3 == 0 {
+//		//	OUT.send(fizz)
+//		//} and if x % 5 == 0 { //TODO: EWW, do we... SHOULD we...?
+//		//	OUT.send(buzz)
+//		//} or if !(x % 3 == 0) & !(x % 5 == 0) {
+//		//	OUT.send(x)
+//		//}
+//		if x % 3 == 0 {
+//			OUT.send(fizz)
+//		} and if x % 5 == 0 { //TODO: EWW, do we... SHOULD we...?
+//			OUT.send(buzz)
+//		} or if !(x % 3 == 0) & !(x % 5 == 0) {
+//			OUT.send(x)
+//		}
+//	}
+//}

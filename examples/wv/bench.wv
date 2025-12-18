@@ -1,0 +1,50 @@
+import "arithmetic"
+import "dataflow"
+import "dsa"
+//import "projection" //TODO:
+import "algorithm"
+import "stream"
+//import "deadlock"
+//import "cpu"
+//import "types"
+//import "unethical"
+
+func _(){}  // null case
+func _skip(){skip;skip;skip}  // null case
+func finite(){var fixed x;x=2}
+func infinite(){while{skip}}
+// or while {} and while {}
+
+//func phi_merge(chan IN1, IN2, OUT) {}
+
+
+//// Dead Code Elimination
+//func min_of_three() {}
+//func parity_check() {}
+//func boolean expressions() {}
+//func divmod() {}
+//func swap() {}
+//
+//// Common Subexpression Elimination
+//func distance() {}
+//func quadratic() {}
+//func discriminant() {}
+//func lerp() {}
+//func slerp() {}
+
+
+//func sort(chan A0,A1,A2,A3, B0,B1,B2,B3) {
+//	var chan C0,C1,C2,C3;
+//
+//	while {
+//		//x0 = A0.recv() and
+//		//	x1 = A1.recv() and
+//		//	x2 = A2.recv() and
+//		//	x3 = A3.recv();
+//
+//		compare_and_swap(A0, A1, C0, C1);
+//		compare_and_swap(A1, A2, C1, C2);
+//		compare_and_swap(A2, A3, C2, C3);
+//	}
+//}
+

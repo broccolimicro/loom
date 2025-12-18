@@ -19,7 +19,7 @@ func sign(chan IN, OUT) {
 		} or if x > 0 {
 			OUT.send(1)
 		} or if x < 0 {
-			OUT.send(-1) //TODO: 0 - 1?
+			OUT.send(-1)
 		}
 	}
 }
@@ -31,7 +31,7 @@ func abs(chan IN, OUT) {
 		if x > 0 {
 			OUT.send(x)
 		} or if !(x > 0) {
-			OUT.send(-x)  //TODO: 0 - x?
+			OUT.send(-x)
 		}
 	}
 }
@@ -63,45 +63,47 @@ func max(chan IN0, IN1, OUT) {
 	}
 }
 
-//TODO: more naive or test ternary?
-func threshold(chan X, T, OUT) {
-	while {
-		OUT.send(X.recv() >= T.recv() ? 1 : 0)
-	}
-}
+//TODO: meaningfully interesting ternary case
+//func threshold(chan X, T, OUT) {
+//	while {
+//		OUT.send(X.recv() >= T.recv() ? 1 : 0)
+//	}
+//}
 
-func clamp(chan LO, N, HI, OUT) {
-	var fixed lo,n,hi
-	while {
-		lo = LO.recv() and
-			n = N.recv() and
-			hi = HI.recv()
-		if n > hi {
-			OUT.send(hi)
-		} or if n < lo {
-			OUT.send(lo)
-		} or if !(n > hi) & !(n < lo) {
-			OUT.send(n)
-		}
-	}
-}
+//TODO: OUT-partial hangs on flatten()
+//func clamp(chan LO, N, HI, OUT) {
+//	var fixed lo,n,hi
+//	while {
+//		lo = LO.recv() and
+//			n = N.recv() and
+//			hi = HI.recv()
+//		if n > hi {
+//			OUT.send(hi)
+//		} or if n < lo {
+//			OUT.send(lo)
+//		} or if !(n > hi) & !(n < lo) {
+//			OUT.send(n)
+//		}
+//	}
+//}
 
-func compare_and_swap(chan IN0, IN1, OUT1, OUT2) {
-	var fixed x, y
-	while {
-		x = IN0.recv() and
-			y = IN1.recv()
-
-		if x > y {
-			OUT0.send(y) and
-				OUT1.send(x)
-
-		} or if !(x > y) {
-			OUT0.send(x) and
-				OUT1.send(y)
-		}
-	}
-}
+//TODO: OUT-partial hangs on flatten()
+//func compare_and_swap(chan IN0, IN1, OUT1, OUT2) {
+//	var fixed x, y
+//	while {
+//		x = IN0.recv() and
+//			y = IN1.recv()
+//
+//		if x > y {
+//			OUT0.send(y) and
+//				OUT1.send(x)
+//
+//		} or if !(x > y) {
+//			OUT0.send(x) and
+//				OUT1.send(y)
+//		}
+//	}
+//}
 
 func median_of_three(chan IN0, IN1, IN2, OUT) {
 	var fixed x, y, z
@@ -178,7 +180,7 @@ func matmul_2x2(chan A00,A01,A10,A11, B00,B01,B10,B11, OUT00,OUT01,OUT10,OUT11) 
 		OUT00.send(a00*b00 + a01*b10) and
 		OUT01.send(a00*b01 + a01*b11) and
 		OUT10.send(a10*b00 + a11*b10) and
-		OUT11.send(a10*b01 + a11*b11) and
+		OUT11.send(a10*b01 + a11*b11)
 	}
 }
 

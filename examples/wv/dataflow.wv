@@ -29,6 +29,30 @@ func buffer2(chan L, R) {
 	}
 }
 
+func seq(chan L1, L2, L3, R1, R2, R3) {
+	var fixed l1, l2, l3;
+	while {
+		l1 = L1.recv();
+		R1.send(l1);
+		l2 = L2.recv();
+		R2.send(l2);
+		l3 = L3.recv();
+		R3.send(l3)
+	}
+}
+
+func par(chan L1, L2, L3, R1, R2, R3) {
+	var fixed l1, l2, l3;
+	while {
+		l1 = L1.recv() and
+			l2 = L2.recv() and
+			l3 = L3.recv();
+		R1.send(l1) and
+			R2.send(l2) and
+			R3.send(l3)
+	}
+}
+
 func copy(chan L, R0, R1) {
 	var fixed l;
 	while {

@@ -1,16 +1,17 @@
-import "algorithm"
+//import "algorithm"
 //import "cpu"
-import "dataflow"
+//import "dataflow"
+import "bench"
 
-func top() {
-	var chan L, R;
-	source(L) and
-		buffer(L, R) and
-		sink(R)
-
-	// Pico Processor
-	//var chan InsAddr, InsRd, DataAddr, DataCmd, DataRd, DataWr;
-	//imem(InsAddr, InsRd) and
-	//	dmem(DataAddr, DataCmd, DataRd, DataWr) and
-	//	cpu(InsAddr, InsRd, DataAddr, DataCmd, DataRd, DataWr)
-}
+func top() {}
+////	var chan L, R;
+////	source(L) and
+////		buffer(L, R) and
+////		sink(R)
+////
+////	// Pico Processor
+////	//var chan InsAddr, InsRd, DataAddr, DataCmd, DataRd, DataWr;
+////	//imem(InsAddr, InsRd) and
+////	//	dmem(DataAddr, DataCmd, DataRd, DataWr) and
+////	//	cpu(InsAddr, InsRd, DataAddr, DataCmd, DataRd, DataWr)
+////}

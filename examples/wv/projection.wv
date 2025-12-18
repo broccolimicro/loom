@@ -1,0 +1,24 @@
+func broadcast(chan A, B, C, D, E) {
+	var fixed x
+	while {
+		x = A.recv();
+		B.send(x) and C.send(x) and D.send(x) and E.send(x)
+	}
+}
+
+func pingpong(chan IN0,IN1, OUT0,OUT1) {
+	var fixed cache
+	while {
+		cache = IN0.recv();
+		OUT0.send(cache);
+		cache = IN1.recv();
+		OUT1.send(cache);
+	}
+}
+
+func deadlockA(chan A, B) { while { A.send(1);B.recv() } }
+func deadlockB(chan A, B) { while { B.send(1);A.recv() } }
+func deadlock() {
+	var chan A, B;
+	deadlockA(A, B) and deadlockB(A, B)
+}

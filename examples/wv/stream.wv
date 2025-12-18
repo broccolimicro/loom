@@ -1,0 +1,71 @@
+func decimator() {}
+//func repeater() {}
+//
+//func fixed_delay() {}
+//func filter() {}
+//func accumulator() {}
+//
+//func sequence_detector() {}
+
+//TODO: decomp hangs
+//func rate_limiter(chan IN, TIMEOUT, OUT) {
+//	var fixed data, reset, timeout;
+//	timeout = 0;
+//	reset = 1
+//	while {
+//		//data=0 //TODO: remove helper
+//		if timeout == 0 {
+//			timeout = TIMEOUT.recv();
+//			data = IN.recv();
+//
+//			if reset == 1 {
+//				reset = 0
+//			} or if !(reset == 1) {
+//				OUT.send(data)
+//			}
+//
+//		} or if !(timeout == 0) {
+//			timeout = timeout - 1
+//		}
+//	}
+//}
+
+func zipper(chan IN0, IN1, OUT) {
+	while {
+		OUT.send(IN0.recv());
+		OUT.send(IN1.recv())
+	}
+}
+
+func unzipper(chan IN, OUT0, OUT1) {
+	while {
+		OUT0.send(IN.recv());
+		OUT1.send(IN.recv())
+	}
+}
+
+//func sign_extend() {}
+//func sign_compress() {}
+
+func serialize_1to8(chan IN, OUT0,OUT1,OUT2,OUT3,OUT4,OUT5,OUT6,OUT7) {
+	var fixed x
+	while {
+		x = IN.recv();
+		OUT7.send((x >> 7) & 1) and
+			OUT6.send((x >> 6) & 1) and
+			OUT5.send((x >> 5) & 1) and
+			OUT4.send((x >> 4) & 1) and
+			OUT3.send((x >> 3) & 1) and
+			OUT2.send((x >> 2) & 1) and
+			OUT1.send((x >> 1) & 1) and
+			OUT0.send((x >> 0) & 1)
+	}
+}
+
+func deserialize_8to1(chan IN0,IN1,IN2,IN3,IN0,IN1,IN0,IN1, OUT) {
+	var fixed x
+	while {
+		x = (IN7.recv() << 7) | (IN6.recv() << 6) | (IN5.recv() << 5) | (IN4.recv() << 4) | (IN3.recv() << 3) | (IN2.recv() << 2) | (IN1.recv() << 1) | (IN0.recv());
+		OUT.send(x)
+	}
+}
