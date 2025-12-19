@@ -120,21 +120,22 @@ googletest:
 	mkdir -p googletest/build; cd googletest/build; cmake .. -DBUILD_GMOCK=OFF
 	$(MAKE) -s $(MAKE_FLAGS) -C googletest/build
 
-coverage-all: coverage-collect coverage-report
+coverage: coverage-collect
+	genhtml coverage_merged.info --output-directory coverage_report_all
 
-coverage-collect:
+coverage-collect: coverage-build
 	@rm -f coverage_merged.info
 	@$(foreach item,$(LIBS), \
 		echo "== Coverage: $(item) =="; \
-		$(MAKE) -C $(item) coverage; \
+		$(MAKE) -s $(MAKE_FLAGS) -C $(subst +, ,$(item)) coverage; \
 		lcov -a coverage_merged.info \
 		     -a $(item)/coverage_filtered.info \
 		     -o coverage_merged.info || \
 		cp $(item)/coverage_filtered.info coverage_merged.info; \
 	)
 
-coverage-report:
-	genhtml coverage_merged.info --output-directory coverage_report_all
+coverage-build:
+	@$(foreach item,$(LIBS),echo "$(subst +, ,$(item))"; $(MAKE) -s $(MAKE_FLAGS) -C $(subst +, ,$(item)) COVERAGE=1;)
 
 check:	
 	@$(foreach item,$(LIBS),echo "$(subst +, ,$(item))"; ./$(subst +, ,$(item))/test;)
