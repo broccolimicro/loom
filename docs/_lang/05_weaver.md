@@ -232,6 +232,16 @@ vdd & true = vdd
 gnd | true = vdd
 ```
 
+Assignments may be composed in parallel or choice based on the `,` and `:`
+operators. Declarations must be preceded by `var` if within a `func`.
+Declarations in the arg-list or return values need not be preceded by `var`.
+
+```weaver
+var fixed<16,-4> a[3] = [1, 2, 3.5], b[4][2] = [[1, 2], [3, 4], [5, 6], [7, 8]]
+var myType x = {1, true, 2.2}
+a[2] = 5, b[1][1] = 3 : x.mybool = false
+```
+
 ### Conditions and Loops
 
 There are two types of conditionals based on the difference between validity
@@ -293,16 +303,16 @@ statements of any kind. Operators are listed in descending precedence.
 
 |  | Operator(s) | Description |
 |----------------------|-------------|-------------|
-| 1 | `,` | Parallel |
-| 2 | `:` | Choice |
+| 1 | `,` | Parallel (assignment only) |
+| 2 | `:` | Choice (assignment only) |
 | 3 | `;`, newline | Sequential |
 | 4 | `and` | Parallel |
 | 5 | `or` | Conditional |
 | 6 | `xor` | Choice |
 
-You have already seen sequental composition in all of
-the previous examples. In the following example, `a` is assigned to `5`, **then**
-`b` is assigned to `2`.
+As you have already seen in the previous examples, statements in a function or
+process are inherently composed in sequence. In the following example, `a` is
+assigned to `5`, **then** `b` is assigned to `2`.
 
 ```weaver
 var int<32> a, b
@@ -394,8 +404,53 @@ await A {
 
 ## Structure
 
+Structures describe circuit structure. Statements in a structure are inherently composed in parallel.
+
+```weaver
+struct buffer(chan<int<4> > L) chan<int<4> > R {
+	R.e & L.r -> R.r = L.r
+	R.r -> L.e-
+	~R.e & ~L.r -> R.r-
+	~R.r -> L.e+
+}
+
+struct fifo(chan<int<4> > L) chan<int<4> > R {
+	var chan<int<4> > M[5]
+	M[0] = L
+	M[1] = R
+
+	var buffer stages[4]
+	stages[0](M[0], M[1])
+	stages[1](M[1], M[2])
+	stages[2](M[2], M[3])
+	stages[3](M[3], M[4])
+}
+```
+
+### Production Rule
+
+Each statement follows the format of a production rule: condition implies
+action. Where action is either an assignment, a function call, or a process
+instantiation. The condition is evaluated based on `valid()`, and `true()` must
+be used explicitly to evaluate truthiness. If the condition is not specified,
+it is assumed to be `vdd`.
+
+```
+a & b -> x = 5
+z = x + y
+```
 
 ## Types
 
+Types specify how data should be grouped into a bus.
 
+```weaver
+type opcode {
+	int<4> fn, rs, rt, rd
+}
 
+var opcode op = {3, 0, 1, 2}
+if op.fn == 0 {
+	rf[op.rd] = rf[op.rs] + rf[op.rt]
+}
+```
