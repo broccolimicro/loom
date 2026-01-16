@@ -1,12 +1,12 @@
 ---
-title: Weaver
+title: Loom
 author: Edward Bingham
 date: 2026-01-15
 layout: post
 permalink: /
 ---
 
-# Weaver Documentation
+# Loom Documentation
 
 Welcome to the Weaver hardware description language documentation.
 
@@ -30,6 +30,13 @@ software engineers to design high-quality complex computer architectures. It
 balances three core building-blocks: **Behavior**, **Structure**, and
 **Types**.
 
+## New Here?
+
+1. Start with a [Tutorial](./tutorials/) to get hands-on experience
+2. Use [How-to Guides](./how-to-guides/) for specific tasks
+3. Refer to the [Reference](./reference/) for syntax and details
+4. Read [Explanations](./explanations/) to deepen your understanding
+
 ### [Tutorials](./tutorials/)
 Step-by-step learning guides. Start here if you're new to Weaver.
 
@@ -42,6 +49,6 @@ Complete technical reference for the Weaver language. Use this when you need to 
 ### [Explanations](./explanations/)
 Conceptual background and deeper understanding. Read these to understand the "why" behind Weaver's design.
 
-## Language Version
+## Version 0.15
 
-This documentation covers **Weaver v1.0.0** for Loom.
+This documentation covers the [lastest version of Loom](https://github.com/broccolimicro/loom), **v0.15**.

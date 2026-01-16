@@ -6,7 +6,11 @@ category: Language
 layout: post
 ---
 
-Loom supports multiple different languages for different stages of the synthesis.
+Loom supports multiple different dialects or languages for different stages of the synthesis.
+
+**Weaver (Wv)** Write your behavioral specifications in Weaver. You behavior will then
+be broken into processes and pipeline stages during synthesis. The semantics
+of the language is fairly similar to the Go language.
 
 **Communicating Hardware Processes (CHP)** Write your behavioral specification
 in CHP. Your behavior will then be broken into processes and pipeline stages

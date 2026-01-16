@@ -1,7 +1,7 @@
 ---
 title: Weaver
 author: Edward Bingham
-date: 2026-01-15
+date: 2024-09-24  #TODO: 2026-01-16, but hacked to order correctly
 category: Language
 layout: post
 ---

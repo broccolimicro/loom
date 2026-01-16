@@ -3,9 +3,11 @@ longtitle:        Loom Language Documentation
 author:           Edward Bingham
 email:            edward.bingham@broccolimicro.io
 description: >
-  Synthesize quasi-delay insensitive circuits.
+  Synthesize quasi-delay-insensitive circuits.
 
-remote_theme: sighingnow/jekyll-gitbook
+#remote_theme: sighingnow/jekyll-gitbook
+#theme: jekyll-gitbook
+#theme_dir: _themes
 extra_css: extra.css
 
 toc:
@@ -31,6 +33,41 @@ syntax_highlighter_style: github
 
 markdown_ext:             markdown,mkdown,mkdn,mkd,md
 
+collections:
+  tutorial:
+    label: Tutorial
+    output: true
+    permalink: /:collection/:title:output_ext
+  guide:
+    label: Guide
+    output: true
+    permalink: /:collection/:title:output_ext
+  explain:
+    label: Explanation
+    output: true
+    permalink: /:collection/:title:output_ext
+  reference:
+    label: Reference
+    output: true
+    permalink: /:collection/:title:output_ext
+  lang:
+    label: Languages
+    output: true
+    permalink: /:collection/:title:output_ext
+  hse:
+    label: HSE
+    output: true
+    permalink: /:collection/:title:output_ext
+
+ordered_collections:
+  - tutorial
+  - guide
+  - explain
+  - reference
+  - lang
+  - hse
+
+#permalink:                /:categories/:title:output_ext
 # Use pretty permalinks (removes .html extension)
 permalink:                pretty
 

@@ -2,7 +2,7 @@
 title: Explanations
 category: Explanations
 author: Edward Bingham
-date: 2026-01-15
+date: 2026-01-14
 layout: post
 ---
 
