@@ -31,28 +31,8 @@ syntax_highlighter_style: github
 
 markdown_ext:             markdown,mkdown,mkdn,mkd,md
 
-permalink:                /:categories/:title:output_ext
+# Use pretty permalinks (removes .html extension)
+permalink:                pretty
 
-collections:
-  lang:
-    label: Languages
-    output: true
-    permalink: /:collection/:title:output_ext
-  comp:
-    label: Compilation
-    output: true
-    permalink: /:collection/:title:output_ext
-  sim:
-    label: Simulation
-    output: true
-    permalink: /:collection/:title:output_ext
-  vis:
-    label: Visualization
-    output: true
-    permalink: /:collection/:title:output_ext
-
-ordered_collections:
-  - lang
-  - comp
-  - sim
-  - vis
+# Collections are not needed - using standard directory structure
+# The jekyll-gitbook theme works with standard pages and directories
