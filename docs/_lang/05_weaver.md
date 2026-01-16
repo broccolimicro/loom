@@ -200,7 +200,9 @@ are two built-in functions to force one evaluation over the other.
 
 ### Operators and Precedence
 
-| Precedence (descending) | Operator(s) | Kind | Description |
+Operators are listed in descending precedence.
+
+|  | Operator(s) | Kind | Description |
 |----------------------|-------------|------|-------------|
 | 1 | `[ ... ]` | Group | Array literal or grouped list expression. Highest binding strength. |
 | 2 | `::` | Modifier | Namespace or scope resolution operator. |
@@ -274,19 +276,29 @@ if x == 3 {
 Keep in mind that the if-statement in Weaver is blocking and there is no
 `else`. This is unlike if statements in any other language.
 
+While loops are inherently truthy, and the following example loops until
+`true(x < 7)` evaluates to `gnd`, which happens when `x` is `7`.
+
+```
+var uint<3> x = 0
+while x < 7 {
+	x = x + 1
+}
+```
+
 ### Composition
 
 There are four process composition operators. These operators may compose
-statements of any kind.
+statements of any kind. Operators are listed in descending precedence.
 
-| Precedence (descending) | Operator(s) | Description |
+|  | Operator(s) | Description |
 |----------------------|-------------|-------------|
 | 1 | `,` | Parallel |
-| 1 | `:` | Choice |
-| 1 | `;`, newline | Sequential |
-| 1 | `and` | Parallel |
-| 1 | `or` | Conditional |
-| 1 | `xor` | Choice |
+| 2 | `:` | Choice |
+| 3 | `;`, newline | Sequential |
+| 4 | `and` | Parallel |
+| 5 | `or` | Conditional |
+| 6 | `xor` | Choice |
 
 You have already seen sequental composition in all of
 the previous examples. In the following example, `a` is assigned to `5`, **then**
@@ -366,6 +378,18 @@ await A {
 	B.recv()
 }
 ```
+
+Await, if, while, and assignments may be composed in a myrad of ways.
+
+```
+await A {
+	...
+} and if x < 3 {
+	...
+} or while i > 2 {
+	...
+}
+``` 
 
 ## Structure
 
