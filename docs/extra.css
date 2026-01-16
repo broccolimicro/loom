@@ -1,0 +1,66 @@
+/* Tabs = 2 spaces */
+pre,
+code {
+	tab-size: 2;
+	-moz-tab-size: 2;
+}
+
+/* Base code block cleanup */
+.highlight {
+	background: #ffffff;
+}
+
+/* Features: func, struct, circ, proto */
+.highlight .kd {
+	color: #22863a; /* GitHub green */
+	font-weight: normal;
+	font-style: normal;
+}
+
+/* Include: import */
+.highlight .kn {
+	color: #005cc5; /* GitHub blue */
+}
+
+/* Control flow: if, while, await, etc */
+.highlight .k {
+	color: #905500; /* readable yellow */
+	font-weight: normal;
+	font-style: normal;
+}
+
+/* Types: chan, fixed, ufixed, bool */
+.highlight .kt {
+	color: #22863a; /* green */
+	font-weight: normal;
+	font-style: normal;
+}
+
+/* Comments */
+.highlight .c,
+.highlight .c1,
+.highlight .cm {
+	color: #005cc5; /* blue */
+	font-style: italic;
+}
+
+/* TODO / FIXME / NOTE / DESIGN */
+.highlight .cs {
+	background-color: #fff5b1;
+	color: #735c0f;
+	padding: 0 2px;
+	border-radius: 2px;
+}
+
+/* Numbers */
+.highlight .m {
+	color: #d73a49; /* pinkish / reddish */
+}
+
+.highlight .p,
+.highlight .o {
+	color: inherit;
+	background: none;
+	font-weight: normal;
+	font-style: normal;
+}
