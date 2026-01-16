@@ -279,7 +279,7 @@ Keep in mind that the if-statement in Weaver is blocking and there is no
 While loops are inherently truthy, and the following example loops until
 `true(x < 7)` evaluates to `gnd`, which happens when `x` is `7`.
 
-```
+```weaver
 var uint<3> x = 0
 while x < 7 {
 	x = x + 1
@@ -304,7 +304,7 @@ You have already seen sequental composition in all of
 the previous examples. In the following example, `a` is assigned to `5`, **then**
 `b` is assigned to `2`.
 
-```
+```weaver
 var int<32> a, b
 a = 5
 b = 2
@@ -314,7 +314,7 @@ Weaver also has parallel composition represented by the `and` operator. In the
 following example, `a` is assigned to `5` and `b` is assigned to `2` in any
 order or even simultaneously.
 
-```
+```weaver
 var int<32> a, b
 a = 5 and b = 2
 ```
@@ -381,13 +381,14 @@ await A {
 
 Await, if, while, and assignments may be composed in a myrad of ways.
 
-```
+```weaver
 await A {
 	...
 } and if x < 3 {
 	...
-} or while i > 2 {
+} or while x >= 3 {
 	...
+	x = x - 1
 }
 ``` 
 
