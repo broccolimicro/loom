@@ -6,7 +6,7 @@ date: 2026-01-15
 layout: post
 ---
 
-**Weaver’s goal is to help software engineers design complex hardware systems
+**Weaver’s mission is to help software engineers design complex hardware systems
 without the need for deep hardware expertise.**
 
 ## Design Choices

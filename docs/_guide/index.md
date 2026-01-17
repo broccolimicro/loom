@@ -6,11 +6,8 @@ date: 2026-01-14
 layout: post
 ---
 
-# How-to Guides
-
-These guides show you how to accomplish specific tasks in Weaver. Each guide provides step-by-step instructions to solve a particular problem.
-
-## When to Use How-to Guides
+These guides show you how to accomplish specific tasks in Weaver. Each guide
+provides step-by-step instructions to solve a particular problem.
 
 How-to guides are for you when you:
 - Know what you want to achieve but need to know how
@@ -18,9 +15,10 @@ How-to guides are for you when you:
 - Need to solve a specific problem or implement a specific pattern
 - Want practical, actionable steps without deep theory
 
-If you're just getting started, begin with the [Tutorials](../tutorials/). If you need to understand *why* something works the way it does, see the [Explanations](../explanations/). If you need syntax or API details, check the [Reference](../reference/).
-
-## Common Tasks
+If you're just getting started, begin with the [Tutorials](../tutorials/). If
+you need to understand *why* something works the way it does, see the
+[Explanations](../explanations/). If you need syntax or API details, check the
+[Reference](../reference/).
 
 ### Debugging and Verification
 
@@ -65,4 +63,5 @@ Each how-to guide follows this structure:
 4. **Verification**: How to verify it worked
 5. **Next Steps**: Related guides or concepts
 
-Guides focus on practical steps. For deeper understanding of concepts, they link to explanations or reference material.
+Guides focus on practical steps. For deeper understanding of concepts, they
+link to explanations or reference material.

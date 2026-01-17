@@ -7,9 +7,7 @@ layout: post
 ---
 
 This section provides conceptual background, design rationale, and deeper
-understanding of Weaver's architecture and design decisions. Unlike tutorials
-(which teach you how to do things) or reference guides (which tell you what
-exists), explanations help you understand *why* things are the way they are.
+understanding of Weaver's architecture and design decisions. These explanations help you understand *why* things are the way they are.
 
 - [**Design Philosophy**](./01-design-philosophy) - The core principles that guide Weaver's design
 - [**Validity and Truthiness**](./02-validity-truthiness) - Why validity exists and how it enables flexible timing
