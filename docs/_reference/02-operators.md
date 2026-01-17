@@ -1,12 +1,10 @@
 ---
-title: Operators - Weaver Language Reference
+title: Operators
 category: Reference
 author: Edward Bingham
 date: 2026-01-15
 layout: post
 ---
-
-# Operators
 
 Operators are listed in descending precedence (highest to lowest).
 

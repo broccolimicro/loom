@@ -1,12 +1,10 @@
 ---
-title: Validity and Truthiness - Weaver Language Reference
+title: Validity and Truthiness
 category: Reference
 author: Edward Bingham
 date: 2026-01-15
 layout: post
 ---
-
-# Validity and Truthiness
 
 Weaver introduces two distinct concepts: **validity** and **truthiness**. Understanding the difference is crucial for writing correct Weaver code.
 

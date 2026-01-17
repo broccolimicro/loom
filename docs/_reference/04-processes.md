@@ -1,12 +1,10 @@
 ---
-title: Processes - Weaver Language Reference
+title: Processes
 category: Reference
 author: Edward Bingham
 date: 2026-01-15
 layout: post
 ---
-
-# Processes
 
 Processes represent one or more pipeline stages in your design. They are the primary mechanism for describing concurrent, stateful hardware behavior.
 

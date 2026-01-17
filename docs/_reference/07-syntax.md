@@ -1,12 +1,10 @@
 ---
-title: Syntax - Weaver Language Reference
+title: Syntax
 category: Reference
 author: Edward Bingham
 date: 2026-01-15
 layout: post
 ---
-
-# Syntax
 
 This page covers the core syntax elements of the Weaver language.
 

@@ -1,12 +1,10 @@
 ---
-title: Types - Weaver Language Reference
+title: Types
 category: Reference
 author: Edward Bingham
 date: 2026-01-15
 layout: post
 ---
-
-# Types
 
 Weaver has a small set of built-in types for representing hardware signals and data.
 

@@ -1,12 +1,10 @@
 ---
-title: Functions - Weaver Language Reference
+title: Functions
 category: Reference
 author: Edward Bingham
 date: 2026-01-15
 layout: post
 ---
-
-# Functions
 
 Functions in Weaver are pure, side-effect-free computations that terminate and return values.
 

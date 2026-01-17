@@ -1,5 +1,5 @@
 ---
-title: Weaver Language Reference
+title: Reference
 category: Reference
 author: Edward Bingham
 date: 2026-01-14

@@ -1,12 +1,10 @@
 ---
-title: Custom Types - Weaver Language Reference
+title: Custom Types
 category: Reference
 author: Edward Bingham
 date: 2026-01-15
 layout: post
 ---
-
-# Custom Types
 
 Types specify how data should be grouped into a bus. They allow you to organize related fields together.
 

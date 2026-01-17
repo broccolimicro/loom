@@ -1,12 +1,10 @@
 ---
-title: Structures - Weaver Language Reference
+title: Structures
 category: Reference
 author: Edward Bingham
 date: 2026-01-15
 layout: post
 ---
-
-# Structures
 
 Structures describe circuit structure using production rules. Statements in a structure are inherently composed in parallel.
 
