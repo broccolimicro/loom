@@ -97,12 +97,12 @@ language features.
 7. [**Syntax**](./reference/07-syntax) - Language syntax and grammar
 8. [**Validity and Truthiness**](./reference/08-validity-truthiness) - Validity semantics and truthiness
 
-### [Explanations](./explain/index)
+### [Design Philosophy](./explain/index)
 This section provides conceptual background, design rationale, and deeper
 understanding of Weaver's architecture and design decisions. These explanations
 help you understand *why* things are the way they are.
 
-1. [**Design Philosophy**](./explain/01-design-philosophy) - The core principles that guide Weaver's design
+1. [**Design Philosophy**](./explain/index) - The core principles that guide Weaver's design
 2. [**Validity and Truthiness**](./explain/02-validity-truthiness) - Why validity exists and how it enables flexible timing
 3. [**Composition Model**](./explain/03-composition-model) - The rationale behind parallel, sequential, and choice composition operators
 4. [**Process Architecture**](./explain/04-process-architecture) - Why processes have perpetual loops and how they map to hardware

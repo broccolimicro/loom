@@ -6,15 +6,46 @@ date: 2026-01-15
 layout: post
 ---
 
-Weaver's composition operators are unlike anything in traditional programming languages. Understanding why they exist and how they work is essential for writing effective Weaver code.
+Most software languages are fundamentally sequential. One statement executes,
+then the next, in a predictable order. Even with threads or async/await,
+there's an underlying sequential execution model.
 
-## The Problem: Hardware is Parallel
+Hardware is different. Multiple things happen simultaneously. A CPU might fetch
+an instruction, decode another, execute a third, and write back a fourth, all at
+the same time. This parallelism is not optional, it's how hardware works.
 
-In software, execution is fundamentally sequential. One statement executes, then the next, in a predictable order. Even with threads or async/await, there's an underlying sequential execution model.
+Traditional hardware description languages handle this by making parallelism
+implicit, and sequencing is implemented by hand using state machines.
+Everything happens in parallel unless you say otherwise.
 
-Hardware is different. Multiple things happen simultaneously. A CPU might fetch an instruction, decode another, execute a third, and write back a fourth—all at the same time. This parallelism isn't optional—it's how hardware works.
+This approach is very hard to reason about because people naturally reason
+sequentially. The end result is that designers must create two descriptions: a
+behavioral model that the programmer can reason about, and a structural
+implementation that the compiler can reason about. Then, the programmer must
+manually tie those two descriptions together with testing and verification.
+This takes so much time and effort that most people doing chip design are
+employed simply to test.
 
-Traditional hardware description languages handle this by making parallelism implicit (everything happens in parallel unless you say otherwise) or by using explicit clocking and state machines. Weaver takes a different approach: it provides explicit composition operators that let you control how statements relate to each other.
+Alternatively, High-Level Synthesis tries to compile software programs to
+hardware, but it is very easy to write a program that is not synthesizeable.
+Software is virtual: functions are loaded and unloaded, memory is allocated and
+deallocated, network connections are created and destroyed, nothing occupies
+physical space. Hardware is physical: functions, memory, and connections are
+all implemented by real, physical, concrete circuit elements.
+
+Virtualization hides sequencing and dependency through memory, and how
+everything is organized in memory over time is *dependant on the inputs of the
+program*. By definition, the compiler does not have enough information to
+untangle virtualization at compile time.
+
+**Weaver is fundamentally sequential and physical.**
+
+![test]({{site.baseurl}}/images/loom.svg)
+
+Weaver  
+
+Weaver provides explicit composition operators that let you control how
+statements relate to each other.
 
 ## The Four Composition Operators
 
@@ -22,8 +53,8 @@ Weaver has four main composition operators (plus assignment-specific variants):
 
 1. **Sequential** (`;` or newline): One thing happens, then the next
 2. **Parallel** (`and`): Multiple things happen simultaneously
-3. **Conditional** (`or`): One of several things happens (mutually exclusive)
-4. **Choice** (`xor`): One of several things happens (arbitrary choice)
+3. **Conditional** (`or`): Only one of several things is possible (deterministic)
+4. **Choice** (`xor`): Only one of several things is chosen (non-deterministic)
 
 Each serves a different purpose and maps to different hardware patterns.
 
