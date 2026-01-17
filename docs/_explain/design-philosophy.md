@@ -6,97 +6,101 @@ date: 2026-01-15
 layout: post
 ---
 
-# Design Philosophy
+**Weaver’s goal is to help software engineers design complex hardware systems
+without the need for deep hardware expertise.**
 
-Weaver is built on a foundation of principles that guide every design decision. Understanding these principles helps you write better Weaver code and understand why the language works the way it does.
+## Design Choices
 
-## Mission
+To do this, Weaver looks and feels like a modern software language, abstracting
+the hardware-level semantics into a more familiar execution model. This drives
+several key design choices:
 
-Weaver's mission is to make it easy for software engineers to design high-quality complex computer architectures. This mission drives several key design choices:
+- **Behavior First** - You describe what the system should do, not how signals
+  move between registers on every cycle. Instead of manually building state
+  machines, you write the intended behavior and let the compiler handle the
+  low-level details.
+- **High Level Abstractions** - Stop worrying about encodings, protocols, or
+  timing. The model and implementation are unified, and verification is
+  built-in. Focus on writing your intended behavior.
+- **Composable Design** - Communication between processes use channels with
+	built-in flow control. Standard communication rules allow components to
+  connect cleanly, without subtle timing bugs.
 
-### Software Engineer Friendly
-
-Weaver prioritizes familiarity for software engineers. The syntax looks similar to common programming languages, but the semantics are fundamentally different because they map to hardware, not software execution.
-
-### High-Quality Architectures
-
-Weaver is designed to help you build correct, efficient hardware. The language enforces patterns that lead to better designs:
-
-- **Explicit communication**: Channels make data flow explicit and verifiable
-- **Compositional design**: Processes compose cleanly, enabling modular architectures
-- **Type safety**: The type system helps catch errors at compile time
-
-### Complex Systems
-
-Weaver doesn't just handle simple circuits—it's designed for complex architectures. The composition operators, channel system, and process model all support building large, interconnected systems.
-
-## Three Core Building Blocks
+## Core Concepts
 
 Weaver balances three fundamental aspects of hardware design:
 
-### Behavior
+- **Behavior** describes *what* the circuit does. Processes and functions let you
+  describe computation and state transitions in a familiar, imperative style.
+  This is where most of your logic lives.
+- **Structure** describes *how* components are connected. Structures let you organize
+  your design hierarchically and describe the physical layout of your circuit.
+  This is where you compose processes into larger systems.
+- **Types** describe *how data is organized*. Custom types let you group related data
+  into buses, making your code more readable and your designs more maintainable.
 
-Behavior describes *what* the circuit does. Processes and functions let you describe computation and state transitions in a familiar, imperative style. This is where most of your logic lives.
+These three aspects are intentionally separate. You can think about behavior
+without worrying about structure, and vice versa. This separation of concerns
+makes complex designs more manageable.
 
-### Structure
+## Hardware Semantics, Not Software
 
-Structure describes *how* components are connected. Structures let you organize your design hierarchically and describe the physical layout of your circuit. This is where you compose processes into larger systems.
+Perhaps the most important principle to understand is that Weaver describes
+hardware, not software. This has profound implications:
 
-### Types
-
-Types describe *how data is organized*. Custom types let you group related data into buses, making your code more readable and your designs more maintainable.
-
-These three aspects are intentionally separate. You can think about behavior without worrying about structure, and vice versa. This separation of concerns makes complex designs more manageable.
-
-## Hardware, Not Software
-
-Perhaps the most important principle to understand is that Weaver describes hardware, not software. This has profound implications:
-
-### No Sequential Execution Model
-
-In software, statements execute one after another. In Weaver, statements can execute in parallel, and the language provides explicit operators to control this. The default sequential composition (`;` or newline) is a convenience, but parallel composition (`and`) is equally fundamental.
-
-### Perpetual Processes
-
-Processes never terminate because hardware doesn't stop. A CPU fetch unit runs forever, continuously fetching instructions. This is why processes have perpetual loops—they model hardware that's always active.
-
-### Timing is Explicit
-
-Unlike software languages that assume a single execution model, Weaver makes timing assumptions explicit. The validity system lets you write code that can compile to different timing models (QDI, synchronous, etc.) by encoding the necessary assumptions explicitly.
-
-## Composition Over Inheritance
-
-Weaver favors composition over other forms of code reuse. Processes compose through channels, structures compose through instantiation, and types compose through aggregation. This makes designs modular and testable.
-
-## Explicit Over Implicit
-
-Weaver makes important concepts explicit rather than hiding them:
-
-- **Validity**: Instead of assuming all values are always valid, Weaver tracks validity explicitly
-- **Timing**: Instead of assuming a single timing model, Weaver lets you encode timing assumptions explicitly
-- **Communication**: Instead of shared memory, Weaver uses explicit channels
-- **Composition**: Instead of implicit execution order, Weaver provides explicit composition operators
-
-This explicitness makes the language more verbose in some ways, but it also makes designs more understandable, verifiable, and flexible.
+- **Extremely Fine-Grained Parallelism** - Software usually runs one step at a
+	time, and parallelism requires heavy tools like threads and locks. Hardware
+	runs many operations at once by default, and sequencing requires heavy tools,
+	like a clock and event semantics. Weaver provides native operators and deeply
+  integrated semantics to help interleave sequential, parallel, and conditional
+  execution.
+- **No Virtualization** - In software, functions are loaded and unloaded,
+  memory is allocated and deallocated, network connections are created and
+  destroyed, nothing occupies physical space. In hardware, virtualization is
+  expensive and everything occupies physical space. Functions, memory, and
+	connections are all implemented by real, physical, concrete circuit elements.
+  As a result, functions are inlined, memory is static, and processes run as long
+  as the chip is powered. Any form of virtualization must be explicitly built on
+  top of static resources.
+- **Message Passing, not Shared Memory** - Hardware naturally uses
+  point-to-point communication. Small pieces of data flow through pipelines
+  rather than large shared data structures. Shared memory is possible, but must
+  be explicitly designed.
+- **Validity instead of Locks** - Software uses locks to control access to
+  shared resources. In hardware, even a single wire can be shared. Weaver uses
+  a lighter mechanism called Validity to control when data is present and usable.
 
 ## Balance of Power and Simplicity
 
-Weaver tries to balance expressive power with simplicity. The language is powerful enough to describe complex architectures, but simple enough that software engineers can learn it without deep hardware expertise.
+Because Weaver describes hardware, it is built up from semantics that are very
+different from software. As a result, there are many powerful low-level
+semantics in the language. However, those semantics are often both complex and
+complicated in extremely subtle ways.
 
-This balance is evident in choices like:
-- Familiar syntax with hardware semantics
-- Small set of built-in types with powerful composition
-- Simple channel model that enables complex communication patterns
-- Explicit operators that make parallel execution clear
+Weaver tries to balance expressive power with simplicity through abstraction.
+You may pick up Weaver and make it look like any other programming language.
+Or, with a healthy dose of psychodelics and masochism, you too can join us down
+the rabit hole of event semantics, timing models, handshake protocols,
+non-determinism, and the beautifully woven hyperdimensional fractal that is a
+program.
+
+Until then, the language is powerful enough to describe complex architectures,
+but simple enough that software engineers can learn it without deep hardware
+expertise.
 
 ## What This Means for You
 
-When writing Weaver code, keep these principles in mind:
+When designing with Weaver, keep these principles in mind:
 
-1. **Think in hardware**: Your code describes circuits, not programs
-2. **Compose explicitly**: Use composition operators to make your design clear
-3. **Make timing explicit**: Use validity to encode your timing assumptions
-4. **Separate concerns**: Use behavior for logic, structure for organization, types for data
-5. **Design for composition**: Write processes that can be easily connected and reused
+1. **Think in hardware** - Your code describes physical circuits, not running programs.
+2. **Design top-down, Build bottom-up** - Understand the bigger picture,
+  but build and verify the smallest and simplest process first.
+3. **Minimize data movement** - Prefer point-to-point communication over
+  broadcast, feed-forward algorithms over iterative, distributed architectures
+  over centralized, and small data packets over big.
+4. **Minimize energy** - Avoid unnecessary work and take advantage of
+  sparse or irregular data.
 
-Understanding these principles helps you write Weaver code that's not just correct, but also clear, maintainable, and well-architected.
+Understanding these principles helps you write Weaver code that's not just
+correct, but also clear, maintainable, and well-architected.
+
