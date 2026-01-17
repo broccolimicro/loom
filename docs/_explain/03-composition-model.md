@@ -6,8 +6,6 @@ date: 2026-01-15
 layout: post
 ---
 
-# Composition Model
-
 Weaver's composition operators are unlike anything in traditional programming languages. Understanding why they exist and how they work is essential for writing effective Weaver code.
 
 ## The Problem: Hardware is Parallel

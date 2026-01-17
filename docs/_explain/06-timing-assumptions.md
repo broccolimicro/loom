@@ -6,8 +6,6 @@ date: 2026-01-15
 layout: post
 ---
 
-# Timing Assumptions
-
 Weaver is designed to support multiple timing models, from Quasi-Delay Insensitive (QDI) to synchronous clocked logic. Understanding how Weaver handles timing helps you write code that can target different hardware styles.
 
 ## The Problem: Timing Models

@@ -6,8 +6,6 @@ date: 2026-01-15
 layout: post
 ---
 
-# Process Architecture
-
 Processes are Weaver's primary mechanism for describing concurrent, stateful hardware behavior. Understanding why they work the way they do helps you design better hardware.
 
 ## The Problem: Describing Concurrent State

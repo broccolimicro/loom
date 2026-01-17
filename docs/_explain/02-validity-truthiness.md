@@ -97,6 +97,29 @@ completed, it may still produce an error. Separating validity and truthiness
 lets you distinguish between those two cases without knowing ahead of time how
 long that task will take.
 
+## Compiling to Different Backends
+
+The validity semantic naturally compiles to any timing model.
+
+In **quasi-delay insensitive systems**, encodings naturally encode both the value
+and it's validity. For example, a 2-wire one-hot encoding (called 1of2 or
+dualrail) has one null and two valid states.
+- `00 = null`
+- `01 = false`
+- `10 = true`
+- `11 = illegal`
+
+In other **asynchronous systems**, variables are encoded with a data bus and a
+valid wire. The data on the data bus is always meaningful by the time the valid
+wire transitions from `gnd` to `vdd` following the bundled-data timing
+assumption.
+
+For **clocked systems**, variables are encoded with a data bus and a valid
+wire. When the valid wire is high on the clock tick, then there is meaningful
+data on the data bus for that clock cycle as guaranteed by the clocked timing
+assumption. If the compiler can guarantee that every clock tick will have a
+different valid value, then it can simply delete the valid wire.
+
 ## How Validity Propagates
 
 Validity affects every operation. Most operators are **conjunctive**, which means
@@ -161,105 +184,61 @@ Then `await cond` is simply a condition on `valid(cond)`, blocking until the
 `cond` becomes valid, and `if cond` is a condition on `true(cond)`, blocking
 until `cond` becomes `true`.
 
+Most of the time, you do not need to explicitly call `valid()` or `true()`. The
+language handles validity and truthiness automatically. But sometimes you need
+to force one interpretation.
+
+Use `valid()` when you need to check validity explicitly in a complex boolean condition.
+
+```weaver
+if valid(x) && y == 3 {
+	...
+}
+```
+
+Or, use `true()`. This is the same as above.
+
+```weaver
+await x & true(y == 3) {
+	...
+}
+```
+
 ## Validity and Parallel Composition
 
-Validity is crucial for parallel composition. Consider this example:
+Two parallel sequences may communicate with eachother by making use of validity and await for signalling.
 
 ```weaver
 var int<32> a, b, c
 a-, b-, c-
 (
-    a = 5
-    await b
-    c = a + b
+	a = 5
+	await b
+	c = a + b
+	a-
+	await ~b
 ) and (
-    await a
-    b = 3
+	await a
+	b = 3
+	await ~a
+	b-
 )
 ```
 
-The validity system ensures that:
-1. The first process sets `a = 5`, making `a` valid
-2. The second process sees `a` is valid and proceeds to set `b = 3`
-3. The first process sees `b` is valid and proceeds to compute `c = a + b`
-
-Without validity, you'd need mutexes or other synchronization primitives. Validity provides a clean, hardware-native way to coordinate parallel processes.
-
-## Compiling to Different Backends
-
-The validity semantic naturally compiles to any timing model.
-
-In **quasi-delay insensitive systems**, encodings naturally encode both the value
-and it's validity. For example, a 2-wire one-hot encoding (called 1of2 or
-dualrail) has one null and two valid states.
-- `00 = null`
-- `01 = false`
-- `10 = true`
-- `11 = illegal`
-
-In other **asynchronous systems**, variables are encoded with a data bus and a
-valid wire. The data on the data bus is always meaningful by the time the valid
-wire transitions from `gnd` to `vdd` following the bundled-data timing
-assumption.
-
-For **clocked systems**, variables are encoded with a data bus and a valid
-wire. When the valid wire is high on the clock tick, then there is meaningful
-data on the data bus for that clock cycle as guaranteed by the clocked timing
-assumption. If the compiler can guarantee that every clock tick will have a
-different valid value, then it can simply delete the valid wire.
-
-## When to Use `valid()` and `true()`
-
-Most of the time, you don't need to explicitly call `valid()` or `true()`. The language handles validity and truthiness automatically. But sometimes you need to force one interpretation:
-
-### `valid(x)`: Force Validity Check
-
-Use `valid()` when you need to check validity explicitly, perhaps in a complex condition:
+The above is equivalent to the following, but this communication is key to
+creating more complex distributed behaviors.
 
 ```weaver
-if valid(x) && valid(y) {
-    // Both are valid, proceed
-}
+a = 5
+b = 3
+c = a + b
+a-
+b-
 ```
 
-### `true(x)`: Force Truthiness Check
+Without validity, you'd need mutexes or other synchronization primitives.
+Validity provides a clean, hardware-native way to coordinate parallel
+processes.
 
-Use `true()` when you need to check truthiness explicitly, perhaps to distinguish false from null:
-
-```weaver
-if true(x) {
-    // x is valid and truthy
-} or if valid(x) && !true(x) {
-    // x is valid but false
-}
-```
-
-## Design Trade-offs
-
-The validity system has trade-offs:
-
-### Advantages
-
-- **Flexible timing**: Code can target different timing models
-- **Explicit synchronization**: Validity makes data flow clear
-- **Hardware-native**: Maps naturally to completion signals and handshakes
-- **Composable**: Works cleanly with parallel composition
-
-### Disadvantages
-
-- **Learning curve**: Software engineers need to learn a new concept
-- **Verbosity**: Sometimes you need explicit validity checks
-- **Compiler complexity**: The compiler must translate validity to target primitives
-
-Overall, the advantages outweigh the disadvantages, especially for complex systems where timing flexibility and explicit synchronization are crucial.
-
-## Summary
-
-Validity is Weaver's solution to the timing assumption problem. By tracking whether values are available separately from their actual values, Weaver can:
-
-- Support multiple timing models
-- Enable clean parallel composition
-- Make data flow explicit
-- Compile to different hardware targets
-
-Understanding validity is key to writing effective Weaver code. It's not just a feature—it's fundamental to how Weaver works.
+Understanding validity is key to writing effective Weaver code. It's not just a
+feature—it's fundamental to how Weaver works.

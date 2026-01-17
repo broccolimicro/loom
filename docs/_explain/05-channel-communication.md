@@ -6,8 +6,6 @@ date: 2026-01-15
 layout: post
 ---
 
-# Channel Communication
-
 Channels are Weaver's primary mechanism for inter-process communication. Understanding why channels were chosen and how they work helps you design better hardware.
 
 ## The Problem: Inter-Process Communication
