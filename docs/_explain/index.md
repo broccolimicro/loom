@@ -6,8 +6,6 @@ date: 2026-01-14
 layout: post
 ---
 
-# Explanations
-
 This section provides conceptual background, design rationale, and deeper
 understanding of Weaver's architecture and design decisions. Unlike tutorials
 (which teach you how to do things) or reference guides (which tell you what
