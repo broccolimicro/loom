@@ -28,7 +28,6 @@ expertise.
 ## New Here?
 
 1. Start with a [Tutorial](./tutorial/index) to get hands-on experience
-2. Use [How-to Guides](./guide/index) for specific tasks
 3. Refer to the [Reference](./reference/index) for syntax and details
 4. Read [Explanations](./explain/index) to deepen your understanding
 
@@ -41,47 +40,6 @@ order. Each tutorial builds on concepts from previous ones.
 2. [**Building Your First Process**](./tutorial/02-first-process) - Create a simple process that demonstrates basic Weaver concepts: variables, loops, and channel communication.
 3. [**Working with Channels**](./tutorial/03-channels) - Learn how processes communicate using channels, including sending, receiving, and waiting for data.
 4. [**Building a Complete Circuit**](./tutorial/04-complete-circuit) - Put it all together: create a functional circuit using processes, channels, and custom types.
-
-### [How-to Guides](./guide/index)
-These guides show you how to accomplish specific tasks in Weaver. Each guide
-provides step-by-step instructions to solve a particular problem. Each how-to
-guide follows this structure:
-
-1. **Goal**: What you'll accomplish
-2. **Prerequisites**: What you need to know or have
-3. **Steps**: Clear, numbered steps to achieve the goal
-4. **Verification**: How to verify it worked
-5. **Next Steps**: Related guides or concepts
-
-Guides focus on practical steps. For deeper understanding of concepts, they
-link to explanations or reference material.
-
-**Debugging and Verification**
-- [How to Debug Processes](./how-to-debug-processes) - Identify and fix issues in your processes
-- [How to Verify Validity Behavior](./how-to-verify-validity) - Check that validity is working correctly
-- [How to Trace Channel Communication](./how-to-trace-channel-communication) - Understand data flow through channels
-
-**Design Patterns**
-- [How to Implement State Machines](./how-to-implement-state-machines) - Create state machines using Weaver processes
-- [How to Build Arbiters](./how-to-build-arbiters) - Implement arbitration logic for multiple requesters
-- [How to Create Pipelines](./how-to-create-pipelines) - Build multi-stage processing pipelines
-- [How to Handle Backpressure](./how-to-handle-backpressure) - Manage flow control in your designs
-
-**Optimization**
-- [How to Optimize Pipeline Depth](./how-to-optimize-pipeline-depth) - Balance latency and throughput
-- [How to Reduce Resource Usage](./how-to-reduce-resource-usage) - Minimize area and power consumption
-
-**Error Handling**
-- [How to Handle Errors in Processes](./how-to-handle-errors) - Implement error detection and recovery
-- [How to Reset Processes](./how-to-reset-processes) - Properly initialize and reset your processes
-
-**Testing and Simulation**
-- [How to Test Processes](./how-to-test-processes) - Verify your processes work correctly
-- [How to Simulate Circuits](./how-to-simulate-circuits) - Run and debug your designs
-
-**Integration**
-- [How to Connect to External Interfaces](./how-to-connect-to-external-interfaces) - Interface with external hardware
-- [How to Integrate with Verilog](./how-to-integrate-with-verilog) - Use Weaver with existing Verilog code
 
 ### [Reference](./reference/index)
 This is the complete technical reference for the Weaver hardware description

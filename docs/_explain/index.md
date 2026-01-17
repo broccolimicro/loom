@@ -91,19 +91,10 @@ This has many downstream consequences.
   operators and semantics to interleave sequential, parallel, and conditional
   execution safely.
 
-- [**Processes, not Functions**](./03-processes) - In Weaver, computation is
+- [**Message Passing, not Shared Memory**](./03-processes) - In Weaver, computation is
   expressed as long-lived processes rather than ephemeral software functions.
-  Processes maintain state across time, communicate explicitly, and execute
+  Processes maintain state across time, communicate across channels, and execute
   continuously while the chip is powered.
-
-- [**Message Passing, not Shared Memory**](./04-message-passing) - Hardware
-  naturally uses point-to-point communication. Shared memory is possible, but
-  must be explicitly designed.
-
-- [**Logic Families, not Instruction Set Architectures**](./05-timing) - Weaver
-  organizes computation around hardware-friendly logic primitives and timing
-  models, rather than abstract instruction sets. This makes timing, concurrency,
-  and resource usage explicit.
 
 ## Balance of Power and Simplicity
 

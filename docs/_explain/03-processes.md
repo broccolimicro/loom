@@ -1,56 +1,36 @@
 ---
-title: Process Architecture
+title: Processes and Message Passing
 category: Explanations
 author: Edward Bingham
 date: 2026-01-15
 layout: post
 ---
 
-Processes are Weaver's primary mechanism for describing concurrent, stateful hardware behavior. Understanding why they work the way they do helps you design better hardware.
+In Weaver, computation is expressed as **network of long-lived stateful
+processes**. This is a deliberate break from software languages, where
+computation is organized around short-lived function calls. This reflects a
+fundamental difference between hardware and software.
 
-## The Problem: Describing Concurrent State
+## Processes, not Functions
 
-Hardware is inherently concurrent and stateful. A CPU has multiple units (fetch, decode, execute, writeback) that all run simultaneously, each maintaining their own state. Traditional programming languages struggle with this because they assume sequential execution.
+Software languages organize computation around functions because functions
+align with the software execution model. Execution starts, local state is
+created, a result is computed, and execution ends. This model assumes that
+persistence is either short-lived (stack frames) or hidden behind abstractions
+like heaps, globals, or runtimes. That assumption breaks down immediately in
+hardware.
 
-Weaver's processes solve this by providing a model that naturally describes concurrent, stateful hardware components.
-
-## Why Perpetual Loops?
-
-All processes have a perpetual outer loop that never terminates:
-
-```weaver
-func fetch() chan Addr {
-    var uint<32> pc = 0
-    while {
-        Addr.send(pc)
-        pc = pc + 1
-    }
-}
-```
-
-This might seem strange coming from software, where functions typically return. But hardware doesn't stop—a CPU fetch unit runs forever, continuously fetching instructions.
-
-### Hardware Doesn't Terminate
-
-In hardware, components are always active. They don't "finish" and return—they keep running as long as power is applied. The perpetual loop models this reality.
-
-### Pipeline Stages
-
-Processes represent one or more pipeline stages. A pipeline stage is a repeating pattern:
-1. Receive input
-2. Process it
-3. Send output
-4. Repeat
-
-The perpetual loop captures this pattern naturally.
-
-### Reset Behavior
-
-Statements before the loop handle reset:
+Hardware components do not terminate. A counter, an arbiter, a pipeline stage,
+or a protocol endpoint exists for as long as the chip is powered. Its state is
+not an implementation detail but the *thing itself*. Attempting to express such
+components as functions forces a mismatch. Either the function must never
+return, or the persistent state must be smuggled in through globals, implicit
+state machines, or a hidden scheduler that decides when the function "runs."
+All of these approaches obscure where state lives and when it changes.
 
 ```weaver
 func counter() chan<int<32>> out {
-    var int<32> count = 0  // Reset: initialize count
+    var int<32> count = 0  // reset
     while {
         out.send(count)
         count = count + 1
@@ -58,223 +38,99 @@ func counter() chan<int<32>> out {
 }
 ```
 
-During reset, `count` is initialized to 0. Then the loop starts, and the process runs forever.
+Consider a simple counter that continuously produces values. There is no
+meaningful "return value" here, and no natural call boundary. The behavior is
+not a computation over time but a *presence over time*. By making this a
+process, Weaver forces persistence to be explicit and unavoidable. If something
+has state across time, it must be represented as a process. This removes
+ambiguity. Designers do not have to infer which variables persist, which reset,
+or which are shared across invocations. The structure of the program directly
+reflects the structure of the hardware.
 
-## Why Channels for Communication?
+## Message Passing, not Shared Memory
 
-Processes communicate through channels, not shared memory:
+Shared memory works in software because software assumes a total or near-total
+ordering of events. Instructions execute in sequence, memory operations are
+serialized by a memory model, and conflicts are resolved by mechanisms such as
+locks, caches, and coherence protocols. These mechanisms are expensive,
+complex, and fundamentally *designed artifacts*. They do not exist by default
+in hardware.
+
+In raw hardware, multiple components operate concurrently. Signals change
+simultaneously. There is no implicit notion of “who went first,” and no natural
+place to hide arbitration or mutual exclusion. When two components read or
+write the same state, the designer must explicitly build the logic that defines
+how conflicts are resolved. Treating shared memory as a primitive assumes away
+this work and hides essential structure.
+
+Channels replace shared memory with explicit communication paths. A channel
+represents a physical connection that exists as long as the connected
+components exist. It defines not just what data is transferred, but *when* that
+transfer is allowed to occur. When one process sends and another receives,
+there is a well-defined causal relationship. The send cannot complete unless
+the receive is possible, and the receive cannot occur unless something was
+sent. No implicit ordering, arbitration, or visibility rules are required
+beyond the channel itself.
+
+This maps directly to real hardware interfaces. Backpressure, flow control, and
+synchronization are not layered on top of communication. They *are* the
+communication. Blocking on a channel does not mean "pause execution until
+scheduled again," as it would in software. It means "the physical conditions
+for transfer are not yet satisfied." The model describes constraints, not
+control flow.
+
+By rejecting shared memory and embracing channels, Weaver forces communication
+to be explicit and local. If buffering, arbitration, or broadcast is needed, it
+must be constructed deliberately, either by the designer or by the compiler as
+a visible transformation. Time, storage, and causality are no longer hidden
+behind a global abstraction.
+
+## Synchronization, not Scheduling
+
+When there does need to be a shared resource, Weaver relies upon
+synchronization across channels rather than locks. Locks, mutexes, and similar
+mechanisms exist to schedule access to shared state in software systems, where
+many independent threads are time-multiplexed onto a small number of execution
+resources. They answer the question of *who is allowed to run next* and rely on
+a runtime to enforce that decision by blocking, waking, and rescheduling
+threads.
+
+Hardware does not operate this way. There is no scheduler deciding which
+component may proceed, and no notion of suspending one piece of hardware so
+another can "take a turn." All components exist and operate simultaneously.
+If multiple components interact with the same resource, the resolution of that
+interaction must be expressed as logic, not as a policy enforced by a runtime.
+
+In Weaver, shared resources are therefore built as explicit processes that
+mediate access through channels. Arbitration is not hidden behind a mutex; it
+is a piece of hardware with defined behavior. A client does not acquire a lock
+and enter a critical section. Instead, it synchronizes by sending a request and
+waiting for a response. Progress occurs only when the necessary communication
+can take place.
 
 ```weaver
-func producer(chan<int<8>> out) {
-    // ...
-}
-
-func consumer(chan<int<8>> in) {
-    // ...
+func arbiter(chan<Req> a, chan<Req> b) chan<Grant> out {
+	while {
+		await a {
+			out.send(handle(a.recv()))
+		} xor await b {
+			out.send(handle(b.recv()))
+		}
+	}
 }
 ```
 
-This design choice has several advantages:
+This is not scheduling in the software sense. Nothing is being paused or
+resumed by an external authority. The blocking behavior reflects physical
+constraints: the arbiter can only accept one request at a time, and a client
+can only proceed once its request has been serviced. The synchronization
+expresses *when* interaction is possible, not *who* owns the resource.
 
-### Explicit Data Flow
+By expressing coordination through synchronization rather than scheduling,
+Weaver keeps all contention explicit and structural. If access must be
+serialized, the serialization logic is visible. If fairness, priority, or
+throughput matter, they are properties of the arbitration process itself, not
+emergent behavior from a runtime scheduler. This makes shared resources easier
+to reason about, easier to verify, and faithful to the realities of hardware
+execution.
 
-Channels make data flow explicit. You can see exactly how data moves through your design by following channel connections. This makes designs easier to understand and verify.
-
-### Natural Backpressure
-
-Channels provide natural backpressure. If a receiver isn't ready, the sender blocks. This prevents buffer overflows and makes flow control automatic.
-
-### Composable Design
-
-Channels enable composable design. You can connect processes through channels without worrying about shared state or synchronization. This makes it easy to build complex systems from simple components.
-
-### Hardware Mapping
-
-Channels map naturally to hardware communication primitives:
-- Handshake protocols (ready/valid)
-- FIFOs and buffers
-- Network-on-chip interconnects
-- Bus protocols
-
-The compiler can translate channel operations to appropriate hardware primitives for the target backend.
-
-## Process Arguments and Returns
-
-Processes take channels as arguments and return channels:
-
-```weaver
-func fetch(chan Inc, Jmp) chan Addr {
-    // ...
-}
-```
-
-This signature says:
-- `fetch` takes two input channels: `Inc` and `Jmp`
-- `fetch` returns one output channel: `Addr`
-
-### Why Channels, Not Values?
-
-Processes operate on streams of data, not single values. A fetch unit doesn't fetch one instruction and stop—it continuously fetches instructions. Channels model these streams naturally.
-
-### Non-Channel Arguments
-
-While channels are typical, processes can also take non-channel arguments for shared variables in complex handshake protocols:
-
-```weaver
-func process(chan Data in, shared_var) chan Data out {
-    // Can read/write shared_var for handshaking
-}
-```
-
-This is less common but useful for certain communication patterns.
-
-## Pipeline Compilation
-
-The compiler may split a process into multiple pipeline stages. This is transparent to you—you write the process as a single unit, and the compiler optimizes it.
-
-### Preserved Ordering
-
-Even when pipelined, the compiler preserves the order of channel communications:
-
-```weaver
-func process(chan A in) chan B out {
-    while {
-        var data = in.recv()
-        out.send(process(data))
-    }
-}
-```
-
-The compiler ensures that:
-1. `in.recv()` happens before `out.send()`
-2. The order is preserved even if the process is split into stages
-3. Backpressure is handled automatically
-
-### No-Ops and Backpressure
-
-If a process is pipelined, the compiler inserts no-ops and backpressure logic to maintain correct ordering. This is handled automatically—you don't need to think about it.
-
-## Process Composition
-
-Processes compose through channels:
-
-```weaver
-func stage1() chan<int<16>> out {
-    // ...
-}
-
-func stage2(chan<int<16>> in) chan<int<16>> out {
-    // ...
-}
-
-func stage3(chan<int<16>> in) {
-    // ...
-}
-
-// Compose them
-var chan<int<16>> s1_out, s2_out
-stage1() -> s1_out
-stage2(s1_out) -> s2_out
-stage3(s2_out)
-```
-
-This creates a pipeline where data flows: stage1 → stage2 → stage3.
-
-### Why This Works
-
-Process composition works because:
-- Processes are independent (no shared state)
-- Channels provide clean interfaces
-- The compiler handles timing and synchronization
-
-You can compose processes without worrying about low-level details like clock domains or handshake protocols.
-
-## Processes vs Functions
-
-Weaver has both processes and functions. Understanding the difference is important:
-
-### Processes
-
-- Never terminate (perpetual loop)
-- Stateful (maintain state across iterations)
-- Communicate through channels
-- Represent hardware components
-
-### Functions
-
-- Terminate (return a value)
-- Stateless (no side effects)
-- Compute values, don't communicate
-- Represent pure computation
-
-Functions are inlined and may be time-multiplexed. Processes are instantiated as separate hardware components.
-
-## Design Patterns
-
-### Producer-Consumer
-
-```weaver
-func producer(chan<int<8>> out) {
-    while {
-        out.send(generate_data())
-    }
-}
-
-func consumer(chan<int<8>> in) {
-    while {
-        await in {
-            process(in.recv())
-        }
-    }
-}
-```
-
-### Pipeline
-
-```weaver
-func stage1() chan<Data> out { /* ... */ }
-func stage2(chan<Data> in) chan<Data> out { /* ... */ }
-func stage3(chan<Data> in) chan<Data> out { /* ... */ }
-```
-
-### State Machine
-
-```weaver
-func state_machine() {
-    var State state = IDLE
-    while {
-        await event {
-            if state == IDLE {
-                state = ACTIVE
-            } or if state == ACTIVE {
-                state = DONE
-            }
-        }
-    }
-}
-```
-
-## Design Trade-offs
-
-The process model has trade-offs:
-
-### Advantages
-
-- **Natural hardware model**: Maps directly to hardware components
-- **Composable**: Processes compose cleanly through channels
-- **Explicit concurrency**: Makes parallelism clear
-- **Verifiable**: Channel interfaces are easy to verify
-
-### Disadvantages
-
-- **Learning curve**: Different from software functions
-- **Verbosity**: More verbose than sequential code
-- **Compiler complexity**: Compiler must handle pipelining and optimization
-
-Overall, the advantages outweigh the disadvantages. The process model makes hardware designs clearer and more maintainable.
-
-## Summary
-
-Processes are Weaver's way of describing concurrent, stateful hardware components. The perpetual loop models hardware that never stops. Channels provide explicit, composable communication. The compiler handles pipelining and optimization automatically.
-
-Understanding the process model helps you design better hardware. Think of processes as independent hardware components that communicate through well-defined interfaces. This mental model maps directly to how hardware actually works.
