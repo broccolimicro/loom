@@ -32,21 +32,21 @@ balances three core building-blocks: **Behavior**, **Structure**, and
 
 ## New Here?
 
-1. Start with a [Tutorial](./tutorials/) to get hands-on experience
-2. Use [How-to Guides](./how-to-guides/) for specific tasks
-3. Refer to the [Reference](./reference/) for syntax and details
-4. Read [Explanations](./explanations/) to deepen your understanding
+1. Start with a [Tutorial](./tutorial/index) to get hands-on experience
+2. Use [How-to Guides](./guide/index) for specific tasks
+3. Refer to the [Reference](./reference/index) for syntax and details
+4. Read [Explanations](./explain/index) to deepen your understanding
 
-### [Tutorials](./tutorials/)
+### [Tutorials](./tutorial/index)
 Step-by-step learning guides. Start here if you're new to Weaver.
 
-### [How-to Guides](./how-to-guides/)
+### [How-to Guides](./guide/index)
 Task-oriented guides for common operations. Use these when you know what you want to do but need to know how.
 
-### [Reference](./reference/)
+### [Reference](./reference/index)
 Complete technical reference for the Weaver language. Use this when you need to look up syntax, operators, types, or language features.
 
-### [Explanations](./explanations/)
+### [Explanations](./explain/index)
 Conceptual background and deeper understanding. Read these to understand the "why" behind Weaver's design.
 
 ## Version 0.15
