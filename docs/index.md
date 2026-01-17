@@ -63,9 +63,7 @@ help you understand *why* things are the way they are.
 1. [**Design Philosophy**](./explain/index) - The core principles that guide Weaver's design
 2. [**Validity and Truthiness**](./explain/02-validity-truthiness) - Why validity exists and how it enables flexible timing
 3. [**Composition Model**](./explain/03-composition-model) - The rationale behind parallel, sequential, and choice composition operators
-4. [**Process Architecture**](./explain/04-process-architecture) - Why processes have perpetual loops and how they map to hardware
-5. [**Channel Communication**](./explain/05-channel-communication) - Design decisions behind Weaver's communication model
-6. [**Timing Assumptions**](./explain/06-timing-assumptions) - How Weaver handles different timing models from QDI to synchronous
+4. [**Processes and Message Passing**](./explain/04-process-architecture) - Why processes have perpetual loops and how they map to hardware
 
 ## Version 0.15
 
