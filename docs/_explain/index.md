@@ -84,14 +84,14 @@ Weaver describes hardware, not software.
 
 This has many downstream consequences. 
 
-- [**Validity, not Locks**](./02-validity-truthiness) - Weaver uses a lighter
+- [**Validity, not Locks**](./01-validity-truthiness) - Weaver uses a lighter
   mechanism to manage distributed access shared resources.
 
-- [**Native Parallel Composition**](./03-composition) - Weaver provides native
+- [**Native Parallel Composition**](./02-composition) - Weaver provides native
   operators and semantics to interleave sequential, parallel, and conditional
   execution safely.
 
-- [**Processes, not Functions**](./04-processes) - In Weaver, computation is
+- [**Processes, not Functions**](./03-processes) - In Weaver, computation is
   expressed as long-lived processes rather than ephemeral software functions.
   Processes maintain state across time, communicate explicitly, and execute
   continuously while the chip is powered.
@@ -100,7 +100,7 @@ This has many downstream consequences.
   naturally uses point-to-point communication. Shared memory is possible, but
   must be explicitly designed.
 
-- [**Logic Families, not Instruction Set Architectures**](./06-timing) - Weaver
+- [**Logic Families, not Instruction Set Architectures**](./05-timing) - Weaver
   organizes computation around hardware-friendly logic primitives and timing
   models, rather than abstract instruction sets. This makes timing, concurrency,
   and resource usage explicit.
