@@ -6,8 +6,6 @@ date: 2026-01-15
 layout: post
 ---
 
-# Getting Started with Weaver
-
 In this tutorial, you'll write your first Weaver program, set up a project, and learn the basics of the Weaver toolchain.
 
 ## What You'll Learn
