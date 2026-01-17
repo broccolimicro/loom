@@ -202,23 +202,23 @@ are two built-in functions to force one evaluation over the other.
 
 Operators are listed in descending precedence.
 
-|  | Operator(s) | Kind | Description |
+|  | Operator(s) | Description |
 |----------------------|-------------|------|-------------|
-| 1 | `[ ... ]` | Group | Array literal or grouped list expression. Highest binding strength. |
-| 2 | `::` | Modifier | Namespace or scope resolution operator. |
-| 3 | `a'1`<br>`f(a, b, ...)`<br>`a.b`<br>`a[b:c]`<br>`a[b]` | Postfix / Modifier | Isochronic-region identifier,<br>function call,<br>member access,<br>slicing,<br>indexing. |
-| 4 | `!`, `~`, `+`, `-` | Unary | Prefix operators: boolean NOT, wire-level NOT, identity, negation. |
-| 5 | `*`, `/`, `%` | Binary | Multiplication, division, and modulo. `*` is commutative. |
-| 6 | `+`, `-` | Binary | Addition and subtraction. `+` is commutative; `-` is not. |
-| 7 | `<<`, `>>` | Binary | Logical bit shifts. |
-| 8 | `==`, `~=`, `<`, `>`, `<=`, `>=` | Binary | Comparison and equality operators. Produce boolean results. |
-| 9 | `^^` | Binary | Boolean exclusive OR. True if operands differ. Commutative. |
-| 10 | `&&` | Binary | Boolean AND on boolean expressions. Short-circuit semantics at the language level. Commutative. |
-| 11 | `||` | Binary | Boolean OR on boolean expressions. Short-circuit semantics at the language level. Commutative. |
-| 12 | `^` | Binary | Wire-level XOR. Element-wise and commutative. |
-| 13 | `&` | Binary | Wire-level AND. Element-wise and commutative. |
-| 14 | `|` | Binary | Wire-level OR. Element-wise and commutative. |
-| 15 | `?:` | Ternary | Conditional selection. Evaluates the condition before `?`; if true evaluates the middle expression, otherwise the final expression. |
+| 1 | `[ ... ]` | Array literal or grouped list expression. Highest binding strength. |
+| 2 | `::` | Namespace or scope resolution operator. |
+| 3 | `a'1`<br>`f(a, b, ...)`<br>`a.b`<br>`a[b:c]`<br>`a[b]` | Isochronic-region identifier,<br>function call,<br>member access,<br>slicing,<br>indexing. |
+| 4 | `!`, `~`, `+`, `-` | Prefix operators: boolean NOT, wire-level NOT, identity, negation. |
+| 5 | `*`, `/`, `%` | Multiplication, division, and modulo. `*` is commutative. |
+| 6 | `+`, `-` | Addition and subtraction. `+` is commutative; `-` is not. |
+| 7 | `<<`, `>>` | Logical bit shifts. |
+| 8 | `==`, `~=`, `<`, `>`, `<=`, `>=` | Comparison and equality operators. Produce boolean results. |
+| 9 | `^^` | Boolean exclusive OR. True if operands differ. Commutative. |
+| 10 | `&&` | Boolean AND on boolean expressions. Short-circuit semantics at the language level. Commutative. |
+| 11 | `||` | Boolean OR on boolean expressions. Short-circuit semantics at the language level. Commutative. |
+| 12 | `^` | Wire-level XOR. Element-wise and commutative. |
+| 13 | `&` | Wire-level AND. Element-wise and commutative. |
+| 14 | `|` | Wire-level OR. Element-wise and commutative. |
+| 15 | `?:` | Conditional selection. Evaluates the condition before `?`; if true evaluates the middle expression, otherwise the final expression. |
 
 Keep in mind that validity affects every operator. The null state is represented by the wire-type `gnd`. For example
 

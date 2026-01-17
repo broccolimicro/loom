@@ -5,7 +5,7 @@ email:            edward.bingham@broccolimicro.io
 description: >
   Synthesize quasi-delay-insensitive circuits.
 
-#remote_theme: sighingnow/jekyll-gitbook
+remote_theme: sighingnow/jekyll-gitbook
 #theme: jekyll-gitbook
 #theme_dir: _themes
 extra_css: extra.css
