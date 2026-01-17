@@ -6,82 +6,86 @@ date: 2026-01-15
 layout: post
 ---
 
-Most Hardware Description Languages use Register-Transfer Logic (Verilog,
-SystemVerilog, Chisel, VHDL, etc). This approach assumes that systems are
-clocked, generating many timing constraints that must be strictly enforced in
-layout. As a result, clock-domain crossings and IO boundaries become painful to
-navigate.
+Most hardware description languages are based on register-transfer logic
+(Verilog, SystemVerilog, Chisel, VHDL, etc.). These languages assume a global
+clock that defines when data is valid, and the entire design is built around
+ensuring data is ready before the next clock tick.
 
-Meanwhile modern chips often have different clock frequencies per core, and the
-asynchronous network that ties together these domains feels like black magic.
-Interfacing with analog systems requires spice-level black-box models, and
-non-standard logic families feel almost unobtainable.
+This works, but it comes with costs. Clock-domain crossings are difficult.
+Interfaces between subsystems are fragile. IO boundaries require careful
+timing assumptions. Once you step outside a single synchronous domain, things
+quickly become complicated.
 
-**Weaver** takes a different approach. Weaver starts with the *most minimal
-timing assumption* needed to be Turing Complete. Timing assumptions can then be
-layered on as needed. This allows Weaver code to compile to different backends
-with different timing models.
+Modern chips rarely live in one clock domain. Different cores often run at
+different frequencies. Communication between them happens over asynchronous
+networks that are hard to reason about. Interfacing with analog systems or
+non-standard logic families often means falling back to black-box models.
 
-In clocked systems, the clock guarantees that data on a bus is valid. Explicit
-flow-control structures like val-rdy must be added to handle no-ops or
-backpressure in the pipeline.
+**Weaver takes a different approach.**
 
-However, Weaver does not have a clock. So, how do you express "this value isn't
-ready yet" or "this computation hasn't finished" without assuming a specific
-timing model?
+Instead of starting with a clock, Weaver starts with the minimum timing
+assumption needed to express computation at all. Stronger timing assumptions
+can then be added later. This allows the same program to target multiple
+backends, each with a different timing model.
+
+In a clocked system, the clock answers a basic question for you: “Is this data
+valid right now?” If the answer is “no”, designers add explicit flow-control
+signals like valid-ready to handle stalls and backpressure.
+
+But Weaver does not assume a clock. So how do you say “this value isn’t ready
+yet” or “this computation hasn’t finished” without baking in a specific timing
+model?
 
 ## The Solution: Validity
 
-Every variable implicitly tracks whether it contains a meaningful value.
-- **Valid**: The variable has a value you can use
-- **Null**: The variable does not have a value yet (or any longer)
+In Weaver, *every variable tracks whether it currently has a meaningful value.*
+- **Valid**: the variable holds a usable value
+- **Null**: the variable does not have a value (yet, or anymore)
 
-For the software engineer, this is most similar to pointers. A pointer may be
-`nullptr`, or it may point to an address in memory that stores a meaningful
-value.
+For a software engineer, validity is similar to pointers. A pointer may be
+`nullptr`, or it may point to a real value in memory.
 
-For the hardware engineer, this is like having the valid signal in a val-rdy or
-AXI protocol alongside the data bus. The value on the bus is meaningful when
-that valid signal is high.
+For a hardware engineer, validity is like the `valid` signal in a val-rdy or
+AXI-style interface. The data bus is only meaningful when valid is asserted.
 
-In Weaver, this applies to **every** data type. For example, a `bool` variable
-may take one of three states:
-- `true` (valid and true)
-- `false` (valid and false)  
-- `null` (not valid)
+The key difference is that in Weaver, **this applies to every value**, not just
+channels or interfaces.
 
-Even a `wire` may be thought of as being valid or null:
-- `vdd` (valid)
-- `gnd` (not valid)
+For example, a `bool` has three possible states:
+- `true` → valid and true
+- `false` → valid and false
+- `null` → not valid
+
+Even a `wire` may be thought of in these terms:
+- `vdd` → valid
+- `gnd` → not valid
 
 ## Why Separate Validity and Truthiness?
 
-Why not just use `null` or `undefined` like most other software languages do?
-Why explicitly separate both validity and truthiness?
+Many software languages already have null or undefined. Why isn’t that
+enough? Why explicitly separate validity from truth?
 
-Most other software languages are fundamentally sequential. This means that
-most actions are implicitly ordered. Parallelism comes in extremely coarse
-grained abstractions like threads. When multiple threads need to communicate,
-those software languages reach for heavy abstractions like locks, shared
-memory, and a complex coherent shared cache heirarchy. As a result, most
-software languages **do not use validity as a way to order access to shared
-resources**.
+The reason is parallelism.
 
-Weaver is a hardware description language. This means that most actions are
-fundamentally parallel, and parallelism is extremely fine-grained. Validity is
-how Weaver manages this fine-grained parallel access to shared buses, and dince
-that parallelism is extremely fine-grained, so must be validity.
+Most software languages are fundamentally sequential. Statements execute in a
+well-defined order. Parallelism exists, but only through heavy abstractions
+like threads, locks, shared memory, and cache coherence. In that world,
+validity is not used to coordinate access to shared resources.
 
-Truthiness serves a very different purpose.
+Weaver describes hardware.
 
-- **Validity: Timing and Presence** "Is this value available?" This is about
-  timing and data flow. When you `await` a channel, you're waiting for
-  validity—you want to know when data arrives, not what the data is.
-- **Truthiness: Logic and Conditions** "Is this condition true?" This is about
-  logic and control flow. When you use `if`, you're checking truthiness—you
-  want to know if a condition is satisfied.
+In hardware, parallelism is the default, and it is extremely fine-grained.
+Signals are shared at the level of individual wires. Validity is how Weaver
+coordinates access to those wires without locks, mutexes, or global ordering.
 
-Consider this scenario:
+Truthiness serves a different role.
+
+- **Validity answers:** “Is this value available yet?” This is about timing and
+  data flow.
+- **Truthiness answers:** “Is this condition true?” This is about logic and
+  control flow.
+
+These are not the same question. For example,
 
 ```weaver
 var bool error_flag
@@ -91,104 +95,100 @@ if error_flag {
 }
 ```
 
-If `error_flag` is `false`, that's a valid value meaning the task has completed
-with no error. But if `error_flag` is `null`, that means the task has not yet
-completed, it may still produce an error. Separating validity and truthiness
-lets you distinguish between those two cases without knowing ahead of time how
-long that task will take.
+If `error_flag` is `false`, the operation completed successfully. That is a
+meaningful result.
+
+If `error_flag` is `null`, the operation has not completed yet. It may still
+produce an error.
+
+By separating validity from truthiness, Weaver lets you distinguish between
+“false” and “not finished” without assuming anything about how long the
+operation takes.
 
 ## Compiling to Different Backends
 
-The validity semantic naturally compiles to any timing model.
+Validity maps cleanly onto many hardware styles.
 
-In **quasi-delay insensitive systems**, encodings naturally encode both the value
-and it's validity. For example, a 2-wire one-hot encoding (called 1of2 or
-dualrail) has one null and two valid states.
-- `00 = null`
-- `01 = false`
-- `10 = true`
-- `11 = illegal`
+In **quasi-delay insensitive systems**, the encoding itself represents both the
+value and its validity. For example, a dual-rail (1-of-2) encoding:
+- `00` → `null`
+- `01` → `false`
+- `10` → `true`
+- `11` is illegal
 
-In other **asynchronous systems**, variables are encoded with a data bus and a
-valid wire. The data on the data bus is always meaningful by the time the valid
-wire transitions from `gnd` to `vdd` following the bundled-data timing
-assumption.
+In **bundled-data asynchronous systems**, values are represented by a data bus
+plus a valid wire. The data is guaranteed to be meaningful when the valid wire
+transitions.
 
-For **clocked systems**, variables are encoded with a data bus and a valid
-wire. When the valid wire is high on the clock tick, then there is meaningful
-data on the data bus for that clock cycle as guaranteed by the clocked timing
-assumption. If the compiler can guarantee that every clock tick will have a
-different valid value, then it can simply delete the valid wire.
+In **clocked systems**, values are also represented by a data bus and a valid
+wire. The clock guarantees that the data is meaningful when valid is high on
+the clock edge. If the compiler can prove that a value is always valid every
+cycle, the valid wire can be optimized away entirely.
 
 ## How Validity Propagates
 
-Validity affects every operation. Most operators are **conjunctive**, which means
-that all inputs need to be valid to produce a valid result. For example, in the
-expression `a + b`, we need to know the value of *both* `a` and `b` to be able
-to compute their sum.
+Validity participates in every operation.
 
-A few operators are **disjunctive**, which means that they can produce a valid
-result before all of their arguments are valid. For example, in the expression
-`a == 0 || b == 0`, if 'a' is '0', then we have enough information to evaluate
-the `||` operator to `true` before `b` becomes valid.
+Most operators are **conjunctive**: all inputs need to be valid to produce a
+valid output. For example, `a + b` cannot be computed until both `a` and `b`
+are valid.
 
-|  | Operator(s) | Validity Propagation |
-|----------------------|-------------|------|
-| 5 | `*`, `/`, `%` | conjunctive |
-| 6 | `+`, `-` | conjunctive |
-| 7 | `<<`, `>>` | conjunctive |
-| 8 | `==`, `~=`, `<`, `>`, `<=`, `>=` | conjunctive |
-| 9 | `^^` | conjunctive |
-| 10 | `&&` | conjunctive |
-| 11 | `||` | **disjunctive** |
-| 12 | `^` | **disjunctive** |
-| 13 | `&` | conjunctive |
-| 14 | `|` | **disjunctive** |
+Some operators are **disjunctive**: they may produce a valid
+result as soon as enough information is available. For example, in:
+
+```weaver
+a == 0 || b == 0
+```
+
+If 'a' is valid and equal to '0', the result is `true` even if `b` is not yet
+valid.
+
+| Operator(s) | Validity Propagation |
+|-------------|------|
+| `*`, `/`, `%` | conjunctive |
+| `+`, `-` | conjunctive |
+| `<<`, `>>` | conjunctive |
+| `==`, `~=`, `<`, `>`, `<=`, `>=` | conjunctive |
+| `^^` | conjunctive |
+| `&&` | conjunctive |
+| `||` | **disjunctive** |
+| `^` | **disjunctive** |
+| `&` | conjunctive |
+| `|` | **disjunctive** |
 
 ## Conditioning on Validity vs Truthiness
 
-Suppose we have a process which receives a boolean value over a channel.
+Suppose a process received a boolean over a channel.
 ```weaver
 var chan<bool> C
 ```
 
-We might want to only do something if the value that arrives on `C` is true.
+If you want to act when the value is true, use an `if` statement to check
+**truthiness**.
 ```weaver
 if C {
 	count = count + 1
-} or if !C {
-	skip
 }
 ```
 
-Or, we might want to wait for a value to arrive on `C` before proceeding.
+If you want to act when the value arrives, use an `await` statement to check
+**validity**.
 ```weaver
 await C {
 	count = count + 1
 }
 ```
 
-Taking a step back, our boolean values can be one of three values. This means
-that if statements alone are no longer sufficient
-- `true` (valid and true)
-- `false` (valid and false)  
-- `null` (not valid)
+Internally, conditions are evaluated as a result of a transition on a single
+wire. Weaver uses two built-in functions.
 
-Under the hood, conditions are evaluated as a result of a transition on a
-single wire. Weaver uses two built-in functions.
+- `valid(x)` evaluates to `vdd` when `x` is valid and `gnd` otherwise. `await
+  x` waits for `valid(x)`
+- `true(x)` evaluates to `vdd` when `x` is `true` and `gnd` otherwise. `if x`
+  waits for `true(x)`
 
-- `valid(cond)` evaluates to `vdd` when `cond` is valid and `gnd` otherwise.
-- `true(cond)` evaluates to `vdd` when `cond` is `true` and `gnd` otherwise.
-
-Then `await cond` is simply a condition on `valid(cond)`, blocking until the
-`cond` becomes valid, and `if cond` is a condition on `true(cond)`, blocking
-until `cond` becomes `true`.
-
-Most of the time, you do not need to explicitly call `valid()` or `true()`. The
-language handles validity and truthiness automatically. But sometimes you need
-to force one interpretation.
-
-Use `valid()` when you need to check validity explicitly in a complex boolean condition.
+Most of the time, this happens automatically. You only need to be explicit when
+mixing validity and logic in complex expressions.
 
 ```weaver
 if valid(x) && y == 3 {
@@ -196,7 +196,7 @@ if valid(x) && y == 3 {
 }
 ```
 
-Or, use `true()`. This is the same as above.
+or
 
 ```weaver
 await x & true(y == 3) {
@@ -206,7 +206,7 @@ await x & true(y == 3) {
 
 ## Validity and Parallel Composition
 
-Two parallel sequences may communicate with eachother by making use of validity and await for signalling.
+Validity also allows parallel processes to synchronize without locks.
 
 ```weaver
 var int<32> a, b, c
@@ -225,8 +225,7 @@ a-, b-, c-
 )
 ```
 
-The above is equivalent to the following, but this communication is key to
-creating more complex distributed behaviors.
+This is equivalent to:
 
 ```weaver
 a = 5
@@ -236,9 +235,12 @@ a-
 b-
 ```
 
-Without validity, you'd need mutexes or other synchronization primitives.
-Validity provides a clean, hardware-native way to coordinate parallel
-processes.
+The difference is that validity provides the signaling needed to coordinate
+these actions safely in parallel.
 
-Understanding validity is key to writing effective Weaver code. It's not just a
-feature—it's fundamental to how Weaver works.
+Without validity, this would require mutexes or explicit synchronization logic.
+With validity, coordination is implicit, local, and hardware-native.
+
+Validity is not just a feature of Weaver. It is the foundation that allows
+parallel hardware behavior to be expressed clearly, safely, and without
+assuming a specific timing model.
