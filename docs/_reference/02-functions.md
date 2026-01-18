@@ -103,6 +103,8 @@ func fetch(chan Inc, Jmp) chan Addr {
 
 ## Control-Flow Operators
 
+> What's the difference between `if` and `await`? See [Validity and Truthiness]({{site.baseurl}}/explain/01-validity-truthiness) for more details on this unique consequence that emerges from hardware-focused development.
+
 ### `await` - Validity-Based Waiting
 
 `await` blocks program execution until the condition expression is valid. For a
