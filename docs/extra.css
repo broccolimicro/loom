@@ -64,3 +64,47 @@ code {
 	font-weight: normal;
 	font-style: normal;
 }
+
+
+/* Alerts */
+.alert {
+	border-left: 4px solid;
+	border-right: 0px;
+	border-bottom: 0px;
+	border-top: 0px;
+	padding: 1em;
+	margin: 1em 0;
+	background: #f8f9fa;
+	border-radius: 4px;
+}
+
+.alert-content p {
+	padding: 0 0 0 0;
+	margin: 0.7em 0 0 0;
+}
+
+.alert-title {
+	font-weight: bold;
+	margin-bottom: 0.5em;
+}
+
+.alert-warning {
+	border-color: #ff9800;
+	background: #fff8e1;
+}
+
+.alert-info {
+	border-color: #2196f3;
+	background: #e7f3fe;
+}
+
+.alert-danger {
+	border-color: #f44336;
+	background: #fdecea;
+}
+
+.alert-success {
+	border-color: #4caf50;
+	background: #edf7ed;
+}
+

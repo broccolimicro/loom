@@ -6,7 +6,8 @@ date: 2026-01-15
 layout: post
 ---
 
-In this tutorial, you'll write your first Weaver program, set up a project, and learn the basics of the Weaver toolchain.
+In this tutorial, you'll write your first Weaver program, set up a project, and
+learn the basics of the Weaver toolchain.
 
 ## What You'll Learn
 
@@ -21,10 +22,11 @@ In this tutorial, you'll write your first Weaver program, set up a project, and 
 Loom is the circuit compiler for Weaver. Install it using the install script:
 
 ```bash
-curl -sL https://raw.githubusercontent.com/broccolimicro/loom/refs/heads/main/install.sh | sudo bash
+curl -sL https://raw.githubusercontent.com/broccolimicro/loom/refs/heads/main/install.sh | bash
 ```
 
-This downloads the appropriate binaries for your system and places them in `/usr/local` (or `C:\Program Files (x86)\Loom` on Windows).
+This downloads the appropriate binaries for your system and places them in
+`/usr/local` (or `C:\Program Files (x86)\Loom` on Windows).
 
 Verify the installation:
 
@@ -36,12 +38,13 @@ You should see the Loom help text with available commands.
 
 ## Step 2: Initialize a Project
 
-First, let's create a new Weaver project. Open a terminal and navigate to where you want to create your project:
+First, let's create a new Weaver project. Open a terminal and navigate to where
+you want to create your project:
 
 ```bash
-mkdir my-first-weaver-project
-cd my-first-weaver-project
-lm mod init my-first-weaver-project
+mkdir hello
+cd hello
+lm mod init hello
 ```
 
 This creates a new Loom module in the current directory.
@@ -50,19 +53,25 @@ This creates a new Loom module in the current directory.
 
 Create a file called `top.wv`:
 
+> [!WARNING]
+> Complex types are not yet supported. This is a currently working example, but
+> it is not in-line with other documentation.
+>
+> TODO(edward.bingham) Update this example once the type system is in place.
+
 ```weaver
 // top.wv - A simple counter process
 
 func counter(chan Out) {
-    var int<8> count = 0
-    
-    while {
-        Out.send(count)
-        count = count + 1
-        if count == 255 {
-            count = 0
-        }
-    }
+	var fixed count = 0
+	
+	while {
+		Out.send(count)
+		count = count + 1
+		if count == 255 {
+			count = 0
+		}
+	}
 }
 ```
 
