@@ -46,14 +46,9 @@ This is the complete technical reference for the Weaver hardware description
 language. Use this when you need to look up syntax, operators, types, or
 language features.
 
-1. [**Types**](./reference/01-types) - Built-in types and type system
-2. [**Operators**](./reference/02-operators) - Operators and precedence
-3. [**Functions**](./reference/03-functions) - Function definitions and behavior
-4. [**Processes**](./reference/04-processes) - Process definitions and pipeline stages
-5. [**Structures**](./reference/05-structures) - Structural circuit descriptions
-6. [**Custom Types**](./reference/06-custom-types) - User-defined types
-7. [**Syntax**](./reference/07-syntax) - Language syntax and grammar
-8. [**Validity and Truthiness**](./reference/08-validity-truthiness) - Validity semantics and truthiness
+1. [**Types**](./reference/01-types) - Describe how data is grouped (type definitions)
+2. [**Behavior**](./reference/02-functions) - Describe what the circuit does (processes and functions)
+3. [**Structure**](./reference/03-structures) - Describe how the circuit is organized (structural descriptions)
 
 ### [Design Philosophy](./explain/index)
 This section provides conceptual background, design rationale, and deeper
