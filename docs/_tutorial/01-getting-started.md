@@ -54,8 +54,7 @@ This creates a new Loom module in the current directory.
 Create a file called `top.wv`:
 
 > [!WARNING]
-> Complex types are not yet supported. This is a currently working example, but
-> it is not in-line with other documentation.
+> Complex types are not yet supported. This is a currently working example, but it is not in-line with other documentation.
 >
 > TODO(edward.bingham) Update this example once the type system is in place.
 
@@ -87,9 +86,12 @@ Let's break down what this code does:
 
 ## Step 4: Understanding the Process
 
-This is a **process** - it represents a hardware component that runs continuously. The `while` loop never terminates, which is correct for hardware that should always be active.
+This is a **process** - it represents a hardware component that runs
+continuously. The `while` loop never terminates, which is correct for hardware
+that should always be active.
 
-The variable `count` is initialized to `0` before the loop, which means it's set during hardware reset.
+The variable `count` is initialized to `0` before the loop, which means it's
+set during hardware reset.
 
 ## Step 5: Build Your Program
 
@@ -99,14 +101,18 @@ Compile your Weaver program using the Loom build command:
 lm build
 ```
 
-By default, `lm build` looks for `top.wv` in the current directory. This will:
-1. Parse your Weaver code
+By default, `lm build` looks for `top.wv` in the root directory of the project,
+which is the directory that contains `lm.mod`. This will:
+1. Parse your program
 2. Synthesize it into Verilog (for data-level specifications)
 3. Generate output files in the `build/` directory
 
 The compiled Verilog will be in `build/rtl/counter.v`.
 
 If there are any syntax errors, `lm build` will report them. Fix any errors and try again.
+
+> [!WARNING]
+> There are still quite a few bugs to work through in synthesis, this is a work in progress.
 
 ## Step 6: List Your Modules
 
@@ -116,7 +122,8 @@ You can see what modules are available in your project:
 lm mod show
 ```
 
-This will list all the functions and protocols defined in your module, for example:
+This will list all the functions and protocols defined in your module, for
+example:
 ```
 top:counter(chan)
 ```
@@ -126,21 +133,20 @@ top:counter(chan)
 You can visualize the circuit structure:
 
 ```bash
-lm show top.wv -o counter.dot
+lm show "top:counter(chan)"
 ```
 
-This creates a Graphviz DOT file that you can render to see the circuit structure. If you have Graphviz installed:
+This creates a png file called `counter.png`.
 
-```bash
-dot -Tpng counter.dot -o counter.png
-```
+## Step 8: Simulate Your Circuit
 
-## Step 8: Simulate (Optional)
+> [!WARNING]
+> The high level simulator is not yet functional.
 
 If you want to simulate the behavior, you can use:
 
 ```bash
-lm sim top.wv
+lm sim "top:counter(chan)"
 ```
 
 This will start the simulation environment where you can interact with your circuit.
