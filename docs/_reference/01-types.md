@@ -6,9 +6,55 @@ date: 2026-01-15
 layout: post
 ---
 
-Weaver has a small set of built-in types for representing hardware signals and data.
+## Comments
 
-## Built-in Types
+```weaver
+// Single-line comment
+/* Multi
+line
+comment */
+```
+
+## Imports
+
+```weaver
+import "math"
+```
+
+## Type Declaration
+
+Types specify how wires should be grouped into a bus. They allow you to organize related fields together.
+
+```weaver
+type typeName {
+    type1 field1
+    type2 field2, field3
+    type3 field4
+}
+```
+
+The following is an example of a type definition to represent a CPU opcode.
+
+```weaver
+type opcode {
+    int<4> fn, rs, rt, rd
+}
+
+var opcode op = {3, 0, 1, 2}
+if op.fn == 0 {
+    rf[op.rd] = rf[op.rs] + rf[op.rt]
+}
+```
+
+Fields are accessed using the dot operator:
+
+```weaver
+op.fn    // Access the fn field
+op.rs    // Access the rs field
+x.mybool // Access the mybool field
+```
+
+Weaver has a small set of built-in types for representing hardware signals and data.
 
 ### `wire`
 
@@ -81,16 +127,43 @@ var chan<int<32>> A
 var chan<bool> B
 ```
 
-## Type Conversions
-
-All constants and compile-time expressions are arbitrary width and precision, but are implicitly cast by any assignment or operator with bounded width or precision.
+Sending blocks until the receiver calls receive:
 
 ```weaver
-var int<16> c
-c = 35 * 0.1  // 3.5 is then truncated to 3 because c is an integer
+A.send(5)
 ```
 
-## Arrays
+Receive removes the value from the channel and allows the sender to proceed:
+
+```weaver
+x = A.recv()
+```
+
+Read the value without removing it (leaves value on channel, sender remains blocked):
+
+```weaver
+x = A  // Peek at channel value
+```
+
+## Variable Declarations
+
+Declarations must be preceded by `var` if within a `func` or process body:
+
+```weaver
+func example() int<32> {
+    var int<32> x = 5
+    var bool flag
+    // ...
+}
+```
+
+Declarations in the argument list or return values for `func`, `struct`, or `type` need not be preceded by `var`.
+
+```weaver
+func example(int<32> x, bool flag) int<32> {
+    // x and flag are already declared
+}
+```
 
 Arrays can be declared with dimensions:
 
@@ -98,6 +171,40 @@ Arrays can be declared with dimensions:
 var fixed<16,-4> a[3] = [1, 2, 3.5]
 var fixed<16,-4> b[4][2] = [[1, 2], [3, 4], [5, 6], [7, 8]]
 ```
+
+## Assignments
+
+Assignments may be composed in parallel or choice based on the `,` and `:` operators:
+- `,` - Parallel assignment (all assignments happen simultaneously)
+- `:` - Choice assignment (only one assignment path is taken)
+
+```weaver
+var fixed<16,-4> a[3] = [1, 2, 3.5], b[4][2] = [[1, 2], [3, 4], [5, 6], [7, 8]]
+var myType x = {1, true, 2.2}
+a[2] = 5, b[1][1] = 3 : x.mybool = false
+```
+
+## Operator Precedence
+
+Operators are listed in descending precedence (highest to lowest).
+
+| Precedence | Operator(s) | Description |
+|------------|-------------|-------------|
+| 1 | `[ ... ]` | Array literal or grouped list expression. Highest binding strength. |
+| 2 | `::` | Namespace or scope resolution operator. |
+| 3 | `a'1`<br>`f(a, b, ...)`<br>`a.b`<br>`a[b:c]`<br>`a[b]` | Isochronic-region identifier,<br>function call,<br>member access,<br>slicing,<br>indexing. |
+| 4 | `!`, `~`, `+`, `-` | Prefix operators: boolean NOT, wire-level NOT, identity, negation. |
+| 5 | `*`, `/`, `%` | Multiplication, division, and modulo. `*` is commutative. |
+| 6 | `+`, `-` | Addition and subtraction. `+` is commutative; `-` is not. |
+| 7 | `<<`, `>>` | Logical bit shifts. |
+| 8 | `==`, `~=`, `<`, `>`, `<=`, `>=` | Comparison and equality operators. Produce boolean results. |
+| 9 | `^^` | Boolean exclusive OR. True if operands differ. Commutative. |
+| 10 | `&&` | Boolean AND on boolean expressions. Short-circuit semantics at the language level. Commutative. |
+| 11 | `\|\|` | Boolean OR on boolean expressions. Short-circuit semantics at the language level. Commutative. |
+| 12 | `^` | Wire-level XOR. Element-wise and commutative. |
+| 13 | `&` | Wire-level AND. Element-wise and commutative. |
+| 14 | `\|` | Wire-level OR. Element-wise and commutative. |
+| 15 | `?:` | Conditional selection. Evaluates the condition before `?`; if true evaluates the middle expression, otherwise the final expression. |
 
 ## Validity
 
@@ -109,4 +216,21 @@ a = 5    // a is valid
 b-       // b is null/invalid
 ```
 
-The validity state affects all operations. See [Validity and Truthiness](./validity-truthiness) for details.
+When the implicit validity/truthiness rules are getting in the way, use these built-in functions:
+
+| Function | Category | Description |
+|----------|----------|-------------|
+| `valid(x)` | Validity | Type cast `x` to a wire that is `vdd` when `x` is valid and `gnd` when `x` is null. |
+| `true(x)` | Truthiness | Type cast `x` to a bool that is `true` when `x` is valid and truthy, and null otherwise. |
+
+Validity affects all operations. See [Validity and Truthiness]({{site.baseurl}}/explain/01-validity-truthiness) for details.
+
+## Constants
+
+All constants and compile-time expressions are arbitrary width and precision, but are implicitly cast by any assignment or operator with bounded width or precision.
+
+```weaver
+var int<16> c
+c = 35 * 0.1  // 3.5 is then truncated to 3 because c is an integer
+```
+
