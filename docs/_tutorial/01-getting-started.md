@@ -58,10 +58,9 @@ Create a file called `top.wv`:
 >
 > TODO(edward.bingham) Update this example once the type system is in place.
 
+**top.wv**
 ```weaver
-// top.wv - A simple counter process
-
-func counter(chan Out) {
+func Counter(chan Out) {
 	var fixed count = 0
 	
 	while {
@@ -76,15 +75,13 @@ func counter(chan Out) {
 
 Let's break down what this code does:
 
-- `func counter(chan Out)` - Defines a process called `counter` with an output channel `Out`
+- `func Counter(chan Out)` - Defines a process called `Counter` with an output channel `Out`
 - Channels in function signatures use `chan` followed by the channel name
 - `var int<8> count = 0` - Declares a counter variable, initialized to 0
-- `while { ... }` - The perpetual loop that runs forever
+- `while { ... }` - The non-terminating loop that runs forever
 - `Out.send(count)` - Sends the current count value on the output channel
 - `count = count + 1` - Increments the counter
 - `if count == 255 { count = 0 }` - Wraps around when reaching maximum value
-
-## Step 4: Understanding the Process
 
 This is a **process** - it represents a hardware component that runs
 continuously. The `while` loop never terminates, which is correct for hardware
@@ -93,9 +90,12 @@ that should always be active.
 The variable `count` is initialized to `0` before the loop, which means it's
 set during hardware reset.
 
-## Step 5: Build Your Program
+Overall, this process continuously outputs numbers 0 through 255 in order,
+wrapping back to 0 after 255.
 
-Compile your Weaver program using the Loom build command:
+## Step 4: Build Your Program
+
+Compile your Weaver program using Loom:
 
 ```bash
 lm build
@@ -107,49 +107,38 @@ which is the directory that contains `lm.mod`. This will:
 2. Synthesize it into Verilog (for data-level specifications)
 3. Generate output files in the `build/` directory
 
-The compiled Verilog will be in `build/rtl/counter.v`.
+The compiled Verilog will be in `build/rtl/Counter.v`.
 
 If there are any syntax errors, `lm build` will report them. Fix any errors and try again.
 
 > [!WARNING]
 > There are still quite a few bugs to work through in synthesis, this is a work in progress.
 
-## Step 6: List Your Modules
+## Step 6: List All Processes
 
-You can see what modules are available in your project:
+`lm mod` provides an easy way to see all of the processes defined in your
+module.
 
 ```bash
 lm mod show
 ```
 
-This will list all the functions and protocols defined in your module, for
-example:
+The **prototypes** shown can be used to select that process for
+compilation, simulation, or debugging. For example:
+
 ```
-top:counter(chan)
+top:Counter(chan)
 ```
 
-## Step 7: Visualize Your Circuit
+## Step 5: Inspecting the Compilation
 
-You can visualize the circuit structure:
+Internally, the process is represented as a guarded petri-net. You can
+visualize that internal representation with `lm show`, generating
+`Counter.png`.
 
 ```bash
-lm show "top:counter(chan)"
+lm show "top:Counter(chan)"
 ```
-
-This creates a png file called `counter.png`.
-
-## Step 8: Simulate Your Circuit
-
-> [!WARNING]
-> The high level simulator is not yet functional.
-
-If you want to simulate the behavior, you can use:
-
-```bash
-lm sim "top:counter(chan)"
-```
-
-This will start the simulation environment where you can interact with your circuit.
 
 ## What's Next?
 
