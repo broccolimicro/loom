@@ -15,6 +15,7 @@ LIBS = \
 	lib/parse_spice \
 	lib/parse_astg \
 	lib/parse_dot \
+	lib/parse_gc \
 	lib/parse_chp \
 	lib/parse_cog \
 	lib/parse_ucs \
@@ -26,6 +27,7 @@ LIBS = \
 	lib/prs \
 	lib/petri \
 	lib/hse \
+	lib/gc \
 	lib/chp \
 	lib/flow \
 	lib/weaver \
@@ -35,6 +37,7 @@ LIBS = \
 	lib/interpret_sch \
 	lib/interpret_prs \
 	lib/interpret_hse \
+	lib/interpret_gc \
 	lib/interpret_chp \
 	lib/interpret_flow \
 	bin/ckt

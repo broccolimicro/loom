@@ -115,3 +115,12 @@
 [submodule "bin/studio"]
 	path = bin/studio
 	url = git@github.com:broccolimicro/studio.git
+[submodule "lib/gc"]
+	path = lib/gc
+	url = https://github.com/broccolimicro/gc.git
+[submodule "lib/parse_gc"]
+	path = lib/parse_gc
+	url = https://github.com/broccolimicro/parse_gc.git
+[submodule "lib/interpret_gc"]
+	path = lib/interpret_gc
+	url = https://github.com/broccolimicro/interpret_gc.git
