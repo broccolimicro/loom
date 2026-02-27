@@ -1,3 +1,9 @@
+dbg
+sim_build
+_site
+coverage_merged.info
+coverage_report_all
+Gemfile.lock
 lm.mod
 __pycache__
 *.astg
