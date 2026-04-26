@@ -124,3 +124,6 @@
 [submodule "lib/interpret_gc"]
 	path = lib/interpret_gc
 	url = https://github.com/broccolimicro/interpret_gc.git
+[submodule "lib/interpret_wv"]
+	path = lib/interpret_wv
+	url = https://github.com/broccolimicro/interpret_wv.git

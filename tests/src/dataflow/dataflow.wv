@@ -1,3 +1,5 @@
+import "test/serial"
+
 func source(chan L) {
 	while {
 		L.send(rand())

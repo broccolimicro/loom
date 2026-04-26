@@ -40,6 +40,7 @@ LIBS = \
 	lib/interpret_gc \
 	lib/interpret_chp \
 	lib/interpret_flow \
+	lib/interpret_wv \
 	bin/ckt
 
 COVERAGE_INFOS := $(LIBS:%=%/coverage_%*.info)
