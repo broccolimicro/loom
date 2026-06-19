@@ -1,0 +1,73 @@
+//import "algorithm"
+//import "cpu"
+//import "dataflow"
+//import "bench"
+
+//func top() {}
+////	var chan L, R;
+////	source(L) and
+////		buffer(L, R) and
+////		sink(R)
+////
+////	// Pico Processor
+////	//var chan InsAddr, InsRd, DataAddr, DataCmd, DataRd, DataWr;
+////	//imem(InsAddr, InsRd) and
+////	//	dmem(DataAddr, DataCmd, DataRd, DataWr) and
+////	//	cpu(InsAddr, InsRd, DataAddr, DataCmd, DataRd, DataWr)
+////}
+
+func decomp_Q1(chan A, B, C, D, X, Y) {
+	var fixed a,b,c,d,y
+
+	while {
+		a = A.recv() and
+			b = B.recv() and
+			c = C.recv();
+		X.send(a + b)
+
+		if c {
+			d = D.recv();
+			//b = d + a;  //TODO(steven.kneiser): DSA bug? why no b_2?
+			//d = b + d;
+			y = b + c + d;
+			//y = y + b;
+			Y.send(y)
+
+		} or if !c {
+			skip
+		}
+	}
+}
+
+//TODO(steven.kneiser): impl! documented in "Data-Driven Process Decomposition for Circuit Synthesis" 2001
+func fetch() {}  // stop trying to make "fetch" happen ...but I've been trying all year!
+
+//func decomp_Q1(chan A, B, C, X, Y) {
+//	var fixed a,b,c,d,y
+//
+//	while {
+//		a = A.recv();
+//		b = B.recv();
+//		c = C.recv();
+//		X.send(a + b)
+//
+//		if c {
+//			d = D.recv();
+//			y = b + c + d;
+//			Y.send(y)
+//
+//		} or if !c {
+//			skip
+//		}
+//	}
+//}
+
+//func straightline(chan IN, OUT) {
+//	var fixed x, y, z
+//	while {
+//		x = 3;
+//		z = 5 + x;
+//		x = IN.recv();
+//		OUT.send(x)
+//	}
+//}
