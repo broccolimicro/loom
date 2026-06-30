@@ -41,7 +41,7 @@ $ cd mychip
 $ lm mod init mychip
 ```
 
-Then add **top.wv** with the following.
+Then add `src/top.wv` with the following.
 ```
 func add(chan A, B; chan S) {
 	while {
@@ -60,7 +60,7 @@ func split(chan C; chan L; chan A, B) {
 }
 ```
 
-And then build your chip, creating **build/rtl/split.v** and **build/rtl/add.v**.
+And then build your chip, creating `build/src/split.v` and `build/src/add.v`.
 ```
 $ lm build
 ```
@@ -68,12 +68,12 @@ $ lm build
 <a name="protocol_example"></a>
 ### Protocol Example
 
-Now we're going to edit **top.wv** putting the following at the top.
+Now we're going to edit `src/top.wv` putting the following at the top.
 ```
 import "buffer"
 ```
 
-Then we can create a new file **buffer.wv** with the following.
+Then we can create a new file `src/buffer.wv` with the following.
 ```
 func buffer(chan L, R) {
 	while {
@@ -130,7 +130,7 @@ top:split(chan,chan,chan,chan)
 We can build just the wchb1b, producing `build/ckt/wchb1b.prs`.
 ```
 $ lm build "buffer:wchb1b()"
-$ cat build/ckt/wchb1b.prs
+$ cat build/src/wchb1b.prs
 require driven, stable, noninterfering
 _Reset&L.t&R.e->v3- [keep]
 ~_Reset|~L.t&~R.e->v3+ [keep]
@@ -164,20 +164,17 @@ Or we can build the whole project again, synthesizing a layout for the `wchb1b`.
 $ lm build
 $ find build/
 build/
-build/gds
-build/gds/wchb1b.gds
-build/spi
-build/spi/wchb1b.spi
-build/rtl
-build/rtl/add.v
-build/rtl/split.v
-build/rtl/buffer.v
-build/ckt
-build/ckt/wchb1b.prs
+build/src
+build/src/project.gds
+build/src/module.spi
+build/src/add.v
+build/src/split.v
+build/src/buffer.v
+build/src/wchb1b.prs
 ```
 
 ```
-$ klayout build/gds/wchb1b.gds
+$ klayout build/src/project.gds
 ```
 
 ![wchb1b](https://github.com/user-attachments/assets/726b96d3-6ebe-49f3-8830-6ac17941b804)
@@ -189,7 +186,7 @@ $ klayout build/gds/wchb1b.gds
 
 Install dependencies
 ```
-sudo apt install ninja-build libqhull-dev libgraphviz-dev opencl-headers ocl-icd-opencl-dev mesa-opencl-icd 
+sudo apt install ninja-build libqhull-dev libgraphviz-dev opencl-headers ocl-icd-opencl-dev mesa-opencl-icd python3-dev
 ```
 
 Clone the repository
@@ -206,7 +203,7 @@ make linux
 
 Install
 ```
-sudo dpkg -i lm-linux.deb
+./install-local.sh
 ```
 
 ### Windows
@@ -244,7 +241,7 @@ make windows
 
 Install
 ```
-unzip lm-windows.zip -d "C:\\Program Files (x86)"
+./install-local.sh
 export PATH="C:\\Program Files (x86)\\Loom\\bin:$PATH"
 ```
 
@@ -269,12 +266,21 @@ make macos
 
 Install
 ```
-tar -xzvf lm-macos.tar.gz
-cp lm-macos/bin/lm /usr/local/bin
-cp lm-macos/share/tech /usr/local/share
-chmod +x /usr/local/bin/lm
-chown -R root:staff /usr/local/share/tech
-chmod -R ug+rw /usr/local/share/tech 
+./install-local.sh
+```
+
+### Vim Syntax Highlighting
+
+```bash
+mkdir -p ~/.vim/syntax
+cp weaver.vim ~/.vim/syntax
+```
+
+Add this to `~/.vimrc`
+```
+au BufRead,BufNewFile *.wv set filetype=weaver
+au BufRead,BufNewFile *.cog set filetype=weaver
+au! Syntax weaver source ~/.vim/syntax/weaver.vim
 ```
 
 ### Run Tests
@@ -286,12 +292,12 @@ make check
 ```
 
 <a name="status"></a>
-## Development Status (Sept 17, 2025)
+## Development Status (June 30, 2026)
 
 ### Synthesis
 * **Templating (0%)** parameterize your module specifications.
-* **Modules (60%)** be able to break up your circuit into modules and construct larger systems.
-* **Process Decomposition (0%)** Break large processes up into pipeline stages.
+* **Modules (80%)** be able to break up your circuit into modules and construct larger systems.
+* **Process Decomposition (80%)** Break large processes up into pipeline stages.
 * **Fold (0%)** fold multiple assignments to get a dynamic single assignment form.
 * **Flatten (20%)** flatten multiple conditions into a single stage-wide condition.
 * **Map to Flow Templates (95%)** map that pipeline stage onto a flow template.
