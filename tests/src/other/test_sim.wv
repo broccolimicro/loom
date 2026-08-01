@@ -52,13 +52,13 @@ func buffer2() {
 		Rr- and Le+
 		await Re & ~Lr
 		while {
-			if ri ~= wi && valid(Re)
+			if ri != wi && valid(Re)
 			Rr = mem[ri]
 			ri = (ri + 1)%10
 			await ~Re
 			Rr-
 		} and while {
-			if (wi + 1)%10 ~= ri
+			if (wi + 1)%10 != ri
 			mem[wi] = Lr
 			wi = (wi + 1)%10
 			Le-

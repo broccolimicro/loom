@@ -148,7 +148,7 @@ valid.
 | `*`, `/`, `%` | conjunctive |
 | `+`, `-` | conjunctive |
 | `<<`, `>>` | conjunctive |
-| `==`, `~=`, `<`, `>`, `<=`, `>=` | conjunctive |
+| `==`, `!=`, `<`, `>`, `<=`, `>=` | conjunctive |
 | `^^` | conjunctive |
 | `&&` | conjunctive |
 | `||` | **disjunctive** |

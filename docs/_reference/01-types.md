@@ -197,7 +197,7 @@ Operators are listed in descending precedence (highest to lowest).
 | 5 | `*`, `/`, `%` | Multiplication, division, and modulo. `*` is commutative. |
 | 6 | `+`, `-` | Addition and subtraction. `+` is commutative; `-` is not. |
 | 7 | `<<`, `>>` | Logical bit shifts. |
-| 8 | `==`, `~=`, `<`, `>`, `<=`, `>=` | Comparison and equality operators. Produce boolean results. |
+| 8 | `==`, `!=`, `<`, `>`, `<=`, `>=` | Comparison and equality operators. Produce boolean results. |
 | 9 | `^^` | Boolean exclusive OR. True if operands differ. Commutative. |
 | 10 | `&&` | Boolean AND on boolean expressions. Short-circuit semantics at the language level. Commutative. |
 | 11 | `\|\|` | Boolean OR on boolean expressions. Short-circuit semantics at the language level. Commutative. |

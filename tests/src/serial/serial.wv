@@ -15,7 +15,7 @@ func add(chan Ac, Ad, Bc, Bd, Sc, Sd) {
 			Bc.recv() and Bd.recv()
 			Sc.send(0) and Sd.send(s[0:4])
 			ci = s[4]
-		} or if Ac.probe()==1 && Bc.probe()==1 && s[4] ~= ci {
+		} or if Ac.probe()==1 && Bc.probe()==1 && s[4] != ci {
 			Sc.send(0) and Sd.send(s[0:4])
 			ci = s[4]
 		} or if Ac.probe()==1 && Bc.probe()==1 && s[4] == ci {

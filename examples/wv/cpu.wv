@@ -75,13 +75,13 @@ func decode(chan InsRd, Alu, Rs, Rt, Rd, DataAddr, DataCmd, DataRd, DataWr, Inc,
 		} or if fn == 11 {
 			if rf[rt] == 0 {
 				Jmp.send(rs)
-			} or if rf[rt] ~= 0 {
+			} or if rf[rt] != 0 {
 				Inc.send()
 			}
 		} or if fn == 12 {
 			if rf[rt] < 0 {
 				Jmp.send(rs)
-			} or if rf[rt] ~= 0 {
+			} or if rf[rt] != 0 {
 				Inc.send()
 			}
 		} or if fn == 13 {

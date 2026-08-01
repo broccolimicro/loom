@@ -285,11 +285,11 @@ func pipeline_with_feedback(chan<input> in, chan<output> out) {
 ## What You've Accomplished
 
 Congratulations! You've now:
-- ✅ Written Weaver processes
-- ✅ Used channels for communication
-- ✅ Defined custom types
-- ✅ Composed complete systems
-- ✅ Built a functional hardware component
+- Written Weaver processes
+- Used channels for communication
+- Defined custom types
+- Composed complete systems
+- Built a functional hardware component
 
 ## Next Steps
 
