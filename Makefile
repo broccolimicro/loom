@@ -24,6 +24,7 @@ LIBS = \
 	lib/arithmetic \
 	lib/phy \
 	lib/sch \
+	lib/verilog \
 	lib/prs \
 	lib/petri \
 	lib/hse \
@@ -35,6 +36,7 @@ LIBS = \
 	lib/interpret_arithmetic \
 	lib/interpret_phy \
 	lib/interpret_sch \
+	lib/interpret_verilog \
 	lib/interpret_prs \
 	lib/interpret_hse \
 	lib/interpret_gc \

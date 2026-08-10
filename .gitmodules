@@ -109,3 +109,9 @@
 [submodule "lib/interpret_wv"]
 	path = lib/interpret_wv
 	url = https://github.com/broccolimicro/interpret_wv.git
+[submodule "lib/verilog"]
+	path = lib/verilog
+	url = https://github.com/broccolimicro/verilog.git
+[submodule "lib/interpret_verilog"]
+	path = lib/interpret_verilog
+	url = https://github.com/broccolimicro/interpret_verilog.git
