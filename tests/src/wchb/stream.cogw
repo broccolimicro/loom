@@ -1,0 +1,38 @@
+region 1 {
+	L.r-
+	await L.e
+	while {
+		L.r+
+		await ~L.e
+		L.r-
+		await L.e
+	}
+} and {
+	L.e+ and R.r-
+	await R.e & ~L.r
+	while {
+		await L.e & R.e & L.r {
+			R.r+
+		}
+		await ~R.e
+		R.r-
+		await L.e & R.e & L.r {
+			R.r+
+		}
+		L.e-
+		await ~R.e
+		R.r-
+		await ~L.r
+		L.e+
+	}
+} and region 1 {
+	R.e+
+	await ~R.r
+	while {
+		await R.r
+		R.e-
+		await ~R.r
+		R.e+
+	}
+}
+

@@ -1,4 +1,6 @@
 import "test/dataflow"
+import "test/wchb"
+import "test/serial"
 
 func top() {
 }

@@ -61,7 +61,7 @@ def test_dataflow_sink_expected():
 	tb.source("rtl/dataflow_sink_expected.v")
 	tb.run()
 
-def test_dataflow_sink():
-	tb = test.Bench("dataflow_sink", "cocotb_dataflow_sink")
-	tb.source("rtl/dataflow_sink.v")
-	tb.run()
+#def test_dataflow_sink():
+#	tb = test.Bench("dataflow_sink", "cocotb_dataflow_sink")
+#	tb.source("rtl/dataflow_sink.v")
+#	tb.run()

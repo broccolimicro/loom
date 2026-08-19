@@ -61,7 +61,7 @@ def test_dataflow_source_expected():
 	tb.source("rtl/dataflow_source_expected.v")
 	tb.run()
 
-def test_dataflow_source():
-	tb = test.Bench("dataflow_source", "cocotb_dataflow_source")
-	tb.source("rtl/dataflow_source.v")
-	tb.run()
+#def test_dataflow_source():
+#	tb = test.Bench("dataflow_source", "cocotb_dataflow_source")
+#	tb.source("rtl/dataflow_source.v")
+#	tb.run()

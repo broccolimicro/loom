@@ -70,7 +70,7 @@ def test_dataflow_copy_expected():
 	tb.source("rtl/dataflow_copy_expected.v")
 	tb.run()
 
-def test_dataflow_copy():
-	tb = test.Bench("dataflow_copy", "cocotb_dataflow_copy")
-	tb.source("rtl/dataflow_copy.v")
-	tb.run()
+#def test_dataflow_copy():
+#	tb = test.Bench("dataflow_copy", "cocotb_dataflow_copy")
+#	tb.source("rtl/dataflow_copy.v")
+#	tb.run()

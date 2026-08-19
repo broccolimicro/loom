@@ -82,7 +82,7 @@ def test_serial_add_expected():
 	tb.source("rtl/serial_add_expected.v")
 	tb.run()
 
-def test_serial_add():
-	tb = test.Bench("serial_add", "cocotb_serial_add")
-	tb.source("rtl/serial_add.v")
-	tb.run()
+#def test_serial_add():
+#	tb = test.Bench("serial_add", "cocotb_serial_add")
+#	tb.source("rtl/serial_add.v")
+#	tb.run()

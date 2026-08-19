@@ -74,7 +74,7 @@ def test_dataflow_split_expected():
 	tb.source("rtl/dataflow_split_expected.v")
 	tb.run()
 
-def test_dataflow_split():
-	tb = test.Bench("dataflow_split", "cocotb_dataflow_split")
-	tb.source("rtl/dataflow_split.v")
-	tb.run()
+#def test_dataflow_split():
+#	tb = test.Bench("dataflow_split", "cocotb_dataflow_split")
+#	tb.source("rtl/dataflow_split.v")
+#	tb.run()

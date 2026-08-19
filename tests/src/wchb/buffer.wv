@@ -1,5 +1,4 @@
-
-/*func buffer() {
+func buffer_e(fixed Lr; wire Le; fixed Rr; wire Re) {
 	region 1 {
 		Lr- and i = 0
 		await Le
@@ -33,47 +32,38 @@
 	}
 }
 
-func buffer2() {
+proto buffer_e1of2(wire Lrf, Lrt, Le, Rrf, Rrt, Re) : buffer_e {
 	region 1 {
-		Lr- and i = 0
+		Lrf- and Lrt-
 		await Le
 		while {
-			Lr = i
-			i = i + 1
+			Lrf+ xor Lrt+
 			await ~Le
-			Lr-
+			Lrf- and Lrt-
 			await Le
 		}
 	} and {
-		var fixed mem[10]
-		mem = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-		ri = 0
-		wi = 0
-		Rr- and Le+
-		await Re & ~Lr
+		Le+ and Rrf- and Rrt-
+		await Re & ~Lrf & ~Lrt
 		while {
-			if ri != wi && valid(Re)
-			Rr = mem[ri]
-			ri = (ri + 1)%10
-			await ~Re
-			Rr-
-		} and while {
-			if (wi + 1)%10 != ri
-			mem[wi] = Lr
-			wi = (wi + 1)%10
+			await Re & Lrf {
+				Rrf+
+			} or await Re & Lrt {
+				Rrt+
+			}
 			Le-
-			await ~Lr
+			await ~Re & ~Lrf & ~Lrt
+			Rrf- and Rrt-
 			Le+
 		}
 	} and region 1 {
 		Re+
-		await ~Rr
+		await ~Rrf & ~Rrt
 		while {
-			await Rr
+			await Rrf | Rrt
 			Re-
-			await ~Rr
+			await ~Rrf & ~Rrt
 			Re+
 		}
 	}
-}*/
-
+}

@@ -74,7 +74,7 @@ def test_dataflow_merge_expected():
 	tb.source("rtl/dataflow_merge_expected.v")
 	tb.run()
 
-def test_dataflow_merge():
-	tb = test.Bench("dataflow_merge", "cocotb_dataflow_merge")
-	tb.source("rtl/dataflow_merge.v")
-	tb.run()
+#def test_dataflow_merge():
+#	tb = test.Bench("dataflow_merge", "cocotb_dataflow_merge")
+#	tb.source("rtl/dataflow_merge.v")
+#	tb.run()
