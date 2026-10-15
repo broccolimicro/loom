@@ -186,7 +186,7 @@ $ klayout build/src/project.gds
 
 Install dependencies
 ```
-sudo apt install ninja-build libqhull-dev libgraphviz-dev opencl-headers ocl-icd-opencl-dev mesa-opencl-icd python3-dev
+sudo apt install ninja-build libqhull-dev libgraphviz-dev opencl-headers ocl-icd-opencl-dev mesa-opencl-icd python3-dev cmake
 ```
 
 Clone the repository
